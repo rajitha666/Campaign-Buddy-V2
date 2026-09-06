@@ -546,3 +546,51 @@ nothing stored):
 `YYYY-MM-DD` strings to `Date` and (staff/activations) whitelist writable columns.
 All `@db.Date` column filters go through `utils/dates.ts` (UTC-midnight) so they
 behave correctly regardless of server timezone.
+
+---
+
+## 11. Addendum — mobile `/v1/*` response shapes (2026-09-06)
+
+§4.1 lists the mobile endpoints but not their response bodies. The mobile app
+(`campaign-buddy-app`) is built to **`CampaignBuddy_API_Spec.md`**, whose data
+models pre-date the v3 schema (`assignmentId`/`userId` rather than
+`activationId`/`staffId`, a slim `AttendanceToday` view, a derived
+`DailyStats.conversionRate`, etc). `/v1/*` has exactly one consumer — that app —
+so the mobile handlers now translate v3 rows into the `CampaignBuddy_API_Spec.md`
+shapes rather than returning raw Prisma rows. Nothing about the v3 behaviour
+rules changes (soft-flag geofence §5.6, one-open-shift lock §5.1, compute-don't-
+store §5.2).
+
+Concretely, per endpoint:
+
+- `GET /me` → `{ id, employeeId, fullName, username, phone, role
+  (promoter→field_rep / supervisor→campaign_owner), avatarInitials,
+  reportsToUserId, reportsToName }`
+- `GET /me/assignments/today` → `{ assignmentId, campaign:{id,name,startDate},
+  outlet:{id,name,address,latitude,longitude,geofenceRadiusMeters}, shiftStart,
+  shiftEnd }`
+- `GET /attendance/today` → `{ checkedIn, checkInAt, checkOutAt,
+  shiftDurationSeconds, locationVerified, status }` (empty-but-shaped when there
+  is no record, instead of `null`)
+- `POST /attendance/check-in` / `check-out` → AttendanceRecord (§2.5) with
+  `userId`/`assignmentId` filled from the activation
+- `GET /attendance/history` → `[{ date, checkInAt, checkOutAt, status,
+  leaveReason? }]`
+- `GET /stats/today` → adds `conversionRate` (`converted/approached`);
+  `PATCH /stats/today` returns the full `DailyStats` (incl. `conversionRate`,
+  `totalSales`)
+- products list → `[{ campaignProductAssignmentId, product:{id,sku,name,
+  unitPrice,imageUrl}, openingStock, soldToday, remainingStock, reorderFlag }]`
+- `GET /products/:id` → `ProductDetails` field set (`addedToCampaignAt` as a
+  `YYYY-MM-DD` string)
+- `PATCH /products/:cpaId/stock` → `StockEntry` (§2.10) with
+  `campaignProductAssignmentId`, `userId`, `remainingStock`
+- sales-summary GET/PATCH/confirm → the computed rollup plus
+  `id`/`userId`/`assignmentId`/`date`
+- `GET /time-off/balance` → adds `pendingCount`
+- `GET /time-off/requests` / `POST` → `TimeOffRequest` (§2.12) with `userId`,
+  a derived inclusive `days`, and `approverName`
+- `GET /campaigns/:id/performance` → `{ campaignName, startDate, dayNumber,
+  totalDays, totalSales, totalUnitsSold, totalApproached, dailySales:[{date,
+  amount}], topProducts:[{productId,name,unitPrice,unitsSold}] }`
+- `POST /location/ping` → also accepts `timestamp` as an alias for `capturedAt`

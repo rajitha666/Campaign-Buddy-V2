@@ -4,42 +4,23 @@ React Native (Expo) implementation of the Campaign Buddy field-rep app, built
 from the interactive HTML prototype and `CampaignBuddy_API_Spec.md`. This
 README is the handoff doc — read it before touching code.
 
-## ⚠️ Before you do anything else
+## Status
 
-This was scaffolded in an environment with **no network access**, so:
+Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 
-1. **`npm install` has never been run against this code.** Treat your first
-   install as the real build-verification step — dependency versions in
-   `package.json` are reasonable-as-of-writing pins, not verified-compatible
-   pins. Run `npx expo install --fix` after the first install to let Expo
-   align versions to your SDK.
-2. **Poppins font files are missing.** See `assets/fonts/README.md` —
-   download `Poppins-SemiBold.ttf` and `Poppins-Bold.ttf` from Google Fonts
-   and drop them in that folder. The app will crash on startup until you do.
-3. **Nothing has been run or tested.** Every file was hand-written against
-   known Expo/React Navigation/React Query APIs, but treat this as a
-   thorough first draft, not a verified build. Expect a handful of small
-   fixes on first compile — likely candidates: exact Expo SDK version
-   compatibility, and the axios/react-query major version pairing.
+- **npm install**: use `npm install --ignore-scripts` (npm 11 + `react-native-screens@3.31.0`'s `prepare` script don't get along); native builds aren't needed for the web preview.
+- **Fonts**: now loaded from `@expo-google-fonts/poppins` (JS-bundled TTFs) — no manual `assets/fonts/*.ttf` needed. `assets/fonts/README.md` is stale.
+- **Auth**: `AuthContext` fetches `/me` after login because the v3 `/auth/login` returns tokens only.
+- **Web**: `expo start --web` works. `expo-secure-store` has no web implementation, so token storage is split — `secureStore.ts` (native Keychain/Keystore) / `secureStore.web.ts` (localStorage). The `BottomSheetModal` (product details / time-off form / checkout confirm) renders but its layout on web is imperfect — it's fine on a device, or swap in `@gorhom/bottom-sheet` as noted below.
+- Verified on web against the live backend: Login, Home, Sales, Attendance (incl. check-out), Performance, Time off, Profile, Update Stock.
 
 ## Setup
 
 ```bash
-npm install
-npx expo install --fix   # aligns native package versions to your Expo SDK
-```
-
-Set your API base URL — create a `.env` file (or set it in `eas.json` per
-build profile):
-
-```
-EXPO_PUBLIC_API_BASE_URL=https://your-backend.example.com/v1
-```
-
-Then:
-
-```bash
-npm run android   # or: npm run ios (once you have a Mac / EAS build)
+npm install --ignore-scripts
+cp .env.example .env         # EXPO_PUBLIC_API_BASE_URL, default http://localhost:4000/v1
+npm run start -- --web       # browser preview
+# or:  npm run android / npm run ios   (device / emulator, once native builds are set up)
 ```
 
 ## Architecture
@@ -114,24 +95,23 @@ confirm) use `useMutation` and invalidate the relevant query keys on
 success — check each screen for which keys it invalidates before changing
 an endpoint's response shape.
 
-## Known gaps to close with backend
+## Known gaps
 
-1. **`otherInterestedCustomers` isn't in the products list endpoint.**
-   `ProductUpdateScreen` currently defaults it to `0` on screen entry (see
-   the TODO comment on `HomeStackParamList['ProductUpdate']` in
-   `src/navigation/types.ts`). Either add it to
-   `GET /campaigns/{id}/outlets/{id}/products`, or add a
-   `GET /products/{cpaId}/stock` endpoint for this screen to call on mount.
-2. **Date pickers are placeholders.** `TimeOffRequestSheet` shows fixed
-   from/to dates rather than a real picker — wire up
-   `@react-native-community/datetimepicker` (not included yet) when ready.
-3. **Forgot-password has no screen.** `LoginScreen`'s "Forgot password?"
-   text has a TODO but no navigation target — `authApi.forgotPassword()` is
-   ready to call once that screen exists.
-4. **Token refresh isn't wired into the axios interceptor.** `authApi.ts`
-   has `refreshAccessToken()`, but nothing calls it yet on a 401. Add a
-   response interceptor in `client.ts` before shipping — right now a
-   401 just surfaces as a generic error.
+1. **Date display.** Several screens render `@db.Date` values (leave-request
+   dates, attendance-history rows) with a raw/short format — the backend sends
+   `…T00:00:00.000Z` and the RN formatters treat it as local, so a negative-UTC
+   device shows the previous day / a day-only string. Format these in UTC.
+2. **`otherInterestedCustomers` isn't in the products list endpoint** —
+   `ProductUpdateScreen` defaults it to `0` on entry. Add it to the list
+   response or a `GET /products/{cpaId}/stock` if the mount value matters.
+3. **Date pickers are placeholders.** `TimeOffRequestSheet` shows fixed
+   from/to dates — wire up `@react-native-community/datetimepicker`.
+4. **Forgot-password has no screen.** `authApi.forgotPassword()` is ready.
+5. **Token refresh isn't wired into the axios interceptor.** `authApi.ts` has
+   `refreshAccessToken()`; add a 401 response interceptor in `client.ts`. (The
+   backend's `/v1/auth/refresh` returns `{ accessToken }` only.)
+6. **`BottomSheetModal` on web** — layout is imperfect; native is fine, or swap
+   in `@gorhom/bottom-sheet` (contained change, same call signature).
 
 ## Design system discipline
 
