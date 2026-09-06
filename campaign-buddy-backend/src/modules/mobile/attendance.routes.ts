@@ -99,6 +99,13 @@ router.post(
         checkInLng: longitude,
         checkInLocationVerified,
         status,
+        // Re-check-in (e.g. after an accidental check-out earlier today) starts a
+        // fresh shift — clear the prior check-out so the one-open-shift lock and
+        // downstream "is this shift open?" checks stay consistent.
+        checkOutAt: null,
+        checkOutLat: null,
+        checkOutLng: null,
+        salesSummaryConfirmedAtCheckout: false,
       },
     });
 
