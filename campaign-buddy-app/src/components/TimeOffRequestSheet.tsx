@@ -1,12 +1,11 @@
 /**
- * New time-off request form. Date fields are simplified to fixed
- * placeholders here — swap in a real date picker (e.g.
- * @react-native-community/datetimepicker) for production; the important
- * part for backend integration is the `fromDate`/`toDate` shape sent to
- * POST /time-off/requests (spec §7), which this already matches.
+ * New time-off request form. `fromDate`/`toDate` are picked with
+ * @react-native-community/datetimepicker and sent to POST /time-off/requests
+ * as "YYYY-MM-DD" (spec §7).
  */
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, TextInput, StyleSheet, Alert, Platform } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { BottomSheetModal } from './BottomSheetModal';
 import { Button } from './Button';
@@ -14,6 +13,7 @@ import * as timeOffApi from '@/api/timeOff';
 import type { TimeOffReason } from '@/api/types';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
+import { formatDay, ymd } from '@/lib/date';
 
 const REASONS: { value: TimeOffReason; label: string }[] = [
   { value: 'sick_leave', label: 'Sick leave' },
@@ -36,13 +36,30 @@ export function TimeOffRequestSheet({
   defaultToDate,
 }: TimeOffRequestSheetProps) {
   const queryClient = useQueryClient();
-  const [fromDate] = useState(defaultFromDate);
-  const [toDate] = useState(defaultToDate);
+  const [fromDate, setFromDate] = useState(defaultFromDate);
+  const [toDate, setToDate] = useState(defaultToDate);
+  const [picking, setPicking] = useState<null | 'from' | 'to'>(null);
   const [reason, setReason] = useState<TimeOffReason>('sick_leave');
   const [note, setNote] = useState('');
 
-  const days =
-    Math.round((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86_400_000) + 1;
+  const days = Math.max(
+    1,
+    Math.round((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86_400_000) + 1
+  );
+
+  function onPick(which: 'from' | 'to') {
+    return (event: DateTimePickerEvent, selected?: Date) => {
+      if (Platform.OS !== 'ios') setPicking(null);
+      if (event.type === 'dismissed' || !selected) return;
+      const picked = ymd(selected);
+      if (which === 'from') {
+        setFromDate(picked);
+        if (picked > toDate) setToDate(picked);
+      } else {
+        setToDate(picked < fromDate ? fromDate : picked);
+      }
+    };
+  }
 
   const submitMutation = useMutation({
     mutationFn: () => timeOffApi.createTimeOffRequest({ fromDate, toDate, reason, note: note || undefined }),
@@ -60,9 +77,16 @@ export function TimeOffRequestSheet({
       </View>
 
       <View style={styles.dateRow}>
-        <DateField label="From" value={fromDate} />
-        <DateField label="To" value={toDate} />
+        <DateField label="From" value={fromDate} onPress={() => setPicking('from')} />
+        <DateField label="To" value={toDate} onPress={() => setPicking('to')} />
       </View>
+
+      {picking === 'from' && (
+        <DateTimePicker value={new Date(fromDate)} mode="date" onChange={onPick('from')} />
+      )}
+      {picking === 'to' && (
+        <DateTimePicker value={new Date(toDate)} mode="date" minimumDate={new Date(fromDate)} onChange={onPick('to')} />
+      )}
 
       <View style={styles.dayCount}>
         <Text style={styles.dayCountLabel}>Total duration</Text>
@@ -103,15 +127,13 @@ export function TimeOffRequestSheet({
   );
 }
 
-function DateField({ label, value }: { label: string; value: string }) {
+function DateField({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.dateBox}>
-        <Text style={styles.dateBoxText}>
-          {new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-        </Text>
-      </View>
+      <Pressable style={styles.dateBox} onPress={onPress}>
+        <Text style={styles.dateBoxText}>{formatDay(value)}</Text>
+      </Pressable>
     </View>
   );
 }

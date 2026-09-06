@@ -8,6 +8,7 @@ import * as timeOffApi from '@/api/timeOff';
 import { Chip, ChipTone } from '@/components/Chip';
 import { TimeOffRequestSheet } from '@/components/TimeOffRequestSheet';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
+import { formatDay, ymd } from '@/lib/date';
 import type { TimeOffStatus } from '@/api/types';
 
 const STATUS_CHIP: Record<TimeOffStatus, { label: string; tone: ChipTone }> = {
@@ -30,7 +31,7 @@ export function TimeOffScreen() {
   const balanceQuery = useQuery({ queryKey: ['time-off', 'balance'], queryFn: timeOffApi.getTimeOffBalance });
   const requestsQuery = useQuery({ queryKey: ['time-off', 'requests'], queryFn: timeOffApi.getTimeOffRequests });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ymd();
 
   return (
     <SafeAreaView style={styles.frame} edges={['top']}>
@@ -103,11 +104,10 @@ function Balance({ n, l }: { n: number; l: string }) {
 }
 
 function formatRange(from: string, to: string) {
-  const f = new Date(from);
-  const t = new Date(to);
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
-  if (from === to) return f.toLocaleDateString(undefined, opts);
-  return `${f.getDate()} – ${t.toLocaleDateString(undefined, opts)}`;
+  const fromYmd = from.slice(0, 10);
+  const toYmd = to.slice(0, 10);
+  if (fromYmd === toYmd) return formatDay(from);
+  return `${formatDay(from, { day: 'numeric', month: 'short' })} – ${formatDay(to)}`;
 }
 
 const styles = StyleSheet.create({

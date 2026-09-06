@@ -160,6 +160,7 @@ export function HomeScreen() {
                 sku: item.product.sku,
                 openingStock: item.openingStock,
                 soldToday: item.soldToday,
+                otherInterestedCustomers: item.otherInterestedCustomers,
                 reorderFlag: item.reorderFlag,
                 bandColor: BAND_COLORS[i % BAND_COLORS.length],
               })

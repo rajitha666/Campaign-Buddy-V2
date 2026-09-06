@@ -41,6 +41,7 @@ router.get(
           },
           openingStock,
           soldToday,
+          otherInterestedCustomers: rec?.otherInterestedCustomers ?? 0,
           remainingStock: openingStock - soldToday,
           reorderFlag: rec?.reorderFlag ?? false,
         };

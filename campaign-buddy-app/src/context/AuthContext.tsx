@@ -7,7 +7,7 @@
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getItem, setItem, deleteItem } from '@/api/secureStore';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/client';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, registerAuthFailureHandler } from '@/api/client';
 import * as authApi from '@/api/auth';
 import * as profileApi from '@/api/profile';
 import type { User } from '@/api/types';
@@ -24,6 +24,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // The axios refresh interceptor calls this when a session can't be recovered.
+  useEffect(() => {
+    registerAuthFailureHandler(() => setUser(null));
+  }, []);
 
   // On cold start: if a token is already stored, try to fetch the profile
   // to confirm it's still valid rather than trusting it blindly.

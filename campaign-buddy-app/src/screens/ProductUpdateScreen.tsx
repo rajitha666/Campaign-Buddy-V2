@@ -25,9 +25,7 @@ export function ProductUpdateScreen() {
 
   const [openingStock, setOpeningStock] = useState(params.openingStock);
   const [soldToday, setSoldToday] = useState(params.soldToday);
-  // Defaults to 0 — not returned by the list endpoint yet, see the TODO on
-  // this route's param type in navigation/types.ts.
-  const [otherInterested, setOtherInterested] = useState(0);
+  const [otherInterested, setOtherInterested] = useState(params.otherInterestedCustomers);
   const [reorderFlag, setReorderFlag] = useState(params.reorderFlag);
   const [detailsVisible, setDetailsVisible] = useState(false);
 

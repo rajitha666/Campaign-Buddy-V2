@@ -129,6 +129,7 @@ export interface CampaignProductListItem {
   product: Pick<Product, 'id' | 'sku' | 'name' | 'unitPrice' | 'imageUrl'>;
   openingStock: number;
   soldToday: number;
+  otherInterestedCustomers: number;
   remainingStock: number; // read-only
   reorderFlag: boolean;
 }

@@ -14,6 +14,7 @@ import { Chip } from '@/components/Chip';
 import { CheckoutConfirmSheet } from '@/components/CheckoutConfirmSheet';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
+import { formatDay } from '@/lib/date';
 import type { AttendanceStatus } from '@/api/types';
 
 type Nav = NativeStackNavigationProp<AttendanceStackParamList, 'Attendance'>;
@@ -132,7 +133,7 @@ export function AttendanceScreen() {
           <View key={entry.date} style={styles.histItem}>
             <View>
               <Text style={styles.histDay}>
-                {new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                {formatDay(entry.date, { weekday: 'long', day: 'numeric', month: 'short' })}
               </Text>
               <Text style={styles.histTime}>{formatHistoryTime(entry)}</Text>
             </View>

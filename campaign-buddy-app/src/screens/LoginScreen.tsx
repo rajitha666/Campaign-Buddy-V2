@@ -2,13 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AuthStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
+type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+
 export function LoginScreen() {
   const { login } = useAuth();
+  const navigation = useNavigation<Nav>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -83,7 +89,7 @@ export function LoginScreen() {
             />
           </View>
           <Button label="Sign in" onPress={handleSubmit} loading={loading} />
-          <Text style={styles.forgot} onPress={() => {/* TODO: navigate to a forgot-password screen calling authApi.forgotPassword */}}>
+          <Text style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
             Forgot password?
           </Text>
           <Text style={styles.foot}>Dyuro Technologies</Text>
