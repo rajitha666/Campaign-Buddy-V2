@@ -1,0 +1,14 @@
+:root {
+  --ink:#12241F; --ink-soft:#23413A; --surface:#F4F6F3; --surface-card:#FFFFFF;
+  --line:#E3E7E1; --text-primary:#16211C; --text-muted:#647169; --text-inverse:#F4F6F3;
+  --mango:#FF7A33; --mango-dark:#E8641F; --mango-tint:#FFE6D6;
+  --success:#1F9D55; --success-tint:#E4F5EA; --pending:#C77F00; --pending-tint:#FBF0DA;
+  --alert:#D8483F; --alert-tint:#FBE6E4; --info:#2673B0; --info-tint:#E3F0FA;
+  --sidebar-w:250px; --topbar-h:64px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body,#root { height:100%; }
+body { font-family:'Liberation Sans',Arial,sans-serif; color:var(--text-primary); background:var(--surface); }
+.h-display { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; }
+button, select, input, textarea { font-family:inherit; font-size:inherit; }
+a { color:inherit; text-decoration:none; }
