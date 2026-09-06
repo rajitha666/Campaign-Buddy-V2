@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Campaign Buddy — Portal</title>
+<style>
+:root {
+  --ink:#12241F; --ink-soft:#23413A; --surface:#F4F6F3; --surface-card:#FFFFFF;
+  --line:#E3E7E1; --text-primary:#16211C; --text-muted:#647169; --text-inverse:#F4F6F3;
+  --mango:#FF7A33; --mango-dark:#E8641F; --mango-tint:#FFE6D6;
+  --success:#1F9D55; --success-tint:#E4F5EA; --pending:#C77F00; --pending-tint:#FBF0DA;
+  --alert:#D8483F; --alert-tint:#FBE6E4; --info:#2673B0; --info-tint:#E3F0FA;
+  --sidebar-w:250px; --topbar-h:64px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; font-family:'Liberation Sans',Arial,sans-serif; color:var(--text-primary); background:var(--surface); }
+.h-display { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; }
+button, select, input { font-family:inherit; }
+a { color:inherit; text-decoration:none; }
+
+/* ===== shell ===== */
+#app { display:flex; min-height:100vh; }
+.sidebar {
+  width:var(--sidebar-w); flex-shrink:0; background:var(--ink); color:var(--text-inverse);
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar::-webkit-scrollbar { width:6px; } .sidebar::-webkit-scrollbar-thumb { background:#2B4A41; border-radius:4px; }
+.brand-row { display:flex; align-items:center; gap:10px; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.brand-mark { width:32px; height:32px; border-radius:9px; background:var(--mango); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.brand-name { font-size:15px; }
+.brand-role-pill { font-size:10px; font-weight:700; color:#9FB2AA; letter-spacing:0.3px; margin-top:1px; }
+.nav-scroll { flex:1; padding:10px 10px 20px; }
+.nav-section-label { font-size:10.5px; font-weight:700; color:#7C948A; letter-spacing:0.4px; padding:14px 10px 6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:13px; font-weight:600; color:#C6D4CC; cursor:pointer; }
+.nav-item svg { width:16px; height:16px; flex-shrink:0; opacity:0.85; }
+.nav-item:hover { background:rgba(255,255,255,0.06); color:#fff; }
+.nav-item.active { background:var(--mango); color:#fff; }
+.nav-item.active svg { opacity:1; }
+.nav-children { padding-left:16px; margin-top:2px; }
+.nav-child { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; font-size:12.5px; font-weight:600; color:#A9BDB4; cursor:pointer; }
+.nav-child:hover { background:rgba(255,255,255,0.06); color:#fff; }
+.nav-child.active { background:rgba(255,122,51,0.18); color:#FFB98C; }
+.nav-child .dot { width:4px; height:4px; border-radius:50%; background:currentColor; flex-shrink:0; }
+
+.main { flex:1; min-width:0; display:flex; flex-direction:column; }
+.topbar {
+  height:var(--topbar-h); background:var(--surface-card); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; padding:0 26px; position:sticky; top:0; z-index:20; gap:20px;
+}
+.topbar .crumb { font-size:12.5px; color:var(--text-muted); }
+.topbar .page-title-mini { font-size:15px; font-weight:700; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.switcher { display:flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.switcher select { border:none; background:transparent; font-size:12.5px; font-weight:600; color:var(--text-primary); cursor:pointer; outline:none; }
+.role-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:0.3px; }
+.role-badge.admin { background:var(--mango-tint); color:var(--mango-dark); }
+.role-badge.supervisor { background:var(--info-tint); color:var(--info); }
+.role-badge.sponsor { background:var(--success-tint); color:var(--success); }
+.topbar-avatar { width:34px; height:34px; border-radius:50%; background:var(--mango-tint); color:var(--mango-dark); display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; flex-shrink:0; }
+
+.content { flex:1; padding:26px 30px 60px; max-width:1400px; width:100%; }
+
+/* ===== page head ===== */
+.page-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; gap:16px; flex-wrap:wrap; }
+.page-head h1 { font-family:'Poppins',sans-serif; font-weight:600; font-size:21px; }
+.page-sub { font-size:12.5px; color:var(--text-muted); margin-top:3px; }
+.btn { display:inline-flex; align-items:center; gap:7px; border:none; border-radius:10px; font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; cursor:pointer; padding:10px 16px; white-space:nowrap; }
+.btn-primary { background:var(--mango); color:#fff; }
+.btn-primary:hover { background:var(--mango-dark); }
+.btn-secondary { background:var(--surface-card); color:var(--ink); border:1.5px solid var(--line); }
+.btn-secondary:hover { border-color:#C7D0C9; }
+.btn-ghost-alert { background:var(--alert-tint); color:var(--alert); }
+.btn-sm { padding:7px 12px; font-size:12px; }
+.locked-note { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-muted); background:var(--surface); border:1px dashed var(--line); border-radius:10px; padding:8px 13px; }
+
+/* ===== filter bar ===== */
+.filter-bar { background:var(--surface-card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+.filter-field { display:flex; flex-direction:column; gap:5px; min-width:150px; }
+.filter-field label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
+.filter-field select, .filter-field input { border:1.5px solid var(--line); border-radius:9px; padding:8px 10px; font-size:12.5px; background:var(--surface); }
+
+/* ===== table card ===== */
+.table-card { background:var(--surface-card); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+.table-toolbar { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); gap:14px; flex-wrap:wrap; }
+.entries-select { font-size:12.5px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+.entries-select select { border:1px solid var(--line); border-radius:7px; padding:4px 7px; font-size:12.5px; }
+.toolbar-right { display:flex; align-items:center; gap:10px; }
+.search-box { display:flex; align-items:center; gap:7px; border:1.5px solid var(--line); border-radius:9px; padding:7px 11px; background:var(--surface); }
+.search-box input { border:none; background:transparent; font-size:12.5px; outline:none; width:150px; }
+.btn-excel { display:flex; align-items:center; gap:6px; background:var(--success-tint); color:var(--success); font-size:12px; font-weight:700; padding:7px 12px; border-radius:9px; cursor:pointer; }
+.table-scroll { overflow-x:auto; }
+table.data-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.data-table th { text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; padding:11px 18px; background:var(--surface); border-bottom:1px solid var(--line); white-space:nowrap; }
+table.data-table td { padding:12px 18px; border-bottom:1px solid var(--line); vertical-align:middle; white-space:nowrap; }
+table.data-table tbody tr:last-child td { border-bottom:none; }
+table.data-table tbody tr:hover { background:#FBFCFA; }
+.cell-strong { font-weight:600; }
+.cell-muted { color:var(--text-muted); }
+.avatar-mini { width:28px; height:28px; border-radius:8px; background:var(--mango-tint); color:var(--mango-dark); display:inline-flex; align-items:center; justify-content:center; font-weight:600; font-size:11px; margin-right:8px; vertical-align:middle; }
+.badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
+.badge.success { background:var(--success-tint); color:var(--success); }
+.badge.pending { background:var(--pending-tint); color:var(--pending); }
+.badge.alert { background:var(--alert-tint); color:var(--alert); }
+.badge.info { background:var(--info-tint); color:var(--info); }
+.badge.muted { background:var(--surface); color:var(--text-muted); border:1px solid var(--line); }
+.row-actions { display:flex; align-items:center; gap:8px; }
+.icon-btn { width:29px; height:29px; border-radius:8px; border:1px solid var(--line); background:var(--surface-card); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.icon-btn:hover { border-color:#C7D0C9; }
+.icon-btn.view { color:var(--info); } .icon-btn.edit { color:var(--success); } .icon-btn.delete { color:var(--alert); } .icon-btn.target { color:var(--text-muted); }
+.table-footer { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; font-size:12px; color:var(--text-muted); flex-wrap:wrap; gap:10px; }
+.pager { display:flex; gap:6px; }
+.pager span { padding:6px 11px; border-radius:8px; border:1px solid var(--line); cursor:pointer; }
+.pager span.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+.empty-state { padding:56px 20px; text-align:center; color:var(--text-muted); font-size:13px; }
+.empty-state .big { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:6px; }
+
+/* ===== dashboard ===== */
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+.stat-card { background:var(--surface-card); border:1px solid var(--line); border-radius:16px; padding:18px 20px; }
+.stat-card .l { font-size:11.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
+.stat-card .n { font-family:'Poppins',sans-serif; font-weight:600; font-size:25px; margin-top:8px; }
+.stat-card .delta { font-size:11.5px; margin-top:6px; font-weight:600; }
+.stat-card .delta.up { color:var(--success); } .stat-card .delta.down { color:var(--alert); }
+.dash-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
+.panel { background:var(--surface-card); border:1px solid var(--line); border-radius:16px; padding:18px 20px; }
+.panel-title { font-size:13.5px; font-weight:700; } .panel-sub { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+.bars-row { display:flex; align-items:flex-end; gap:14px; height:150px; margin-top:20px; padding:0 4px; }
+.bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; }
+.bar-col .bar { width:100%; border-radius:6px 6px 0 0; background:var(--mango); }
+.bar-col .bar.today { background:var(--ink); }
+.bar-col .day { font-size:10.5px; color:var(--text-muted); font-weight:600; }
+.feed-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+.feed-item:last-child { border-bottom:none; }
+.feed-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.feed-text { font-size:12.5px; } .feed-time { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.rank-row { display:flex; align-items:center; gap:11px; padding:10px 0; border-bottom:1px solid var(--line); }
+.rank-row:last-child { border-bottom:none; }
+.rank-num { width:22px; height:22px; border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; font-weight:600; font-size:10.5px; color:var(--text-muted); flex-shrink:0; }
+.rank-name { font-size:12.5px; font-weight:600; } .rank-meta { font-size:11px; color:var(--text-muted); }
+.rank-val { margin-left:auto; font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; }
+
+/* ===== sponsor map ===== */
+.map-shell { border-radius:16px; overflow:hidden; border:1px solid var(--line); position:relative; height:340px; background:
+  linear-gradient(135deg,#EAF2ED 25%,#E3ECE5 25%,#E3ECE5 50%,#EAF2ED 50%,#EAF2ED 75%,#E3ECE5 75%,#E3ECE5 100%);
+  background-size:34px 34px;
+}
+.map-road { position:absolute; background:#D8E0D9; }
+.map-pin { position:absolute; display:flex; flex-direction:column; align-items:center; transform:translate(-50%,-100%); cursor:pointer; }
+.map-pin .dot { width:14px; height:14px; border-radius:50%; background:var(--mango); border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.25); }
+.map-pin .pulse { position:absolute; top:-3px; width:20px; height:20px; border-radius:50%; background:rgba(255,122,51,0.35); animation:pulse 1.8s infinite; }
+@keyframes pulse { 0%{transform:scale(0.6);opacity:0.9;} 100%{transform:scale(2.1);opacity:0;} }
+.map-pin .tag { margin-top:6px; background:var(--ink); color:#fff; font-size:10.5px; font-weight:600; padding:4px 8px; border-radius:7px; white-space:nowrap; }
+.map-pin.outlet .dot { background:var(--ink); }
+.map-legend { position:absolute; left:14px; bottom:14px; background:rgba(255,255,255,0.92); border-radius:10px; padding:9px 12px; font-size:11px; display:flex; gap:14px; }
+.map-legend .item { display:flex; align-items:center; gap:6px; }
+.map-legend .sw { width:9px; height:9px; border-radius:50%; }
+
+/* ===== drawer ===== */
+.overlay { position:fixed; inset:0; background:rgba(10,18,15,0.45); z-index:80; display:none; }
+.overlay.open { display:block; }
+.drawer { position:fixed; top:0; right:0; height:100vh; width:460px; max-width:92vw; background:var(--surface-card); z-index:90; box-shadow:-8px 0 30px rgba(0,0,0,0.18); transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column; }
+.drawer.open { transform:translateX(0); }
+.drawer-head { padding:20px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+.drawer-title { font-size:16px; } .drawer-sub { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+.close-btn { width:30px; height:30px; border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.drawer-body { flex:1; overflow-y:auto; padding:20px 22px; }
+.drawer-foot { padding:16px 22px; border-top:1px solid var(--line); display:flex; gap:10px; }
+.drawer-foot .btn { flex:1; justify-content:center; }
+.form-row { margin-bottom:16px; }
+.form-row label { font-size:12px; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+.form-row .req { color:var(--alert); }
+.form-row input, .form-row select, .form-row textarea { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; background:var(--surface); }
+.form-row textarea { min-height:70px; resize:vertical; }
+.form-two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.radio-row, .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+.chip-opt { font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; border:1.5px solid var(--line); color:var(--text-muted); background:var(--surface); cursor:pointer; }
+.chip-opt.selected { background:var(--ink); color:#fff; border-color:var(--ink); }
+.builder-add-row { display:flex; gap:8px; align-items:flex-end; margin-bottom:12px; }
+.builder-add-row select { flex:1; }
+.builder-table { border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:6px; }
+.builder-table div.brow { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; font-size:12.5px; border-bottom:1px solid var(--line); }
+.builder-table div.brow:last-child { border-bottom:none; }
+.section-divider { font-size:12px; font-weight:700; color:var(--ink); margin:20px 0 12px; padding-top:14px; border-top:1px solid var(--line); }
+.section-divider:first-child { margin-top:0; padding-top:0; border-top:none; }
+.hint-note { font-size:11px; color:var(--text-muted); margin-top:5px; }
+
+/* ===== calendar (assign routes) ===== */
+.cal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-nav { display:flex; align-items:center; gap:10px; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.cal-dow { background:var(--surface); text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); padding:8px 0; }
+.cal-cell { background:var(--surface-card); min-height:84px; padding:7px; font-size:11.5px; }
+.cal-cell .dnum { font-weight:600; font-size:12px; }
+.cal-cell.faded { color:#C6CFC9; background:#FAFBF9; }
+.cal-chip { margin-top:5px; background:var(--info-tint); color:var(--info); font-size:10px; font-weight:700; padding:3px 6px; border-radius:6px; display:block; }
+.cal-chip.mango { background:var(--mango-tint); color:var(--mango-dark); }
+
+/* ===== toast ===== */
+.toast { position:fixed; left:50%; bottom:30px; transform:translate(-50%,10px); background:var(--ink); color:#fff; font-size:12.5px; font-weight:600; padding:12px 20px; border-radius:24px; z-index:100; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; }
+.toast.show { opacity:1; transform:translate(-50%,0); }
+
+/* ===== breadcrumb pill for activation targets ===== */
+.crumb-pill { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-muted); background:var(--surface-card); border:1px solid var(--line); border-radius:10px; padding:9px 14px; margin-bottom:16px; }
+.crumb-pill b { color:var(--text-primary); }
+
+@media (max-width: 980px) {
+  .stat-grid { grid-template-columns:repeat(2,1fr); }
+  .dash-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="brand-row">
+      <div class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <div class="brand-name h-display">Campaign Buddy</div>
+        <div class="brand-role-pill" id="sidebarRoleLabel">SUPER ADMIN</div>
+      </div>
+    </div>
+    <div class="nav-scroll" id="navScroll"></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb" id="crumbText">Dashboard</div>
+        <div class="page-title-mini" id="pageTitleMini">Overview</div>
+      </div>
+      <div class="topbar-right">
+        <div class="switcher"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="#647169" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <select id="campaignSwitcher" onchange="onCampaignChange()"></select>
+        </div>
+        <div class="switcher"><span id="roleBadgeWrap"></span>
+          <select id="roleSwitcher" onchange="onRoleChange()">
+            <option value="admin">Admin view</option>
+            <option value="supervisor">Supervisor view</option>
+            <option value="sponsor">Sponsor view</option>
+          </select>
+        </div>
+        <div class="topbar-avatar" id="topAvatar">DY</div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div><div class="drawer-title h-display" id="drawerTitle">Add New</div><div class="drawer-sub" id="drawerSub"></div></div>
+    <div class="close-btn" onclick="closeDrawer()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#647169" stroke-width="2" stroke-linecap="round"/></svg></div>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <button class="btn btn-secondary" onclick="closeDrawer()">Cancel</button>
+    <button class="btn btn-primary" id="drawerSaveBtn" onclick="saveDrawer()">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ICONS
+============================================================ */
+const ICO = {
+  dashboard:'<svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  clients:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.8"/></svg>',
+  campaigns:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 11l14-7v16L3 13v-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 13v5a2 2 0 002 2h1" stroke="currentColor" stroke-width="1.8"/></svg>',
+  outlets:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>',
+  staff:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c1.7-4.3 4.9-6.4 8-6.4s6.3 2.1 8 6.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  sales:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  supervisors:'<svg viewBox="0 0 24 24" fill="none"><path d="M9 11l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>',
+  items:'<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5.5A2.5 2.5 0 0110.5 3h3A2.5 2.5 0 0116 5.5V7" stroke="currentColor" stroke-width="1.8"/></svg>',
+  tracking:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  reports:'<svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M2 20c1.2-3.6 3.6-5.4 7-5.4s5.8 1.8 7 5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 4.5a3 3 0 010 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 14.5c1.8.7 3 2.2 3.7 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  roles:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  updatesales:'<svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 6h10M4 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+/* NAV PERSONA, not the real backend roleId. In the real API, both 'adm' and 'usr'
+   roleIds collapse to this 'admin' nav persona (same sidebar for both) — but they
+   are NOT equivalent for data access: 'adm' bypasses CampaignAccessGrant entirely,
+   'usr' does not. Any real data-scoping check must resolve the actual roleId from
+   the JWT, never branch on this collapsed persona string. (Backend Spec v3 §2.7,
+   Changelog v3 #10.) */
+let ROLE = 'admin';
+let CAMPAIGN = 'Sktest Activation';
+const CAMPAIGNS = ['Sktest Activation','PUSH GIRLS — New','Radiance Summer Push','Millennium Retail Drive'];
+let currentModuleId = 'dashboard';
+
+/* ============================================================
+   NAV — sections & items, with role visibility
+   role tags: which roles can see this item at all
+============================================================ */
+const NAV = [
+  { section:null, items:[
+    { id:'dashboard', label:'Dashboard', icon:'dashboard', roles:['admin','supervisor','sponsor'] },
+  ]},
+  { section:'Client & Catalog', roles:['admin'], items:[
+    { id:'clients', label:'Clients', icon:'clients', roles:['admin'] },
+    { id:'items', label:'Items', icon:'items', roles:['admin'], children:[
+      {id:'items', label:'List'}, {id:'brands', label:'Brands'}, {id:'reorder', label:'Reorder'}
+    ]},
+  ]},
+  { section:'Campaigns', roles:['admin','supervisor','sponsor'], items:[
+    { id:'campaigns', label:'Campaigns', icon:'campaigns', roles:['admin'], children:[
+      {id:'campaigns', label:'List'}, {id:'activations', label:'Activation'}
+    ]},
+    { id:'activationsClient', label:'My Campaigns', icon:'campaigns', roles:['supervisor'] },
+    { id:'activationListClient', label:'Activation List', icon:'campaigns', roles:['sponsor'] },
+  ]},
+  { section:'Outlets', roles:['admin'], items:[
+    { id:'outlets', label:'Outlets', icon:'outlets', roles:['admin'], children:[
+      {id:'outlets', label:'List'}, {id:'distributors', label:'Distributor Point'}, {id:'cities', label:'Cities'}
+    ]},
+  ]},
+  { section:'People', roles:['admin','supervisor'], items:[
+    { id:'staff', label:'Staff', icon:'staff', roles:['admin'], children:[
+      {id:'staff', label:'List'}, {id:'staffAttendance', label:'Attendance'}, {id:'staffAbsence', label:'Absence'},
+      {id:'leaveRequests', label:'Leave Requests'}, {id:'staffProfiles', label:'Profiles'}
+    ]},
+    { id:'supervisors', label:'Supervisors', icon:'supervisors', roles:['admin'], children:[
+      {id:'supervisorTasks', label:'Tasks'}, {id:'outletAttendance', label:'Outlet Attendance'},
+      {id:'supervisorAttendance', label:'Attendance'}, {id:'assignRoutes', label:'Assign Routes'}
+    ]},
+    { id:'myOutletAttendance', label:'Outlet Attendance', icon:'supervisors', roles:['supervisor'] },
+    { id:'myLeaveRequests', label:'Leave Requests', icon:'staff', roles:['supervisor'] },
+  ]},
+  { section:'Sales', roles:['admin','supervisor','sponsor'], items:[
+    { id:'sales', label:'Sales', icon:'sales', roles:['admin'], children:[
+      {id:'skuSales', label:'SKU Wise Sales'}, {id:'salesStatus', label:'Sales Update Status'}, {id:'outletWise', label:'Outlet wise'}
+    ]},
+    { id:'updateSales', label:'Update Sales', icon:'updatesales', roles:['admin'] },
+    { id:'skuSalesReadOnly', label:'SKU Wise Sales', icon:'sales', roles:['supervisor'] },
+    { id:'clientSales', label:'Sales & Foot Fall', icon:'sales', roles:['sponsor'] },
+  ]},
+  { section:'Tracking', roles:['admin','supervisor','sponsor'], items:[
+    { id:'tracking', label:'Tracking', icon:'tracking', roles:['admin'], children:[
+      {id:'promoterTracking', label:'Promoter'}, {id:'supervisorTracking', label:'Supervisor'}
+    ]},
+    { id:'promoterTracking', label:'Promoter Tracking', icon:'tracking', roles:['supervisor'] },
+    { id:'liveMap', label:'Seller Live Locations', icon:'tracking', roles:['sponsor'] },
+  ]},
+  { section:'Reports', roles:['admin','supervisor','sponsor'], items:[
+    /* v3: collapsed. There is exactly one Reports screen per report type — a Sponsor
+       calling GET /reports/sku-wise or /reports/brand-wise gets the identical endpoint,
+       auto-filtered to their CampaignAccessGrant. No separate "-client" route or nav
+       tree exists (Backend Spec v3 §5.10 / Admin Panel Spec v3 §3.11). */
+    { id:'reports', label:'Reports', icon:'reports', roles:['admin','sponsor'], children:[
+      {id:'reportSkuWise', label:'Overall SKU Wise'}, {id:'reportBrandWise', label:'Overall Brand Wise'}
+    ]},
+    { id:'adminReports', label:'Admin Reports', icon:'reports', roles:['admin'], children:[
+      {id:'monthlyAttendance', label:'Monthly Attendance'}
+    ]},
+    { id:'reportSkuWise', label:'Overall Reports', icon:'reports', roles:['supervisor'] },
+  ]},
+  { section:'Admin', roles:['admin'], items:[
+    { id:'promoterListReadOnly', label:'Promoter List', icon:'staff', roles:['admin'] },
+    { id:'users', label:'Users', icon:'users', roles:['admin'] },
+    { id:'roles', label:'Roles', icon:'roles', roles:['admin'] },
+  ]},
+];
+
+/* ============================================================
+   SAMPLE DATA HELPERS
+============================================================ */
+function avatar(initials, name, sub){ return `<span class="avatar-mini">${initials}</span><span class="cell-strong">${name}</span>${sub?`<div class="cell-muted" style="margin-left:36px;margin-top:2px;">${sub}</div>`:''}`; }
+function badge(type,label){ return `<span class="badge ${type}">${label}</span>`; }
+function actionsCell(icons){
+  const map = { view:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8"/></svg>',
+                edit:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 20l1-4L16.5 4.5a2 2 0 012.8 0l.2.2a2 2 0 010 2.8L8 19l-4 1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+                delete:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-9 0l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                target:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>' };
+  const isReadOnly = ROLE!=='admin';
+  const shown = isReadOnly ? icons.filter(i=>i==='view'||i==='target') : icons;
+  return `<div class="row-actions">${shown.map(i=>`<div class="icon-btn ${i}" onclick="toast('${i==='delete'?'Delete requires confirmation':'Opening '+i}')">${map[i]}</div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   MODULE DEFINITIONS (table-driven pages)
+============================================================ */
+const MODULES = {
+
+clients: { title:'Clients', subtitle:'Brand owners who commission campaigns.', addLabel:'Add New Client',
+  columns:['Client Name','Contact','Address','Email','Company'],
+  rows:[
+    [avatar('PN','Prisha Naturals','Client since Jan 2025'),'+94 11 234 5678','No. 42, Havelock Rd, Colombo 5','contact@prishanaturals.lk','Prisha Naturals (Pvt) Ltd'],
+    [avatar('MW','Meridian Wellness','Client since Mar 2025'),'+94 11 987 6543','118 Duplication Rd, Colombo 4','hello@meridianwellness.lk','Meridian Wellness Group'],
+    [avatar('CB','Ceylon Botanics','Client since Aug 2024'),'+94 11 456 1122','7 Ward Place, Colombo 7','info@ceylonbotanics.lk','Ceylon Botanics Ltd'],
+  ], actions:['edit','delete'],
+  formFields:[
+    {label:'Company',type:'text',placeholder:'e.g. Prisha Naturals (Pvt) Ltd',required:true},
+    {label:'Client Name',type:'text',placeholder:'Primary contact name',required:true},
+    {label:'Contact Number',type:'text',placeholder:'+94 71 234 5678',required:true},
+    {label:'Email',type:'text',placeholder:'name@company.lk',required:true},
+    {label:'Address',type:'textarea',placeholder:'Street, city',required:false},
+  ]},
+
+campaigns: { title:'Campaigns', subtitle:'All campaigns run for your clients.', addLabel:'Add New Campaign',
+  columns:['ID','Number','Name','Client','From','To','Status'],
+  rows:[
+    ['1','CMP-0231',avatar('SK','Sktest Activation'),'Prisha Naturals','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    ['2','CMP-0228',avatar('PG','PUSH GIRLS — New'),'Meridian Wellness','20 Aug 2026','30 Sep 2026',badge('success','Active')],
+    ['3','CMP-0219',avatar('RS','Radiance Summer Push'),'Ceylon Botanics','1 Jun 2026','31 Jul 2026',badge('muted','Ended')],
+    ['4','CMP-0233',avatar('MR','Millennium Retail Drive'),'Prisha Naturals','1 Oct 2026','30 Nov 2026',badge('pending','Upcoming')],
+  ], actions:['view','edit','delete'],
+  formFields:[
+    {label:'Campaign No',type:'text',placeholder:'CMP-0234',required:true},
+    {label:'Campaign Name',type:'text',placeholder:'e.g. Festive Radiance Push',required:true},
+    {label:'Client',type:'select',options:['Prisha Naturals','Meridian Wellness','Ceylon Botanics'],required:true},
+    {label:'Description',type:'textarea',placeholder:'Internal notes about this campaign'},
+    {label:'Date range',type:'daterange',required:true},
+    {label:'Campaign Items',type:'builder',addLabel:'Add item', optionsA:['Sulfate Free Shampoo Range'],optionsB:['Lavender 320ml','Tea Tree 320ml','Aloe Vera 320ml'],
+      preset:['Lavender 320ml — LKR 3,200','Tea Tree 320ml — LKR 3,200','Aloe Vera 320ml — LKR 3,200']},
+  ]},
+
+activations: { title:'Activations', subtitle:'Field-rep assignments to a campaign + outlet.', addLabel:'Add New Activation',
+  columns:['ID','Activation','Campaign','Outlet','Promoter','Supervisor','From','To','Status'],
+  rows:[
+    ['a_55',avatar('','Nawala Weekday Push'),'Sktest Activation','Nawala Retail Outlet','Sanduni Kumari','Neel Dharmapriya','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    ['a_56',avatar('','Rajagiriya Weekend'),'Sktest Activation','Keells Rajagiriya','Kasun Perera','Neel Dharmapriya','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    ['a_57',avatar('','Colombo City Center'),'PUSH GIRLS — New','CCC Food Hall','Nadeesha Silva','Ishara Fernando','20 Aug 2026','30 Sep 2026',badge('success','Active')],
+    ['a_58',avatar('','Dehiwala Outlet'),'Sktest Activation','Arpico Dehiwala','Tharindu Jayasuriya','Neel Dharmapriya','5 Sep 2026','14 Sep 2026',badge('pending','Upcoming')],
+  ], actions:['target','view','edit','delete'],
+  formFields:[
+    {label:'Activation Name',type:'text',placeholder:'e.g. Nawala Weekday Push',required:true},
+    {label:'Outlet',type:'select',options:['Nawala Retail Outlet','Keells Rajagiriya','CCC Food Hall','Arpico Dehiwala'],required:true},
+    {label:'Promoter',type:'select',options:['Sanduni Kumari','Kasun Perera','Nadeesha Silva','Tharindu Jayasuriya'],required:true},
+    {label:'Supervisor',type:'select',options:['Neel Dharmapriya','Ishara Fernando'],required:true},
+    {label:'Distributor Point',type:'select',options:['— none —','Colombo Central DP'],required:false},
+    {label:'Campaign',type:'select',options:CAMPAIGNS,required:true},
+    {label:'Date range',type:'daterange',required:true},
+    {label:'Target Type',type:'radio',options:['Item Wise','Brand Wise']},
+    {label:'Target Categorization',type:'radio',options:['Daily','Monthly']},
+    {label:'Target Unit',type:'radio',options:['Unit Wise','Sales Wise']},
+    {label:'Activation Items',type:'builder',addLabel:'Add item / Add all',optionsB:['Lavender 320ml','Tea Tree 320ml','Aloe Vera 320ml'],
+      preset:['Lavender 320ml','Tea Tree 320ml','Aloe Vera 320ml']},
+  ]},
+
+activationsClient: { title:'My Campaigns', subtitle:'Activations you supervise, across your assigned outlets.', noAdd:true,
+  columns:['Activation','Campaign','Outlet','Promoter','From','To','Status'],
+  rows:[
+    [avatar('','Nawala Weekday Push'),'Sktest Activation','Nawala Retail Outlet','Sanduni Kumari','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    [avatar('','Dehiwala Outlet'),'Sktest Activation','Arpico Dehiwala','Tharindu Jayasuriya','5 Sep 2026','14 Sep 2026',badge('pending','Upcoming')],
+  ], actions:['view']},
+
+activationListClient: { title:'Activation List', subtitle:'Read-only list of activations for your sponsored campaign.', noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS}],
+  columns:['Activation','Outlet','Promoter','From','To','Status'],
+  rows:[
+    [avatar('','Nawala Weekday Push'),'Nawala Retail Outlet','Sanduni Kumari','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    [avatar('','Rajagiriya Weekend'),'Keells Rajagiriya','Kasun Perera','1 Sep 2026','14 Sep 2026',badge('success','Active')],
+    [avatar('','Dehiwala Outlet'),'Arpico Dehiwala','Tharindu Jayasuriya','5 Sep 2026','14 Sep 2026',badge('pending','Upcoming')],
+  ], actions:['view']},
+
+outlets: { title:'Outlets', subtitle:'Retail locations where activations run.', addLabel:'Add New Outlet', excel:true,
+  columns:['Outlet No','Outlet Name','Contact Person','Address','City','Phone','Mobile'],
+  rows:[
+    ['out0027',avatar('','Nawala Retail Outlet'),'R. Gunasekara','221 Nawala Rd','Nawala','+94 11 280 1122','+94 77 123 4567'],
+    ['out0028',avatar('','Keells Rajagiriya'),'S. Wickrama','88 Kotte Rd','Rajagiriya','+94 11 288 3344','+94 77 234 5678'],
+    ['out0031',avatar('','CCC Food Hall'),'A. Jayawardena','1 Bristol St, Colombo 1','Colombo 1','+94 11 258 8899','+94 76 345 6789'],
+    ['out0035',avatar('','Arpico Dehiwala'),'N. Rathnayake','75 Galle Rd','Dehiwala','+94 11 273 4455','+94 71 456 7890'],
+  ], actions:['edit','delete'],
+  formFields:[
+    {label:'Outlet Name',type:'text',required:true},{label:'Contact Person',type:'text'},
+    {label:'Address',type:'textarea',required:true},{label:'City',type:'select',options:['Nawala','Rajagiriya','Colombo 1','Dehiwala','Nugegoda','Kandy'],required:true},
+    {label:'Phone',type:'text'},{label:'Mobile',type:'text'},{label:'Fax',type:'text'},
+    {label:'Geocode',type:'geocode'},
+  ]},
+
+distributors: { title:'Distributor Points', subtitle:'Restock/supply points, shared across campaigns.', addLabel:'Add New Distributor', excel:true,
+  columns:['Name','Contact','Address','Client','City'],
+  rows:[
+    [avatar('','Colombo Central DP'),'+94 11 220 0011','44 Sir Baron Jayathilaka Mw','Prisha Naturals','Colombo 1'],
+    [avatar('','Kandy Regional DP'),'+94 81 220 4455','12 Peradeniya Rd','Meridian Wellness','Kandy'],
+  ], actions:['edit','delete'],
+  formFields:[{label:'Distributor Name',type:'text',required:true},{label:'Contact',type:'text'},{label:'Address',type:'text'},
+    {label:'City',type:'select',options:['Colombo 1','Kandy','Nawala']},{label:'Client',type:'select',options:['Prisha Naturals','Meridian Wellness','Ceylon Botanics']}],
+  saveLabel:'Add'},
+
+cities: { title:'Cities', subtitle:'Master lookup used by Outlets, Distributor Points and Staff.', addLabel:'Add New City',
+  columns:['City Name','Province','District'],
+  rows:[
+    ['Nawala','Western','Colombo'],['Rajagiriya','Western','Colombo'],['Dehiwala','Western','Colombo'],
+    ['Kandy','Central','Kandy'],['Galle','Southern','Galle'],['Nugegoda','Western','Colombo'],
+  ], actions:['edit','delete'],
+  formFields:[{label:'City Name',type:'text',required:true},
+    {label:'Province',type:'select',options:['Western','Eastern','Central','Southern','Sabaragamuwa','North Western','Northern','Uva','North Central'],required:true},
+    {label:'District',type:'select',options:['Colombo','Gampaha','Kandy','Galle','Matara','Jaffna'],required:true}]},
+
+staff: { title:'Staff', subtitle:'Promoters and supervisors across all campaigns.', addLabel:'Add New Member', addFull:true,
+  columns:['Name','Type','Email','City','Telephone','Mobile'],
+  rows:[
+    [avatar('SK','Sanduni Kumari','DYR-0142'),badge('info','Promoter'),'sanduni.k@dyuro.lk','Nawala','+94 11 280 4455','+94 77 123 4567'],
+    [avatar('ND','Neel Dharmapriya','DYR-0098'),badge('success','Supervisor'),'neel.d@dyuro.lk','Rajagiriya','+94 11 288 2233','+94 77 555 1122'],
+    [avatar('KP','Kasun Perera','DYR-0151'),badge('info','Promoter'),'kasun.p@dyuro.lk','Rajagiriya','+94 11 288 9988','+94 76 222 3344'],
+    [avatar('NS','Nadeesha Silva','DYR-0160'),badge('info','Promoter'),'nadeesha.s@dyuro.lk','Colombo 1','+94 11 258 1010','+94 71 333 4455'],
+  ], actions:['view','edit','delete']},
+
+staffAttendance: { title:'Staff Attendance', subtitle:'Check-in / check-out log for field promoters.', excel:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Promoter',type:'select',options:['All promoters','Sanduni Kumari','Kasun Perera']},{label:'Date range',type:'daterange'}],
+  columns:['Promoter','Activation','Outlet','Check-in Date','Check-in Time','Check-out Time','Work Hours'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'Nawala Weekday Push','Nawala Retail Outlet','5 Sep 2026','9:49 AM',badge('pending','Pending'),badge('pending','Pending')],
+    [avatar('KP','Kasun Perera'),'Rajagiriya Weekend','Keells Rajagiriya','4 Sep 2026','9:52 AM','6:04 PM','8h 12m'],
+    [avatar('NS','Nadeesha Silva'),'Colombo City Center','CCC Food Hall','4 Sep 2026','10:16 AM','6:00 PM','7h 44m'],
+  ], noAdd:true},
+
+staffAbsence: { title:'Staff Absence', subtitle:'Promoters scheduled but not checked in for the selected date.', excel:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Date',type:'date'}],
+  columns:['Campaign','Activation','Outlet','Promoter'], rows:[], noAdd:true, emptyText:'No absences recorded for this date.'},
+
+leaveRequests: { title:'Leave Requests', subtitle:'Time-off submitted from the mobile app.', excel:true,
+  filters:[{label:'Employee',type:'select',options:['All employees','Sanduni Kumari','Kasun Perera']},{label:'Date range',type:'daterange'}],
+  columns:['Employee','From','To','Reason','Approved By'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'8 Sep 2026','9 Sep 2026',badge('info','Sick leave'),badge('pending','Awaiting approval')],
+    [avatar('KP','Kasun Perera'),'14 Aug 2026','14 Aug 2026',badge('info','Annual leave'),'Neel Dharmapriya '+badge('success','Approved')],
+    [avatar('NS','Nadeesha Silva'),'2 Jul 2026','2 Jul 2026',badge('info','Sick leave'),'Ishara Fernando '+badge('alert','Declined')],
+  ], actions:['view'], noAdd:true},
+
+staffProfiles: { title:'Staff Profiles', subtitle:'Per-promoter performance analytics.', noAdd:true, custom:'profiles' },
+
+supervisorTasks: { title:'Supervisor Tasks', subtitle:'QA checklist supervisors fill out during outlet visits.', addLabel:'Add New Task',
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS}],
+  columns:['Campaign','Task','Category','Task Type'],
+  rows:[
+    ['Sktest Activation','Shelf pricing matches campaign sheet','Sale',badge('info','Range')],
+    ['Sktest Activation','Uniform & grooming standard met','Attire & Grooming',badge('muted','Feedback')],
+    ['Sktest Activation','Competitor promotions observed today','Competitor Activities',badge('muted','Feedback')],
+    ['Sktest Activation','Outlet shelf presence rating (1–5)','Outlet PR',badge('info','Range')],
+  ], actions:['edit','delete'],
+  formFields:[{label:'Campaign',type:'select',options:CAMPAIGNS,required:true},
+    {label:'Category',type:'select',options:['Sale','Outlet PR','Documentation','Discipline','Competitor Activities','Communication','Capability / Knowledge','Attitude','Attire & Grooming'],required:true},
+    {label:'Task Type',type:'radio',options:['Range','Feedback']},
+    {label:'Task',type:'textarea',placeholder:'The question or instruction shown to the supervisor',required:true}]},
+
+/* v3: new — backs POST/PATCH /admin/v1/campaigns/:campaignId/supervisor-routes
+   (Backend Spec v3 §2.6, §4.2, §5.9). Outlets uses the 'builder' field type so
+   it behaves like the SupervisorRoute.outletIds[] multi-select it maps to — add
+   one at a time from outlets already active on this campaign, remove with ✕. */
+supervisorRoutes: { title:'Assign Routes', addLabel:'Assign Routes', saveLabel:'Save route', noAdd:true,
+  formFields:[
+    {label:'Supervisor',type:'select',options:['Neel Dharmapriya','Ishara Fernando'],required:true},
+    {label:'Outlets',type:'builder',optionsB:['Nawala Retail Outlet','Keells Rajagiriya','CCC Food Hall'],addLabel:'Add outlet',preset:['Nawala Retail Outlet'],required:true},
+    {label:'Date range',type:'daterange',required:true},
+  ]},
+
+outletAttendance: { title:'Outlet Attendance', subtitle:'Supervisor visit log, cross-checked against promoter attendance.', excel:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Supervisor',type:'select',options:['All supervisors','Neel Dharmapriya','Ishara Fernando']},{label:'Date',type:'date'}],
+  columns:['Photo','Supervisor','Promoter','Outlet','Check-in Date','Check-in Time','Check-out Time','Work Hours'],
+  rows:[
+    ['<span class="avatar-mini">📷</span>',avatar('ND','Neel Dharmapriya'),'Sanduni Kumari','Nawala Retail Outlet','5 Sep 2026','10:02 AM',badge('pending','Pending'),badge('pending','Pending')],
+    ['<span class="avatar-mini">📷</span>',avatar('ND','Neel Dharmapriya'),'Kasun Perera','Keells Rajagiriya','4 Sep 2026','2:15 PM','3:40 PM','1h 25m'],
+  ], noAdd:true},
+
+supervisorAttendance: { title:'Supervisor Attendance', subtitle:"Supervisors' own check-in log.", excel:true,
+  filters:[{label:'Supervisor',type:'select',options:['All supervisors','Neel Dharmapriya','Ishara Fernando']},{label:'Date range',type:'daterange'}],
+  columns:['Promoter Name','Check-in Date','Check-in Time','Check-out Time','Work Hours'],
+  rows:[[avatar('ND','Neel Dharmapriya'),'5 Sep 2026','8:55 AM',badge('pending','Pending'),badge('pending','Pending')]], noAdd:true},
+
+myOutletAttendance: { title:'Outlet Attendance', subtitle:'Your visit log across assigned outlets.', excel:true,
+  filters:[{label:'Date',type:'date'}],
+  columns:['Promoter','Outlet','Check-in Time','Check-out Time','Work Hours'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'Nawala Retail Outlet','10:02 AM',badge('pending','Pending'),badge('pending','Pending')],
+    [avatar('TJ','Tharindu Jayasuriya'),'Arpico Dehiwala','1:10 PM','2:30 PM','1h 20m'],
+  ], noAdd:true},
+
+myLeaveRequests: { title:'Leave Requests', subtitle:'Requests from staff reporting to you.', noAdd:true,
+  columns:['Employee','From','To','Reason','Status'],
+  rows:[[avatar('SK','Sanduni Kumari'),'8 Sep 2026','9 Sep 2026',badge('info','Sick leave'),badge('pending','Awaiting approval')]],
+  actions:['view']},
+
+skuSales: { title:'SKU Wise Sales', subtitle:'Raw per-item, per-promoter sales log.', excel:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Promoter',type:'select',options:['All promoters','Sanduni Kumari']},{label:'Date range',type:'daterange'}],
+  columns:['Promoter','Activation','Outlet','Item','Brand','Sales Date','Start Qty','Sold Qty','Price','Total Sales'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'Nawala Weekday Push','Nawala Retail Outlet','Tea Tree 320ml','Sulfate Free Shampoo','5 Sep 2026','12','9','LKR 3,200','LKR 28,800'],
+    [avatar('SK','Sanduni Kumari'),'Nawala Weekday Push','Nawala Retail Outlet','Lavender 320ml','Sulfate Free Shampoo','5 Sep 2026','12','0','LKR 3,200','LKR 0'],
+    [avatar('KP','Kasun Perera'),'Rajagiriya Weekend','Keells Rajagiriya','Aloe Vera 320ml','Sulfate Free Shampoo','4 Sep 2026','10','7','LKR 3,200','LKR 22,400'],
+  ], noAdd:true},
+
+skuSalesReadOnly: { title:'SKU Wise Sales', subtitle:'Sales across your assigned outlets.', excel:true, noAdd:true,
+  filters:[{label:'Date range',type:'daterange'}],
+  columns:['Promoter','Outlet','Item','Sales Date','Sold Qty','Total Sales'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'Nawala Retail Outlet','Tea Tree 320ml','5 Sep 2026','9','LKR 28,800'],
+    [avatar('TJ','Tharindu Jayasuriya'),'Arpico Dehiwala','Lavender 320ml','5 Sep 2026','4','LKR 12,800'],
+  ]},
+
+salesStatus: { title:'Sales Update Status', subtitle:"Daily submission-compliance — did each promoter submit today's sales.", noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Date',type:'date'}],
+  columns:['Activation','Outlet','Promoter','Status'],
+  rows:[
+    ['Nawala Weekday Push','Nawala Retail Outlet',avatar('SK','Sanduni Kumari'),badge('success','Completed')],
+    ['Rajagiriya Weekend','Keells Rajagiriya',avatar('KP','Kasun Perera'),badge('pending','Pending')],
+    ['Colombo City Center','CCC Food Hall',avatar('NS','Nadeesha Silva'),badge('alert','Missing')],
+  ]},
+
+outletWise: { title:'Outlet Wise', subtitle:'Sales rollup by outlet.', noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:['Select campaign…',...CAMPAIGNS]},{label:'Duration',type:'select',options:['Select duration…','Daily','Weekly','Monthly']}],
+  columns:[],rows:[], emptyText:'Select a campaign and duration above, then Load, to view the outlet-wise breakdown.'},
+
+updateSales: { title:'Update Sales', subtitle:"Manual correction screen for a day's sales.", noAdd:true, custom:'updateSales' },
+
+items: { title:'Items', subtitle:'Catalog-level products, shared across campaigns.', addLabel:'Add New Item',
+  columns:['Item','Brand','Description','Price','Reorder Level'],
+  rows:[
+    [avatar('','Sulfate Free Shampoo — Lavender 320ml'),'Sulfate Free Shampoo Range','Gentle daily formula with lavender oil','LKR 3,200','5'],
+    [avatar('','Sulfate Free Shampoo — Tea Tree 320ml'),'Sulfate Free Shampoo Range','Cleanses & soothes with tea tree oil','LKR 3,200','5'],
+    [avatar('','Sulfate Free Shampoo — Aloe Vera 320ml'),'Sulfate Free Shampoo Range','Hydrating formula with aloe vera','LKR 3,200','5'],
+  ], actions:['edit','delete'],
+  formFields:[{label:'Item Name',type:'text',required:true},{label:'Brand',type:'select',options:['Sulfate Free Shampoo Range','FRELLA'],required:true},
+    {label:'Short Description',type:'text'},{label:'Description',type:'textarea'},{label:'Price (LKR)',type:'text',required:true},
+    {label:'Re-order Level',type:'text',required:true},{label:'Image',type:'upload'}], saveLabel:'Add'},
+
+brands: { title:'Brands', subtitle:'Brand catalog, owned by clients.', addLabel:'Add New Brand',
+  columns:['Brand Name'],
+  rows:[[avatar('','Sulfate Free Shampoo Range')],[avatar('','FRELLA')]], actions:['edit','delete'],
+  formFields:[{label:'Brand Name',type:'text',required:true},{label:'Client',type:'select',options:['Prisha Naturals','Meridian Wellness','Ceylon Botanics'],required:true}]},
+
+reorder: { title:'Reorder', subtitle:'Items at or below their reorder level, per outlet.', excel:true, noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Date',type:'date'}],
+  columns:['Activation','Item','Outlet','Date'],
+  rows:[
+    ['Nawala Weekday Push',avatar('','Tea Tree 320ml'),'Nawala Retail Outlet','5 Sep 2026'],
+    ['Rajagiriya Weekend',avatar('','Aloe Vera 320ml'),'Keells Rajagiriya','4 Sep 2026'],
+  ]},
+
+promoterTracking: { title:'Promoter Tracking', subtitle:'GPS breadcrumb trail while checked in.', noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Promoter',type:'select',options:['Sanduni Kumari','Kasun Perera']},{label:'Date',type:'date'}],
+  columns:['Promoter','Time','Latitude','Longitude'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),'9:49 AM','6.8845','79.8887'],
+    [avatar('SK','Sanduni Kumari'),'9:50 AM','6.8846','79.8889'],
+    [avatar('SK','Sanduni Kumari'),'9:51 AM','6.8847','79.8888'],
+  ]},
+
+supervisorTracking: { title:'Supervisor Tracking', subtitle:'GPS breadcrumb trail for supervisors.', noAdd:true,
+  filters:[{label:'Supervisor',type:'select',options:['Neel Dharmapriya','Ishara Fernando']},{label:'Date',type:'date'}],
+  columns:['Supervisor','Time','Latitude','Longitude'],
+  rows:[[avatar('ND','Neel Dharmapriya'),'10:02 AM','6.9017','79.9082']]},
+
+reportSkuWise: { title:'Overall SKU Wise', subtitle:'Aggregated sales by item, across the campaign.', excel:true, noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Promoter',type:'select',options:['All promoters']},{label:'Date range',type:'daterange'}],
+  columns:['Item','Product Brand','Item Count','Total Sales'],
+  rows:[
+    [avatar('','Tea Tree 320ml'),'Sulfate Free Shampoo Range','61','LKR 195,200'],
+    [avatar('','Lavender 320ml'),'Sulfate Free Shampoo Range','47','LKR 150,400'],
+    [avatar('','Aloe Vera 320ml'),'Sulfate Free Shampoo Range','34','LKR 108,800'],
+  ], footerTotal:'LKR 454,400 (142 units total)'},
+
+reportBrandWise: { title:'Overall Brand Wise', subtitle:'Aggregated sales by brand.', excel:true, noAdd:true,
+  filters:[{label:'Campaign',type:'select',options:CAMPAIGNS},{label:'Date range',type:'daterange'}],
+  columns:['Product Brand','Item Count','Total Sales'],
+  rows:[[avatar('','Sulfate Free Shampoo Range'),'142','LKR 454,400']], footerTotal:'LKR 454,400 total'},
+
+/* v3: clientReports / brandWiseClient module defs removed — reportSkuWise and
+   reportBrandWise below now serve Sponsor too (auto-scoped by their grant),
+   same as the real API (Backend Spec v3 §5.10). */
+
+promoterListReadOnly: { title:'Promoter List', subtitle:'Read-only staff directory.', noAdd:true,
+  columns:['Name','Type','Email','City','Telephone','Mobile'],
+  rows:[
+    [avatar('SK','Sanduni Kumari'),badge('info','Promoter'),'sanduni.k@dyuro.lk','Nawala','+94 11 280 4455','+94 77 123 4567'],
+    [avatar('KP','Kasun Perera'),badge('info','Promoter'),'kasun.p@dyuro.lk','Rajagiriya','+94 11 288 9988','+94 76 222 3344'],
+  ], actions:['view']},
+
+users: { title:'Users', subtitle:'Back-office logins for the web portal (Admin / Supervisor / Sponsor).', addLabel:'Add User',
+  columns:['Display Name','Email','Username','User Role','Created At','Is Active'],
+  rows:[
+    [avatar('DY','Dyuro Admin'),'admin@dyuro.lk','dyuro_admin',badge('info','Super Admin'),'2 Jan 2025',badge('success','Active')],
+    [avatar('ND','Neel Dharmapriya'),'neel.d@dyuro.lk','neel_d',badge('success','Supervisor'),'14 Mar 2026',badge('success','Active')],
+    [avatar('PN','Prisha Sponsor'),'sponsor@prishanaturals.lk','prisha_sponsor',badge('muted','Sponsor'),'28 Aug 2026',badge('success','Active')],
+  ], actions:['edit'],
+  /* v3: no Campaigns/Distributors/Brands multi-select here — campaign access is
+     granted separately, per campaign, from the Campaign Access tab (§3.3.4) or
+     auto-granted when this person is set as an Activation's Supervisor (§3.3.2).
+     Matches POST /admin/v1/users exactly (Backend Spec v3 §4.2). */
+  formFields:[{label:'Username',type:'text',required:true},{label:'Password',type:'text',required:true},{label:'Display Name',type:'text',required:true},
+    {label:'Email',type:'text'},
+    {label:'User Role',type:'select',options:['Super Admin','Campaign Admin','Supervisor','Sponsor'],required:true},
+    {label:'Is Active',type:'radio',options:['Active','Inactive']}],
+  postAddHint:'Grant campaign access separately from the Campaign Access tab on each campaign.'},
+
+roles: { title:'Roles', subtitle:'RBAC — modules, functionality and default landing page per role.', addLabel:'Add Role',
+  columns:['Id','Label','Description','Default URL'],
+  rows:[
+    ['adm',avatar('','Super Admin'),'Full access, bypasses campaign access grants entirely','/dashboard'],
+    ['usr',avatar('','Campaign Admin'),'Full access, but still grant-scoped like Supervisor/Sponsor','/dashboard'],
+    ['supervisor',avatar('','Supervisor'),'Read-only, outlet-scoped','/portal/campaigns'],
+    ['sponsor',avatar('','Sponsor'),'Read-only, campaign-scoped','/portal/campaigns'],
+  ], actions:['edit'],
+  /* v3: exactly these 4 seeded roles — no 'client' or 'super' role id exists
+     (Backend Spec v3 §2.7 / Changelog v3 #9). */
+  formFields:[{label:'Id',type:'text',placeholder:'short code, e.g. supervisor',required:true},{label:'Label',type:'text',required:true},
+    {label:'Description',type:'text'},{label:'Modules',type:'select',options:['Clients','Campaigns','Outlets','Staff','Sales','Supervisors','Items','Tracking','Reports','Users'],required:true},
+    {label:'Functionality',type:'select',options:['View','Add','Edit','Delete'],required:true},
+    {label:'Default URL',type:'text',required:true},{label:'Is Active',type:'radio',options:['Active','Inactive']}]},
+
+};
+
+/* ============================================================
+   CUSTOM PAGE: DASHBOARD (admin/supervisor variant)
+============================================================ */
+function renderDashboardPage(){
+  const supervisorView = ROLE==='supervisor';
+  return `
+  <div class="page-head"><div><h1>Overview</h1><p class="page-sub">${supervisorView? 'Your outlets, today.' : CAMPAIGN + ' and all active campaigns'}</p></div>
+    <div class="switcher" style="cursor:default;">🗓️ Friday, 5 September 2026</div></div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="l">Active Outlets Today</div><div class="n">${supervisorView?'6':'24'}</div><div class="delta up">▲ ${supervisorView?'1':'3'} vs yesterday</div></div>
+    <div class="stat-card"><div class="l">Sales Today</div><div class="n">LKR ${supervisorView?'182K':'1.94M'}</div><div class="delta up">▲ 8.4%</div></div>
+    <div class="stat-card"><div class="l">Active Outlets Yesterday</div><div class="n">${supervisorView?'5':'21'}</div><div class="delta down">▼ 1</div></div>
+    <div class="stat-card"><div class="l">Sales Yesterday</div><div class="n">LKR ${supervisorView?'168K':'1.79M'}</div><div class="delta up">▲ 2.1%</div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-title">Sales this week</div><div class="panel-sub">Mon 1 Sep – Fri 5 Sep 2026</div>
+      <div class="bars-row">
+        <div class="bar-col"><div class="bar" style="height:88px;"></div><div class="day">Mon</div></div>
+        <div class="bar-col"><div class="bar" style="height:96px;"></div><div class="day">Tue</div></div>
+        <div class="bar-col"><div class="bar" style="height:118px;"></div><div class="day">Wed</div></div>
+        <div class="bar-col"><div class="bar" style="height:120px;"></div><div class="day">Thu</div></div>
+        <div class="bar-col"><div class="bar today" style="height:112px;"></div><div class="day">Fri</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">${supervisorView?'Your promoters':'Recent activity'}</div>
+      <div style="margin-top:10px;">
+        <div class="feed-item"><div class="feed-dot" style="background:var(--success);"></div><div><div class="feed-text"><b>Sanduni Kumari</b> checked in at Nawala Retail Outlet</div><div class="feed-time">9:49 AM</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--pending);"></div><div><div class="feed-text"><b>Tea Tree 320ml</b> flagged for reorder at Nawala</div><div class="feed-time">11:20 AM</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--info);"></div><div><div class="feed-text"><b>Kasun Perera</b> submitted daily sales summary</div><div class="feed-time">6:04 PM (yesterday)</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--alert);"></div><div><div class="feed-text"><b>Nadeesha Silva</b> missed sales submission</div><div class="feed-time">Yesterday</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="dash-grid" style="margin-top:16px;">
+    <div class="panel">
+      <div class="panel-title">Top products this month</div>
+      <div style="margin-top:8px;">
+        <div class="rank-row"><div class="rank-num">1</div><div><div class="rank-name">Tea Tree 320ml</div><div class="rank-meta">Sulfate Free Shampoo Range</div></div><div class="rank-val">61 units</div></div>
+        <div class="rank-row"><div class="rank-num">2</div><div><div class="rank-name">Lavender 320ml</div><div class="rank-meta">Sulfate Free Shampoo Range</div></div><div class="rank-val">47 units</div></div>
+        <div class="rank-row"><div class="rank-num">3</div><div><div class="rank-name">Aloe Vera 320ml</div><div class="rank-meta">Sulfate Free Shampoo Range</div></div><div class="rank-val">34 units</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Monthly summary</div>
+      <div style="display:flex; gap:14px; margin-top:14px;">
+        <div style="flex:1;"><div class="stat-card" style="padding:14px;"><div class="l">Total Sales</div><div class="n" style="font-size:18px;">LKR 8.6M</div></div></div>
+        <div style="flex:1;"><div class="stat-card" style="padding:14px;"><div class="l">Units Sold</div><div class="n" style="font-size:18px;">2,140</div></div></div>
+      </div>
+      <div style="margin-top:10px;"><div class="stat-card" style="padding:14px;"><div class="l">Average Sales / Day</div><div class="n" style="font-size:18px;">LKR 286,600</div></div></div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   CUSTOM PAGE: SPONSOR DASHBOARD / LIVE MAP
+============================================================ */
+function renderSponsorDashboard(){
+  return `
+  <div class="page-head"><div><h1>${CAMPAIGN}</h1><p class="page-sub">Live campaign overview · Sponsored by Prisha Naturals</p></div></div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="l">Sales Today</div><div class="n">LKR 86,400</div><div class="delta up">▲ 12% vs yesterday</div></div>
+    <div class="stat-card"><div class="l">Foot Fall Today</div><div class="n">62</div><div class="delta up">▲ 6</div></div>
+    <div class="stat-card"><div class="l">Outlets Live Now</div><div class="n">5 / 6</div><div class="delta down">1 not checked in</div></div>
+    <div class="stat-card"><div class="l">Units Sold (campaign)</div><div class="n">142</div><div class="delta up">Day 5 of 14</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="panel-title">Seller live locations</div><div class="panel-sub">Foreground-tracked, updates while a promoter is checked in.</div>
+    ${sponsorMapHTML()}
+  </div>
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-title">Sales this period</div><div class="panel-sub">LKR 412,400 total · 5 days</div>
+      <div class="bars-row">
+        <div class="bar-col"><div class="bar" style="height:73px;"></div><div class="day">1 Sep</div></div>
+        <div class="bar-col"><div class="bar" style="height:80px;"></div><div class="day">2 Sep</div></div>
+        <div class="bar-col"><div class="bar" style="height:98px;"></div><div class="day">3 Sep</div></div>
+        <div class="bar-col"><div class="bar" style="height:100px;"></div><div class="day">4 Sep</div></div>
+        <div class="bar-col"><div class="bar today" style="height:93px;"></div><div class="day">5 Sep</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Top products</div>
+      <div style="margin-top:8px;">
+        <div class="rank-row"><div class="rank-num">1</div><div><div class="rank-name">Tea Tree 320ml</div><div class="rank-meta">LKR 3,200/unit</div></div><div class="rank-val">61 sold</div></div>
+        <div class="rank-row"><div class="rank-num">2</div><div><div class="rank-name">Lavender 320ml</div><div class="rank-meta">LKR 3,200/unit</div></div><div class="rank-val">47 sold</div></div>
+        <div class="rank-row"><div class="rank-num">3</div><div><div class="rank-name">Aloe Vera 320ml</div><div class="rank-meta">LKR 3,200/unit</div></div><div class="rank-val">34 sold</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+function sponsorMapHTML(){
+  return `<div class="map-shell">
+    <div class="map-pin outlet" style="left:20%; top:30%;"><div class="dot"></div><div class="tag">Nawala Retail Outlet</div></div>
+    <div class="map-pin" style="left:23%; top:26%;"><div class="pulse"></div><div class="dot"></div><div class="tag">Sanduni · checked in 9:49 AM</div></div>
+    <div class="map-pin outlet" style="left:52%; top:60%;"><div class="dot"></div><div class="tag">Keells Rajagiriya</div></div>
+    <div class="map-pin" style="left:55%; top:56%;"><div class="pulse"></div><div class="dot"></div><div class="tag">Kasun · checked in 9:52 AM</div></div>
+    <div class="map-pin outlet" style="left:75%; top:35%;"><div class="dot"></div><div class="tag">CCC Food Hall</div></div>
+    <div class="map-pin" style="left:78%; top:31%;"><div class="pulse"></div><div class="dot"></div><div class="tag">Nadeesha · checked in 10:16 AM</div></div>
+    <div class="map-pin outlet" style="left:40%; top:78%;"><div class="dot"></div><div class="tag">Arpico Dehiwala — not checked in</div></div>
+    <div class="map-legend"><div class="item"><div class="sw" style="background:var(--mango);"></div>Promoter (live)</div><div class="item"><div class="sw" style="background:var(--ink);"></div>Outlet</div></div>
+  </div>`;
+}
+function renderLiveMapPage(){
+  return `<div class="page-head"><div><h1>Seller Live Locations</h1><p class="page-sub">Live positions of checked-in staff for ${CAMPAIGN}.</p></div></div>
+  <div class="panel">${sponsorMapHTML()}</div>
+  <div class="table-card" style="margin-top:16px;">
+    <div class="table-toolbar"><div class="entries-select">Currently checked in</div></div>
+    <div class="table-scroll"><table class="data-table"><thead><tr><th>Promoter</th><th>Outlet</th><th>Checked in since</th><th>Last ping</th></tr></thead>
+    <tbody>
+      <tr><td>${avatar('SK','Sanduni Kumari')}</td><td>Nawala Retail Outlet</td><td>9:49 AM</td><td class="cell-muted">14 seconds ago</td></tr>
+      <tr><td>${avatar('KP','Kasun Perera')}</td><td>Keells Rajagiriya</td><td>9:52 AM</td><td class="cell-muted">41 seconds ago</td></tr>
+      <tr><td>${avatar('NS','Nadeesha Silva')}</td><td>CCC Food Hall</td><td>10:16 AM</td><td class="cell-muted">1 min ago</td></tr>
+    </tbody></table></div>
+  </div>`;
+}
+
+/* ============================================================
+   CUSTOM: Staff Profiles (evaluation)
+============================================================ */
+function renderProfiles(){
+  return `<div class="page-head"><div><h1>Staff Profiles</h1><p class="page-sub">Per-promoter performance analytics.</p></div></div>
+  <div class="filter-bar">
+    <div class="filter-field"><label>Promoter</label><select><option>Sanduni Kumari</option><option>Kasun Perera</option></select></div>
+    <div class="filter-field"><label>From</label><input type="text" value="1 Sep 2026"></div>
+    <div class="filter-field"><label>To</label><input type="text" value="5 Sep 2026"></div>
+    <button class="btn btn-primary btn-sm" onclick="toast('Loaded')">Load</button>
+  </div>
+  <div class="dash-grid">
+    <div class="panel">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div class="avatar-mini" style="width:56px;height:56px;font-size:19px;border-radius:16px;">SK</div>
+        <div><div class="h-display" style="font-size:17px;">Sanduni Kumari</div><div class="cell-muted">Promoter · Nawala</div></div>
+      </div>
+      <div style="margin-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="stat-card" style="padding:13px;"><div class="l">Overall Performance</div><div class="n" style="font-size:17px;">87%</div></div>
+        <div class="stat-card" style="padding:13px;"><div class="l">Attendance</div><div class="n" style="font-size:17px;">96%</div></div>
+        <div class="stat-card" style="padding:13px;"><div class="l">Total Sales</div><div class="n" style="font-size:17px;">LKR 412,400</div></div>
+        <div class="stat-card" style="padding:13px;"><div class="l">Total Items</div><div class="n" style="font-size:17px;">142 units</div></div>
+        <div class="stat-card" style="padding:13px;"><div class="l">Avg Sales / Month</div><div class="n" style="font-size:17px;">LKR 1.2M</div></div>
+        <div class="stat-card" style="padding:13px;"><div class="l">Highest Daily Sales</div><div class="n" style="font-size:17px;">LKR 98,000</div></div>
+        <div class="stat-card" style="padding:13px; grid-column:span 2;"><div class="l">Highest Performing Date</div><div class="n" style="font-size:17px;">3 Sep 2026</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Brand contribution</div>
+      <div style="display:flex; align-items:center; justify-content:center; margin:20px 0;">
+        <svg width="150" height="150" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#E3E7E1" stroke-width="6"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#FF7A33" stroke-width="6" stroke-dasharray="43 57" stroke-dashoffset="25"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#2673B0" stroke-width="6" stroke-dasharray="33 67" stroke-dashoffset="82"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#1F9D55" stroke-width="6" stroke-dasharray="24 76" stroke-dashoffset="115"></circle>
+        </svg>
+      </div>
+      <div class="rank-row"><div class="sw" style="width:9px;height:9px;border-radius:50%;background:#FF7A33;margin-right:8px;"></div>Tea Tree 320ml<div class="rank-val">43%</div></div>
+      <div class="rank-row"><div class="sw" style="width:9px;height:9px;border-radius:50%;background:#2673B0;margin-right:8px;"></div>Lavender 320ml<div class="rank-val">33%</div></div>
+      <div class="rank-row"><div class="sw" style="width:9px;height:9px;border-radius:50%;background:#1F9D55;margin-right:8px;"></div>Aloe Vera 320ml<div class="rank-val">24%</div></div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   CUSTOM: Update Sales (cascading + editable grid)
+============================================================ */
+function renderUpdateSales(){
+  return `<div class="page-head"><div><h1>Update Sales</h1><p class="page-sub">Manual correction screen for a promoter's daily sales.</p></div></div>
+  <div class="filter-bar">
+    <div class="filter-field"><label>Campaign</label><select onchange="toast('Promoter list filtered')"><option>Sktest Activation</option></select></div>
+    <div class="filter-field"><label>Promoter</label><select><option>Sanduni Kumari</option></select></div>
+    <div class="filter-field"><label>Outlet</label><select><option>Nawala Retail Outlet</option></select></div>
+    <div class="filter-field"><label>Activation</label><select><option>Nawala Weekday Push</option></select></div>
+    <div class="filter-field"><label>Date</label><input type="text" value="5 Sep 2026"></div>
+    <button class="btn btn-primary btn-sm" onclick="toast('Sales loaded for editing')">Load sales</button>
+  </div>
+  <div class="table-card">
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th></th><th>Item</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th></tr></thead>
+      <tbody>
+        <tr><td><input type="checkbox" checked></td><td class="cell-strong">Tea Tree 320ml</td><td>LKR 3,200</td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="12"></td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="9"></td></tr>
+        <tr><td><input type="checkbox"></td><td class="cell-strong">Lavender 320ml</td><td>LKR 3,200</td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="12"></td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="0"></td></tr>
+        <tr><td><input type="checkbox"></td><td class="cell-strong">Aloe Vera 320ml</td><td>LKR 3,200</td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="12"></td><td><input style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;" value="0"></td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-footer"><span></span><button class="btn btn-primary btn-sm" onclick="toast('Sales corrections saved')">Save corrections</button></div>
+  </div>`;
+}
+
+/* ============================================================
+   CUSTOM: Assign Routes (calendar)
+============================================================ */
+function renderAssignRoutes(){
+  const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let cells = '';
+  dow.forEach(d=>cells+=`<div class="cal-dow">${d}</div>`);
+  // Sept 2026 starts on a Tuesday; 30 days. Build 5 leading blanks then days.
+  const lead = 2;
+  for(let i=0;i<lead;i++) cells+=`<div class="cal-cell faded"></div>`;
+  for(let d=1; d<=30; d++){
+    let chip = '';
+    if([1,2,3,4,5,8,9,10,11,12].includes(d)) chip = `<span class="cal-chip">Nawala Outlet</span>`;
+    if([1,3,5,8,10,12].includes(d)) chip += `<span class="cal-chip mango">Rajagiriya Outlet</span>`;
+    cells += `<div class="cal-cell ${d===5?'':''}"><div class="dnum">${d}</div>${chip}</div>`;
+  }
+  return `<div class="page-head"><div><h1>Assign Routes</h1><p class="page-sub">Plan which outlets a supervisor visits, by date — scoped to ${CAMPAIGN}.</p></div>
+    <button class="btn btn-primary" onclick="openForm('supervisorRoutes')">+ Assign Routes</button></div>
+  <div class="filter-bar">
+    <div class="filter-field"><label>Supervisor</label><select><option>All supervisors</option><option>Neel Dharmapriya</option><option>Ishara Fernando</option></select></div>
+    <div class="filter-field"><label>Outlet</label><select><option>All outlets</option><option>Nawala Retail Outlet</option><option>Keells Rajagiriya</option></select></div>
+    <div class="filter-field"><label>Date range</label><input type="text" value="1 – 30 Sep 2026"></div>
+    <button class="btn btn-secondary btn-sm" onclick="toast('Routes loaded')">Load</button>
+  </div>
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="cal-head"><div class="panel-title">September 2026</div><div class="cal-nav"><span class="icon-btn">‹</span><span class="icon-btn">›</span></div></div>
+    <div class="cal-grid">${cells}</div>
+  </div>
+  <div class="table-card">
+    <div class="table-toolbar"><div class="entries-select">Planned routes this campaign</div></div>
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th>Supervisor</th><th>Outlets</th><th>Date range</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr><td>${avatar('ND','Neel Dharmapriya')}</td><td><span class="badge info">2 outlets</span> <span class="cell-muted" style="cursor:pointer;" onclick="toast('Nawala Retail Outlet, Keells Rajagiriya')">expand</span></td><td>1 – 12 Sep 2026</td><td>${actionsCell(['edit','delete'])}</td></tr>
+        <tr><td>${avatar('IF','Ishara Fernando')}</td><td><span class="badge info">1 outlet</span> <span class="cell-muted" style="cursor:pointer;" onclick="toast('CCC Food Hall')">expand</span></td><td>1 – 30 Sep 2026</td><td>${actionsCell(['edit','delete'])}</td></tr>
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ============================================================
+   CUSTOM: Monthly Attendance grid
+============================================================ */
+function renderMonthlyAttendance(){
+  const days = Array.from({length:30},(_,i)=>i+1);
+  const rows = [
+    {name:'Sanduni Kumari', outlet:'Nawala Retail Outlet', pattern:d=>d<=5?'✓':(d%7===0?'—':'✓')},
+    {name:'Kasun Perera', outlet:'Keells Rajagiriya', pattern:d=>d<=4?'✓':(d===3?'A':'✓')},
+    {name:'Nadeesha Silva', outlet:'CCC Food Hall', pattern:d=>d<=4?'✓':'·'},
+  ];
+  return `<div class="page-head"><div><h1>Monthly Attendance</h1><p class="page-sub">One column per day of the month.</p></div></div>
+  <div class="filter-bar">
+    <div class="filter-field"><label>Campaign</label><select><option>Sktest Activation</option></select></div>
+    <div class="filter-field"><label>Month</label><input type="text" value="09-2026"></div>
+    <button class="btn btn-primary btn-sm" onclick="toast('Loaded')">Load</button>
+    <div class="btn-excel" style="margin-left:auto;" onclick="toast('Exporting Excel…')">⬇ Excel</div>
+  </div>
+  <div class="table-card"><div class="table-scroll"><table class="data-table">
+    <thead><tr><th>Promoter</th><th>Outlet</th><th>Activation</th>${days.map(d=>`<th style="text-align:center;padding:11px 8px;">${d}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr><td class="cell-strong">${r.name}</td><td>${r.outlet}</td><td>Weekday Push</td>${days.map(d=>{
+      const v=r.pattern(d); let color = v==='✓'?'var(--success)':v==='A'?'var(--alert)':'var(--text-muted)';
+      return `<td style="text-align:center;padding:11px 8px;color:${color};font-weight:700;">${v}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table></div></div>
+  <div class="hint-note" style="margin-top:10px;">✓ present · A absent · — on leave · · not yet started</div>`;
+}
+
+/* ============================================================
+   GENERIC TABLE PAGE RENDERER
+============================================================ */
+function renderTablePage(mod){
+  const readOnly = ROLE !== 'admin';
+  const head = `<div class="page-head"><div><h1>${mod.title}</h1><p class="page-sub">${mod.subtitle||''}</p></div>
+    ${(!mod.noAdd && !readOnly) ? `<button class="btn btn-primary" onclick="openForm('${currentModuleId}')">+ ${mod.addLabel||'Add New'}</button>`
+      : (!mod.noAdd && readOnly) ? `<div class="locked-note">🔒 Read-only in ${ROLE} view</div>` : ''}</div>`;
+
+  let filters = '';
+  if(mod.filters){
+    filters = `<div class="filter-bar">${mod.filters.map(f=>{
+      if(f.type==='select') return `<div class="filter-field"><label>${f.label}</label><select>${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+      if(f.type==='date') return `<div class="filter-field"><label>${f.label}</label><input type="text" value="5 Sep 2026"></div>`;
+      if(f.type==='daterange') return `<div class="filter-field"><label>${f.label}</label><input type="text" value="1 – 5 Sep 2026"></div>`;
+      return '';
+    }).join('')}<button class="btn btn-primary btn-sm" onclick="toast('Filters applied')">Load</button></div>`;
+  }
+
+  let tableInner;
+  if(!mod.rows || mod.rows.length===0){
+    tableInner = `<div class="empty-state"><div class="big">Nothing to show yet</div>${mod.emptyText||'No data available in table.'}</div>`;
+  } else {
+    tableInner = `<div class="table-scroll"><table class="data-table">
+      <thead><tr>${mod.columns.map(c=>`<th>${c}</th>`).join('')}${mod.actions?'<th>Action</th>':''}</tr></thead>
+      <tbody>${mod.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}${mod.actions?`<td>${actionsCell(mod.actions)}</td>`:''}</tr>`).join('')}</tbody>
+    </table></div>
+    ${mod.footerTotal? `<div class="table-footer"><b>Grand total: ${mod.footerTotal}</b><span></span></div>`:''}`;
+  }
+
+  const toolbar = mod.rows && mod.rows.length>0 ? `<div class="table-toolbar">
+      <div class="entries-select">Show <select><option>10</option><option selected>25</option><option>50</option></select> entries</div>
+      <div class="toolbar-right">
+        ${mod.excel? `<div class="btn-excel" onclick="toast('Exporting Excel…')">⬇ Excel</div>`:''}
+        <div class="search-box">🔍<input placeholder="Search..."></div>
+      </div>
+    </div>` : '';
+
+  const footer = mod.rows && mod.rows.length>0 ? `<div class="table-footer">
+      <span>Showing 1 to ${mod.rows.length} of ${mod.rows.length} entries</span>
+      <div class="pager"><span>Previous</span><span class="active">1</span><span>Next</span></div>
+    </div>` : '';
+
+  return head + filters + `<div class="table-card">${toolbar}${tableInner}${footer}</div>`;
+}
+
+/* ============================================================
+   ROUTER
+============================================================ */
+function render(){
+  const el = document.getElementById('content');
+  let html;
+  if(currentModuleId==='dashboard'){
+    html = ROLE==='sponsor' ? renderSponsorDashboard() : renderDashboardPage();
+  } else if(currentModuleId==='liveMap'){
+    html = renderLiveMapPage();
+  } else if(currentModuleId==='staffProfiles'){
+    html = renderProfiles();
+  } else if(currentModuleId==='updateSales'){
+    html = renderUpdateSales();
+  } else if(currentModuleId==='assignRoutes'){
+    html = renderAssignRoutes();
+  } else if(currentModuleId==='monthlyAttendance'){
+    html = renderMonthlyAttendance();
+  } else if(MODULES[currentModuleId]){
+    html = renderTablePage(MODULES[currentModuleId]);
+  } else {
+    html = `<div class="empty-state"><div class="big">Coming soon</div>This screen is not yet wired up in the prototype.</div>`;
+  }
+  el.innerHTML = html;
+
+  // topbar text
+  let label = findNavLabel(currentModuleId);
+  document.getElementById('pageTitleMini').textContent = label.title;
+  document.getElementById('crumbText').textContent = label.crumb;
+}
+function findNavLabel(id){
+  for(const sec of NAV){
+    for(const item of sec.items){
+      if(item.id===id) return {title:item.label, crumb:(sec.section||'Home')};
+      if(item.children){
+        for(const c of item.children){ if(c.id===id) return {title:c.label, crumb:item.label}; }
+      }
+    }
+  }
+  const mod = MODULES[id];
+  return {title: mod?mod.title:'Page', crumb: sec_fallback(id)};
+}
+function sec_fallback(){ return 'Campaign Buddy'; }
+
+/* ============================================================
+   NAV RENDER
+============================================================ */
+function navVisible(rolesArr){ return rolesArr.includes(ROLE); }
+function renderNav(){
+  const wrap = document.getElementById('navScroll');
+  let html = '';
+  NAV.forEach(sec=>{
+    if(sec.roles && !navVisible(sec.roles)) return;
+    const visibleItems = sec.items.filter(it=>navVisible(it.roles));
+    if(visibleItems.length===0) return;
+    if(sec.section) html += `<div class="nav-section-label">${sec.section}</div>`;
+    visibleItems.forEach(it=>{
+      if(it.children){
+        const activeParent = it.children.some(c=>c.id===currentModuleId);
+        html += `<div class="nav-item ${activeParent?'active':''}" onclick="toggleParent(this)">${ICO[it.icon]||''}<span>${it.label}</span></div>
+          <div class="nav-children" style="display:${activeParent?'block':'none'}">${it.children.map(c=>`<div class="nav-child ${c.id===currentModuleId?'active':''}" onclick="event.stopPropagation(); goTo('${c.id}')"><span class="dot"></span>${c.label}</div>`).join('')}</div>`;
+      } else {
+        html += `<div class="nav-item ${it.id===currentModuleId?'active':''}" onclick="goTo('${it.id}')">${ICO[it.icon]||''}<span>${it.label}</span></div>`;
+      }
+    });
+  });
+  wrap.innerHTML = html;
+  document.getElementById('sidebarRoleLabel').textContent = ROLE==='admin'?'SUPER ADMIN':(ROLE==='supervisor'?'SUPERVISOR':'SPONSOR');
+  document.getElementById('topAvatar').textContent = ROLE==='admin'?'DY':(ROLE==='supervisor'?'ND':'PN');
+}
+function toggleParent(el){
+  const next = el.nextElementSibling;
+  const isOpen = next.style.display==='block';
+  document.querySelectorAll('.nav-children').forEach(n=>n.style.display='none');
+  next.style.display = isOpen? 'none':'block';
+}
+function goTo(id){
+  currentModuleId = id;
+  renderNav();
+  render();
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   ROLE / CAMPAIGN SWITCH
+============================================================ */
+function onRoleChange(){
+  ROLE = document.getElementById('roleSwitcher').value;
+  currentModuleId = 'dashboard';
+  renderNav();
+  render();
+  toast('Switched to ' + ROLE + ' view');
+}
+function onCampaignChange(){
+  CAMPAIGN = document.getElementById('campaignSwitcher').value;
+  render();
+  toast('Campaign switched to ' + CAMPAIGN);
+}
+function initSwitchers(){
+  document.getElementById('campaignSwitcher').innerHTML = CAMPAIGNS.map(c=>`<option ${c===CAMPAIGN?'selected':''}>${c}</option>`).join('');
+  document.getElementById('roleSwitcher').value = ROLE;
+}
+
+/* ============================================================
+   DRAWER (Add / Edit forms)
+============================================================ */
+let selectedChips = {};
+function openForm(modId, mode){
+  const mod = MODULES[modId];
+  if(!mod || !mod.formFields){ toast('Opening ' + (mod?mod.title:'form') + '…'); return; }
+  document.getElementById('drawerTitle').textContent = (mode==='edit'?'Edit ':(mod.addFull?'Add New Member':mod.addLabel||'Add New'));
+  document.getElementById('drawerSub').textContent = mod.title;
+  document.getElementById('drawerSaveBtn').textContent = mod.saveLabel || 'Save';
+  const body = document.getElementById('drawerBody');
+  body.innerHTML = mod.formFields.map((f,idx)=>renderField(f, modId, idx)).join('')
+    + (mod.postAddHint ? `<div class="hint-note" style="margin-top:6px;">${mod.postAddHint}</div>` : '');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function renderField(f, modId, idx){
+  const reqMark = f.required? '<span class="req">*</span>' : '';
+  if(f.type==='text') return `<div class="form-row"><label>${f.label} ${reqMark}</label><input type="text" placeholder="${f.placeholder||''}"></div>`;
+  if(f.type==='textarea') return `<div class="form-row"><label>${f.label} ${reqMark}</label><textarea placeholder="${f.placeholder||''}"></textarea></div>`;
+  if(f.type==='select') return `<div class="form-row"><label>${f.label} ${reqMark}</label><select>${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+  if(f.type==='radio') return `<div class="form-row"><label>${f.label}</label><div class="radio-row">${f.options.map((o,i)=>`<span class="chip-opt ${i===0?'selected':''}" onclick="selectChip(this)">${o}</span>`).join('')}</div></div>`;
+  if(f.type==='upload') return `<div class="form-row"><label>${f.label} ${reqMark}</label><div class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">📷 Choose file…</div></div>`;
+  if(f.type==='daterange') return `<div class="form-row"><label>${f.label} ${reqMark}</label><div class="form-two"><input type="text" placeholder="From"><input type="text" placeholder="To"></div></div>`;
+  if(f.type==='geocode') return `<div class="form-row"><div class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;margin-bottom:12px;" onclick="toast('Coordinates fetched')">📍 Get Latitude and Longitude values</div><div class="form-two"><div><label>Latitude <span class="req">*</span></label><input type="text" placeholder="6.8845"></div><div><label>Longitude <span class="req">*</span></label><input type="text" placeholder="79.8887"></div></div></div>`;
+  if(f.type==='builder') return `<div class="form-row"><label>${f.label}</label>
+      <div class="builder-add-row">${f.optionsA?`<select>${f.optionsA.map(o=>`<option>${o}</option>`).join('')}</select>`:''}<select>${(f.optionsB||[]).map(o=>`<option>${o}</option>`).join('')}</select><button class="btn btn-secondary btn-sm" onclick="toast('Item added')">${f.addLabel||'Add'}</button></div>
+      <div class="builder-table" id="builder-${idx}">${(f.preset||[]).map(p=>`<div class="brow"><span>${p}</span><span class="icon-btn delete" style="width:24px;height:24px;" onclick="this.parentElement.remove()">✕</span></div>`).join('')}</div>
+    </div>`;
+  return '';
+}
+function selectChip(el){
+  const parent = el.parentElement;
+  Array.prototype.forEach.call(parent.children, c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function saveDrawer(){
+  closeDrawer();
+  toast('Saved');
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1700);
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+initSwitchers();
+renderNav();
+render();
+</script>
+</body>
+</html>

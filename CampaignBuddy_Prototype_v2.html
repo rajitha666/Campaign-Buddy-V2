@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Campaign Buddy — Interactive Prototype</title>
+<style>
+/* ============ design tokens (shared) ============ */
+:root {
+  --ink: #12241F;
+  --ink-soft: #23413A;
+  --surface: #F4F6F3;
+  --surface-card: #FFFFFF;
+  --line: #E3E7E1;
+  --text-primary: #16211C;
+  --text-muted: #647169;
+  --text-inverse: #F4F6F3;
+  --mango: #FF7A33;
+  --mango-dark: #E8641F;
+  --mango-tint: #FFE6D6;
+  --success: #1F9D55;
+  --success-tint: #E4F5EA;
+  --pending: #C77F00;
+  --pending-tint: #FBF0DA;
+  --alert: #D8483F;
+  --alert-tint: #FBE6E4;
+  --info: #2673B0;
+  --info-tint: #E3F0FA;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: 'Liberation Sans', Arial, sans-serif;
+  color: var(--text-primary);
+  background: #E7E9E5;
+}
+.h-display { font-family: 'Poppins','Liberation Sans',sans-serif; font-weight: 600; }
+
+/* ============ page chrome (outside the phone) ============ */
+.stage {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 16px 48px;
+}
+.stage-title { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size: 18px; color: var(--ink); }
+.stage-sub { font-size: 12.5px; color: var(--text-muted); text-align:center; max-width: 340px; }
+.restart-btn {
+  margin-top: 4px;
+  font-size: 12px; font-weight: 700; color: var(--text-muted);
+  background: #fff; border: 1px solid var(--line); border-radius: 20px;
+  padding: 7px 16px; cursor: pointer;
+}
+.restart-btn:hover { color: var(--ink); border-color: #C7D0C9; }
+
+/* ============ phone frame ============ */
+.phone-shell {
+  width: 375px; height: 812px;
+  border-radius: 46px;
+  background: #0B0F0D;
+  padding: 12px;
+  box-shadow: 0 30px 60px rgba(10,20,15,0.28), 0 4px 12px rgba(10,20,15,0.14);
+  flex-shrink: 0;
+}
+.frame {
+  width: 100%; height: 100%;
+  border-radius: 34px;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.notch {
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width: 120px; height: 22px; background:#0B0F0D; border-radius: 0 0 14px 14px; z-index: 50;
+}
+
+/* ============ screens ============ */
+.screen {
+  position:absolute; inset:0;
+  display:none; flex-direction:column;
+  background: var(--surface);
+}
+.screen.active { display:flex; }
+#screen-login { background: var(--ink); }
+
+.statusbar { height: 34px; display:flex; align-items:center; justify-content:space-between; padding: 0 22px 0 26px; font-size: 13px; font-weight:600; color: var(--text-inverse); flex-shrink:0; }
+.statusbar.on-light { color: var(--text-primary); }
+
+.topnav { background: var(--ink); padding: 22px 20px 18px; flex-shrink:0; }
+.topnav .app-title { color: var(--text-inverse); font-size: 17px; letter-spacing:0.2px; }
+.topnav .app-sub { color:#9FB2AA; font-size:12.5px; margin-top:2px; }
+
+.content { flex:1; overflow-y:auto; padding: 18px 20px 24px; }
+.content::-webkit-scrollbar { display:none; }
+
+/* ============ shared components ============ */
+.card { background: var(--surface-card); border-radius:16px; border:1px solid var(--line); padding:16px 18px; }
+.card + .card { margin-top:12px; }
+
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:5px 11px; border-radius:20px; }
+.chip.success { background: var(--success-tint); color: var(--success); }
+.chip.pending { background: var(--pending-tint); color: var(--pending); }
+.chip.alert   { background: var(--alert-tint);  color: var(--alert); }
+.chip.info    { background: var(--info-tint);   color: var(--info); }
+
+.btn { display:flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:14px; font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:15px; cursor:pointer; }
+.btn-primary { background: var(--mango); color:#fff; padding:16px; }
+.btn-secondary { background: var(--surface-card); color: var(--ink); border:1.5px solid var(--line); padding:14px; }
+
+.bottomnav { flex-shrink:0; display:flex; background: var(--surface-card); border-top:1px solid var(--line); padding:10px 6px 22px; }
+.navitem { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10.5px; font-weight:600; color: var(--text-muted); cursor:pointer; }
+.navitem.active { color: var(--mango); }
+.navitem svg { width:22px; height:22px; }
+
+.avatar { width:46px; height:46px; border-radius:50%; background:var(--mango-tint); color:var(--mango-dark); display:flex; align-items:center; justify-content:center; font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:17px; flex-shrink:0; }
+
+.pbar { height:6px; border-radius:4px; background: var(--line); overflow:hidden; }
+.pbar > div { height:100%; border-radius:4px; background: var(--mango); }
+
+.field-label { font-size:12.5px; color: var(--text-muted); margin-bottom:6px; font-weight:600; }
+.field-box { border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; font-size:15px; color: var(--text-primary); background: var(--surface-card); }
+
+.stepper { display:flex; align-items:center; gap:14px; }
+.stepper button { width:34px; height:34px; border-radius:10px; border:1.5px solid var(--line); background: var(--surface-card); font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:17px; color: var(--ink); cursor:pointer; }
+.stepper .val { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:19px; min-width:28px; text-align:center; }
+
+.fab { position:absolute; right:20px; bottom:96px; width:54px; height:54px; border-radius:50%; background: var(--mango); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 18px rgba(255,122,51,0.38); cursor:pointer; z-index:15; }
+
+.tap { cursor:pointer; }
+.tap:active { opacity:0.82; }
+
+/* ============ #screen-login ============ */
+#screen-login .hero { padding: 60px 32px 0; }
+#screen-login .badge-mark { width:62px; height:62px; border-radius:18px; background: var(--mango); display:flex; align-items:center; justify-content:center; }
+#screen-login .brand-name { color:#fff; font-size:26px; margin-top:22px; }
+#screen-login .brand-tag { color:#9FB2AA; font-size:14px; margin-top:6px; line-height:1.5; }
+#screen-login .login-sheet { margin-top:36px; background: var(--surface); border-radius:28px 28px 0 0; flex:1; padding:32px 28px 0; }
+#screen-login .field { margin-bottom:20px; }
+#screen-login .field label { font-size:12.5px; font-weight:600; color: var(--text-muted); }
+#screen-login .field .box { margin-top:8px; display:flex; align-items:center; gap:10px; border-bottom:1.5px solid var(--line); padding-bottom:11px; }
+#screen-login .field .box .input-fake { color:#A9B2AC; font-size:15px; }
+#screen-login .forgot { text-align:center; font-size:13.5px; color: var(--info); font-weight:600; margin-top:22px; }
+#screen-login .foot { text-align:center; font-size:11.5px; color: var(--text-muted); margin-top:14px; }
+
+/* ============ #screen-home ============ */
+#screen-home .greetrow { display:flex; align-items:center; justify-content:space-between; margin-top:4px; }
+#screen-home .greet-name { font-size:20px; }
+#screen-home .greet-sub { font-size:13px; color: var(--text-muted); margin-top:2px; }
+#screen-home .campaign-card { background: var(--ink); border-radius:18px; padding:16px 20px; color:#fff; margin-top:14px; }
+#screen-home .campaign-card .name { font-size:17px; }
+#screen-home .campaign-card .loc { font-size:12.5px; color:#A9BDB4; margin-top:3px; display:flex; align-items:center; gap:5px; }
+#screen-home .campaign-card .row { display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
+#screen-home .checkin-chip { background: rgba(255,255,255,0.12); color:#DCE9E3; font-size:12px; font-weight:600; padding:6px 11px; border-radius:20px; display:inline-flex; align-items:center; gap:6px; }
+#screen-home .section-header-row { display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; }
+#screen-home .section-header-row .lbl { font-size:13px; font-weight:700; color: var(--text-primary); }
+#screen-home .toggle-chevron { width:26px; height:26px; border-radius:8px; background: var(--surface-card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+#screen-home .stats-compact { display:flex; align-items:center; background: var(--surface-card); border:1px solid var(--line); border-radius:14px; padding:13px 6px; }
+#screen-home .stat-mini { flex:1; text-align:center; }
+#screen-home .stat-mini .label { font-size:10.5px; color: var(--text-muted); font-weight:600; }
+#screen-home .stat-mini .value-row { display:flex; align-items:center; justify-content:center; gap:5px; margin-top:3px; }
+#screen-home .stat-mini .value { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:16.5px; color: var(--ink); }
+#screen-home .stat-mini .mini-update { width:17px; height:17px; border-radius:6px; background: var(--mango-tint); color: var(--mango-dark); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#screen-home .stat-divider { width:1px; align-self:stretch; background: var(--line); margin:1px 4px; }
+#screen-home .searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-card); border:1.5px solid var(--line); border-radius:12px; padding:11px 14px; margin-top:14px; }
+#screen-home .searchbar span { color:#A9B2AC; font-size:14px; }
+#screen-home .list-head { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+#screen-home .list-head .lbl { font-size:13px; font-weight:700; }
+#screen-home .list-head .count { font-size:12px; color: var(--text-muted); }
+#screen-home .prod-card { display:flex; gap:12px; padding:12px 2px; border-bottom:1px solid var(--line); align-items:center; }
+#screen-home .prod-card:last-child { border-bottom:none; }
+#screen-home .prod-img { width:46px; height:46px; border-radius:11px; overflow:hidden; flex-shrink:0; background:#EEF1EC; display:flex; align-items:center; justify-content:center; }
+#screen-home .prod-name { font-size:13px; font-weight:600; line-height:1.3; }
+#screen-home .prod-price { font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+#screen-home .prod-qty-row { display:flex; align-items:center; gap:10px; margin-top:5px; }
+#screen-home .qty-pill { font-size:11px; font-weight:600; padding:2px 8px; border-radius:8px; }
+#screen-home .qty-pill.avail { background: var(--info-tint); color: var(--info); }
+#screen-home .qty-pill.sold { background: var(--success-tint); color: var(--success); }
+#screen-home .qty-pill.reorder { background: var(--pending-tint); color: var(--pending); }
+#screen-home .prod-qty-row { flex-wrap: wrap; row-gap: 6px; }
+
+/* ============ #screen-attendance / #screen-attendance-checkin ============ */
+#screen-attendance .checkin-hero, #screen-attendance-checkin .checkin-hero { text-align:center; padding:22px 0 6px; }
+#screen-attendance .ring { width:168px; height:168px; border-radius:50%; margin:0 auto; background: var(--success-tint); display:flex; align-items:center; justify-content:center; position:relative; cursor:default; }
+#screen-attendance .ring::before { content:""; position:absolute; inset:-10px; border-radius:50%; border:2px dashed #BFE6CD; }
+#screen-attendance .ring-inner { width:128px; height:128px; border-radius:50%; background: var(--success); display:flex; align-items:center; justify-content:center; flex-direction:column; color:#fff; }
+#screen-attendance .ring-inner .lbl { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:15px; margin-top:4px; }
+
+#screen-attendance-checkin .ring { width:168px; height:168px; border-radius:50%; margin:0 auto; background: var(--mango-tint); display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+#screen-attendance-checkin .ring::before { content:""; position:absolute; inset:-10px; border-radius:50%; border:2px dashed #FFD1AD; }
+#screen-attendance-checkin .ring-inner { width:128px; height:128px; border-radius:50%; background: var(--mango); display:flex; align-items:center; justify-content:center; flex-direction:column; color:#fff; box-shadow:0 10px 22px rgba(255,122,51,0.35); }
+#screen-attendance-checkin .ring-inner .lbl { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:16px; margin-top:6px; }
+#screen-attendance-checkin .ring-inner .sub { font-size:10.5px; color: rgba(255,255,255,0.85); margin-top:2px; }
+
+#screen-attendance .timer, #screen-attendance-checkin .timer { font-size:13px; color: var(--text-muted); margin-top:18px; }
+#screen-attendance .timer b, #screen-attendance-checkin .timer b { color: var(--text-primary); font-family:'Poppins','Liberation Sans',sans-serif; }
+#screen-attendance .loc-row, #screen-attendance-checkin .loc-row { display:flex; align-items:center; gap:8px; justify-content:center; margin-top:8px; font-size:12.5px; color: var(--text-muted); }
+#screen-attendance .hist-item, #screen-attendance-checkin .hist-item { display:flex; align-items:center; justify-content:space-between; padding:11px 2px; border-bottom:1px solid var(--line); }
+#screen-attendance .hist-item:last-child, #screen-attendance-checkin .hist-item:last-child { border-bottom:none; }
+#screen-attendance .hist-day, #screen-attendance-checkin .hist-day { font-size:13.5px; font-weight:600; }
+#screen-attendance .hist-time, #screen-attendance-checkin .hist-time { font-size:12px; color: var(--text-muted); margin-top:1px; }
+#screen-attendance .section-label, #screen-attendance-checkin .section-label { font-size:13px; font-weight:700; margin:22px 0 6px; }
+#screen-attendance .link-row, #screen-attendance-checkin .link-row { margin-top:12px; display:flex; align-items:center; gap:12px; padding:14px 16px; }
+#screen-attendance .link-row .ic, #screen-attendance-checkin .link-row .ic { width:36px; height:36px; border-radius:10px; background: var(--info-tint); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#screen-attendance .link-row .t, #screen-attendance-checkin .link-row .t { font-size:14px; font-weight:600; }
+#screen-attendance .link-row .s, #screen-attendance-checkin .link-row .s { font-size:11.5px; color: var(--text-muted); margin-top:1px; }
+
+/* ============ #screen-products ============ */
+#screen-products .searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-card); border:1.5px solid var(--line); border-radius:12px; padding:11px 14px; margin-top:4px; }
+#screen-products .searchbar span { color:#A9B2AC; font-size:14px; }
+#screen-products .filter-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+#screen-products .filter-row .lbl { font-size:13px; font-weight:700; }
+#screen-products .toggle-mini { width:40px; height:24px; border-radius:20px; background: var(--line); position:relative; }
+#screen-products .toggle-mini .knob { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+#screen-products .prod-card { display:flex; gap:12px; padding:13px 2px; border-bottom:1px solid var(--line); align-items:center; cursor:pointer; }
+#screen-products .prod-card:last-child { border-bottom:none; }
+#screen-products .prod-img { width:52px; height:52px; border-radius:12px; overflow:hidden; flex-shrink:0; background:#EEF1EC; display:flex; align-items:center; justify-content:center; }
+#screen-products .prod-name { font-size:13.5px; font-weight:600; line-height:1.3; }
+#screen-products .prod-meta { font-size:12px; color: var(--text-muted); margin-top:3px; }
+#screen-products .prod-stock { margin-top:6px; display:flex; align-items:center; gap:6px; }
+#screen-products .prod-stock .pbar { width:60px; }
+#screen-products .prod-stock .n { font-size:11px; color: var(--text-muted); }
+#screen-products .chev { color:#B7C0BA; flex-shrink:0; }
+
+/* ============ #screen-product-update ============ */
+#screen-product-update .back-row, #screen-stats-update .back-row, #screen-products .back-row, #screen-timeoff .back-row, #screen-profile .back-row { display:flex; align-items:center; gap:10px; cursor:pointer; }
+#screen-product-update .hero-img { width:100%; height:190px; border-radius:18px; background: linear-gradient(160deg,#EEF1EC,#E3E8E1); display:flex; align-items:center; justify-content:center; margin-top:6px; position:relative; }
+#screen-product-update .view-details-btn { position:absolute; right:12px; bottom:12px; display:flex; align-items:center; gap:6px; background: rgba(18,36,31,0.88); color:#fff; font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; cursor:pointer; }
+#screen-product-update .p-name { font-size:18px; margin-top:16px; line-height:1.3; }
+#screen-product-update .p-meta { font-size:13px; color: var(--text-muted); margin-top:4px; }
+#screen-product-update .qty-row { display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding:14px 0; border-bottom:1px solid var(--line); }
+#screen-product-update .qty-row:last-of-type { border-bottom:none; }
+#screen-product-update .qty-row .lbl { font-size:14.5px; font-weight:600; }
+#screen-product-update .qty-row .sub { font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+#screen-product-update .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--line); }
+#screen-product-update .toggle-row .lbl { font-size:14.5px; font-weight:600; }
+#screen-product-update .toggle-row .sub { font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+#screen-product-update .switch { width:46px; height:27px; border-radius:20px; background: var(--line); position:relative; flex-shrink:0; cursor:pointer; }
+#screen-product-update .switch.on { background: var(--mango); }
+#screen-product-update .switch .knob { position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+#screen-product-update .switch.on .knob { left:22px; }
+
+/* ============ #screen-stats-update ============ */
+#screen-stats-update .metric-card { background: var(--surface-card); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-top:14px; }
+#screen-stats-update .metric-top { display:flex; align-items:center; gap:11px; }
+#screen-stats-update .metric-icon { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#screen-stats-update .metric-title { font-size:14.5px; font-weight:700; }
+#screen-stats-update .metric-sub { font-size:11.5px; color: var(--text-muted); margin-top:1px; }
+#screen-stats-update .metric-stepper-row { display:flex; align-items:center; justify-content:flex-end; margin-top:16px; }
+#screen-stats-update .stepper button { width:40px; height:40px; }
+#screen-stats-update .stepper .val { font-size:21px; min-width:34px; }
+#screen-stats-update .conv-summary { display:flex; align-items:center; justify-content:space-between; background: var(--success-tint); border-radius:14px; padding:13px 16px; margin-top:16px; }
+#screen-stats-update .conv-summary .lbl { font-size:12.5px; font-weight:600; color: var(--success); }
+#screen-stats-update .conv-summary .val { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:17px; color: var(--success); }
+
+/* ============ #screen-sales-summary ============ */
+#screen-sales-summary .total-card { background: var(--ink); border-radius:18px; padding:20px; color:#fff; margin-top:4px; }
+#screen-sales-summary .total-card .lbl { font-size:12.5px; color:#9FB2AA; }
+#screen-sales-summary .total-card .val { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:30px; margin-top:4px; }
+#screen-sales-summary .total-card .sub-row { display:flex; gap:22px; margin-top:16px; }
+#screen-sales-summary .total-card .sub-row .item .n { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:16px; }
+#screen-sales-summary .total-card .sub-row .item .l { font-size:11px; color:#9FB2AA; margin-top:2px; }
+#screen-sales-summary .metric-grid { display:flex; gap:10px; margin-top:14px; }
+#screen-sales-summary .metric { flex:1; background: var(--surface-card); border:1px solid var(--line); border-radius:14px; padding:12px 10px; text-align:center; }
+#screen-sales-summary .metric .icon { width:32px; height:32px; border-radius:9px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; }
+#screen-sales-summary .metric .n { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:18px; }
+#screen-sales-summary .metric .l { font-size:11px; color: var(--text-muted); margin-top:2px; }
+#screen-sales-summary .conv-note { text-align:center; font-size:12px; color: var(--text-muted); margin-top:10px; }
+#screen-sales-summary .conv-note b { color: var(--success); }
+#screen-sales-summary .remarks { margin-top:18px; }
+
+/* ============ #screen-timeoff ============ */
+#screen-timeoff .balance-row { display:flex; gap:10px; margin-top:4px; }
+#screen-timeoff .balance { flex:1; background: var(--surface-card); border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+#screen-timeoff .balance .n { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:22px; }
+#screen-timeoff .balance .l { font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+#screen-timeoff .section-label { font-size:13px; font-weight:700; margin:20px 0 6px; }
+#screen-timeoff .req-card { padding:13px 2px; border-bottom:1px solid var(--line); }
+#screen-timeoff .req-card:last-child { border-bottom:none; }
+#screen-timeoff .req-top { display:flex; justify-content:space-between; align-items:flex-start; }
+#screen-timeoff .req-reason { font-size:14px; font-weight:600; }
+#screen-timeoff .req-dates { font-size:12px; color: var(--text-muted); margin-top:3px; }
+#screen-timeoff .req-meta { font-size:11.5px; color: var(--text-muted); margin-top:6px; display:flex; align-items:center; gap:5px; }
+
+/* ============ #screen-performance ============ */
+#screen-performance .campaign-card { background: var(--ink); border-radius:18px; padding:18px 20px; color:#fff; margin-top:4px; }
+#screen-performance .campaign-card .name { font-size:18px; }
+#screen-performance .campaign-card .meta-row { display:flex; gap:22px; margin-top:14px; }
+#screen-performance .campaign-card .meta-row .item .n { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:15px; }
+#screen-performance .campaign-card .meta-row .item .l { font-size:10.5px; color:#9FB2AA; margin-top:2px; }
+#screen-performance .perf-stats { display:flex; gap:10px; margin-top:14px; }
+#screen-performance .perf-stat { flex:1; background: var(--surface-card); border:1px solid var(--line); border-radius:14px; padding:13px 10px; text-align:center; }
+#screen-performance .perf-stat .n { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:17px; color: var(--ink); }
+#screen-performance .perf-stat .l { font-size:10.5px; color: var(--text-muted); margin-top:4px; line-height:1.3; }
+#screen-performance .chart-card { background: var(--surface-card); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-top:14px; }
+#screen-performance .chart-title { font-size:13px; font-weight:700; }
+#screen-performance .chart-total { font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+#screen-performance .bars { display:flex; align-items:flex-end; gap:12px; height:100px; margin-top:18px; padding: 0 2px; }
+#screen-performance .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+#screen-performance .bar-col .bar { width:100%; border-radius:5px 5px 0 0; background: var(--mango); }
+#screen-performance .bar-col .bar.today { background: var(--ink); }
+#screen-performance .bar-col .day { font-size:10px; color: var(--text-muted); font-weight:600; }
+#screen-performance .section-label { font-size:13px; font-weight:700; margin:20px 0 8px; }
+#screen-performance .rank-card { display:flex; align-items:center; gap:12px; padding:12px 2px; border-bottom:1px solid var(--line); }
+#screen-performance .rank-card:last-child { border-bottom:none; }
+#screen-performance .rank-num { width:24px; height:24px; border-radius:50%; background: var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:11px; color: var(--text-muted); flex-shrink:0; }
+#screen-performance .rank-img { width:40px; height:40px; border-radius:10px; overflow:hidden; flex-shrink:0; background:#EEF1EC; display:flex; align-items:center; justify-content:center; }
+#screen-performance .rank-name { font-size:13px; font-weight:600; }
+#screen-performance .rank-meta { font-size:11px; color: var(--text-muted); margin-top:2px; }
+#screen-performance .rank-sold { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:15px; color: var(--ink); flex-shrink:0; }
+
+/* ============ #screen-profile ============ */
+#screen-profile .profile-hero { text-align:center; padding: 18px 0 6px; }
+#screen-profile .profile-hero .avatar { width:76px; height:76px; font-size:26px; margin:0 auto; }
+#screen-profile .profile-hero .name { font-size:18px; margin-top:12px; }
+#screen-profile .profile-hero .role { font-size:12.5px; color: var(--text-muted); margin-top:2px; }
+#screen-profile .info-row { display:flex; align-items:center; justify-content:space-between; padding:13px 2px; border-bottom:1px solid var(--line); }
+#screen-profile .info-row:last-of-type { border-bottom:none; }
+#screen-profile .info-row .k { font-size:13px; color: var(--text-muted); }
+#screen-profile .info-row .v { font-size:13px; font-weight:600; }
+
+/* ============ modals (shared chrome) ============ */
+.modal-overlay {
+  position:absolute; inset:0; z-index:40;
+  background: rgba(10, 18, 15, 0.55);
+  display:none; align-items:flex-end;
+}
+.modal-overlay.open { display:flex; }
+.sheet {
+  width:100%;
+  background: var(--surface);
+  border-radius: 26px 26px 0 0;
+  padding: 10px 24px 28px;
+  max-height: 88%;
+  overflow-y: auto;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
+}
+.drag-handle { width:40px; height:4px; border-radius:3px; background: var(--line); margin:6px auto 14px; }
+.close-btn { width:30px; height:30px; border-radius:50%; background: var(--surface-card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; }
+
+/* checkout-confirm modal specifics */
+#modal-checkout-confirm .sheet { text-align:center; padding-bottom: 30px; }
+#modal-checkout-confirm .checkout-icon { width:52px; height:52px; border-radius:14px; background: var(--pending-tint); display:flex; align-items:center; justify-content:center; margin: 6px auto 0; }
+#modal-checkout-confirm .sheet-title { font-size:17px; }
+#modal-checkout-confirm .checkout-question { font-size:13.5px; color: var(--text-muted); margin-top:8px; line-height:1.5; }
+
+/* product-details modal specifics */
+#modal-product-details .sheet-top { display:flex; align-items:flex-start; justify-content:space-between; }
+#modal-product-details .sheet-img { width:72px; height:72px; border-radius:16px; background: linear-gradient(160deg,#EEF1EC,#E3E8E1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#modal-product-details .sheet-name { font-size:17px; margin-top:14px; line-height:1.3; }
+#modal-product-details .sheet-meta { font-size:12.5px; color: var(--text-muted); margin-top:4px; }
+#modal-product-details .desc { font-size:13px; color: var(--text-primary); line-height:1.55; margin-top:14px; }
+#modal-product-details .attr-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+#modal-product-details .attr-chip { font-size:11.5px; font-weight:600; color: var(--text-primary); background: var(--surface-card); border:1px solid var(--line); padding:6px 11px; border-radius:10px; }
+#modal-product-details .divider-line { height:1px; background: var(--line); margin:16px 0; }
+#modal-product-details .info-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
+#modal-product-details .info-row .k { font-size:12.5px; color: var(--text-muted); }
+#modal-product-details .info-row .v { font-size:12.5px; font-weight:600; color: var(--text-primary); }
+#modal-product-details .hint { text-align:center; font-size:11px; color:#9AA79F; margin-top:16px; }
+
+/* timeoff-request modal specifics */
+#modal-timeoff-request .sheet-head { display:flex; align-items:center; justify-content:space-between; }
+#modal-timeoff-request .sheet-title { font-size:17px; }
+#modal-timeoff-request .date-row { display:flex; gap:12px; margin-top:20px; }
+#modal-timeoff-request .date-field { flex:1; }
+#modal-timeoff-request .reason-field { margin-top:18px; }
+#modal-timeoff-request .reason-options { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+#modal-timeoff-request .reason-chip { font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; border:1.5px solid var(--line); color: var(--text-muted); background: var(--surface-card); cursor:pointer; }
+#modal-timeoff-request .reason-chip.selected { background: var(--ink); color:#fff; border-color: var(--ink); }
+#modal-timeoff-request .day-count { display:flex; align-items:center; justify-content:space-between; background: var(--info-tint); border-radius:12px; padding:11px 14px; margin-top:16px; }
+#modal-timeoff-request .day-count .l { font-size:12.5px; font-weight:600; color: var(--info); }
+#modal-timeoff-request .day-count .v { font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:15px; color: var(--info); }
+
+/* toast */
+.toast { position:absolute; left:50%; bottom:110px; transform:translate(-50%,10px); background: var(--ink); color:#fff; font-size:12.5px; font-weight:600; padding:11px 18px; border-radius:24px; z-index:60; opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease; white-space:nowrap; }
+.toast.show { opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="stage-title">Campaign Buddy — Interactive Prototype</div>
+  <div class="stage-sub">Click around: bottom tabs, cards, buttons and back arrows all navigate. Start at the sign-in screen.</div>
+
+  <div class="phone-shell">
+    <div class="frame" id="frame">
+      <div class="notch"></div>
+
+      <!-- ===================== LOGIN ===================== -->
+      <div class="screen active" id="screen-login">
+        <div class="statusbar"><span>10:12</span><span>●●●● 100%</span></div>
+        <div class="hero">
+          <div class="badge-mark">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="brand-name h-display">Campaign Buddy</div>
+          <div class="brand-tag">Sign in to check in, log sales<br>and keep your campaign on track.</div>
+        </div>
+        <div class="login-sheet">
+          <div class="field">
+            <label>Username</label>
+            <div class="box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c1.6-3.6 4.8-5.5 8-5.5s6.4 1.9 8 5.5" stroke="#647169" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span class="input-fake">sktest</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <div class="box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9" rx="2" stroke="#647169" stroke-width="1.8"/><path d="M8 10.5V7.5a4 4 0 018 0v3" stroke="#647169" stroke-width="1.8"/></svg>
+              <span class="input-fake">••••••••</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width:100%; margin-top:14px;" onclick="tab('home')">Sign in</button>
+          <div class="forgot">Forgot password?</div>
+          <div class="foot">Dyuro Technologies</div>
+        </div>
+      </div>
+
+      <!-- ===================== HOME ===================== -->
+      <div class="screen" id="screen-home">
+        <div class="statusbar on-light"><span>9:49</span><span>●●●● 82%</span></div>
+        <div class="content">
+          <div class="greetrow">
+            <div>
+              <div class="greet-name h-display">Good morning, Sanduni</div>
+              <div class="greet-sub">Friday, 5 September</div>
+            </div>
+            <div class="avatar tap" onclick="push('profile')">SK</div>
+          </div>
+
+          <div class="campaign-card">
+            <div class="loc">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="#A9BDB4" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="#A9BDB4" stroke-width="1.8"/></svg>
+              Nawala Retail Outlet
+            </div>
+            <div class="name h-display" style="margin-top:8px;">Sktest Activation</div>
+            <div class="row">
+              <span class="checkin-chip tap" onclick="tab('attendance')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7FE3B4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Checked in · 9:49 AM
+              </span>
+            </div>
+          </div>
+
+          <div class="section-header-row tap" onclick="push('stats-update')">
+            <span class="lbl">Today's stats</span>
+            <div class="toggle-chevron">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#647169" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="stats-compact tap" onclick="push('stats-update')">
+            <div class="stat-mini">
+              <div class="label">Sales</div>
+              <div class="value-row"><span class="value">86.4K</span></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-mini">
+              <div class="label">Foot fall</div>
+              <div class="value-row">
+                <span class="value">12</span>
+                <span class="mini-update"><svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></span>
+              </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-mini">
+              <div class="label">Approached</div>
+              <div class="value-row">
+                <span class="value">20</span>
+                <span class="mini-update"><svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></span>
+              </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-mini">
+              <div class="label">Conversion</div>
+              <div class="value-row">
+                <span class="value">11</span>
+                <span class="mini-update"><svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="searchbar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A9B2AC" stroke-width="1.8"/><path d="M21 21l-4-4" stroke="#A9B2AC" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Search products</span>
+          </div>
+
+          <div class="list-head tap" onclick="push('products')">
+            <span class="lbl">Campaign products</span>
+            <span class="count">3 products ›</span>
+          </div>
+
+          <div class="prod-card tap" onclick="push('product-update')">
+            <div class="prod-img"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#8B5FBF"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Lavender 320ml</div>
+              <div class="prod-price">LKR 3,200 per unit</div>
+              <div class="prod-qty-row">
+                <span class="qty-pill avail">Available 12</span>
+                <span class="qty-pill sold">Sold 0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="prod-card tap" onclick="push('product-update')">
+            <div class="prod-img"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#4E8C5E"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Tea Tree 320ml</div>
+              <div class="prod-price">LKR 3,200 per unit</div>
+              <div class="prod-qty-row">
+                <span class="qty-pill avail">Available 3</span>
+                <span class="qty-pill sold">Sold 9</span>
+                <span class="qty-pill reorder" id="reorderBadge">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px; margin-right:2px;"><path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 15a7 7 0 0012.6 2.5M18.5 9a7 7 0 00-12.6-2.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+                  Reorder
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="prod-card tap" onclick="push('product-update')">
+            <div class="prod-img"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#2F9E8F"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Aloe Vera 320ml</div>
+              <div class="prod-price">LKR 3,200 per unit</div>
+              <div class="prod-qty-row">
+                <span class="qty-pill avail">Available 12</span>
+                <span class="qty-pill sold">Sold 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem active" onclick="tab('home')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+          <div class="navitem" onclick="tab('sales-summary')"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+          <div class="navitem" onclick="tab('attendance')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+          <div class="navitem" onclick="tab('performance')"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+        </div>
+      </div>
+
+      <!-- ===================== ATTENDANCE (checked in) ===================== -->
+      <div class="screen" id="screen-attendance">
+        <div class="topnav">
+          <div class="app-title h-display">Attendance</div><div class="app-sub">Sktest Activation · Nawala Retail Outlet</div>
+        </div>
+        <div class="content">
+          <div class="checkin-hero">
+            <div class="ring">
+              <div class="ring-inner">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="lbl">Checked in</div>
+              </div>
+            </div>
+            <div class="timer">On shift for <b>3h 42m</b></div>
+            <div class="loc-row">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="#647169" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="#647169" stroke-width="1.8"/></svg>
+              Location verified at check-in
+            </div>
+          </div>
+
+          <button class="btn btn-secondary tap" style="width:100%; margin-top:20px; color:var(--alert); border-color:#F3D3D0;" onclick="openModal('checkout-confirm')">Check out</button>
+
+          <div class="card link-row tap" onclick="push('timeoff')">
+            <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#2673B0" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="#2673B0" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+            <div style="flex:1;"><div class="t">Request time off</div><div class="s">Submit a leave request for approval</div></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#B7C0BA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <div class="section-label">This week</div>
+          <div class="hist-item"><div><div class="hist-day">Friday, 5 Sep</div><div class="hist-time">In 9:49 AM</div></div><span class="chip success">On time</span></div>
+          <div class="hist-item"><div><div class="hist-day">Thursday, 4 Sep</div><div class="hist-time">In 9:52 AM · Out 6:04 PM</div></div><span class="chip success">On time</span></div>
+          <div class="hist-item"><div><div class="hist-day">Wednesday, 3 Sep</div><div class="hist-time">In 10:16 AM · Out 6:00 PM</div></div></div>
+          <div class="hist-item"><div><div class="hist-day">Tuesday, 2 Sep</div><div class="hist-time">Sick leave</div></div><span class="chip info">Leave</span></div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem" onclick="tab('home')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+          <div class="navitem" onclick="tab('sales-summary')"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+          <div class="navitem active" onclick="tab('attendance')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+          <div class="navitem" onclick="tab('performance')"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+        </div>
+      </div>
+
+      <!-- ===================== ATTENDANCE (check-in / pre-shift) ===================== -->
+      <div class="screen" id="screen-attendance-checkin">
+        <div class="topnav">
+          <div class="app-title h-display">Attendance</div><div class="app-sub">Sktest Activation · Nawala Retail Outlet</div>
+        </div>
+        <div class="content">
+          <div class="checkin-hero">
+            <div class="ring tap" onclick="replaceScreen('attendance')">
+              <div class="ring-inner">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="white" stroke-width="2.2"/><circle cx="12" cy="9" r="2.4" stroke="white" stroke-width="2.2"/></svg>
+                <div class="lbl">Check in</div>
+                <div class="sub">Tap to start your shift</div>
+              </div>
+            </div>
+            <div class="timer">Shift not started yet</div>
+            <div class="loc-row">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="#647169" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="#647169" stroke-width="1.8"/></svg>
+              Your location will be verified at check-in
+            </div>
+          </div>
+
+          <button class="btn btn-primary tap" style="width:100%; margin-top:20px;" onclick="replaceScreen('attendance')">Check in</button>
+
+          <div class="card link-row tap" onclick="push('timeoff')">
+            <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#2673B0" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="#2673B0" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+            <div style="flex:1;"><div class="t">Request time off</div><div class="s">Submit a leave request for approval</div></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#B7C0BA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <div class="section-label">This week</div>
+          <div class="hist-item"><div><div class="hist-day">Friday, 5 Sep</div><div class="hist-time">Not checked in yet</div></div><span class="chip pending">Pending</span></div>
+          <div class="hist-item"><div><div class="hist-day">Thursday, 4 Sep</div><div class="hist-time">In 9:52 AM · Out 6:04 PM</div></div><span class="chip success">On time</span></div>
+          <div class="hist-item"><div><div class="hist-day">Wednesday, 3 Sep</div><div class="hist-time">In 10:16 AM · Out 6:00 PM</div></div></div>
+          <div class="hist-item"><div><div class="hist-day">Tuesday, 2 Sep</div><div class="hist-time">Sick leave</div></div><span class="chip info">Leave</span></div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem" onclick="tab('home')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+          <div class="navitem" onclick="tab('sales-summary')"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+          <div class="navitem active" onclick="tab('attendance')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+          <div class="navitem" onclick="tab('performance')"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+        </div>
+      </div>
+
+      <!-- ===================== PRODUCTS (Campaign product list) ===================== -->
+      <div class="screen" id="screen-products">
+        <div class="topnav">
+          <div class="back-row" onclick="back()" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#F4F6F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div><div class="app-title h-display">Sktest Activation</div><div class="app-sub">Nawala Retail Outlet</div></div>
+            </div>
+            <span class="tap" style="background: rgba(255,255,255,0.12); color:#DCE9E3; font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:20px;" onclick="event.stopPropagation(); tab('attendance')">Checked in</span>
+          </div>
+        </div>
+        <div class="content">
+          <div class="searchbar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A9B2AC" stroke-width="1.8"/><path d="M21 21l-4-4" stroke="#A9B2AC" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Search products</span>
+          </div>
+          <div class="filter-row">
+            <span class="lbl">3 products</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:12.5px; color:var(--text-muted); font-weight:600;">Reorder only</span>
+              <div class="toggle-mini"><div class="knob"></div></div>
+            </div>
+          </div>
+
+          <div class="prod-card" onclick="push('product-update')">
+            <div class="prod-img"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#8B5FBF"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Lavender 320ml</div>
+              <div class="prod-meta">LKR 3,200 · Sold 0</div>
+              <div class="prod-stock"><div class="pbar"><div style="width:0%"></div></div><span class="n">0/12</span></div>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <div class="prod-card" onclick="push('product-update')">
+            <div class="prod-img"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#4E8C5E"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Tea Tree 320ml</div>
+              <div class="prod-meta">LKR 3,200 · Sold 9</div>
+              <div class="prod-stock"><div class="pbar"><div style="width:75%"></div></div><span class="n">9/12</span></div>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <div class="prod-card" onclick="push('product-update')">
+            <div class="prod-img"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#2F9E8F"/></svg></div>
+            <div style="flex:1;">
+              <div class="prod-name">Sulfate Free Shampoo — Aloe Vera 320ml</div>
+              <div class="prod-meta">LKR 3,200 · Sold 0</div>
+              <div class="prod-stock"><div class="pbar"><div style="width:0%"></div></div><span class="n">0/12</span></div>
+            </div>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== PRODUCT UPDATE ===================== -->
+      <div class="screen" id="screen-product-update">
+        <div class="topnav">
+          <div class="back-row" onclick="back()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#F4F6F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><div class="app-title h-display">Update stock</div><div class="app-sub">Sktest Activation</div></div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="hero-img">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#4E8C5E"/></svg>
+            <div class="view-details-btn" onclick="openModal('product-details')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.8"/><path d="M12 11v5.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="white"/></svg>
+              View details
+            </div>
+          </div>
+          <div class="p-name h-display">Sulfate Free Shampoo<br>Tea Tree Essential Oil 320ml</div>
+          <div class="p-meta">Unit price LKR 3,200 · SKU TF-320-TT</div>
+
+          <div class="qty-row">
+            <div><div class="lbl">Opening stock</div><div class="sub">Units received at check-in</div></div>
+            <div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">12</div><button onclick="step(this,1)">+</button></div>
+          </div>
+          <div class="qty-row">
+            <div><div class="lbl">Sold today</div><div class="sub">Updates remaining stock live</div></div>
+            <div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">9</div><button onclick="step(this,1)">+</button></div>
+          </div>
+          <div class="qty-row">
+            <div><div class="lbl">Other interested customers</div><div class="sub">Asked about it, didn't buy today</div></div>
+            <div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">4</div><button onclick="step(this,1)">+</button></div>
+          </div>
+          <div class="toggle-row">
+            <div><div class="lbl">Flag for reorder</div><div class="sub">Lets the campaign owner know this needs restocking</div></div>
+            <div class="switch on" id="reorderSwitch" onclick="toggleReorder()"><div class="knob"></div></div>
+          </div>
+
+          <div class="card" style="margin-top:18px; display:flex; align-items:center; justify-content:space-between; background: var(--success-tint); border-color:transparent;">
+            <span style="font-size:13.5px; font-weight:600; color:var(--success);">Remaining in stock</span>
+            <span style="font-family:'Poppins','Liberation Sans',sans-serif; font-weight:600; font-size:18px; color:var(--success);">3 units</span>
+          </div>
+
+          <button class="btn btn-primary tap" style="width:100%; margin-top:22px;" onclick="toast('Stock update saved'); back();">Save update</button>
+        </div>
+      </div>
+
+      <!-- ===================== STATS UPDATE ===================== -->
+      <div class="screen" id="screen-stats-update">
+        <div class="topnav">
+          <div class="back-row" onclick="back()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#F4F6F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><div class="app-title h-display">Update today's stats</div><div class="app-sub">Sktest Activation · 5 Sep 2026</div></div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-icon" style="background: var(--info-tint);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 21c1.5-4 4.2-6 8-6s6.5 2 8 6" stroke="#2673B0" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="3.4" stroke="#2673B0" stroke-width="1.8"/></svg></div>
+              <div><div class="metric-title">Foot fall</div><div class="metric-sub">Shoppers who entered the outlet</div></div>
+            </div>
+            <div class="metric-stepper-row"><div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">12</div><button onclick="step(this,1)">+</button></div></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-icon" style="background: var(--pending-tint);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 12h8M8 8h8M8 16h5" stroke="#C77F00" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+              <div><div class="metric-title">Approached</div><div class="metric-sub">Shoppers engaged by the team</div></div>
+            </div>
+            <div class="metric-stepper-row"><div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">20</div><button onclick="step(this,1)">+</button></div></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-icon" style="background: var(--success-tint);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#1F9D55" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div><div class="metric-title">Conversion</div><div class="metric-sub">Approached shoppers who purchased</div></div>
+            </div>
+            <div class="metric-stepper-row"><div class="stepper"><button onclick="step(this,-1)">–</button><div class="val">11</div><button onclick="step(this,1)">+</button></div></div>
+          </div>
+
+          <div class="conv-summary"><span class="lbl">Conversion rate</span><span class="val">55% of approached</span></div>
+
+          <button class="btn btn-primary tap" style="width:100%; margin-top:20px;" onclick="toast('Stats updated'); back();">Update</button>
+        </div>
+      </div>
+
+      <!-- ===================== SALES SUMMARY (Sales tab) ===================== -->
+      <div class="screen" id="screen-sales-summary">
+        <div class="topnav"><div class="app-title h-display">Daily sales</div><div class="app-sub">Sktest Activation · 5 Sep 2026</div></div>
+        <div class="content">
+          <div class="total-card">
+            <div class="lbl">Total sales today</div>
+            <div class="val">LKR 86,400</div>
+            <div class="sub-row">
+              <div class="item"><div class="n">36</div><div class="l">Items received</div></div>
+              <div class="item"><div class="n">27</div><div class="l">Items sold</div></div>
+              <div class="item"><div class="n">9</div><div class="l">Items remaining</div></div>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="icon" style="background:var(--info-tint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 21c1.5-4 4.2-6 8-6s6.5 2 8 6" stroke="#2673B0" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="3.4" stroke="#2673B0" stroke-width="1.8"/></svg></div>
+              <div class="n">12</div><div class="l">Foot fall</div>
+            </div>
+            <div class="metric">
+              <div class="icon" style="background:var(--pending-tint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 12h8M8 8h8M8 16h5" stroke="#C77F00" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+              <div class="n">20</div><div class="l">Approached</div>
+            </div>
+            <div class="metric">
+              <div class="icon" style="background:var(--success-tint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#1F9D55" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="n">11</div><div class="l">Converted</div>
+            </div>
+          </div>
+          <div class="conv-note">Conversion rate <b>55%</b> of approached shoppers</div>
+
+          <div class="remarks">
+            <div class="field-label">Remarks</div>
+            <div class="field-box" style="color:#A9B2AC; min-height:52px;">Slow foot fall after 4pm due to rain</div>
+          </div>
+
+          <button class="btn btn-primary tap" style="width:100%; margin-top:20px;" onclick="toast('Sales submitted'); tab('home');">Confirm & submit</button>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem" onclick="tab('home')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+          <div class="navitem active" onclick="tab('sales-summary')"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+          <div class="navitem" onclick="tab('attendance')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+          <div class="navitem" onclick="tab('performance')"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+        </div>
+      </div>
+
+      <!-- ===================== TIME OFF (reached from Attendance) ===================== -->
+      <div class="screen" id="screen-timeoff">
+        <div class="topnav">
+          <div class="back-row" onclick="back()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#F4F6F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><div class="app-title h-display">Time off</div><div class="app-sub">Requests & leave balance</div></div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="balance-row">
+            <div class="balance"><div class="n">1</div><div class="l">Pending approval</div></div>
+            <div class="balance"><div class="n">3</div><div class="l">Taken this year</div></div>
+          </div>
+
+          <div class="section-label">Your requests</div>
+
+          <div class="req-card">
+            <div class="req-top">
+              <div><div class="req-reason">Sick leave</div><div class="req-dates">8 – 9 Sep 2026 · 2 days</div></div>
+              <span class="chip pending">Awaiting approval</span>
+            </div>
+            <div class="req-meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#647169" stroke-width="1.6"/><path d="M5 20c1.5-4 4.2-6 7-6s5.5 2 7 6" stroke="#647169" stroke-width="1.6"/></svg>Approver: Neel Dharmapriya</div>
+          </div>
+
+          <div class="req-card">
+            <div class="req-top">
+              <div><div class="req-reason">Annual leave</div><div class="req-dates">14 Aug 2026 · 1 day</div></div>
+              <span class="chip success">Approved</span>
+            </div>
+            <div class="req-meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#647169" stroke-width="1.6"/><path d="M5 20c1.5-4 4.2-6 7-6s5.5 2 7 6" stroke="#647169" stroke-width="1.6"/></svg>Approver: Neel Dharmapriya</div>
+          </div>
+
+          <div class="req-card">
+            <div class="req-top">
+              <div><div class="req-reason">Sick leave</div><div class="req-dates">2 Jul 2026 · 1 day</div></div>
+              <span class="chip alert">Declined</span>
+            </div>
+            <div class="req-meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#647169" stroke-width="1.6"/><path d="M5 20c1.5-4 4.2-6 7-6s5.5 2 7 6" stroke="#647169" stroke-width="1.6"/></svg>Approver: Neel Dharmapriya</div>
+          </div>
+        </div>
+
+        <div class="fab" onclick="openModal('timeoff-request')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <!-- ===================== PROFILE (reached from Home avatar) ===================== -->
+      <div class="screen" id="screen-profile">
+        <div class="topnav">
+          <div class="back-row" onclick="back()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#F4F6F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><div class="app-title h-display">Profile</div><div class="app-sub">Account & settings</div></div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="profile-hero">
+            <div class="avatar">SK</div>
+            <div class="name h-display">Sanduni Kumari</div>
+            <div class="role">Field Promoter · Sktest Activation</div>
+          </div>
+          <div class="card" style="margin-top:18px; padding: 4px 18px;">
+            <div class="info-row"><span class="k">Employee ID</span><span class="v">DYR-0142</span></div>
+            <div class="info-row"><span class="k">Assigned outlet</span><span class="v">Nawala Retail Outlet</span></div>
+            <div class="info-row"><span class="k">Phone</span><span class="v">+94 77 123 4567</span></div>
+            <div class="info-row"><span class="k">Reports to</span><span class="v">Neel Dharmapriya</span></div>
+          </div>
+          <button class="btn btn-secondary tap" style="width:100%; margin-top:20px; color:var(--alert); border-color:#F3D3D0;" onclick="logout()">Log out</button>
+        </div>
+      </div>
+
+      <!-- ===================== PERFORMANCE (tab) ===================== -->
+      <div class="screen" id="screen-performance">
+        <div class="topnav"><div class="app-title h-display">Performance</div><div class="app-sub">Sktest Activation · Nawala Retail Outlet</div></div>
+        <div class="content">
+          <div class="campaign-card">
+            <div class="name h-display">Sktest Activation</div>
+            <div class="meta-row">
+              <div class="item"><div class="n">1 Sep 2026</div><div class="l">Start date</div></div>
+              <div class="item"><div class="n">Day 5 of 14</div><div class="l">Days passed</div></div>
+            </div>
+          </div>
+
+          <div class="perf-stats">
+            <div class="perf-stat"><div class="n">LKR 412K</div><div class="l">Total sales</div></div>
+            <div class="perf-stat"><div class="n">142</div><div class="l">Units sold</div></div>
+            <div class="perf-stat"><div class="n">96</div><div class="l">Approached</div></div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Sales this period</div>
+            <div class="chart-total">LKR 412,400 total · 5 days</div>
+            <div class="bars">
+              <div class="bar-col"><div class="bar" style="height:73px;"></div><div class="day">1 Sep</div></div>
+              <div class="bar-col"><div class="bar" style="height:80px;"></div><div class="day">2 Sep</div></div>
+              <div class="bar-col"><div class="bar" style="height:98px;"></div><div class="day">3 Sep</div></div>
+              <div class="bar-col"><div class="bar" style="height:100px;"></div><div class="day">4 Sep</div></div>
+              <div class="bar-col"><div class="bar today" style="height:93px;"></div><div class="day">5 Sep</div></div>
+            </div>
+          </div>
+
+          <div class="section-label">Top products</div>
+          <div class="rank-card">
+            <div class="rank-num">1</div>
+            <div class="rank-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#4E8C5E"/></svg></div>
+            <div style="flex:1;">
+              <div class="rank-name">Sulfate Free Shampoo — Tea Tree 320ml</div>
+              <div class="rank-meta">LKR 3,200 per unit</div>
+            </div>
+            <div class="rank-sold">61</div>
+          </div>
+          <div class="rank-card">
+            <div class="rank-num">2</div>
+            <div class="rank-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#8B5FBF"/></svg></div>
+            <div style="flex:1;">
+              <div class="rank-name">Sulfate Free Shampoo — Lavender 320ml</div>
+              <div class="rank-meta">LKR 3,200 per unit</div>
+            </div>
+            <div class="rank-sold">47</div>
+          </div>
+          <div class="rank-card">
+            <div class="rank-num">3</div>
+            <div class="rank-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#2F9E8F"/></svg></div>
+            <div style="flex:1;">
+              <div class="rank-name">Sulfate Free Shampoo — Aloe Vera 320ml</div>
+              <div class="rank-meta">LKR 3,200 per unit</div>
+            </div>
+            <div class="rank-sold">34</div>
+          </div>
+        </div>
+        <div class="bottomnav">
+          <div class="navitem" onclick="tab('home')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+          <div class="navitem" onclick="tab('sales-summary')"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+          <div class="navitem" onclick="tab('attendance')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+          <div class="navitem active" onclick="tab('performance')"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+        </div>
+      </div>
+
+      <!-- ===================== MODAL: checkout confirm ===================== -->
+      <div class="modal-overlay" id="modal-checkout-confirm" onclick="if(event.target===this) closeModal('checkout-confirm')">
+        <div class="sheet">
+          <div class="drag-handle"></div>
+          <div class="checkout-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4z" stroke="#C77F00" stroke-width="1.8"/><path d="M4 10h16" stroke="#C77F00" stroke-width="1.8"/></svg>
+          </div>
+          <div class="sheet-title h-display" style="margin-top:14px;">Before you check out</div>
+          <div class="checkout-question">Did you confirm the sales summary for today?</div>
+          <button class="btn btn-primary tap" style="width:100%; margin-top:20px;" onclick="closeModal('checkout-confirm'); toast('Checked out'); replaceScreen('attendance-checkin');">Yes, check out</button>
+          <button class="btn btn-secondary tap" style="width:100%; margin-top:10px;" onclick="closeModal('checkout-confirm'); push('sales-summary');">No, confirm sales summary</button>
+        </div>
+      </div>
+
+      <!-- ===================== MODAL: product details ===================== -->
+      <div class="modal-overlay" id="modal-product-details" onclick="if(event.target===this) closeModal('product-details')">
+        <div class="sheet">
+          <div class="drag-handle"></div>
+          <div class="sheet-top">
+            <div class="sheet-img"><svg width="34" height="34" viewBox="0 0 24 24" fill="none"><rect x="10.2" y="1" width="3.6" height="3" rx="1" fill="#2B2420"/><rect x="8.5" y="3.6" width="7" height="2.6" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="16" rx="3" fill="#2B2420"/><rect x="6" y="11.5" width="12" height="4.5" fill="#4E8C5E"/></svg></div>
+            <div class="close-btn" onclick="closeModal('product-details')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#647169" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="sheet-name h-display">Sulfate Free Shampoo — Tea Tree Essential Oil 320ml</div>
+          <div class="sheet-meta">SKU TF-320-TT · LKR 3,200 per unit</div>
+          <div class="desc">A gentle, sulfate-free formula infused with tea tree essential oil to cleanse and soothe the scalp. Suited for daily use on all hair types, including color-treated hair.</div>
+          <div class="attr-grid">
+            <span class="attr-chip">320ml</span>
+            <span class="attr-chip">Sulfate-free</span>
+            <span class="attr-chip">Paraben-free</span>
+            <span class="attr-chip">Cruelty-free</span>
+            <span class="attr-chip">Tea tree scent</span>
+          </div>
+          <div class="divider-line"></div>
+          <div class="info-row"><span class="k">In this campaign since</span><span class="v">3 Sep 2026</span></div>
+          <div class="info-row"><span class="k">Supplier</span><span class="v">Prisha Naturals</span></div>
+          <div class="info-row"><span class="k">Sold across all outlets today</span><span class="v">64 units</span></div>
+          <div class="hint">Tap outside this card to go back</div>
+        </div>
+      </div>
+
+      <!-- ===================== MODAL: time off request ===================== -->
+      <div class="modal-overlay" id="modal-timeoff-request" onclick="if(event.target===this) closeModal('timeoff-request')">
+        <div class="sheet">
+          <div class="drag-handle"></div>
+          <div class="sheet-head">
+            <div class="sheet-title h-display">New time off request</div>
+            <div class="close-btn" onclick="closeModal('timeoff-request')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#647169" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="date-row">
+            <div class="date-field">
+              <div class="field-label">From</div>
+              <div class="field-box" style="display:flex; align-items:center; justify-content:space-between;">
+                <span>8 Sep 2026</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="14" rx="2" stroke="#647169" stroke-width="1.8"/><path d="M4 10h16M8 4v4M16 4v4" stroke="#647169" stroke-width="1.8"/></svg>
+              </div>
+            </div>
+            <div class="date-field">
+              <div class="field-label">To</div>
+              <div class="field-box" style="display:flex; align-items:center; justify-content:space-between;">
+                <span>9 Sep 2026</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="14" rx="2" stroke="#647169" stroke-width="1.8"/><path d="M4 10h16M8 4v4M16 4v4" stroke="#647169" stroke-width="1.8"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="day-count"><span class="l">Total duration</span><span class="v">2 days</span></div>
+          <div class="reason-field">
+            <div class="field-label">Reason</div>
+            <div class="reason-options">
+              <span class="reason-chip selected" onclick="selectReason(this)">Sick leave</span>
+              <span class="reason-chip" onclick="selectReason(this)">Annual leave</span>
+              <span class="reason-chip" onclick="selectReason(this)">Personal</span>
+              <span class="reason-chip" onclick="selectReason(this)">Other</span>
+            </div>
+            <div class="field-box" style="margin-top:10px; color:#A9B2AC; min-height:46px;">Add a note for your approver (optional)</div>
+          </div>
+          <button class="btn btn-primary tap" style="width:100%; margin-top:20px;" onclick="toast('Request submitted'); closeModal('timeoff-request');">Submit request</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <button class="restart-btn" onclick="restart()">↺ Restart demo</button>
+</div>
+
+<script>
+  var history_ = [];
+  var current = 'login';
+
+  function setActive(id) {
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('screen-' + id).classList.add('active');
+    current = id;
+  }
+  function push(id) {
+    history_.push(current);
+    setActive(id);
+  }
+  function tab(id) {
+    history_ = [];
+    setActive(id);
+  }
+  function replaceScreen(id) {
+    setActive(id);
+  }
+  function back() {
+    var prev = history_.pop();
+    setActive(prev || 'home');
+  }
+  function openModal(id) {
+    document.getElementById('modal-' + id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById('modal-' + id).classList.remove('open');
+  }
+  function selectReason(el) {
+    var parent = el.parentElement;
+    Array.prototype.forEach.call(parent.children, function(c){ c.classList.remove('selected'); });
+    el.classList.add('selected');
+  }
+  function step(btn, dir) {
+    var stepper = btn.parentElement;
+    var val = stepper.querySelector('.val');
+    var n = parseInt(val.textContent, 10) + dir;
+    if (n < 0) n = 0;
+    val.textContent = n;
+  }
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+  function toggleReorder() {
+    var sw = document.getElementById('reorderSwitch');
+    sw.classList.toggle('on');
+    var badge = document.getElementById('reorderBadge');
+    badge.style.display = sw.classList.contains('on') ? 'inline-flex' : 'none';
+  }
+  function logout() {
+    tab('login');
+  }
+  function restart() {
+    document.querySelectorAll('.modal-overlay').forEach(function(m){ m.classList.remove('open'); });
+    tab('login');
+  }
+</script>
+</body>
+</html>
