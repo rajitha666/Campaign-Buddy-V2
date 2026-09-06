@@ -7,6 +7,27 @@ import { requireRole } from "../../middleware/userAuth";
 
 const router = Router();
 
+// The Staff HR field set is fixed for v3 (schema comment / Changelog v3 "Staff HR
+// fields"). Whitelist writes to these columns so a portal form that posts extra
+// keys gets them ignored rather than 500-ing Prisma.
+const STAFF_WRITABLE = [
+  "employeeId", "fullName", "displayName", "userType", "mobileUsername",
+  "phone", "cityId", "status", "reportsToStaffId", "linkedUserId",
+  "nic", "dateOfBirth", "gender", "permanentAddress", "currentAddress",
+  "emergencyContactName", "emergencyContactPhone",
+  "bankAccountName", "bankName", "bankAccountNumber", "bankBranch",
+] as const;
+
+function pickStaff(body: Record<string, unknown>) {
+  const data: Record<string, unknown> = {};
+  for (const key of STAFF_WRITABLE) {
+    if (body[key] !== undefined) {
+      data[key] = key === "dateOfBirth" && body[key] ? new Date(body[key] as string) : body[key];
+    }
+  }
+  return data;
+}
+
 // Global staff pool — NOT campaign-scoped. Used across ~8 dropdowns in the portal.
 router.get(
   "/staff",
@@ -32,10 +53,10 @@ router.post(
   "/staff",
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    const { password, ...rest } = req.body as any;
+    const { password } = req.body as any;
     if (!password) throw validationError("password is required", "password");
     const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
-    const created = await prisma.staff.create({ data: { ...rest, passwordHash } });
+    const created = await prisma.staff.create({ data: { ...pickStaff(req.body), passwordHash } as any });
     res.status(201).json(ok(created)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
@@ -44,11 +65,20 @@ router.patch(
   "/staff/:id",
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    const { password, ...rest } = req.body as any;
-    const data: any = { ...rest };
+    const { password } = req.body as any;
+    const data: any = pickStaff(req.body);
     if (password) data.passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
     const updated = await prisma.staff.update({ where: { id: req.params.id }, data });
     res.json(ok(updated)); // passwordHash omitted globally (src/utils/prisma.ts)
+  })
+);
+
+router.delete(
+  "/staff/:id",
+  requireRole("adm"),
+  asyncHandler(async (req, res) => {
+    await prisma.staff.delete({ where: { id: req.params.id } });
+    res.status(204).send();
   })
 );
 

@@ -12,7 +12,9 @@ router.get(
   "/campaigns/:campaignId/attendance",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const { outletId, dateFrom, dateTo } = req.query as { outletId?: string; dateFrom?: string; dateTo?: string };
+    const { outletId, dateFrom, dateTo, role } = req.query as {
+      outletId?: string; dateFrom?: string; dateTo?: string; role?: "promoter" | "supervisor";
+    };
     const allowed = outletIdsAllowed(req);
     if (outletId) assertOutletAllowed(req, outletId);
 
@@ -21,10 +23,12 @@ router.get(
         activation: {
           campaignId: req.params.campaignId,
           ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+          ...(role ? { staff: { is: { userType: role } } } : {}),
         },
         ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) } } : {}),
       },
       include: { activation: { include: { staff: true, outlet: true } } },
+      orderBy: { date: "desc" },
     });
     res.json(okList(rows, rows.length));
   })
@@ -130,9 +134,21 @@ router.get(
         activation: { campaignId: req.params.campaignId, ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}) },
         ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) } } : {}),
       },
+      include: { activation: { include: { outlet: true, staff: true } } },
+      orderBy: { date: "asc" },
     });
     const totals = rows.reduce((acc, r) => ({ footFall: acc.footFall + r.footFall, approached: acc.approached + r.approached, converted: acc.converted + r.converted }), { footFall: 0, approached: 0, converted: 0 });
-    res.json(ok({ totals, byDay: rows }));
+    // byDay rows carry outletId/outletName/staffName flattened alongside the raw
+    // DailyStats fields so the portal's status / outlet screens can group without
+    // a second lookup.
+    const byDay = rows.map((r) => ({
+      ...r,
+      outletId: r.activation.outletId,
+      outletName: r.activation.outlet.name,
+      staffName: r.activation.staff.fullName,
+      activationName: r.activation.name,
+    }));
+    res.json(ok({ totals, byDay }));
   })
 );
 
@@ -239,8 +255,14 @@ router.patch(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    if (req.body.outletIds) (req.body.outletIds as string[]).forEach((id) => assertOutletAllowed(req, id));
-    const updated = await prisma.supervisorRoute.update({ where: { id: req.params.id }, data: req.body });
+    const b = req.body as { supervisorStaffId?: string; outletIds?: string[]; dateFrom?: string; dateTo?: string };
+    if (b.outletIds) b.outletIds.forEach((id) => assertOutletAllowed(req, id));
+    const data: Record<string, unknown> = {};
+    if (b.supervisorStaffId !== undefined) data.supervisorStaffId = b.supervisorStaffId;
+    if (b.outletIds !== undefined) data.outletIds = b.outletIds;
+    if (b.dateFrom !== undefined) data.dateFrom = new Date(b.dateFrom);
+    if (b.dateTo !== undefined) data.dateTo = new Date(b.dateTo);
+    const updated = await prisma.supervisorRoute.update({ where: { id: req.params.id }, data });
     res.json(ok(updated));
   })
 );
@@ -252,6 +274,196 @@ router.delete(
   asyncHandler(async (req, res) => {
     await prisma.supervisorRoute.delete({ where: { id: req.params.id } });
     res.status(204).send();
+  })
+);
+
+// ---- Supervisor Tasks (QA checklist) — model existed since v3, endpoints added
+// for portal completion. Portal-only config; the mobile app does not read it. ----
+router.get(
+  "/campaigns/:campaignId/supervisor-tasks",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.supervisorTask.findMany({
+      where: { campaignId: req.params.campaignId },
+      orderBy: { createdAt: "asc" },
+    });
+    res.json(okList(rows, rows.length));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/supervisor-tasks",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const { category, taskType, task } = req.body as { category: string; taskType: "range" | "feedback"; task: string };
+    if (!category || !task) throw validationError("category and task are required");
+    const created = await prisma.supervisorTask.create({
+      data: { campaignId: req.params.campaignId, category, taskType: taskType ?? "feedback", task },
+    });
+    res.status(201).json(ok(created));
+  })
+);
+
+router.patch(
+  "/campaigns/:campaignId/supervisor-tasks/:id",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const { category, taskType, task } = req.body as { category?: string; taskType?: "range" | "feedback"; task?: string };
+    const updated = await prisma.supervisorTask.update({
+      where: { id: req.params.id },
+      data: {
+        ...(category !== undefined ? { category } : {}),
+        ...(taskType !== undefined ? { taskType } : {}),
+        ...(task !== undefined ? { task } : {}),
+      },
+    });
+    res.json(ok(updated));
+  })
+);
+
+router.delete(
+  "/campaigns/:campaignId/supervisor-tasks/:id",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    await prisma.supervisorTask.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  })
+);
+
+// ---- Staff Absence — promoters whose activation covers `date` but who have no
+// check-in that day. Computed, never stored (§5.2). ----
+router.get(
+  "/campaigns/:campaignId/absence",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const { date, outletId } = req.query as { date?: string; outletId?: string };
+    if (!date) throw validationError("date is required", "date");
+    if (outletId) assertOutletAllowed(req, outletId);
+    const allowed = outletIdsAllowed(req);
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+
+    const activations = await prisma.activation.findMany({
+      where: {
+        campaignId: req.params.campaignId,
+        dateFrom: { lte: day },
+        dateTo: { gte: day },
+        ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+      },
+      include: { outlet: true, staff: true, attendanceRecords: { where: { date: day } } },
+    });
+
+    const absent = activations
+      .filter((a) => !a.attendanceRecords[0]?.checkInAt)
+      .map((a) => ({
+        activationId: a.id,
+        activationName: a.name,
+        outletId: a.outletId,
+        outletName: a.outlet.name,
+        staffId: a.staffId,
+        staffName: a.staff.fullName,
+        onLeave: a.attendanceRecords[0]?.status === "leave",
+      }));
+    res.json(okList(absent, absent.length));
+  })
+);
+
+// ---- Outlet Attendance — supervisor visit log: attendance rows for activations
+// whose assigned staff is a supervisor. ----
+router.get(
+  "/campaigns/:campaignId/outlet-attendance",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const { date, outletId } = req.query as { date?: string; outletId?: string };
+    if (outletId) assertOutletAllowed(req, outletId);
+    const allowed = outletIdsAllowed(req);
+    const where: Record<string, unknown> = {
+      activation: {
+        campaignId: req.params.campaignId,
+        staff: { is: { userType: "supervisor" } },
+        ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+      },
+    };
+    if (date) {
+      const day = new Date(date);
+      day.setHours(0, 0, 0, 0);
+      where.date = day;
+    }
+    const rows = await prisma.attendanceRecord.findMany({
+      where,
+      include: { activation: { include: { staff: true, outlet: true } } },
+      orderBy: { date: "desc" },
+    });
+    const shaped = rows.map((r) => ({
+      id: r.id,
+      supervisorName: r.activation.staff.fullName,
+      staffName: r.activation.staff.fullName,
+      outletName: r.activation.outlet.name,
+      date: r.date,
+      checkInAt: r.checkInAt,
+      checkOutAt: r.checkOutAt,
+    }));
+    res.json(okList(shaped, shaped.length));
+  })
+);
+
+// ---- GPS breadcrumb history (raw TrackingPing trail). Campaign-scoped like
+// tracking/live (§5.9), split promoter vs supervisor by the activation's staff. ----
+async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
+  const { staffId, date, outletId } = req.query as { staffId?: string; date?: string; outletId?: string };
+  if (outletId) assertOutletAllowed(req, outletId);
+  const allowed = outletIdsAllowed(req);
+
+  let dateFilter: { gte: Date; lte: Date } | undefined;
+  if (date) {
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const end = new Date(date); end.setHours(23, 59, 59, 999);
+    dateFilter = { gte: start, lte: end };
+  }
+
+  const rows = await prisma.trackingPing.findMany({
+    where: {
+      ...(dateFilter ? { capturedAt: dateFilter } : {}),
+      activation: {
+        campaignId: req.params.campaignId,
+        staff: { is: { userType, ...(staffId ? { id: staffId } : {}) } },
+        ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+      },
+    },
+    include: { activation: { include: { staff: true, outlet: true } } },
+    orderBy: { capturedAt: "asc" },
+  });
+  return rows.map((p) => ({
+    id: p.id,
+    staffId: p.activation.staffId,
+    staffName: p.activation.staff.fullName,
+    outletName: p.activation.outlet.name,
+    latitude: p.latitude,
+    longitude: p.longitude,
+    accuracyMeters: p.accuracyMeters,
+    capturedAt: p.capturedAt,
+    appState: p.appState,
+  }));
+}
+
+router.get(
+  "/campaigns/:campaignId/tracking/promoter-history",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const rows = await trackingHistory(req, "promoter");
+    res.json(okList(rows, rows.length));
+  })
+);
+
+router.get(
+  "/campaigns/:campaignId/tracking/supervisor-history",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const rows = await trackingHistory(req, "supervisor");
+    res.json(okList(rows, rows.length));
   })
 );
 

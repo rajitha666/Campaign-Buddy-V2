@@ -1,11 +1,24 @@
 import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, notFound } from "../../utils/apiResponse";
+import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
+import { coerceDates } from "../../utils/coerce";
 
 const router = Router();
+
+const ACTIVATION_WRITABLE = [
+  "name", "outletId", "staffId", "supervisorStaffId", "distributorPointId",
+  "dateFrom", "dateTo", "targetType", "targetCategorization", "targetUnit",
+  "shiftStart", "shiftEnd",
+] as const;
+
+function pickActivation(body: Record<string, unknown>) {
+  const picked: Record<string, unknown> = {};
+  for (const key of ACTIVATION_WRITABLE) if (body[key] !== undefined) picked[key] = body[key];
+  return coerceDates(picked, ["dateFrom", "dateTo", "shiftStart", "shiftEnd"]);
+}
 
 // Confirmed v3 (§5.3): setting supervisorStaffId auto-provisions/expands that
 // supervisor's portal access — always additive, always "subset" seeded with just
@@ -51,7 +64,9 @@ router.post(
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
     assertOutletAllowed(req, req.body.outletId);
-    const created = await prisma.activation.create({ data: { ...req.body, campaignId: req.params.campaignId } });
+    const created = await prisma.activation.create({
+      data: { ...pickActivation(req.body), campaignId: req.params.campaignId } as any,
+    });
     await autoGrantSupervisor(created.supervisorStaffId, req.params.campaignId, created.outletId);
     res.status(201).json(ok(created));
   })
@@ -77,7 +92,10 @@ router.patch(
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
     if (req.body.outletId) assertOutletAllowed(req, req.body.outletId);
-    const updated = await prisma.activation.update({ where: { id: req.params.activationId }, data: req.body });
+    const updated = await prisma.activation.update({
+      where: { id: req.params.activationId },
+      data: pickActivation(req.body),
+    });
     await autoGrantSupervisor(updated.supervisorStaffId, req.params.campaignId, updated.outletId);
     res.json(ok(updated));
   })
@@ -93,29 +111,51 @@ router.delete(
   })
 );
 
+router.get(
+  "/campaigns/:campaignId/activations/:activationId/items",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
+    assertOutletAllowed(req, activation.outletId);
+    const rows = await prisma.activationItem.findMany({
+      where: { activationId: req.params.activationId },
+      include: { campaignItem: { include: { item: true } } },
+    });
+    res.json(okList(rows, rows.length));
+  })
+);
+
 router.post(
   "/campaigns/:campaignId/activations/:activationId/items",
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    const { campaignItemId, addAll } = req.body as { campaignItemId?: string; addAll?: boolean };
-    if (addAll) {
-      const campaignItems = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId } });
-      const created = await prisma.$transaction(
-        campaignItems.map((ci) =>
-          prisma.activationItem.upsert({
-            where: { activationId_campaignItemId: { activationId: req.params.activationId, campaignItemId: ci.id } },
-            create: { activationId: req.params.activationId, campaignItemId: ci.id },
-            update: {},
-          })
-        )
-      );
-      return res.status(201).json(okList(created, created.length));
+    const body = req.body as { campaignItemId?: string; campaignItemIds?: string[]; addAll?: boolean };
+    const activationId = req.params.activationId;
+
+    // Resolve the set of campaignItemIds to attach, from any of the accepted shapes.
+    let ids: string[];
+    if (body.addAll) {
+      ids = (await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId }, select: { id: true } })).map((c) => c.id);
+    } else if (Array.isArray(body.campaignItemIds)) {
+      ids = body.campaignItemIds;
+    } else if (body.campaignItemId) {
+      ids = [body.campaignItemId];
+    } else {
+      throw new ApiError(400, "VALIDATION_ERROR", "campaignItemId, campaignItemIds or addAll is required");
     }
-    const created = await prisma.activationItem.create({
-      data: { activationId: req.params.activationId, campaignItemId: campaignItemId! },
-    });
-    res.status(201).json(ok(created));
+
+    // Idempotent — re-attaching an already-linked item is a no-op, not a 409.
+    const created = await prisma.$transaction(
+      ids.map((campaignItemId) =>
+        prisma.activationItem.upsert({
+          where: { activationId_campaignItemId: { activationId, campaignItemId } },
+          create: { activationId, campaignItemId },
+          update: {},
+        })
+      )
+    );
+    res.status(201).json(okList(created, created.length));
   })
 );
 
@@ -145,7 +185,17 @@ router.post(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    const created = await prisma.activationTarget.create({ data: { ...req.body, activationId: req.params.activationId } });
+    const { dateFrom, dateTo, repeat, targetItemId, targetValue } = req.body as Record<string, unknown>;
+    const created = await prisma.activationTarget.create({
+      data: {
+        activationId: req.params.activationId,
+        dateFrom: new Date(dateFrom as string),
+        dateTo: new Date(dateTo as string),
+        repeat: !!repeat,
+        targetItemId: targetItemId as string,
+        targetValue: Number(targetValue) || 0,
+      },
+    });
     res.status(201).json(ok(created));
   })
 );

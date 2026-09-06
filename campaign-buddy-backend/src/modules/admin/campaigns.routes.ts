@@ -5,6 +5,7 @@ import { ok, okList, notFound } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess } from "../../middleware/campaignAccess";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
+import { coerceDates } from "../../utils/coerce";
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.post(
   "/campaigns",
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    const created = await prisma.campaign.create({ data: req.body });
+    const created = await prisma.campaign.create({ data: coerceDates(req.body, ["startDate", "endDate"]) });
     // Creator automatically gets an "all"-scope grant (Spec v3 §4.2)
     await prisma.campaignAccessGrant.create({
       data: { userId: req.user!.sub, campaignId: created.id, scopeType: "all", outletIds: [] },
@@ -75,7 +76,7 @@ router.patch(
     // A manual `status` in the body is a deliberate override (§5.8) — it sticks
     // until the dates change, at which point the date-derived rule resumes.
     const body = req.body as Record<string, unknown>;
-    const data: Record<string, unknown> = { ...body };
+    const data: Record<string, unknown> = coerceDates(body, ["startDate", "endDate"]);
     if (body.status !== undefined) {
       data.statusManuallySet = true;
     } else if (body.startDate !== undefined || body.endDate !== undefined) {
@@ -83,6 +84,16 @@ router.patch(
     }
     const updated = await prisma.campaign.update({ where: { id: req.params.campaignId }, data });
     res.json(ok(updated));
+  })
+);
+
+router.delete(
+  "/campaigns/:campaignId",
+  requireCampaignAccess,
+  requireRole("adm"),
+  asyncHandler(async (req, res) => {
+    await prisma.campaign.delete({ where: { id: req.params.campaignId } });
+    res.status(204).send();
   })
 );
 

@@ -1,35 +1,56 @@
 import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok } from "../../utils/apiResponse";
-import { requireCampaignAccess, outletIdsAllowed } from "../../middleware/campaignAccess";
+import { ok, okList } from "../../utils/apiResponse";
+import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 
 const router = Router();
 
 // Confirmed v3 (§5.10): ONE set of report endpoints. A Sponsor calling these gets
 // the identical response, auto-filtered by their CampaignAccessGrant via
 // outletIdsAllowed() below — there is no separate "-client" route anywhere.
+//
+// List-shaped reports return the rows as `data` (with `meta.total` and, where it
+// applies, `meta.grandTotal`) so the portal's generic ResourcePage can render
+// them like any other table.
+
+type Range = { gte?: Date; lte?: Date };
+function dateRange(req: any): Range | undefined {
+  const { dateFrom, dateTo } = req.query as { dateFrom?: string; dateTo?: string };
+  if (!dateFrom && !dateTo) return undefined;
+  return { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) };
+}
+function outletScope(req: any): string[] | undefined {
+  const explicit = req.query.outletId as string | undefined;
+  if (explicit) { assertOutletAllowed(req, explicit); return [explicit]; }
+  return outletIdsAllowed(req);
+}
 
 router.get(
   "/campaigns/:campaignId/reports/sku-wise",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const allowed = outletIdsAllowed(req);
+    const outlets = outletScope(req);
+    const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
-      where: { activationItem: { activation: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) } } },
-      include: { activationItem: { include: { campaignItem: { include: { item: true } } } } },
+      where: {
+        ...(range ? { date: range } : {}),
+        activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
+      },
+      include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
     });
-    const byItem: Record<string, { itemCount: number; totalSales: number }> = {};
+    const byItem: Record<string, { itemName: string; brandName: string; itemCount: number; totalSales: number }> = {};
     let grandTotal = 0;
     for (const r of records) {
-      const name = r.activationItem.campaignItem.item.name;
-      const value = r.soldToday * r.activationItem.campaignItem.item.unitPrice;
-      byItem[name] = byItem[name] ?? { itemCount: 0, totalSales: 0 };
-      byItem[name].itemCount += r.soldToday;
-      byItem[name].totalSales += value;
+      const item = r.activationItem.campaignItem.item;
+      const value = r.soldToday * item.unitPrice;
+      byItem[item.id] = byItem[item.id] ?? { itemName: item.name, brandName: item.brand.name, itemCount: 0, totalSales: 0 };
+      byItem[item.id].itemCount += r.soldToday;
+      byItem[item.id].totalSales += value;
       grandTotal += value;
     }
-    res.json(ok({ rows: Object.entries(byItem).map(([item, v]) => ({ item, ...v })), grandTotal }));
+    const rows = Object.values(byItem);
+    res.json({ data: rows, meta: { total: rows.length, grandTotal } });
   })
 );
 
@@ -37,22 +58,69 @@ router.get(
   "/campaigns/:campaignId/reports/brand-wise",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const allowed = outletIdsAllowed(req);
+    const outlets = outletScope(req);
+    const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
-      where: { activationItem: { activation: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) } } },
+      where: {
+        ...(range ? { date: range } : {}),
+        activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
+      },
       include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
     });
-    const byBrand: Record<string, { itemCount: number; totalSales: number }> = {};
+    const byBrand: Record<string, { brandName: string; itemCount: number; totalSales: number }> = {};
     let grandTotal = 0;
     for (const r of records) {
-      const name = r.activationItem.campaignItem.item.brand.name;
+      const brand = r.activationItem.campaignItem.item.brand;
       const value = r.soldToday * r.activationItem.campaignItem.item.unitPrice;
-      byBrand[name] = byBrand[name] ?? { itemCount: 0, totalSales: 0 };
-      byBrand[name].itemCount += r.soldToday;
-      byBrand[name].totalSales += value;
+      byBrand[brand.id] = byBrand[brand.id] ?? { brandName: brand.name, itemCount: 0, totalSales: 0 };
+      byBrand[brand.id].itemCount += r.soldToday;
+      byBrand[brand.id].totalSales += value;
       grandTotal += value;
     }
-    res.json(ok({ rows: Object.entries(byBrand).map(([brand, v]) => ({ brand, ...v })), grandTotal }));
+    const rows = Object.values(byBrand);
+    res.json({ data: rows, meta: { total: rows.length, grandTotal } });
+  })
+);
+
+// Outlet-wise rollup — footfall (DailyStats) + sales (SalesRecord) per outlet.
+// Added for portal completion; computed, never stored (§5.2).
+router.get(
+  "/campaigns/:campaignId/reports/outlet-wise",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const outlets = outletScope(req);
+    const range = dateRange(req);
+    const campaignId = req.params.campaignId;
+
+    const [salesRecords, stats] = await Promise.all([
+      prisma.salesRecord.findMany({
+        where: {
+          ...(range ? { date: range } : {}),
+          activationItem: { activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
+        },
+        include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { outlet: true } } } } },
+      }),
+      prisma.dailyStats.findMany({
+        where: {
+          ...(range ? { date: range } : {}),
+          activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+        },
+        include: { activation: { include: { outlet: true } } },
+      }),
+    ]);
+
+    const byOutlet: Record<string, { outletId: string; outletName: string; footFall: number; totalSales: number }> = {};
+    const ensure = (id: string, name: string) => (byOutlet[id] = byOutlet[id] ?? { outletId: id, outletName: name, footFall: 0, totalSales: 0 });
+    for (const r of salesRecords) {
+      const o = r.activationItem.activation.outlet;
+      ensure(o.id, o.name).totalSales += r.soldToday * r.activationItem.campaignItem.item.unitPrice;
+    }
+    for (const s of stats) {
+      const o = s.activation.outlet;
+      ensure(o.id, o.name).footFall += s.footFall;
+    }
+    const rows = Object.values(byOutlet);
+    res.json(okList(rows, rows.length));
   })
 );
 
@@ -60,20 +128,33 @@ router.get(
   "/campaigns/:campaignId/reports/reorder",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const allowed = outletIdsAllowed(req);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const rows = await prisma.salesRecord.findMany({
+    const outlets = outletScope(req);
+    const day = req.query.date ? new Date(req.query.date as string) : new Date();
+    day.setHours(0, 0, 0, 0);
+    const records = await prisma.salesRecord.findMany({
       where: {
-        date: today,
+        date: day,
         reorderFlag: true,
-        activationItem: { activation: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) } },
+        activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
       },
       include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { outlet: true } } } } },
     });
-    res.json(ok(rows));
+    const rows = records.map((r) => ({
+      id: r.id,
+      itemName: r.activationItem.campaignItem.item.name,
+      outletName: r.activationItem.activation.outlet.name,
+      activationName: r.activationItem.activation.name,
+      date: r.date,
+      openingStock: r.openingStock,
+      soldToday: r.soldToday,
+      remainingStock: r.openingStock - r.soldToday,
+    }));
+    res.json(okList(rows, rows.length));
   })
 );
 
+// Monthly attendance grid — one row per (staff, outlet), a per-day-of-month map
+// of ✓ present / A absent / L on-leave / · not-yet-started.
 router.get(
   "/campaigns/:campaignId/reports/attendance-monthly",
   requireCampaignAccess,
@@ -82,16 +163,31 @@ router.get(
     const [year, mo] = month.split("-").map(Number);
     const from = new Date(year, mo - 1, 1);
     const to = new Date(year, mo, 0);
-    const allowed = outletIdsAllowed(req);
+    const daysInMonth = to.getDate();
+    const outlets = outletScope(req);
 
-    const rows = await prisma.attendanceRecord.findMany({
-      where: {
-        date: { gte: from, lte: to },
-        activation: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) },
+    const activations = await prisma.activation.findMany({
+      where: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+      include: {
+        staff: true,
+        outlet: true,
+        attendanceRecords: { where: { date: { gte: from, lte: to } } },
       },
-      include: { activation: { include: { staff: true, outlet: true } } },
     });
-    res.json(ok(rows));
+
+    const rows = activations.map((a) => {
+      const days: Record<number, string> = {};
+      for (const rec of a.attendanceRecords) {
+        const d = new Date(rec.date).getDate();
+        days[d] =
+          rec.status === "leave" ? "L" :
+          rec.checkInAt ? "✓" :
+          rec.status === "absent" ? "A" : "·";
+      }
+      return { activationId: a.id, staffName: a.staff.fullName, outletName: a.outlet.name, days };
+    });
+
+    res.json(ok({ rows, days: Array.from({ length: daysInMonth }, (_, i) => i + 1) }));
   })
 );
 

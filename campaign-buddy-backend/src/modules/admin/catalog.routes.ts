@@ -45,6 +45,14 @@ router.post("/brands", requireRole("adm", "usr"), asyncHandler(async (req, res) 
   const created = await prisma.brand.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
+router.patch("/brands/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const updated = await prisma.brand.update({ where: { id: req.params.id }, data: req.body });
+  res.json(ok(updated));
+}));
+router.delete("/brands/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  await prisma.brand.delete({ where: { id: req.params.id } });
+  res.status(204).send();
+}));
 
 // ---- Items ----
 router.get("/items", asyncHandler(async (req, res) => {
@@ -64,6 +72,10 @@ router.patch("/items/:id", requireRole("adm", "usr"), asyncHandler(async (req, r
   const updated = await prisma.item.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
+router.delete("/items/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  await prisma.item.delete({ where: { id: req.params.id } });
+  res.status(204).send();
+}));
 
 // ---- Cities ----
 router.get("/cities", asyncHandler(async (_req, res) => {
@@ -73,6 +85,14 @@ router.get("/cities", asyncHandler(async (_req, res) => {
 router.post("/cities", requireRole("adm"), asyncHandler(async (req, res) => {
   const created = await prisma.city.create({ data: req.body });
   res.status(201).json(ok(created));
+}));
+router.patch("/cities/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  const updated = await prisma.city.update({ where: { id: req.params.id }, data: req.body });
+  res.json(ok(updated));
+}));
+router.delete("/cities/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  await prisma.city.delete({ where: { id: req.params.id } });
+  res.status(204).send();
 }));
 
 // ---- Outlets ----
@@ -93,6 +113,10 @@ router.patch("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req,
   const updated = await prisma.outlet.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
+router.delete("/outlets/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  await prisma.outlet.delete({ where: { id: req.params.id } });
+  res.status(204).send();
+}));
 
 // ---- Distributor Points ----
 router.get("/distributor-points", asyncHandler(async (_req, res) => {
@@ -102,6 +126,14 @@ router.get("/distributor-points", asyncHandler(async (_req, res) => {
 router.post("/distributor-points", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
   const created = await prisma.distributorPoint.create({ data: req.body });
   res.status(201).json(ok(created));
+}));
+router.patch("/distributor-points/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const updated = await prisma.distributorPoint.update({ where: { id: req.params.id }, data: req.body });
+  res.json(ok(updated));
+}));
+router.delete("/distributor-points/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+  await prisma.distributorPoint.delete({ where: { id: req.params.id } });
+  res.status(204).send();
 }));
 
 export default router;

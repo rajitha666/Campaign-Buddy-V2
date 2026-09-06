@@ -63,4 +63,12 @@ router.post("/roles", asyncHandler(async (req, res) => {
   res.status(201).json(ok(created));
 }));
 
+router.patch("/roles/:id", asyncHandler(async (req, res) => {
+  // `id` is the role's short code and is the primary key — never let it be
+  // rewritten from the body.
+  const { id: _ignore, ...data } = req.body as Record<string, unknown>;
+  const updated = await prisma.role.update({ where: { id: req.params.id }, data });
+  res.json(ok(updated));
+}));
+
 export default router;
