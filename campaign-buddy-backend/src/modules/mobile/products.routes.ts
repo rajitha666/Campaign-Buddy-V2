@@ -23,17 +23,25 @@ router.get(
       include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: today } } },
     });
 
+    // CampaignBuddy_API_Spec.md §6.3 — CampaignProductListItem shape.
     const rows = activationItems
       .map((ai) => {
         const rec = ai.salesRecords[0];
+        const item = ai.campaignItem.item;
+        const openingStock = rec?.openingStock ?? 0;
+        const soldToday = rec?.soldToday ?? 0;
         return {
-          activationItemId: ai.id,
-          itemId: ai.campaignItem.item.id,
-          name: ai.campaignItem.item.name,
-          imageUrl: ai.campaignItem.item.imageUrl,
-          unitPrice: ai.campaignItem.item.unitPrice,
-          availableQty: (rec?.openingStock ?? 0) - (rec?.soldToday ?? 0),
-          soldQty: rec?.soldToday ?? 0,
+          campaignProductAssignmentId: ai.id,
+          product: {
+            id: item.id,
+            sku: item.sku,
+            name: item.name,
+            unitPrice: item.unitPrice,
+            imageUrl: item.imageUrl,
+          },
+          openingStock,
+          soldToday,
+          remainingStock: openingStock - soldToday,
           reorderFlag: rec?.reorderFlag ?? false,
         };
       })
@@ -62,7 +70,20 @@ router.get(
       ? activationItems.map((ai) => ai.campaignItem.addedAt).sort((a, b) => a.getTime() - b.getTime())[0]
       : null;
 
-    res.json(ok({ ...item, brandName: item.brand.name, soldAcrossAllOutletsToday, addedToCampaignAt }));
+    // CampaignBuddy_API_Spec.md §6.4 — ProductDetails.
+    res.json(ok({
+      id: item.id,
+      sku: item.sku,
+      name: item.name,
+      unitPrice: item.unitPrice,
+      imageUrl: item.imageUrl,
+      description: item.description ?? "",
+      attributes: item.attributes ?? [],
+      supplierName: item.supplierName ?? "",
+      brandName: item.brand.name,
+      addedToCampaignAt,
+      soldAcrossAllOutletsToday,
+    }));
   })
 );
 
@@ -76,7 +97,10 @@ router.patch(
     };
     const today = startOfDay(new Date());
 
-    const activationItem = await prisma.activationItem.findUnique({ where: { id: activationItemId } });
+    const activationItem = await prisma.activationItem.findUnique({
+      where: { id: activationItemId },
+      include: { activation: true },
+    });
     if (!activationItem) throw notFound("Activation product");
 
     const existing = await prisma.salesRecord.findUnique({
@@ -102,7 +126,19 @@ router.patch(
         ...(reorderFlag != null ? { reorderFlag } : {}),
       },
     });
-    res.json(ok(record));
+    // CampaignBuddy_API_Spec.md §2.10 — StockEntry.
+    res.json(ok({
+      id: record.id,
+      campaignProductAssignmentId: record.activationItemId,
+      userId: activationItem.activation.staffId,
+      date: record.date,
+      openingStock: record.openingStock,
+      soldToday: record.soldToday,
+      otherInterestedCustomers: record.otherInterestedCustomers,
+      reorderFlag: record.reorderFlag,
+      remainingStock: record.openingStock - record.soldToday,
+      updatedAt: record.updatedAt,
+    }));
   })
 );
 

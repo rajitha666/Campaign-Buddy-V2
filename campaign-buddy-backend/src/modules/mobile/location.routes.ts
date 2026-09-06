@@ -8,14 +8,16 @@ const router = Router();
 router.post(
   "/location/ping",
   asyncHandler(async (req, res) => {
-    const { latitude, longitude, accuracyMeters, capturedAt, appState, batteryPercent } = req.body as {
+    const { latitude, longitude, accuracyMeters, capturedAt, timestamp, appState, batteryPercent } = req.body as {
       latitude: number;
       longitude: number;
       accuracyMeters?: number;
-      capturedAt: string;
+      capturedAt?: string;
+      timestamp?: string; // CampaignBuddy_API_Spec.md §5 names it `timestamp`
       appState?: "foreground" | "background";
       batteryPercent?: number;
     };
+    const capturedIso = capturedAt ?? timestamp;
 
     const openShift = await prisma.attendanceRecord.findFirst({
       where: { activation: { staffId: req.staff!.sub }, checkInAt: { not: null }, checkOutAt: null },
@@ -30,7 +32,7 @@ router.post(
         latitude,
         longitude,
         accuracyMeters,
-        capturedAt: new Date(capturedAt),
+        capturedAt: capturedIso ? new Date(capturedIso) : new Date(),
         appState: appState ?? "foreground",
         batteryPercent,
       },

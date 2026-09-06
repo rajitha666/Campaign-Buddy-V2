@@ -3,6 +3,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { haversineDistanceMeters } from "../../utils/geo";
+import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
 const GRACE_PERIOD_MINUTES = 10; // Confirmed v3 — stays hardcoded, not configurable yet (Spec §5.6/§8)
@@ -13,6 +14,27 @@ function startOfDay(d: Date) {
   return x;
 }
 
+// CampaignBuddy_API_Spec.md §2.5 AttendanceRecord — the app expects userId /
+// assignmentId, which are activation.staffId / activation.id in v3.
+function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
+  return {
+    id: rec.id,
+    userId: staffId,
+    assignmentId: rec.activationId,
+    date: rec.date,
+    checkInAt: rec.checkInAt,
+    checkInLat: rec.checkInLat,
+    checkInLng: rec.checkInLng,
+    checkInLocationVerified: rec.checkInLocationVerified,
+    checkOutAt: rec.checkOutAt,
+    checkOutLat: rec.checkOutLat,
+    checkOutLng: rec.checkOutLng,
+    salesSummaryConfirmedAtCheckout: rec.salesSummaryConfirmedAtCheckout,
+    status: rec.status,
+    leaveRequestId: rec.leaveRequestId,
+  };
+}
+
 router.get(
   "/attendance/today",
   asyncHandler(async (req, res) => {
@@ -20,11 +42,32 @@ router.get(
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
     });
-    if (!activation) return res.json(ok(null));
+    const empty = {
+      checkedIn: false, checkInAt: null, checkOutAt: null,
+      shiftDurationSeconds: 0, locationVerified: false, status: "pending" as const,
+    };
+    if (!activation) return res.json(ok(empty));
     const record = await prisma.attendanceRecord.findUnique({
       where: { activationId_date: { activationId: activation.id, date: today } },
     });
-    res.json(ok(record));
+    if (!record) return res.json(ok(empty));
+
+    // CampaignBuddy_API_Spec.md §5 GET /attendance/today — the slim view.
+    const checkedIn = !!record.checkInAt && !record.checkOutAt;
+    const end = record.checkOutAt ?? new Date();
+    const shiftDurationSeconds = record.checkInAt
+      ? Math.max(0, Math.floor((end.getTime() - record.checkInAt.getTime()) / 1000))
+      : 0;
+    res.json(
+      ok({
+        checkedIn,
+        checkInAt: record.checkInAt,
+        checkOutAt: record.checkOutAt,
+        shiftDurationSeconds,
+        locationVerified: record.checkInLocationVerified,
+        status: record.status,
+      })
+    );
   })
 );
 
@@ -109,7 +152,7 @@ router.post(
       },
     });
 
-    res.status(201).json(ok(record));
+    res.status(201).json(ok(toAttendanceRecord(record, req.staff!.sub)));
   })
 );
 
@@ -145,7 +188,7 @@ router.post(
       },
     });
 
-    res.json(ok(updated));
+    res.json(ok(toAttendanceRecord(updated, req.staff!.sub)));
   })
 );
 
@@ -159,8 +202,19 @@ router.get(
     const records = await prisma.attendanceRecord.findMany({
       where: { activation: { staffId: req.staff!.sub }, date: { gte: since } },
       orderBy: { date: "desc" },
+      include: { leaveRequest: true },
     });
-    res.json(ok(records));
+    res.json(
+      ok(
+        records.map((r) => ({
+          date: r.date,
+          checkInAt: r.checkInAt,
+          checkOutAt: r.checkOutAt,
+          status: r.status,
+          ...(r.leaveRequest ? { leaveReason: r.leaveRequest.reason } : {}),
+        }))
+      )
+    );
   })
 );
 

@@ -16,12 +16,27 @@ async function currentActivationOrThrow(staffId: string) {
   return activation;
 }
 
+// CampaignBuddy_API_Spec.md §2.11 — SalesSummary carries id/userId/assignmentId/date
+// on top of the computed rollup.
+async function fullSummary(activationId: string, staffId: string, date: Date) {
+  const [rollup, row] = await Promise.all([
+    buildSalesSummary(prisma, activationId, date),
+    prisma.salesSummary.findUnique({ where: { activationId_date: { activationId, date } } }),
+  ]);
+  return {
+    id: row?.id ?? `${activationId}:${date.toISOString().slice(0, 10)}`,
+    userId: staffId,
+    assignmentId: activationId,
+    date,
+    ...rollup,
+  };
+}
+
 router.get(
   "/sales-summary/today",
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
-    const summary = await buildSalesSummary(prisma, activation.id, startOfDay(new Date()));
-    res.json(ok(summary));
+    res.json(ok(await fullSummary(activation.id, req.staff!.sub, startOfDay(new Date()))));
   })
 );
 
@@ -36,8 +51,7 @@ router.patch(
       create: { activationId: activation.id, date: today, remarks },
       update: { remarks },
     });
-    const summary = await buildSalesSummary(prisma, activation.id, today);
-    res.json(ok(summary));
+    res.json(ok(await fullSummary(activation.id, req.staff!.sub, today)));
   })
 );
 
@@ -51,8 +65,7 @@ router.post(
       create: { activationId: activation.id, date: today, confirmed: true, confirmedAt: new Date() },
       update: { confirmed: true, confirmedAt: new Date() }, // idempotent
     });
-    const summary = await buildSalesSummary(prisma, activation.id, today);
-    res.json(ok(summary));
+    res.json(ok(await fullSummary(activation.id, req.staff!.sub, today)));
   })
 );
 
