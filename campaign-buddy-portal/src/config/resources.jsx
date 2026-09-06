@@ -19,7 +19,10 @@ import {
   outletAttendance as outletAttendanceApi, tracking as trackingApi,
 } from '../lib/endpoints';
 
-const fmtDate = (v) => (v ? new Date(v).toLocaleDateString() : '');
+// @db.Date columns come back as "…T00:00:00.000Z"; render them in UTC so a
+// negative-offset browser doesn't show the previous day. Timestamps (checkInAt,
+// capturedAt, …) are real instants and render in local time.
+const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '');
 const fmtTime = (v) => (v ? new Date(v).toLocaleString() : '—');
 const fmtISO = (v) => (v ? new Date(v).toISOString().slice(0, 10) : ''); // for <input type="date">
 const nameOf = (s) => s?.displayName || s?.fullName || '';
@@ -386,7 +389,10 @@ export const RESOURCES = {
       { key: 'staffName', label: 'Promoter' },
       { key: 'onLeave', label: 'Reason', render: (r) => <Badge type={r.onLeave ? 'info' : 'alert'}>{r.onLeave ? 'On leave' : 'No check-in'}</Badge> },
     ],
-    fetchList: ({ campaignId, query }) => staffAbsenceApi.list(campaignId, { date: query?.date }),
+    fetchList: ({ campaignId, query }) => {
+      if (!query?.date) return Promise.resolve({ data: [], meta: { total: 0 } });
+      return staffAbsenceApi.list(campaignId, { date: query.date });
+    },
     emptyHint: 'Pick a date above and Load. Promoters with an activation covering that day but no check-in appear here.',
   },
 
@@ -529,7 +535,11 @@ export const RESOURCES = {
     title: 'Reorder', subtitle: 'Items at or below their reorder level, per outlet.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'date', label: 'Date', type: 'date' }],
-    columns: [{ key: 'activationName', label: 'Activation' }, { key: 'itemName', label: 'Item' }, { key: 'outletName', label: 'Outlet' }, { key: 'date', label: 'Date' }],
+    columns: [
+      { key: 'activationName', label: 'Activation' }, { key: 'itemName', label: 'Item' },
+      { key: 'outletName', label: 'Outlet' }, { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'remainingStock', label: 'Remaining' },
+    ],
     fetchList: ({ campaignId, query }) => reportsApi.reorder(campaignId, query),
   },
 

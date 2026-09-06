@@ -3,6 +3,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList } from "../../utils/apiResponse";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
+import { dayDate } from "../../utils/dates";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ type Range = { gte?: Date; lte?: Date };
 function dateRange(req: any): Range | undefined {
   const { dateFrom, dateTo } = req.query as { dateFrom?: string; dateTo?: string };
   if (!dateFrom && !dateTo) return undefined;
-  return { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) };
+  return { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) };
 }
 function outletScope(req: any): string[] | undefined {
   const explicit = req.query.outletId as string | undefined;
@@ -129,8 +130,7 @@ router.get(
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
     const outlets = outletScope(req);
-    const day = req.query.date ? new Date(req.query.date as string) : new Date();
-    day.setHours(0, 0, 0, 0);
+    const day = dayDate(req.query.date as string | undefined);
     const records = await prisma.salesRecord.findMany({
       where: {
         date: day,
@@ -178,7 +178,7 @@ router.get(
     const rows = activations.map((a) => {
       const days: Record<number, string> = {};
       for (const rec of a.attendanceRecords) {
-        const d = new Date(rec.date).getDate();
+        const d = new Date(rec.date).getUTCDate(); // @db.Date is stored at UTC midnight
         days[d] =
           rec.status === "leave" ? "L" :
           rec.checkInAt ? "✓" :

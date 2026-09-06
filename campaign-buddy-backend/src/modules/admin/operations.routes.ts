@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
+import { dayDate, dayBounds } from "../../utils/dates";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get(
           ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
           ...(role ? { staff: { is: { userType: role } } } : {}),
         },
-        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) } } : {}),
+        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
       },
       include: { activation: { include: { staff: true, outlet: true } } },
       orderBy: { date: "desc" },
@@ -51,7 +52,7 @@ router.get(
             ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
           },
         },
-        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) } } : {}),
+        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
       },
       include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { staff: true, outlet: true } } } } },
     });
@@ -102,7 +103,7 @@ router.get(
 
     const activationItems = await prisma.activationItem.findMany({
       where: { activationId: activation.id },
-      include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: new Date(date) } } },
+      include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: dayDate(date) } } },
     });
 
     res.json(
@@ -132,7 +133,7 @@ router.get(
     const rows = await prisma.dailyStats.findMany({
       where: {
         activation: { campaignId: req.params.campaignId, ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}) },
-        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: new Date(dateFrom) } : {}), ...(dateTo ? { lte: new Date(dateTo) } : {}) } } : {}),
+        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
       },
       include: { activation: { include: { outlet: true, staff: true } } },
       orderBy: { date: "asc" },
@@ -225,8 +226,8 @@ router.get(
         campaignId: req.params.campaignId,
         ...(supervisorId ? { supervisorStaffId: supervisorId } : {}),
         ...(outletId ? { outletIds: { has: outletId } } : {}),
-        ...(dateFrom ? { dateTo: { gte: new Date(dateFrom) } } : {}),
-        ...(dateTo ? { dateFrom: { lte: new Date(dateTo) } } : {}),
+        ...(dateFrom ? { dateTo: { gte: dayDate(dateFrom) } } : {}),
+        ...(dateTo ? { dateFrom: { lte: dayDate(dateTo) } } : {}),
       },
       include: { supervisor: true },
     });
@@ -343,8 +344,7 @@ router.get(
     if (!date) throw validationError("date is required", "date");
     if (outletId) assertOutletAllowed(req, outletId);
     const allowed = outletIdsAllowed(req);
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
+    const day = dayDate(date);
 
     const activations = await prisma.activation.findMany({
       where: {
@@ -387,11 +387,7 @@ router.get(
         ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
       },
     };
-    if (date) {
-      const day = new Date(date);
-      day.setHours(0, 0, 0, 0);
-      where.date = day;
-    }
+    if (date) where.date = dayDate(date);
     const rows = await prisma.attendanceRecord.findMany({
       where,
       include: { activation: { include: { staff: true, outlet: true } } },
@@ -417,12 +413,7 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
   if (outletId) assertOutletAllowed(req, outletId);
   const allowed = outletIdsAllowed(req);
 
-  let dateFilter: { gte: Date; lte: Date } | undefined;
-  if (date) {
-    const start = new Date(date); start.setHours(0, 0, 0, 0);
-    const end = new Date(date); end.setHours(23, 59, 59, 999);
-    dateFilter = { gte: start, lte: end };
-  }
+  const dateFilter = date ? dayBounds(date) : undefined;
 
   const rows = await prisma.trackingPing.findMany({
     where: {
