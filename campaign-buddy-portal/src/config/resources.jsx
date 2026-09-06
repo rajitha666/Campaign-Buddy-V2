@@ -14,8 +14,15 @@ import {
   distributorPoints as distributorPointsApi, cities as citiesApi, campaigns as campaignsApi,
   staff as staffApi, activations as activationsApi, attendance as attendanceApi,
   salesRecords as salesRecordsApi, dailyStats as dailyStatsApi, leaveRequests as leaveRequestsApi,
-  reports as reportsApi, users as usersApi, roles as rolesApi, assumed,
+  reports as reportsApi, users as usersApi, roles as rolesApi,
+  supervisorTasks as supervisorTasksApi, staffAbsence as staffAbsenceApi,
+  outletAttendance as outletAttendanceApi, tracking as trackingApi,
 } from '../lib/endpoints';
+
+const fmtDate = (v) => (v ? new Date(v).toLocaleDateString() : '');
+const fmtTime = (v) => (v ? new Date(v).toLocaleString() : '—');
+const fmtISO = (v) => (v ? new Date(v).toISOString().slice(0, 10) : ''); // for <input type="date">
+const nameOf = (s) => s?.displayName || s?.fullName || '';
 
 const PROVINCES = ['Western', 'Eastern', 'Central', 'Southern', 'Sabaragamuwa', 'North Western', 'Northern', 'Uva', 'North Central'];
 const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota',
@@ -209,7 +216,8 @@ export const RESOURCES = {
     columns: [
       { key: 'name', label: 'Name', render: (r) => <Avatar name={r.name} sub={r.campaignNo} /> },
       { key: 'clientName', label: 'Client', render: (r) => r.clientName || r.clientId },
-      { key: 'startDate', label: 'From' }, { key: 'endDate', label: 'To' },
+      { key: 'startDate', label: 'From', render: (r) => fmtDate(r.startDate) },
+      { key: 'endDate', label: 'To', render: (r) => fmtDate(r.endDate) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : r.status === 'ended' ? 'muted' : 'pending'}>{r.status}</Badge> },
     ],
     actions: ['items', 'edit', 'delete'],
@@ -219,11 +227,20 @@ export const RESOURCES = {
       const map = buildLookup(clientRes?.data, 'clientName');
       return rows.map((r) => ({ ...r, clientName: map[r.clientId] }));
     },
+    editValues: (row) => ({
+      campaignNo: row.campaignNo, name: row.name, clientId: row.clientId,
+      description: row.description, dateRange: [fmtISO(row.startDate), fmtISO(row.endDate)],
+    }),
     createItem: ({ values }) => campaignsApi.create({
       campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
       description: values.description, startDate: values.dateRange?.[0], endDate: values.dateRange?.[1],
     }),
-    updateItem: ({ id, values }) => campaignsApi.update(id, values),
+    updateItem: ({ id, values }) => campaignsApi.update(id, {
+      campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
+      description: values.description,
+      ...(values.dateRange?.[0] ? { startDate: values.dateRange[0] } : {}),
+      ...(values.dateRange?.[1] ? { endDate: values.dateRange[1] } : {}),
+    }),
     deleteItem: ({ id }) => campaignsApi.remove(id),
     formFields: [
       { key: 'campaignNo', label: 'Campaign No', type: 'text', required: true, placeholder: 'CMP-0234' },
@@ -242,19 +259,32 @@ export const RESOURCES = {
       { key: 'name', label: 'Activation', render: (r) => <Avatar name={r.name} /> },
       { key: 'outletName', label: 'Outlet', render: (r) => r.outletName || r.outletId },
       { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
-      { key: 'supervisorName', label: 'Supervisor', render: (r) => r.supervisorName || r.supervisorStaffId },
-      { key: 'dateFrom', label: 'From' }, { key: 'dateTo', label: 'To' },
+      { key: 'supervisorName', label: 'Supervisor', render: (r) => r.supervisorName || r.supervisorStaffId || '—' },
+      { key: 'dateFrom', label: 'From', render: (r) => fmtDate(r.dateFrom) },
+      { key: 'dateTo', label: 'To', render: (r) => fmtDate(r.dateTo) },
     ],
     actions: ['target', 'items', 'edit', 'delete'],
     fetchList: ({ campaignId, query }) => activationsApi.list(campaignId, query),
     hydrate: hydrateActivations,
+    editValues: (row) => ({
+      name: row.name, outletId: row.outletId, staffId: row.staffId,
+      supervisorStaffId: row.supervisorStaffId, distributorPointId: row.distributorPointId,
+      dateRange: [fmtISO(row.dateFrom), fmtISO(row.dateTo)],
+      targetType: row.targetType, targetCategorization: row.targetCategorization, targetUnit: row.targetUnit,
+    }),
     createItem: ({ campaignId, values }) => activationsApi.create(campaignId, {
       name: values.name, outletId: values.outletId, staffId: values.staffId,
       supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
       dateFrom: values.dateRange?.[0], dateTo: values.dateRange?.[1],
       targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
     }),
-    updateItem: ({ campaignId, id, values }) => activationsApi.update(campaignId, id, values),
+    updateItem: ({ campaignId, id, values }) => activationsApi.update(campaignId, id, {
+      name: values.name, outletId: values.outletId, staffId: values.staffId,
+      supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
+      ...(values.dateRange?.[0] ? { dateFrom: values.dateRange[0] } : {}),
+      ...(values.dateRange?.[1] ? { dateTo: values.dateRange[1] } : {}),
+      targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
+    }),
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
     formFields: [
       { key: 'name', label: 'Activation Name', type: 'text', required: true },
@@ -272,88 +302,59 @@ export const RESOURCES = {
   },
 
   staff: {
-    title: 'Staff', subtitle: 'Promoters and supervisors across all campaigns.', addLabel: 'Add New Member', addFull: true,
+    title: 'Staff', subtitle: 'Promoters and supervisors across all campaigns.', addLabel: 'Add New Member',
     columns: [
       { key: 'displayName', label: 'Name', render: (r) => <Avatar initials={(r.displayName || '?').slice(0, 2).toUpperCase()} name={r.displayName || r.fullName} sub={r.employeeId} /> },
       { key: 'userType', label: 'Type', render: (r) => <Badge type={r.userType === 'supervisor' ? 'success' : 'info'}>{r.userType}</Badge> },
-      { key: 'email', label: 'Email' }, { key: 'cityName', label: 'City', render: (r) => r.cityName || r.cityId },
+      { key: 'mobileUsername', label: 'App Username' },
+      { key: 'cityName', label: 'City', render: (r) => r.cityName || r.cityId || '—' },
       { key: 'phone', label: 'Mobile' },
+      { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : 'muted'}>{r.status}</Badge> },
     ],
-    actions: ['view', 'edit', 'delete'],
+    actions: ['edit', 'delete'],
     fetchList: ({ query }) => staffApi.search(query?.search || ''),
     hydrate: async (rows) => {
       const cityRes = await citiesApi.list().catch(() => null);
       const map = buildLookup(cityRes?.data);
       return rows.map((r) => ({ ...r, cityName: map[r.cityId] }));
     },
-    createItem: async ({ values }) => {
-      // profilePicture is a File object, not JSON — upload it separately
-      // once we have a staff id, so POST /staff stays plain JSON.
-      const { profilePicture, ...rest } = values;
-      const res = await staffApi.create(rest);
-      const newId = res?.data?.id;
-      if (profilePicture instanceof File && newId) {
-        await staffApi.uploadPhoto(newId, profilePicture);
-      }
-      return res;
-    },
-    updateItem: async ({ id, values }) => {
-      const { profilePicture, ...rest } = values;
-      const res = await staffApi.update(id, rest);
-      // Only re-upload if the admin actually picked a new file — otherwise
-      // `profilePicture` here is just the existing photo URL string coming
-      // back from initialValues, not a File.
-      if (profilePicture instanceof File) {
-        await staffApi.uploadPhoto(id, profilePicture);
-      }
-      return res;
-    },
+    editValues: (row) => ({
+      ...row,
+      dateOfBirth: row.dateOfBirth ? fmtISO(row.dateOfBirth) : '',
+    }),
+    createItem: ({ values }) => staffApi.create(values),
+    updateItem: ({ id, values }) => staffApi.update(id, values),
     deleteItem: ({ id }) => staffApi.remove(id),
-    // Full HR record per CampaignBuddy_AdminPanel_Feature_Specification.md §3.5.1
-    // and CampaignBuddy_Full_Backend_Contract.md §10.3 (confirmed in scope for v1).
+    // Fixed HR field set for v3 (schema / Changelog v3 "Staff HR fields"). The
+    // backend whitelists these columns; extras are ignored.
     formFields: [
       { type: 'section', label: 'Basic Info' },
+      { key: 'employeeId', label: 'Employee ID', type: 'text', required: true, placeholder: 'e.g. EMP-0042' },
       { key: 'fullName', label: 'Full Name', type: 'text', required: true },
       { key: 'displayName', label: 'Display Name (App Name)', type: 'text', required: true },
-      { key: 'gender', label: 'Gender', type: 'radio', required: true, options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
-      { key: 'dateOfBirth', label: 'Date of Birth', type: 'date', required: true },
-      { key: 'nic', label: 'NIC', type: 'text', required: true, placeholder: 'National ID number' },
-      { key: 'profilePicture', label: 'Profile Picture', type: 'upload', required: true },
-      { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea', required: true },
-      { key: 'currentAddress', label: 'Current Address', type: 'textarea', required: true },
-      { key: 'cityId', label: 'City', type: 'select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
-      { key: 'telephone', label: 'Telephone', type: 'text' },
-      { key: 'phone', label: 'Mobile', type: 'text', required: true },
-      { key: 'mobileType', label: 'Mobile Type', type: 'radio', required: true, options: [{ value: 'smart', label: 'Smart' }, { value: 'normal', label: 'Normal' }] },
-      { key: 'email', label: 'Email', type: 'text' },
-      { key: 'maritalStatus', label: 'Marital Status', type: 'radio', options: [{ value: 'non_married', label: 'Non-Married' }, { value: 'married', label: 'Married' }] },
-
-      { type: 'section', label: 'Emergency Contact Details' },
-      { key: 'emergencyContactName', label: 'Contact Name', type: 'text', required: true },
-      { key: 'emergencyContactNo', label: 'Contact No', type: 'text', required: true },
-
-      { type: 'section', label: 'Bank Account Details' },
-      { key: 'bankAccountName', label: 'Account Name', type: 'text', required: true },
-      { key: 'bankName', label: 'Bank', type: 'text', required: true },
-      { key: 'bankAccountNumber', label: 'Account Number', type: 'text', required: true },
-      { key: 'bankBranch', label: 'Branch', type: 'text', required: true },
-
-      { type: 'section', label: 'Skills and Qualifications' },
-      { key: 'educationQualification', label: 'Education Qualification', type: 'textarea' },
-      { key: 'workExperience', label: 'Work Experience', type: 'textarea' },
-      { key: 'otherSkills', label: 'Other Skills', type: 'textarea' },
-      { key: 'interestsHobbies', label: 'Interests / Hobbies', type: 'textarea' },
-      { key: 'englishSpeaking', label: 'English Speaking', type: 'radio', options: [{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'poor', label: 'Poor' }] },
-      { key: 'englishReading', label: 'English Reading', type: 'radio', options: [{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'poor', label: 'Poor' }] },
-      { key: 'englishWriting', label: 'English Writing', type: 'radio', options: [{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'poor', label: 'Poor' }] },
-
-      { type: 'section', label: 'Work Details' },
-      { key: 'workingType', label: 'Working Type', type: 'radio', required: true, options: [{ value: 'weekdays_only', label: 'Weekdays Only' }, { value: 'daily', label: 'Daily' }, { value: 'outstation', label: 'Outstation' }] },
-      { key: 'supplierName', label: 'Supplier Name', type: 'text', placeholder: 'Optional — links this promoter to a distributor/supplier' },
-      { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces or special characters' },
-      { key: 'designation', label: 'Designation', type: 'creatable', required: true, options: ['Category Assistant', 'Beauty Category Assistant', 'Supervisor'] },
       { key: 'userType', label: 'User Type', type: 'radio', required: true, options: [{ value: 'promoter', label: 'Promoter' }, { value: 'supervisor', label: 'Supervisor' }] },
       { key: 'status', label: 'Status', type: 'radio', required: true, options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
+      { key: 'gender', label: 'Gender', type: 'radio', options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
+      { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
+      { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number' },
+      { key: 'phone', label: 'Mobile', type: 'text' },
+      { key: 'cityId', label: 'City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
+      { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea' },
+      { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
+
+      { type: 'section', label: 'Login' },
+      { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces' },
+      { key: 'password', label: 'Password', type: 'text', placeholder: 'Set on create; leave blank on edit to keep' },
+
+      { type: 'section', label: 'Emergency Contact' },
+      { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
+      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'text' },
+
+      { type: 'section', label: 'Bank Account' },
+      { key: 'bankAccountName', label: 'Account Name', type: 'text' },
+      { key: 'bankName', label: 'Bank', type: 'text' },
+      { key: 'bankAccountNumber', label: 'Account Number', type: 'text' },
+      { key: 'bankBranch', label: 'Branch', type: 'text' },
     ],
   },
 
@@ -365,8 +366,11 @@ export const RESOURCES = {
       { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' },
     ],
     columns: [
-      { key: 'userId', label: 'Promoter' }, { key: 'date', label: 'Date' },
-      { key: 'checkInAt', label: 'Check-in Time' }, { key: 'checkOutAt', label: 'Check-out Time' },
+      { key: 'staffName', label: 'Promoter', render: (r) => nameOf(r.activation?.staff) || r.activation?.staff?.fullName || '—' },
+      { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
+      { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'on_time' ? 'success' : r.status === 'late' ? 'pending' : 'muted'}>{r.status}</Badge> },
     ],
     fetchList: ({ campaignId, query }) => attendanceApi.list(campaignId, query),
@@ -376,9 +380,14 @@ export const RESOURCES = {
     title: 'Staff Absence', subtitle: 'Promoters scheduled but not checked in for the selected date.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'date', label: 'Date', type: 'date' }],
-    columns: [{ key: 'activationName', label: 'Activation' }, { key: 'outletName', label: 'Outlet' }, { key: 'staffName', label: 'Promoter' }],
-    fetchList: ({ campaignId, query }) => assumed.staffAbsence(campaignId, query?.date),
-    emptyHint: 'No absences recorded for this date.',
+    columns: [
+      { key: 'activationName', label: 'Activation' },
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'staffName', label: 'Promoter' },
+      { key: 'onLeave', label: 'Reason', render: (r) => <Badge type={r.onLeave ? 'info' : 'alert'}>{r.onLeave ? 'On leave' : 'No check-in'}</Badge> },
+    ],
+    fetchList: ({ campaignId, query }) => staffAbsenceApi.list(campaignId, { date: query?.date }),
+    emptyHint: 'Pick a date above and Load. Promoters with an activation covering that day but no check-in appear here.',
   },
 
   leaveRequests: {
@@ -386,7 +395,9 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
-      { key: 'userId', label: 'Employee' }, { key: 'fromDate', label: 'From' }, { key: 'toDate', label: 'To' },
+      { key: 'staffName', label: 'Employee', render: (r) => r.staff?.fullName || r.staffId },
+      { key: 'fromDate', label: 'From', render: (r) => fmtDate(r.fromDate) },
+      { key: 'toDate', label: 'To', render: (r) => fmtDate(r.toDate) },
       { key: 'reason', label: 'Reason', render: (r) => <Badge type="info">{r.reason}</Badge> },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'approved' ? 'success' : r.status === 'declined' ? 'alert' : 'pending'}>{r.status}</Badge> },
     ],
@@ -406,10 +417,10 @@ export const RESOURCES = {
       { key: 'taskType', label: 'Task Type', render: (r) => <Badge type={r.taskType === 'range' ? 'info' : 'muted'}>{r.taskType}</Badge> },
     ],
     actions: ['edit', 'delete'],
-    fetchList: ({ campaignId }) => assumed.supervisorTasks.list(campaignId),
-    createItem: ({ campaignId, values }) => assumed.supervisorTasks.create(campaignId, values),
-    updateItem: ({ campaignId, id, values }) => assumed.supervisorTasks.update(campaignId, id, values),
-    deleteItem: ({ campaignId, id }) => assumed.supervisorTasks.remove(campaignId, id),
+    fetchList: ({ campaignId }) => supervisorTasksApi.list(campaignId),
+    createItem: ({ campaignId, values }) => supervisorTasksApi.create(campaignId, values),
+    updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, values),
+    deleteItem: ({ campaignId, id }) => supervisorTasksApi.remove(campaignId, id),
     formFields: [
       { key: 'category', label: 'Category', type: 'select', required: true, options: ['Sale', 'Outlet PR', 'Documentation', 'Discipline', 'Competitor Activities', 'Communication', 'Capability / Knowledge', 'Attitude', 'Attire & Grooming'] },
       { key: 'taskType', label: 'Task Type', type: 'radio', options: [{ value: 'range', label: 'Range' }, { value: 'feedback', label: 'Feedback' }] },
@@ -422,16 +433,24 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'date', label: 'Date', type: 'date' }],
     columns: [
-      { key: 'supervisorName', label: 'Supervisor' }, { key: 'staffName', label: 'Promoter' }, { key: 'outletName', label: 'Outlet' },
-      { key: 'checkInAt', label: 'Check-in Time' }, { key: 'checkOutAt', label: 'Check-out Time' },
+      { key: 'supervisorName', label: 'Supervisor' }, { key: 'outletName', label: 'Outlet' },
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
+      { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
     ],
-    fetchList: ({ campaignId, query }) => assumed.outletAttendance(campaignId, query),
+    fetchList: ({ campaignId, query }) => outletAttendanceApi.list(campaignId, query),
   },
 
   supervisorAttendance: {
     title: 'Supervisor Attendance', subtitle: "Supervisors' own check-in log.", excel: true, noAdd: true,
     scopeToCampaign: true,
-    columns: [{ key: 'userId', label: 'Supervisor' }, { key: 'checkInAt', label: 'Check-in Time' }, { key: 'checkOutAt', label: 'Check-out Time' }],
+    columns: [
+      { key: 'staffName', label: 'Supervisor', render: (r) => r.activation?.staff?.fullName || '—' },
+      { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
+      { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
+    ],
     fetchList: ({ campaignId, query }) => attendanceApi.list(campaignId, { ...query, role: 'supervisor' }),
   },
 
@@ -451,9 +470,11 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
-      { key: 'activationItemId', label: 'Item' }, { key: 'date', label: 'Date' },
+      { key: 'itemName', label: 'Item', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
+      { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
-      { key: 'remainingStock', label: 'Remaining' },
+      { key: 'remainingStock', label: 'Remaining', render: (r) => (r.openingStock ?? 0) - (r.soldToday ?? 0) },
     ],
     fetchList: ({ campaignId, query }) => salesRecordsApi.list(campaignId, query),
   },
@@ -463,11 +484,15 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'date', label: 'Date', type: 'date' }],
     columns: [
-      { key: 'activationId', label: 'Activation' }, { key: 'outletId', label: 'Outlet' },
+      { key: 'activationName', label: 'Activation' }, { key: 'outletName', label: 'Outlet' },
       { key: 'footFall', label: 'Foot Fall' },
       { key: 'updatedAt', label: 'Status', render: (r) => <Badge type={r.updatedAt ? 'success' : 'alert'}>{r.updatedAt ? 'Completed' : 'Missing'}</Badge> },
     ],
-    fetchList: ({ campaignId, query }) => dailyStatsApi.list(campaignId, query),
+    fetchList: async ({ campaignId, query }) => {
+      const res = await dailyStatsApi.list(campaignId, query);
+      const rows = res?.data?.byDay || [];
+      return { data: rows, meta: { total: rows.length } };
+    },
   },
 
   reportSkuWise: {
@@ -490,14 +515,14 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }],
     columns: [{ key: 'itemName', label: 'Item' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => assumed.clientScopedReports.skuWise(campaignId, query),
+    fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
   },
 
   brandWiseClient: {
     title: 'Overall Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
     columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => assumed.clientScopedReports.brandWise(campaignId, query),
+    fetchList: ({ campaignId, query }) => reportsApi.brandWise(campaignId, query),
   },
 
   reorder: {
@@ -539,27 +564,8 @@ export const RESOURCES = {
       { key: 'duration', label: 'Duration', type: 'select', options: ['Daily', 'Weekly', 'Monthly'] },
     ],
     columns: [{ key: 'outletName', label: 'Outlet' }, { key: 'footFall', label: 'Foot Fall' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    emptyHint: 'Select an outlet and duration above, then Load, to view the outlet-wise breakdown.',
-    // Unified spec has no dedicated outlet-rollup endpoint — this derives the
-    // rollup client-side from DailyStats. Swap for a real /reports/outlet-wise
-    // endpoint once the backend adds one; grouping this much data client-side
-    // won't scale past a small campaign.
-    fetchList: async ({ campaignId, query }) => {
-      if (!query?.outletId) return { data: [], meta: { total: 0 } };
-      const res = await dailyStatsApi.list(campaignId, query);
-      const rows = res?.data || [];
-      const outletRes = await outletsApi.list().catch(() => null);
-      const outletMap = buildLookup(outletRes?.data);
-      const grouped = {};
-      rows.forEach((r) => {
-        const key = r.outletId || 'unknown';
-        grouped[key] = grouped[key] || { outletId: key, outletName: outletMap[key] || key, footFall: 0, totalSales: 0 };
-        grouped[key].footFall += r.footFall || 0;
-        grouped[key].totalSales += r.totalSales || 0;
-      });
-      const data = Object.values(grouped);
-      return { data, meta: { total: data.length } };
-    },
+    emptyHint: 'No sales or footfall recorded for the selected scope yet.',
+    fetchList: ({ campaignId, query }) => reportsApi.outletWise(campaignId, query),
   },
 
   promoterTracking: {
@@ -569,18 +575,29 @@ export const RESOURCES = {
       { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
-    columns: [{ key: 'staffId', label: 'Promoter' }, { key: 'capturedAt', label: 'Time' }, { key: 'latitude', label: 'Latitude' }, { key: 'longitude', label: 'Longitude' }],
-    fetchList: ({ campaignId, query }) => assumed.promoterTrackingHistory(campaignId, query),
+    columns: [
+      { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'capturedAt', label: 'Time', render: (r) => fmtTime(r.capturedAt) },
+      { key: 'latitude', label: 'Latitude' }, { key: 'longitude', label: 'Longitude' },
+    ],
+    fetchList: ({ campaignId, query }) => trackingApi.promoterHistory(campaignId, query),
   },
 
   supervisorTracking: {
     title: 'Supervisor Tracking', subtitle: 'GPS breadcrumb trail for supervisors.', noAdd: true,
+    scopeToCampaign: true,
     filters: [
       { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
-    columns: [{ key: 'staffId', label: 'Supervisor' }, { key: 'capturedAt', label: 'Time' }, { key: 'latitude', label: 'Latitude' }, { key: 'longitude', label: 'Longitude' }],
-    fetchList: ({ query }) => assumed.supervisorTrackingHistory(query),
+    columns: [
+      { key: 'staffName', label: 'Supervisor', render: (r) => r.staffName || r.staffId },
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'capturedAt', label: 'Time', render: (r) => fmtTime(r.capturedAt) },
+      { key: 'latitude', label: 'Latitude' }, { key: 'longitude', label: 'Longitude' },
+    ],
+    fetchList: ({ campaignId, query }) => trackingApi.supervisorHistory(campaignId, query),
   },
 
   activationListClient: {

@@ -5,52 +5,61 @@ import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 
-// NOTE: the Unified Backend Spec only documents POST .../activations/{id}/items
-// (§4.3) — there's no GET to list what's already attached, or a DELETE to
-// remove one. This page can attach items but can only show what was added
-// *this session*; ask the backend team to add a GET/DELETE pair so a page
-// reload doesn't lose the attached list.
 export default function ActivationItems() {
   const { campaignId, activationId } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
   const [campaignItems, setCampaignItems] = useState([]);
   const [allItems, setAllItems] = useState([]);
-  const [addedThisSession, setAddedThisSession] = useState([]);
+  const [attached, setAttached] = useState([]); // ActivationItem rows (campaignItemId)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true); setError(null);
-      try {
-        const [ciRes, itemsRes] = await Promise.all([campaignsApi.items(campaignId), itemsApi.list()]);
-        setCampaignItems(ciRes?.data || []);
-        setAllItems(itemsRes?.data || []);
-      } catch (e) {
-        setError(e.message || 'Could not load this campaign\'s item catalog.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [campaignId]);
+  async function load() {
+    setLoading(true); setError(null);
+    try {
+      const [ciRes, itemsRes, aiRes] = await Promise.all([
+        campaignsApi.items(campaignId),
+        itemsApi.list(),
+        activationsApi.items(campaignId, activationId),
+      ]);
+      setCampaignItems(ciRes?.data || []);
+      setAllItems(itemsRes?.data || []);
+      setAttached(aiRes?.data || []);
+    } catch (e) {
+      setError(e.message || 'Could not load this activation\'s items.');
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [campaignId, activationId]);
 
   const itemMap = Object.fromEntries(allItems.map((i) => [i.id, i]));
+  const attachedCampaignItemIds = new Set(attached.map((ai) => ai.campaignItemId));
+  const attachedRowByCampaignItemId = Object.fromEntries(attached.map((ai) => [ai.campaignItemId, ai]));
 
   async function addOne(campaignItemId) {
     try {
       await activationsApi.addItems(campaignId, activationId, { campaignItemIds: [campaignItemId] });
-      setAddedThisSession((a) => [...new Set([...a, campaignItemId])]);
       push('Item attached to activation');
+      load();
     } catch (e) { push(e.message || 'Could not attach item', 'error'); }
   }
   async function addAll() {
-    const ids = campaignItems.map((ci) => ci.id);
     try {
-      await activationsApi.addItems(campaignId, activationId, { campaignItemIds: ids });
-      setAddedThisSession(ids);
+      await activationsApi.addItems(campaignId, activationId, { addAll: true });
       push('All campaign items attached');
+      load();
     } catch (e) { push(e.message || 'Could not attach items', 'error'); }
+  }
+  async function removeOne(campaignItemId) {
+    const ai = attachedRowByCampaignItemId[campaignItemId];
+    if (!ai) return;
+    try {
+      await activationsApi.removeItem(campaignId, activationId, ai.id);
+      push('Item removed');
+      load();
+    } catch (e) { push(e.message || 'Could not remove item', 'error'); }
   }
 
   return (
@@ -72,13 +81,15 @@ export default function ActivationItems() {
               <tbody>
                 {campaignItems.map((ci) => {
                   const item = itemMap[ci.itemId] || {};
-                  const added = addedThisSession.includes(ci.id);
+                  const added = attachedCampaignItemIds.has(ci.id);
                   return (
                     <tr key={ci.id}>
                       <td className="cell-strong">{item.name || ci.itemId}</td>
                       <td>LKR {Number(item.unitPrice || 0).toLocaleString()}</td>
                       <td>{added ? <span className="badge success">Attached</span> : <span className="badge muted">Not attached</span>}</td>
-                      <td>{!added ? <button className="btn btn-secondary btn-sm" onClick={() => addOne(ci.id)}>Add</button> : null}</td>
+                      <td>{added
+                        ? <button className="btn btn-secondary btn-sm" onClick={() => removeOne(ci.id)}>Remove</button>
+                        : <button className="btn btn-secondary btn-sm" onClick={() => addOne(ci.id)}>Add</button>}</td>
                     </tr>
                   );
                 })}

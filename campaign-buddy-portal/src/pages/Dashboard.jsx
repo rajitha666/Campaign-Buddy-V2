@@ -21,7 +21,7 @@ function todayISO(offsetDays = 0) {
 //   GET /campaigns/{id}/stats           -> { totals:{footFall,approached,converted}, byDay:[] }
 //   GET /campaigns/{id}/sales           -> [ SalesRecord + activationItem.campaignItem.item + activation.outlet ]
 //   GET /campaigns/{id}/attendance      -> [ AttendanceRecord + activation.outlet ]
-//   GET /campaigns/{id}/reports/sku-wise-> { rows:[{item,itemCount,totalSales}], grandTotal }
+//   GET /campaigns/{id}/reports/sku-wise-> [{ itemName, brandName, itemCount, totalSales }] (+ meta.grandTotal)
 export default function Dashboard() {
   const { currentCampaignId, persona } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -55,8 +55,8 @@ export default function Dashboard() {
         setYesterday(daySummary(salesRows, attRows, todayISO(-1)));
         setWeek(salesByDay(salesRows));
 
-        const skuRows = skuRes?.data?.rows || [];
-        setTopProducts(skuRows.slice(0, 3));
+        const skuRows = skuRes?.data || [];
+        setTopProducts([...skuRows].sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0)).slice(0, 3));
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load dashboard data.');
       } finally {
@@ -100,9 +100,9 @@ export default function Dashboard() {
           <div className="panel-title">Top products (last 30 days)</div>
           <div style={{ marginTop: 8 }}>
             {topProducts.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : topProducts.map((p, i) => (
-              <div className="rank-row" key={p.item || i}>
+              <div className="rank-row" key={p.itemName || i}>
                 <div className="rank-num">{i + 1}</div>
-                <div><div className="rank-name">{p.item}</div><div className="rank-meta">LKR {(p.totalSales || 0).toLocaleString()}</div></div>
+                <div><div className="rank-name">{p.itemName}</div><div className="rank-meta">{p.brandName} · LKR {(p.totalSales || 0).toLocaleString()}</div></div>
                 <div className="rank-val">{p.itemCount} units</div>
               </div>
             ))}
@@ -118,9 +118,6 @@ export default function Dashboard() {
 function saleValue(r) {
   const price = r.activationItem?.campaignItem?.item?.unitPrice ?? 0;
   return (r.soldToday || 0) * price;
-}
-function saleOutletId(r) {
-  return r.activationItem?.activation?.outletId ?? null;
 }
 
 function daySummary(salesRows, attRows, isoDay) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { staff as staffApi, assumed } from '../lib/endpoints';
+import { staff as staffApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 
@@ -22,7 +22,7 @@ export default function StaffProfiles() {
     if (!staffId) return;
     setLoading(true); setError(null);
     try {
-      const res = await assumed.staffProfileEvaluation(staffId, {});
+      const res = await staffApi.evaluation(staffId, {});
       setData(res?.data || null);
     } catch (e) {
       setError(e.message || 'Could not load this evaluation.');
@@ -82,7 +82,7 @@ export default function StaffProfiles() {
         </div>
       )}
       <div className="hint-note" style={{ marginTop: 12 }}>
-        Uses GET /staff/{'{staffId}'}/evaluation — an assumed endpoint not yet in the Unified Backend Spec; confirm the real shape with the backend team.
+        Reads GET /admin/v1/staff/{'{staffId}'}/evaluation (Backend Spec v3 §4.2).
       </div>
     </div>
   );

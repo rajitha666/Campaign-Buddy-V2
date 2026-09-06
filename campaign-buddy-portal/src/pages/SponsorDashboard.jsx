@@ -48,7 +48,7 @@ export default function SponsorDashboard() {
         );
         setToday({ outletCount: outletIds.size, totalSales, footFall: totals.footFall || 0 });
         setLive(liveRes?.data || []);
-        setTopProducts((skuRes?.data?.rows || []).slice(0, 3));
+        setTopProducts([...(skuRes?.data || [])].sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0)).slice(0, 3));
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load campaign overview.');
       } finally {
@@ -82,9 +82,9 @@ export default function SponsorDashboard() {
         <div className="panel-title">Top products (last 30 days)</div>
         <div style={{ marginTop: 8 }}>
           {topProducts.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : topProducts.map((p, i) => (
-            <div className="rank-row" key={p.item || i}>
+            <div className="rank-row" key={p.itemName || i}>
               <div className="rank-num">{i + 1}</div>
-              <div><div className="rank-name">{p.item}</div><div className="rank-meta">LKR {(p.totalSales || 0).toLocaleString()}</div></div>
+              <div><div className="rank-name">{p.itemName}</div><div className="rank-meta">{p.brandName} · LKR {(p.totalSales || 0).toLocaleString()}</div></div>
               <div className="rank-val">{p.itemCount} sold</div>
             </div>
           ))}

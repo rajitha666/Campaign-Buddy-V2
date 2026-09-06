@@ -1,7 +1,8 @@
-// One function per endpoint in CampaignBuddy_Unified_Backend_Spec.md §4.
-// Endpoints marked "ASSUMED" are not explicitly listed in the spec but are
-// implied by an admin-panel screen (see CampaignBuddy_AdminPanel_Feature_Specification.md) —
-// flag these with the backend team before wiring the real thing.
+// One function per endpoint in CampaignBuddy_Backend_Spec_v3.md §4.2, plus the
+// portal-completion endpoints added to the backend so every screen here has a
+// real route (catalog PATCH/DELETE, campaign/staff DELETE, role PATCH,
+// activation-items GET, supervisor-tasks CRUD, staff-absence, outlet-attendance,
+// tracking history, outlet-wise report).
 import { api } from './apiClient';
 
 // ---------- Auth ----------
@@ -10,7 +11,7 @@ export const auth = {
   logout: () => api.post('/auth/logout', {}),
 };
 
-// ---------- Catalog (§4.1) ----------
+// ---------- Catalog ----------
 export const clients = {
   list: (query) => api.get('/clients', { query }),
   create: (body) => api.post('/clients', body),
@@ -49,7 +50,7 @@ export const cities = {
   remove: (id) => api.delete(`/cities/${id}`),
 };
 
-// ---------- Campaign setup (§4.2) ----------
+// ---------- Campaign setup ----------
 export const campaigns = {
   list: (query) => api.get('/campaigns', { query }), // scoped to caller's CampaignAccessGrant
   create: (body) => api.post('/campaigns', body),
@@ -61,19 +62,13 @@ export const campaigns = {
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
 };
 
-// ---------- Staff & Activations (§4.3) ----------
+// ---------- Staff & Activations ----------
 export const staff = {
   search: (search) => api.get('/staff', { query: { search } }),
   create: (body) => api.post('/staff', body),
   update: (id, body) => api.patch(`/staff/${id}`, body),
   remove: (id) => api.delete(`/staff/${id}`),
-  // Kept separate from create/update so those two stay plain JSON — see
-  // CampaignBuddy_Full_Backend_Contract.md §4.9.1.
-  uploadPhoto: (id, file) => {
-    const formData = new FormData();
-    formData.append('photo', file);
-    return api.postForm(`/staff/${id}/photo`, formData);
-  },
+  evaluation: (id, query) => api.get(`/staff/${id}/evaluation`, { query }),
 };
 export const activations = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/activations`, { query }),
@@ -81,16 +76,18 @@ export const activations = {
   get: (campaignId, activationId) => api.get(`/campaigns/${campaignId}/activations/${activationId}`),
   update: (campaignId, activationId, body) => api.patch(`/campaigns/${campaignId}/activations/${activationId}`, body),
   remove: (campaignId, activationId) => api.delete(`/campaigns/${campaignId}/activations/${activationId}`),
-  addItems: (campaignId, activationId, body) => api.post(`/campaigns/${campaignId}/activations/${activationId}/items`, body),
+  items: (campaignId, activationId) => api.get(`/campaigns/${campaignId}/activations/${activationId}/items`),
+  addItems: (campaignId, activationId, body) => api.post(`/campaigns/${campaignId}/activations/${activationId}/items`, body), // {campaignItemId} | {campaignItemIds:[...]} | {addAll:true}
+  removeItem: (campaignId, activationId, activationItemId) => api.delete(`/campaigns/${campaignId}/activations/${activationId}/items/${activationItemId}`),
   targets: {
     list: (campaignId, activationId) => api.get(`/campaigns/${campaignId}/activations/${activationId}/targets`),
     create: (campaignId, activationId, body) => api.post(`/campaigns/${campaignId}/activations/${activationId}/targets`, body),
   },
 };
 
-// ---------- Attendance, Sales & Tracking (§4.4) ----------
+// ---------- Attendance, Sales & Tracking ----------
 export const attendance = {
-  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/attendance`, { query }), // {outletId, dateFrom, dateTo}
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/attendance`, { query }), // {outletId, dateFrom, dateTo, role}
 };
 export const salesRecords = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales`, { query }),
@@ -101,28 +98,32 @@ export const dailyStats = {
 };
 export const tracking = {
   live: (campaignId) => api.get(`/campaigns/${campaignId}/tracking/live`),
+  promoterHistory: (campaignId, query) => api.get(`/campaigns/${campaignId}/tracking/promoter-history`, { query }),
+  supervisorHistory: (campaignId, query) => api.get(`/campaigns/${campaignId}/tracking/supervisor-history`, { query }),
 };
 export const leaveRequests = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/leave-requests`, { query }),
   decide: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/leave-requests/${id}`, body), // {status:'approved'|'declined'}
 };
 
-// ---------- Reporting (§4.5) ----------
+// ---------- Reporting ----------
 export const reports = {
   skuWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sku-wise`, { query }),
   brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise`, { query }),
+  outletWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/outlet-wise`, { query }),
   reorder: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/reorder`, { query }),
   attendanceMonthly: (campaignId, month) => api.get(`/campaigns/${campaignId}/reports/attendance-monthly`, { query: { month } }),
 };
 
-// ---------- RBAC administration (§4.6) ----------
+// ---------- RBAC administration ([adm] only) ----------
 export const users = {
   list: (query) => api.get('/users', { query }),
   create: (body) => api.post('/users', body),
   update: (id, body) => api.patch(`/users/${id}`, body),
   campaignAccess: {
     list: (userId) => api.get(`/users/${userId}/campaign-access`),
-    grant: (userId, body) => api.post(`/users/${userId}/campaign-access`, body), // {campaignId, outletScope}
+    grant: (userId, body) => api.post(`/users/${userId}/campaign-access`, body), // {campaignId, scopeType:'all'|'subset', outletIds?}
+    revoke: (userId, campaignId) => api.delete(`/users/${userId}/campaign-access/${campaignId}`),
   },
 };
 export const roles = {
@@ -131,10 +132,7 @@ export const roles = {
   update: (id, body) => api.patch(`/roles/${id}`, body),
 };
 
-// ---------- Reconciled against Backend Spec v3 ----------
-// These screens exist in the Admin Panel feature spec. Backend Spec v3 DOES
-// implement the three below — campaign-scoped, folded in from the retired
-// contract doc (v3 §4.2). Paths corrected to match what the backend serves.
+// ---------- Campaign-scoped extras ----------
 export const supervisorRoutes = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/supervisor-routes`, { query }), // {supervisorId, outletId, dateFrom, dateTo}
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-routes`, body),    // {supervisorStaffId, outletIds, dateFrom, dateTo}
@@ -142,43 +140,37 @@ export const supervisorRoutes = {
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-routes/${id}`),
 };
 export const salesLookup = {
-  // v3 §4.2: GET /campaigns/{id}/sales/lookup?staffId&outletId&activationId&date
-  load: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales/lookup`, { query }),
+  load: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales/lookup`, { query }), // {staffId, outletId, activationId, date}
 };
-export const staffEvaluation = {
-  // v3 §4.2: GET /admin/v1/staff/{staffId}/evaluation?dateFrom&dateTo
-  get: (staffId, query) => api.get(`/staff/${staffId}/evaluation`, { query }),
+export const supervisorTasks = {
+  list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
+  create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
+  update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-tasks/${id}`, body),
+  remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-tasks/${id}`),
+};
+export const staffAbsence = {
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/absence`, { query }), // {date, outletId}
+};
+export const outletAttendance = {
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/outlet-attendance`, { query }), // {date, outletId}
 };
 
-// ---------- NOT in Backend Spec v3 — no endpoint exists yet ----------
-// Screens whose backend route is genuinely unimplemented. Calling these 404s;
-// the page shows its error state. Raise with the backend team before relying
-// on any of them (shapes are best-guess from the feature spec).
+// Compatibility shims for pages that still import the old `assumed.*` names.
 export const assumed = {
-  staffAbsence: (campaignId, date) => api.get(`/campaigns/${campaignId}/absence`, { query: { date } }),
-  supervisorTasks: {
-    list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
-    create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
-    update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-tasks/${id}`, body),
-    remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-tasks/${id}`),
+  staffProfileEvaluation: (staffId, query) => staff.evaluation(staffId, query),
+  staffAbsence: (campaignId, date) => staffAbsence.list(campaignId, { date }),
+  supervisorTasks,
+  outletAttendance: (campaignId, query) => outletAttendance.list(campaignId, query),
+  promoterTrackingHistory: (campaignId, query) => tracking.promoterHistory(campaignId, query),
+  supervisorTrackingHistory: (campaignId, query) => tracking.supervisorHistory(campaignId, query),
+  assignedRoutes: {
+    list: (campaignId, query) => supervisorRoutes.list(campaignId, query),
+    assign: (campaignId, body) => supervisorRoutes.create(campaignId, body),
   },
-  outletAttendance: (campaignId, query) => api.get(`/campaigns/${campaignId}/outlet-attendance`, { query }),
-  promoterTrackingHistory: (campaignId, query) => api.get(`/campaigns/${campaignId}/tracking/promoter-history`, { query }),
-  supervisorTrackingHistory: (query) => api.get('/tracking/supervisor-history', { query }),
+  updateSalesLoad: (campaignId, query) => salesLookup.load(campaignId, query),
   clientScopedReports: {
-    // v3 §5.10: there is deliberately no separate client-scoped report route —
-    // the Sponsor calls the same /reports/* and gets grant-filtered results.
-    skuWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sku-wise`, { query }),
-    brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise`, { query }),
+    // v3 §5.10: no separate client route — same /reports/*, grant-filtered.
+    skuWise: (campaignId, query) => reports.skuWise(campaignId, query),
+    brandWise: (campaignId, query) => reports.brandWise(campaignId, query),
   },
 };
-
-// Back-compat: a couple of pages import `assumed.staffProfileEvaluation` /
-// `assumed.assignedRoutes` / `assumed.updateSalesLoad`. Keep them pointing at
-// the reconciled implementations so nothing breaks if a page isn't updated.
-assumed.staffProfileEvaluation = staffEvaluation.get;
-assumed.assignedRoutes = {
-  list: (campaignId, query) => supervisorRoutes.list(campaignId, query),
-  assign: (campaignId, body) => supervisorRoutes.create(campaignId, body),
-};
-assumed.updateSalesLoad = (campaignId, query) => salesLookup.load(campaignId, query);
