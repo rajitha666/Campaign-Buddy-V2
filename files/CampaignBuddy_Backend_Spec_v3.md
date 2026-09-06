@@ -480,3 +480,69 @@ This is enough to exercise every mobile endpoint and every admin read endpoint a
 ## 9. Where this document's decisions came from
 
 Every "confirmed v3" note above resolves a conflict that existed between this document's v2 predecessor and the now-retired `CampaignBuddy_Full_Backend_Contract.md`. The full reasoning, alternatives considered, and who/what confirmed each one is kept in `CampaignBuddy_Changelog_v3.md` — treat that file as the permanent decision log; this section of the spec states the *outcome* inline at point of use so implementers don't have to cross-reference the changelog for day-to-day work.
+
+---
+
+## 10. Addendum — portal-completion endpoints (added 2026-09-06)
+
+§4.2 was a first-pass endpoint set. Standing up `campaign-buddy-portal` (the
+React/Vite Admin/Supervisor/Sponsor UI) against the live backend surfaced screens
+whose routes §4.2 didn't cover. These were added to the backend; the design rules
+above (grant enforcement, `outletIdsAllowed()` filtering, "compute rollups at read
+time" §5.2, campaign-scoped tracking §5.9, one report route not a `-client` variant
+§5.10) all still hold.
+
+**Catalog CRUD completion:** `PATCH`/`DELETE /brands/:id`, `DELETE /items/:id`,
+`PATCH`/`DELETE /cities/:id`, `DELETE /outlets/:id`,
+`PATCH`/`DELETE /distributor-points/:id` — all `[adm/usr]` for `PATCH`, `[adm]` for
+`DELETE`. A `DELETE` that violates a foreign key returns `409 IN_USE`.
+
+**Other CRUD:** `DELETE /campaigns/:campaignId` `[adm]` (cascades to activations,
+items, grants, tasks, routes). `DELETE /staff/:id` `[adm]`. `PATCH /roles/:id`
+`[adm]` (the `id` is the PK and is never rewritten from the body).
+
+**Activations:** `GET /campaigns/:campaignId/activations/:activationId/items`
+(grant + outlet check) — lists attached `ActivationItem`s so the portal's
+Activation Items screen survives a reload. The items `POST` additionally accepts
+`{ campaignItemIds: [...] }` and is idempotent (upsert).
+
+**SupervisorTask CRUD** (removes it from §8's deferred list):
+`GET`/`POST`/`PATCH`/`DELETE /campaigns/:campaignId/supervisor-tasks`. Portal-only
+config; the mobile app still does not read it.
+
+**Computed read endpoints** (all campaign-scoped, grant + outlet filtered,
+nothing stored):
+- `GET /campaigns/:campaignId/absence?date=&outletId=` — promoters whose
+  activation covers `date` but who have no check-in that day (`onLeave` flag when
+  the attendance row is a `leave`).
+- `GET /campaigns/:campaignId/outlet-attendance?date=&outletId=` — attendance rows
+  for activations whose assigned staff is a supervisor (the "supervisor visit
+  log").
+- `GET /campaigns/:campaignId/tracking/promoter-history?staffId=&date=&outletId=`
+  and `…/tracking/supervisor-history?…` — the raw `TrackingPing` trail, split by
+  the activation's staff `userType`. Campaign-scoped for the same reason
+  `tracking/live` is (§5.9).
+- `GET /campaigns/:campaignId/reports/outlet-wise?outletId=&dateFrom=&dateTo=` —
+  per-outlet `{ footFall, totalSales }` rollup.
+
+**Shape / filter changes to existing §4.2 endpoints:**
+- `GET /campaigns/:campaignId/attendance` gains `?role=promoter|supervisor`.
+- `GET /campaigns/:campaignId/stats` — `byDay` rows now also carry
+  `outletId`, `outletName`, `staffName`, `activationName` (flattened alongside the
+  raw `DailyStats` fields).
+- `GET /campaigns/:campaignId/reports/{sku-wise,brand-wise}` now return the rows
+  as `data: [...]` with `meta: { total, grandTotal }` (was `data: { rows, grandTotal }`),
+  field names `itemName` / `brandName`, and accept `outletId` + `dateFrom` /
+  `dateTo`.
+- `GET /campaigns/:campaignId/reports/reorder` returns flattened rows
+  (`itemName`, `outletName`, `activationName`, `date`, `remainingStock`) and
+  accepts `?date=`.
+- `GET /campaigns/:campaignId/reports/attendance-monthly` returns
+  `{ rows: [{ activationId, staffName, outletName, days: { <dayNum>: "✓"|"A"|"L"|"·" } }], days: [1..N] }`.
+
+**Cross-cutting:** `errorHandler` maps Prisma `P2025`→404, `P2002`→409 DUPLICATE,
+`P2003`→409 IN_USE, and `PrismaClientValidationError`→400. `POST`/`PATCH` on
+`campaigns`, `activations`, `activation targets`, and `staff` coerce
+`YYYY-MM-DD` strings to `Date` and (staff/activations) whitelist writable columns.
+All `@db.Date` column filters go through `utils/dates.ts` (UTC-midnight) so they
+behave correctly regardless of server timezone.

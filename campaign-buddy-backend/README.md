@@ -33,12 +33,45 @@ Every confirmed v3 business rule is implemented as documented in the spec:
 - `Campaign.status` auto-syncs from dates but accepts a manual override (`src/modules/admin/campaigns.routes.ts`, `src/utils/campaignStatus.ts`).
 - `requireCampaignAccess` (`src/middleware/campaignAccess.ts`) is the single RBAC mechanism for Admin, Supervisor, and Sponsor alike — no separate portal codebases, no separate report routes.
 
-## What's deliberately NOT implemented (see Spec v3 §8)
-- `SupervisorTask` CRUD (table exists, no endpoints — QA checklist workflow deferred)
+## Portal-completion endpoints (added on top of Spec v3 §4.2)
+
+Backend Spec v3 §4.2 was a first-pass endpoint set; the web portal
+(`campaign-buddy-portal`) needs the rest of the CRUD plus a few computed
+reports. These were added and every portal screen now has a real route:
+
+- **Catalog:** `PATCH`/`DELETE /brands/:id`, `DELETE /items/:id`,
+  `PATCH`/`DELETE /cities/:id`, `DELETE /outlets/:id`,
+  `PATCH`/`DELETE /distributor-points/:id`
+- **`DELETE /campaigns/:campaignId`** (cascades), **`DELETE /staff/:id`**,
+  **`PATCH /roles/:id`**
+- **`GET /campaigns/:id/activations/:activationId/items`**; the items `POST`
+  also accepts `{ campaignItemIds: [...] }` and is idempotent
+- **`GET /campaigns/:id/supervisor-tasks`** + `POST`/`PATCH`/`DELETE`
+  (the `SupervisorTask` table finally gets its endpoints)
+- **`GET /campaigns/:id/absence?date=`** — promoters scheduled but not checked in
+- **`GET /campaigns/:id/outlet-attendance?date=`** — supervisor visit log
+- **`GET /campaigns/:id/tracking/promoter-history`** and
+  **`/tracking/supervisor-history`** — raw GPS breadcrumb trail (campaign-scoped,
+  same as `tracking/live` per §5.9)
+- **`GET /campaigns/:id/reports/outlet-wise`** — per-outlet footfall + sales
+- `GET /campaigns/:id/attendance` gained a `?role=promoter|supervisor` filter;
+  `/stats` `byDay` rows now carry `outletId`/`outletName`/`staffName`;
+  `/reports/*` list rows come back as `data[]` + `meta.grandTotal` with
+  `itemName`/`brandName` fields and accept `outletId` + `dateFrom`/`dateTo`.
+
+All computed reports follow §5.2 (derive at read time, never store).
+`errorHandler` now maps Prisma `P2025`/`P2002`/`P2003` and validation errors to
+proper 4xx codes. `utils/dates.ts` centralises UTC-midnight parsing for the
+`@db.Date` columns.
+
+## What's still deliberately NOT implemented (see Spec v3 §8)
 - Staff password reset delivery (stub, generic response only)
 - User (portal) refresh-token flow (re-login required on expiry, by design)
 - Configurable geofence radius / grace period per campaign (both are fixed defaults for now)
+- Staff HR photo upload / the ~30-field HR form (schema comment: out of scope for v3)
 - Automated test suite
+- Request-body schema validation library (zod etc.) — writes are field-whitelisted
+  where it matters, but there is still no general runtime validation layer
 
 ## Project layout
 ```
@@ -53,10 +86,12 @@ src/
     campaignAccess.ts           requireCampaignAccess + outletIdsAllowed/assertOutletAllowed
     errorHandler.ts             formats every ApiError per the spec's response envelope
   utils/
-    apiResponse.ts              ApiError, ok()/okList() envelope helpers
+    apiResponse.ts              ApiError, ok()/okList() envelope helpers (+ passwordHash scrub)
     geo.ts                      haversine distance (geofence soft-flag calc only)
     salesCalc.ts                totalSales / SalesSummary rollups — always computed, never stored
     campaignStatus.ts           Campaign.status auto-sync computation
+    coerce.ts                   YYYY-MM-DD -> Date coercion for the portal's date inputs
+    dates.ts                    UTC-midnight helpers for @db.Date column filters
   modules/
     mobile/          one file per endpoint group — auth, attendance, location, stats, products, sales-summary, time-off, performance
     admin/           one file per endpoint group — auth, catalog, staff, campaigns, activations, operations, reports, rbac
