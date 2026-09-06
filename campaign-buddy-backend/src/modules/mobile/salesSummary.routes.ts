@@ -3,6 +3,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { buildSalesSummary } from "../../utils/salesCalc";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -42,6 +44,7 @@ router.get(
 
 router.patch(
   "/sales-summary/today",
+  validate({ body: s.salesSummaryRemarks }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
     const { remarks } = req.body as { remarks?: string };
@@ -57,6 +60,7 @@ router.patch(
 
 router.post(
   "/sales-summary/today/confirm",
+  validate({ body: s.salesSummaryConfirm }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
     const today = startOfDay(new Date());

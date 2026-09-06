@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 import type { LeaveRequest, Staff } from "@prisma/client";
 
 const router = Router();
@@ -57,6 +59,7 @@ router.get(
 
 router.post(
   "/time-off/requests",
+  validate({ body: s.timeOffCreate }),
   asyncHandler(async (req, res) => {
     const { fromDate, toDate, reason, note } = req.body as {
       fromDate: string; toDate: string; reason: "sick_leave" | "annual_leave" | "personal" | "other"; note?: string;

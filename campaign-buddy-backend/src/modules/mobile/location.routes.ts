@@ -2,11 +2,14 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError } from "../../utils/apiResponse";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
 router.post(
   "/location/ping",
+  validate({ body: s.locationPing }),
   asyncHandler(async (req, res) => {
     const { latitude, longitude, accuracyMeters, capturedAt, timestamp, appState, batteryPercent } = req.body as {
       latitude: number;

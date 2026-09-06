@@ -3,6 +3,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { computeTotalSales } from "../../utils/salesCalc";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -45,6 +47,7 @@ router.get(
 
 router.patch(
   "/stats/today",
+  validate({ body: s.statsUpdate }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
     const today = startOfDay(new Date());

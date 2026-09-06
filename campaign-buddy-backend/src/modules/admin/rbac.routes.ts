@@ -4,6 +4,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 // Entire file is [adm] only — RBAC administration (Spec v3 §4.2).
 const router = Router();
@@ -14,7 +16,7 @@ router.get("/users", asyncHandler(async (_req, res) => {
   res.json(okList(rows, rows.length)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
-router.post("/users", asyncHandler(async (req, res) => {
+router.post("/users", validate({ body: s.userCreate }), asyncHandler(async (req, res) => {
   const { password, ...rest } = req.body as any;
   if (!password) throw validationError("password is required", "password");
   const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
@@ -22,7 +24,7 @@ router.post("/users", asyncHandler(async (req, res) => {
   res.status(201).json(ok(created)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
-router.patch("/users/:id", asyncHandler(async (req, res) => {
+router.patch("/users/:id", validate({ body: s.userUpdate }), asyncHandler(async (req, res) => {
   const { password, ...rest } = req.body as any;
   const data: any = { ...rest };
   if (password) data.passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
@@ -37,7 +39,7 @@ router.get("/users/:id/campaign-access", asyncHandler(async (req, res) => {
 
 // No Campaigns/Distributors/Brands multi-select on user creation (Admin Panel Spec
 // v3 §3.14) — access is granted here, per campaign, one at a time.
-router.post("/users/:id/campaign-access", asyncHandler(async (req, res) => {
+router.post("/users/:id/campaign-access", validate({ body: s.campaignAccessGrant }), asyncHandler(async (req, res) => {
   const { campaignId, scopeType, outletIds } = req.body as { campaignId: string; scopeType: "all" | "subset"; outletIds?: string[] };
   if (scopeType === "subset" && (!outletIds || outletIds.length === 0)) {
     throw validationError("outletIds is required when scopeType is 'subset'", "outletIds");
@@ -58,12 +60,12 @@ router.get("/roles", asyncHandler(async (_req, res) => {
   res.json(okList(rows, rows.length));
 }));
 
-router.post("/roles", asyncHandler(async (req, res) => {
+router.post("/roles", validate({ body: s.roleCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.role.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
 
-router.patch("/roles/:id", asyncHandler(async (req, res) => {
+router.patch("/roles/:id", validate({ body: s.roleUpdate }), asyncHandler(async (req, res) => {
   // `id` is the role's short code and is the primary key — never let it be
   // rewritten from the body.
   const { id: _ignore, ...data } = req.body as Record<string, unknown>;

@@ -6,14 +6,16 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { staffAuth } from "../../middleware/staffAuth";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
 router.post(
   "/auth/login",
+  validate({ body: s.login }),
   asyncHandler(async (req, res) => {
     const { username, password } = req.body as { username: string; password: string };
-    if (!username || !password) throw new ApiError(400, "VALIDATION_ERROR", "username and password required");
 
     const staff = await prisma.staff.findUnique({ where: { mobileUsername: username } });
     if (!staff || staff.status !== "active" || !(await bcrypt.compare(password, staff.passwordHash))) {
@@ -39,9 +41,9 @@ router.post(
 
 router.post(
   "/auth/refresh",
+  validate({ body: s.refresh }),
   asyncHandler(async (req, res) => {
     const { refreshToken } = req.body as { refreshToken: string };
-    if (!refreshToken) throw new ApiError(400, "VALIDATION_ERROR", "refreshToken required");
     const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
 
     const stored = await prisma.staffRefreshToken.findFirst({

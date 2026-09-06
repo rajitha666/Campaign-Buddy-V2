@@ -5,6 +5,8 @@ import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { dayDate, dayBounds } from "../../utils/dates";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
@@ -64,6 +66,7 @@ router.patch(
   "/campaigns/:campaignId/sales/:salesRecordId",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.salesCorrect }),
   asyncHandler(async (req, res) => {
     const existing = await prisma.salesRecord.findUnique({
       where: { id: req.params.salesRecordId },
@@ -206,6 +209,7 @@ router.patch(
   "/campaigns/:campaignId/leave-requests/:id",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.leaveDecide }),
   asyncHandler(async (req, res) => {
     const { status } = req.body as { status: "approved" | "declined" };
     const updated = await prisma.leaveRequest.update({ where: { id: req.params.id }, data: { status, decidedAt: new Date() } });
@@ -239,6 +243,7 @@ router.post(
   "/campaigns/:campaignId/supervisor-routes",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.supervisorRouteCreate }),
   asyncHandler(async (req, res) => {
     const { supervisorStaffId, outletIds, dateFrom, dateTo } = req.body as {
       supervisorStaffId: string; outletIds: string[]; dateFrom: string; dateTo: string;
@@ -255,6 +260,7 @@ router.patch(
   "/campaigns/:campaignId/supervisor-routes/:id",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.supervisorRouteUpdate }),
   asyncHandler(async (req, res) => {
     const b = req.body as { supervisorStaffId?: string; outletIds?: string[]; dateFrom?: string; dateTo?: string };
     if (b.outletIds) b.outletIds.forEach((id) => assertOutletAllowed(req, id));
@@ -296,6 +302,7 @@ router.post(
   "/campaigns/:campaignId/supervisor-tasks",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.supervisorTaskCreate }),
   asyncHandler(async (req, res) => {
     const { category, taskType, task } = req.body as { category: string; taskType: "range" | "feedback"; task: string };
     if (!category || !task) throw validationError("category and task are required");
@@ -310,6 +317,7 @@ router.patch(
   "/campaigns/:campaignId/supervisor-tasks/:id",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.supervisorTaskUpdate }),
   asyncHandler(async (req, res) => {
     const { category, taskType, task } = req.body as { category?: string; taskType?: "range" | "feedback"; task?: string };
     const updated = await prisma.supervisorTask.update({

@@ -3,6 +3,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { haversineDistanceMeters } from "../../utils/geo";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
@@ -73,11 +75,9 @@ router.get(
 
 router.post(
   "/attendance/check-in",
+  validate({ body: s.checkIn }),
   asyncHandler(async (req, res) => {
     const { latitude, longitude } = req.body as { latitude: number; longitude: number };
-    if (latitude == null || longitude == null) {
-      throw new ApiError(400, "VALIDATION_ERROR", "latitude and longitude required");
-    }
 
     const today = startOfDay(new Date());
     const activation = await prisma.activation.findFirst({
@@ -158,8 +158,9 @@ router.post(
 
 router.post(
   "/attendance/check-out",
+  validate({ body: s.checkOut }),
   asyncHandler(async (req, res) => {
-    const { latitude, longitude } = req.body as { latitude: number; longitude: number };
+    const { latitude, longitude } = req.body as { latitude?: number; longitude?: number };
     const today = startOfDay(new Date());
 
     const activation = await prisma.activation.findFirst({

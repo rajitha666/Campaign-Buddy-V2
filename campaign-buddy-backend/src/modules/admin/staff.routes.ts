@@ -4,6 +4,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
@@ -52,6 +54,7 @@ router.get(
 router.post(
   "/staff",
   requireRole("adm", "usr"),
+  validate({ body: s.staffCreate }),
   asyncHandler(async (req, res) => {
     const { password } = req.body as any;
     if (!password) throw validationError("password is required", "password");
@@ -64,6 +67,7 @@ router.post(
 router.patch(
   "/staff/:id",
   requireRole("adm", "usr"),
+  validate({ body: s.staffUpdate }),
   asyncHandler(async (req, res) => {
     const { password } = req.body as any;
     const data: any = pickStaff(req.body);

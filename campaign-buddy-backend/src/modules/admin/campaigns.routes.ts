@@ -6,6 +6,8 @@ import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess } from "../../middleware/campaignAccess";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
 import { coerceDates } from "../../utils/coerce";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
@@ -43,6 +45,7 @@ router.get(
 router.post(
   "/campaigns",
   requireRole("adm", "usr"),
+  validate({ body: s.campaignCreate }),
   asyncHandler(async (req, res) => {
     const created = await prisma.campaign.create({ data: coerceDates(req.body, ["startDate", "endDate"]) });
     // Creator automatically gets an "all"-scope grant (Spec v3 §4.2)
@@ -72,6 +75,7 @@ router.patch(
   "/campaigns/:campaignId",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.campaignUpdate }),
   asyncHandler(async (req, res) => {
     // A manual `status` in the body is a deliberate override (§5.8) — it sticks
     // until the dates change, at which point the date-derived rule resumes.
@@ -110,6 +114,7 @@ router.post(
   "/campaigns/:campaignId/items",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.campaignItemAdd }),
   asyncHandler(async (req, res) => {
     const { itemId, newItem } = req.body as { itemId?: string; newItem?: any };
     const resolvedItemId = itemId ?? (await prisma.item.create({ data: newItem })).id;

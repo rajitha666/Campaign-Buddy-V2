@@ -3,6 +3,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
@@ -22,11 +24,11 @@ router.get("/clients", asyncHandler(async (req, res) => {
   ]);
   res.json(okList(rows, total));
 }));
-router.post("/clients", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.post("/clients", requireRole("adm", "usr"), validate({ body: s.clientCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.client.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/clients/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.patch("/clients/:id", requireRole("adm", "usr"), validate({ body: s.clientUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.client.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
@@ -41,11 +43,11 @@ router.get("/brands", asyncHandler(async (req, res) => {
   const rows = await prisma.brand.findMany({ where: clientId ? { clientId } : {} });
   res.json(okList(rows, rows.length));
 }));
-router.post("/brands", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.post("/brands", requireRole("adm", "usr"), validate({ body: s.brandCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.brand.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/brands/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.patch("/brands/:id", requireRole("adm", "usr"), validate({ body: s.brandUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.brand.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
@@ -64,11 +66,11 @@ router.get("/items", asyncHandler(async (req, res) => {
   ]);
   res.json(okList(rows, total));
 }));
-router.post("/items", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.post("/items", requireRole("adm", "usr"), validate({ body: s.itemCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.item.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/items/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.patch("/items/:id", requireRole("adm", "usr"), validate({ body: s.itemUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.item.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
@@ -82,11 +84,11 @@ router.get("/cities", asyncHandler(async (_req, res) => {
   const rows = await prisma.city.findMany();
   res.json(okList(rows, rows.length));
 }));
-router.post("/cities", requireRole("adm"), asyncHandler(async (req, res) => {
+router.post("/cities", requireRole("adm"), validate({ body: s.cityCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.city.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/cities/:id", requireRole("adm"), asyncHandler(async (req, res) => {
+router.patch("/cities/:id", requireRole("adm"), validate({ body: s.cityUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.city.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
@@ -105,11 +107,11 @@ router.get("/outlets", asyncHandler(async (req, res) => {
   ]);
   res.json(okList(rows, total));
 }));
-router.post("/outlets", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.post("/outlets", requireRole("adm", "usr"), validate({ body: s.outletCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.outlet.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.patch("/outlets/:id", requireRole("adm", "usr"), validate({ body: s.outletUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.outlet.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
@@ -123,11 +125,11 @@ router.get("/distributor-points", asyncHandler(async (_req, res) => {
   const rows = await prisma.distributorPoint.findMany();
   res.json(okList(rows, rows.length));
 }));
-router.post("/distributor-points", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.post("/distributor-points", requireRole("adm", "usr"), validate({ body: s.distributorCreate }), asyncHandler(async (req, res) => {
   const created = await prisma.distributorPoint.create({ data: req.body });
   res.status(201).json(ok(created));
 }));
-router.patch("/distributor-points/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+router.patch("/distributor-points/:id", requireRole("adm", "usr"), validate({ body: s.distributorUpdate }), asyncHandler(async (req, res) => {
   const updated = await prisma.distributorPoint.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));

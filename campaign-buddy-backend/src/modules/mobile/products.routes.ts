@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound, validationError } from "../../utils/apiResponse";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -92,6 +94,7 @@ router.get(
 
 router.patch(
   "/products/:campaignProductAssignmentId/stock",
+  validate({ body: s.stockUpdate }),
   asyncHandler(async (req, res) => {
     // :campaignProductAssignmentId = ActivationItem.id (Spec v3 §4.1 naming note)
     const activationItemId = req.params.campaignProductAssignmentId;

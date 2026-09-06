@@ -5,14 +5,16 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { userAuth } from "../../middleware/userAuth";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
 router.post(
   "/auth/login",
+  validate({ body: s.login }),
   asyncHandler(async (req, res) => {
     const { username, password } = req.body as { username: string; password: string };
-    if (!username || !password) throw new ApiError(400, "VALIDATION_ERROR", "username and password required");
 
     const user = await prisma.user.findUnique({ where: { username }, include: { role: true } });
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {

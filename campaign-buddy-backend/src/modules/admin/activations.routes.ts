@@ -5,6 +5,8 @@ import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { coerceDates } from "../../utils/coerce";
+import { validate } from "../../middleware/validate";
+import { s } from "../../schemas";
 
 const router = Router();
 
@@ -62,6 +64,7 @@ router.post(
   "/campaigns/:campaignId/activations",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.activationCreate }),
   asyncHandler(async (req, res) => {
     assertOutletAllowed(req, req.body.outletId);
     const created = await prisma.activation.create({
@@ -90,6 +93,7 @@ router.patch(
   "/campaigns/:campaignId/activations/:activationId",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.activationUpdate }),
   asyncHandler(async (req, res) => {
     if (req.body.outletId) assertOutletAllowed(req, req.body.outletId);
     const updated = await prisma.activation.update({
@@ -129,6 +133,7 @@ router.post(
   "/campaigns/:campaignId/activations/:activationId/items",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.activationItemsAdd }),
   asyncHandler(async (req, res) => {
     const body = req.body as { campaignItemId?: string; campaignItemIds?: string[]; addAll?: boolean };
     const activationId = req.params.activationId;
@@ -184,6 +189,7 @@ router.post(
   "/campaigns/:campaignId/activations/:activationId/targets",
   requireCampaignAccess,
   requireRole("adm", "usr"),
+  validate({ body: s.targetCreate }),
   asyncHandler(async (req, res) => {
     const { dateFrom, dateTo, repeat, targetItemId, targetValue } = req.body as Record<string, unknown>;
     const created = await prisma.activationTarget.create({
