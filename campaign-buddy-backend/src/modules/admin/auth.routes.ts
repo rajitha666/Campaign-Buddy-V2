@@ -23,7 +23,7 @@ router.post(
     const accessToken = jwt.sign(
       { sub: user.id, type: "user", roleId: user.roleId },
       process.env.USER_JWT_SECRET as string,
-      { expiresIn: process.env.USER_JWT_EXPIRES_IN || "8h" }
+      { expiresIn: process.env.USER_JWT_EXPIRES_IN || "8h" } as jwt.SignOptions
     );
 
     res.json(ok({ accessToken, user: { id: user.id, displayName: user.displayName, roleId: user.roleId, defaultUrl: user.role.defaultUrl } }));
