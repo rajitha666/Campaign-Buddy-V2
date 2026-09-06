@@ -23,6 +23,19 @@ npm run start -- --web       # browser preview
 # or:  npm run android / npm run ios   (device / emulator, once native builds are set up)
 ```
 
+## Tests
+
+```bash
+npm test           # vitest run --config vitest.config.mts
+npm run test:watch
+```
+
+Pure-logic only — no RN/Expo runtime. `src/lib/date.test.ts` covers the
+`@db.Date` UTC pinning (`formatDay`, `dayOfMonth`, `ymd`);
+`src/api/adapters.test.ts` mocks `./client` and asserts each `/v1` adapter
+hits the right path/verb and unwraps `{ data }`. Screen and navigation
+coverage is manual.
+
 ## Architecture
 
 ```

@@ -38,6 +38,19 @@ Default dev proxy forwards `/admin/v1/*` to `http://localhost:4000`. Override
 with `VITE_API_PROXY_TARGET=http://your-host:port npm run dev`, or set
 `VITE_API_BASE_URL` directly for a production build (`npm run build`).
 
+## Tests
+
+```bash
+npm test          # vitest run
+npm run test:watch
+```
+
+`src/lib/endpoints.test.js` pins the path/verb every endpoint helper builds
+(catalog CRUD, campaign-scoped id nesting, the `assumed.*` compat shims →
+real v3 routes). `src/config/resources.test.jsx` checks every resource entry
+is wired end to end (list/edit/delete handlers, form-field shapes). No
+network — `apiClient` is mocked.
+
 ## How roles map to the UI
 
 `AuthContext.roleToPersona()` collapses the backend's `roleId` values down
