@@ -11,7 +11,7 @@
  * AuthContext is responsible for writing/clearing it there on login/logout.
  */
 import axios, { AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { getItem } from './secureStore';
 import type { ApiErrorBody } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.campaignbuddy.app/v1';
@@ -29,7 +29,7 @@ apiClient.interceptors.request.use(async (config) => {
   // attach one anyway since the backend ignores auth on those routes, but
   // we skip it to avoid sending a stale token by accident.
   if (!config.url?.startsWith('/auth/')) {
-    const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const token = await getItem(ACCESS_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

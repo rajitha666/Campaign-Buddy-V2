@@ -6,7 +6,7 @@
  * AuthStack (Login) or MainTabs — see navigation/RootNavigator.tsx.
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem, deleteItem } from '@/api/secureStore';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/client';
 import * as authApi from '@/api/auth';
 import * as profileApi from '@/api/profile';
@@ -30,15 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+        const token = await getItem(ACCESS_TOKEN_KEY);
         if (token) {
           const me = await profileApi.getMe();
           setUser(me);
         }
       } catch {
         // Token expired/invalid — fall through to the login screen.
-        await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        await deleteItem(ACCESS_TOKEN_KEY);
+        await deleteItem(REFRESH_TOKEN_KEY);
       } finally {
         setIsLoading(false);
       }
@@ -47,9 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     const result = await authApi.login(username, password);
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, result.accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, result.refreshToken);
-    setUser(result.user);
+    await setItem(ACCESS_TOKEN_KEY, result.accessToken);
+    await setItem(REFRESH_TOKEN_KEY, result.refreshToken);
+    // The v3 backend's /auth/login returns only tokens, so pull the profile
+    // separately (same call the cold-start path uses).
+    setUser(result.user ?? (await profileApi.getMe()));
   }, []);
 
   const logout = useCallback(async () => {
@@ -59,8 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if the network call fails, still clear local session below —
       // we don't want a dead network to trap the user signed in.
     }
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await deleteItem(ACCESS_TOKEN_KEY);
+    await deleteItem(REFRESH_TOKEN_KEY);
     setUser(null);
   }, []);
 

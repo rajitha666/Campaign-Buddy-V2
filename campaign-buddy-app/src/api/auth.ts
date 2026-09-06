@@ -5,8 +5,8 @@ import type { User } from './types';
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
-  user: User;
+  expiresIn?: number; // not sent by the v3 backend
+  user?: User;        // v3 backend returns tokens only — fetch /me separately
 }
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
