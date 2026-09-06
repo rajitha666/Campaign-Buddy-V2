@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Campaign Buddy",
+    "slug": "campaign-buddy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F4F6F3",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.dyuro.campaignbuddy",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Campaign Buddy checks your location when you check in and while you're checked in for a shift, so the campaign owner can confirm attendance at the right outlet. Location is never tracked once you check out."
+      }
+    },
+    "android": {
+      "package": "com.dyuro.campaignbuddy",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+      "adaptiveIcon": {
+        "backgroundColor": "#12241F"
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Campaign Buddy checks your location when you check in and while you're checked in for a shift."
+        }
+      ]
+    ]
+  }
+}
