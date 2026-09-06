@@ -11,7 +11,7 @@ router.use(requireRole("adm"));
 
 router.get("/users", asyncHandler(async (_req, res) => {
   const rows = await prisma.user.findMany({ include: { role: true } });
-  res.json(okList(rows.map(({ passwordHash, ...u }) => u), rows.length));
+  res.json(okList(rows, rows.length)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
 router.post("/users", asyncHandler(async (req, res) => {
@@ -19,8 +19,7 @@ router.post("/users", asyncHandler(async (req, res) => {
   if (!password) throw validationError("password is required", "password");
   const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
   const created = await prisma.user.create({ data: { ...rest, passwordHash } });
-  const { passwordHash: _omit, ...safe } = created;
-  res.status(201).json(ok(safe));
+  res.status(201).json(ok(created)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
 router.patch("/users/:id", asyncHandler(async (req, res) => {
@@ -28,8 +27,7 @@ router.patch("/users/:id", asyncHandler(async (req, res) => {
   const data: any = { ...rest };
   if (password) data.passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
   const updated = await prisma.user.update({ where: { id: req.params.id }, data });
-  const { passwordHash: _omit, ...safe } = updated;
-  res.json(ok(safe));
+  res.json(ok(updated)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
 router.get("/users/:id/campaign-access", asyncHandler(async (req, res) => {

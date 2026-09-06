@@ -24,7 +24,7 @@ router.get(
       prisma.staff.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, include: { city: true } }),
       prisma.staff.count({ where }),
     ]);
-    res.json(okList(rows.map(({ passwordHash, ...s }) => s), total));
+    res.json(okList(rows, total)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
 
@@ -36,8 +36,7 @@ router.post(
     if (!password) throw validationError("password is required", "password");
     const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
     const created = await prisma.staff.create({ data: { ...rest, passwordHash } });
-    const { passwordHash: _omit, ...safe } = created;
-    res.status(201).json(ok(safe));
+    res.status(201).json(ok(created)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
 
@@ -49,8 +48,7 @@ router.patch(
     const data: any = { ...rest };
     if (password) data.passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
     const updated = await prisma.staff.update({ where: { id: req.params.id }, data });
-    const { passwordHash: _omit, ...safe } = updated;
-    res.json(ok(safe));
+    res.json(ok(updated)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
 

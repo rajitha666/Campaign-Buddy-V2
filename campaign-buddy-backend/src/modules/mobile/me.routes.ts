@@ -9,8 +9,7 @@ router.get(
   "/me",
   asyncHandler(async (req, res) => {
     const staff = await prisma.staff.findUniqueOrThrow({ where: { id: req.staff!.sub } });
-    const { passwordHash, ...safe } = staff;
-    res.json(ok(safe));
+    res.json(ok(staff)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
 
