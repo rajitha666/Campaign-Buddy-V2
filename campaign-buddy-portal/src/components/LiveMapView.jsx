@@ -14,8 +14,8 @@ export default function LiveMapView({ pings = [] }) {
   });
   return (
     <div className="map-shell">
-      {positioned.map((p) => (
-        <div key={p.userId || p.id} className="map-pin" style={{ left: `${p.left}%`, top: `${p.top}%` }}>
+      {positioned.map((p, i) => (
+        <div key={`${p.staffName || ''}-${p.outletName || ''}-${i}`} className="map-pin" style={{ left: `${p.left}%`, top: `${p.top}%` }}>
           <div className="pulse" /><div className="dot" />
           <div className="tag">{p.staffName || p.userId} · {p.outletName || p.outletId}</div>
         </div>

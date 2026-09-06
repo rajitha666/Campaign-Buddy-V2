@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { activations as activationsApi, outlets as outletsApi, staff as staffApi, assumed, salesRecords as salesRecordsApi } from '../lib/endpoints';
+import { activations as activationsApi, outlets as outletsApi, staff as staffApi, salesLookup, salesRecords as salesRecordsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -26,8 +26,8 @@ export default function UpdateSales() {
   async function loadSales() {
     setLoading(true); setError(null);
     try {
-      const res = await assumed.updateSalesLoad({ campaignId: currentCampaignId, ...form });
-      setRows(res?.data || []);
+      const res = await salesLookup.load(currentCampaignId, form);
+      setRows((res?.data || []).map((r) => ({ ...r, selected: false })));
     } catch (e) {
       setError(e.message || 'Could not load sales for this selection.');
     } finally {
@@ -99,7 +99,7 @@ export default function UpdateSales() {
         </div>
       ) : null}
       <div className="hint-note" style={{ marginTop: 12 }}>
-        Uses GET /sales/lookup — an assumed endpoint (not yet in the Unified Backend Spec) to load a day's SalesRecords for editing; saves via the documented PATCH /campaigns/{'{id}'}/sales/{'{salesRecordId}'}.
+        Reads GET /admin/v1/campaigns/{'{id}'}/sales/lookup (Backend Spec v3 §4.2); saves via PATCH /admin/v1/campaigns/{'{id}'}/sales/{'{salesRecordId}'}. Rows with an existing SalesRecord have an id and can be saved; days with no record yet return id:null.
       </div>
     </div>
   );

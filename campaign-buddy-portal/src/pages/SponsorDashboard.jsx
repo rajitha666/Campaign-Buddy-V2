@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { dailyStats as dailyStatsApi, reports as reportsApi, tracking as trackingApi } from '../lib/endpoints';
+import {
+  dailyStats as dailyStatsApi,
+  reports as reportsApi,
+  tracking as trackingApi,
+  salesRecords as salesApi,
+  attendance as attendanceApi,
+} from '../lib/endpoints';
 import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -22,21 +28,27 @@ export default function SponsorDashboard() {
     (async () => {
       setLoading(true); setError(null);
       try {
-        const [statsRes, liveRes, skuRes] = await Promise.all([
+        const [statsRes, liveRes, skuRes, salesRes, attRes] = await Promise.all([
           dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
           trackingApi.live(currentCampaignId),
           reportsApi.skuWise(currentCampaignId, { dateFrom: todayISO(-30), dateTo: todayISO() }),
+          salesApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
+          attendanceApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
         ]);
         if (cancelled) return;
-        const rows = statsRes?.data || [];
-        const outletIds = new Set(rows.map((r) => r.outletId).filter(Boolean));
-        setToday({
-          outletCount: outletIds.size,
-          totalSales: rows.reduce((s, r) => s + (r.totalSales || 0), 0),
-          footFall: rows.reduce((s, r) => s + (r.footFall || 0), 0),
-        });
+        const totals = statsRes?.data?.totals || { footFall: 0 };
+        const salesRows = salesRes?.data || [];
+        const attRows = attRes?.data || [];
+        const totalSales = salesRows.reduce(
+          (s, r) => s + (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice ?? 0),
+          0
+        );
+        const outletIds = new Set(
+          attRows.filter((a) => a.checkInAt).map((a) => a.activation?.outletId).filter(Boolean)
+        );
+        setToday({ outletCount: outletIds.size, totalSales, footFall: totals.footFall || 0 });
         setLive(liveRes?.data || []);
-        setTopProducts((skuRes?.data || []).slice(0, 3));
+        setTopProducts((skuRes?.data?.rows || []).slice(0, 3));
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load campaign overview.');
       } finally {
@@ -70,9 +82,9 @@ export default function SponsorDashboard() {
         <div className="panel-title">Top products (last 30 days)</div>
         <div style={{ marginTop: 8 }}>
           {topProducts.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : topProducts.map((p, i) => (
-            <div className="rank-row" key={p.itemId || i}>
+            <div className="rank-row" key={p.item || i}>
               <div className="rank-num">{i + 1}</div>
-              <div><div className="rank-name">{p.itemName}</div><div className="rank-meta">{p.brandName}</div></div>
+              <div><div className="rank-name">{p.item}</div><div className="rank-meta">LKR {(p.totalSales || 0).toLocaleString()}</div></div>
               <div className="rank-val">{p.itemCount} sold</div>
             </div>
           ))}

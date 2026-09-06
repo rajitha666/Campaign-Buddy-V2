@@ -45,8 +45,12 @@ export default function LiveMap() {
               <table className="data-table">
                 <thead><tr><th>Promoter</th><th>Outlet</th><th>Checked in since</th></tr></thead>
                 <tbody>
-                  {live.map((p) => (
-                    <tr key={p.userId || p.id}><td>{p.staffName || p.userId}</td><td>{p.outletName || p.outletId}</td><td>{p.checkInAt}</td></tr>
+                  {live.map((p, i) => (
+                    <tr key={`${p.staffName || ''}-${p.outletName || ''}-${i}`}>
+                      <td>{p.staffName || p.userId}</td>
+                      <td>{p.outletName || p.outletId}</td>
+                      <td>{p.checkedInSince ? new Date(p.checkedInSince).toLocaleString() : '—'}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>

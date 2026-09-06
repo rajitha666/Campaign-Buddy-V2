@@ -131,13 +131,31 @@ export const roles = {
   update: (id, body) => api.patch(`/roles/${id}`, body),
 };
 
-// ---------- ASSUMED — screens the admin spec documents but the unified
-// backend spec doesn't yet give an explicit route for. Wire these up once
-// the backend team confirms real paths; shapes are my best guess from the
-// feature spec (CampaignBuddy_AdminPanel_Feature_Specification.md).
+// ---------- Reconciled against Backend Spec v3 ----------
+// These screens exist in the Admin Panel feature spec. Backend Spec v3 DOES
+// implement the three below — campaign-scoped, folded in from the retired
+// contract doc (v3 §4.2). Paths corrected to match what the backend serves.
+export const supervisorRoutes = {
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/supervisor-routes`, { query }), // {supervisorId, outletId, dateFrom, dateTo}
+  create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-routes`, body),    // {supervisorStaffId, outletIds, dateFrom, dateTo}
+  update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-routes/${id}`, body),
+  remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-routes/${id}`),
+};
+export const salesLookup = {
+  // v3 §4.2: GET /campaigns/{id}/sales/lookup?staffId&outletId&activationId&date
+  load: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales/lookup`, { query }),
+};
+export const staffEvaluation = {
+  // v3 §4.2: GET /admin/v1/staff/{staffId}/evaluation?dateFrom&dateTo
+  get: (staffId, query) => api.get(`/staff/${staffId}/evaluation`, { query }),
+};
+
+// ---------- NOT in Backend Spec v3 — no endpoint exists yet ----------
+// Screens whose backend route is genuinely unimplemented. Calling these 404s;
+// the page shows its error state. Raise with the backend team before relying
+// on any of them (shapes are best-guess from the feature spec).
 export const assumed = {
   staffAbsence: (campaignId, date) => api.get(`/campaigns/${campaignId}/absence`, { query: { date } }),
-  staffProfileEvaluation: (staffId, query) => api.get(`/staff/${staffId}/evaluation`, { query }),
   supervisorTasks: {
     list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
     create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
@@ -145,15 +163,22 @@ export const assumed = {
     remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-tasks/${id}`),
   },
   outletAttendance: (campaignId, query) => api.get(`/campaigns/${campaignId}/outlet-attendance`, { query }),
-  assignedRoutes: {
-    list: (query) => api.get('/supervisor-routes', { query }),
-    assign: (body) => api.post('/supervisor-routes', body),
-  },
-  updateSalesLoad: (query) => api.get('/sales/lookup', { query }), // {campaignId, staffId, outletId, activationId, date}
   promoterTrackingHistory: (campaignId, query) => api.get(`/campaigns/${campaignId}/tracking/promoter-history`, { query }),
   supervisorTrackingHistory: (query) => api.get('/tracking/supervisor-history', { query }),
   clientScopedReports: {
-    skuWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sku-wise-client`, { query }),
-    brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise-client`, { query }),
+    // v3 §5.10: there is deliberately no separate client-scoped report route —
+    // the Sponsor calls the same /reports/* and gets grant-filtered results.
+    skuWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sku-wise`, { query }),
+    brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise`, { query }),
   },
 };
+
+// Back-compat: a couple of pages import `assumed.staffProfileEvaluation` /
+// `assumed.assignedRoutes` / `assumed.updateSalesLoad`. Keep them pointing at
+// the reconciled implementations so nothing breaks if a page isn't updated.
+assumed.staffProfileEvaluation = staffEvaluation.get;
+assumed.assignedRoutes = {
+  list: (campaignId, query) => supervisorRoutes.list(campaignId, query),
+  assign: (campaignId, body) => supervisorRoutes.create(campaignId, body),
+};
+assumed.updateSalesLoad = (campaignId, query) => salesLookup.load(campaignId, query);

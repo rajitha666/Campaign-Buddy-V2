@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { staff as staffApi, outlets as outletsApi, assumed } from '../lib/endpoints';
+import { staff as staffApi, outlets as outletsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -7,11 +8,13 @@ import ErrorState from '../components/ErrorState';
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function AssignRoutes() {
+  const { currentCampaignId } = useAuth();
   const { push } = useToast();
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [supervisors, setSupervisors] = useState([]);
   const [supervisorId, setSupervisorId] = useState('');
   const [routes, setRoutes] = useState([]);
+  const [outletNames, setOutletNames] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -21,6 +24,9 @@ export default function AssignRoutes() {
       setSupervisors(sup);
       if (sup[0]) setSupervisorId(sup[0].id);
     }).catch(() => {});
+    outletsApi.list().then((res) => {
+      setOutletNames(Object.fromEntries((res?.data || []).map((o) => [o.id, o.name])));
+    }).catch(() => {});
   }, []);
 
   const monthLabel = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
@@ -28,12 +34,12 @@ export default function AssignRoutes() {
   const leadBlanks = cursor.getDay();
 
   async function load() {
-    if (!supervisorId) return;
+    if (!supervisorId || !currentCampaignId) return;
     setLoading(true); setError(null);
     try {
       const from = new Date(cursor.getFullYear(), cursor.getMonth(), 1).toISOString().slice(0, 10);
       const to = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).toISOString().slice(0, 10);
-      const res = await assumed.assignedRoutes.list({ supervisorId, dateFrom: from, dateTo: to });
+      const res = await routesApi.list(currentCampaignId, { supervisorId, dateFrom: from, dateTo: to });
       setRoutes(res?.data || []);
     } catch (e) {
       setError(e.message || 'Could not load routes.');
@@ -41,13 +47,24 @@ export default function AssignRoutes() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [supervisorId, cursor]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [supervisorId, cursor, currentCampaignId]);
 
+  // A v3 SupervisorRoute is { outletIds: string[], dateFrom, dateTo } — a set of
+  // outlets over a date range. Expand each into per-day chips for the calendar.
   const routesByDay = useMemo(() => {
     const map = {};
-    routes.forEach((r) => { (map[r.date] = map[r.date] || []).push(r); });
+    for (const r of routes) {
+      const start = new Date(String(r.dateFrom).slice(0, 10));
+      const end = new Date(String(r.dateTo).slice(0, 10));
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = d.toISOString().slice(0, 10);
+        for (const outletId of r.outletIds || []) {
+          (map[iso] = map[iso] || []).push({ outletId, name: outletNames[outletId] || outletId });
+        }
+      }
+    }
     return map;
-  }, [routes]);
+  }, [routes, outletNames]);
 
   const cells = [];
   for (let i = 0; i < leadBlanks; i++) cells.push(<div className="cal-cell faded" key={`lead-${i}`} />);
@@ -57,7 +74,7 @@ export default function AssignRoutes() {
     cells.push(
       <div className="cal-cell" key={iso}>
         <div className="dnum">{d}</div>
-        {dayRoutes.map((r, i) => <span className={`cal-chip ${i % 2 ? 'mango' : ''}`} key={i}>{r.outletName || r.outletId}</span>)}
+        {dayRoutes.map((r, i) => <span className={`cal-chip ${i % 2 ? 'mango' : ''}`} key={i}>{r.name}</span>)}
       </div>
     );
   }
@@ -92,10 +109,10 @@ export default function AssignRoutes() {
         </div>
       )}
       <div className="hint-note" style={{ marginTop: 12 }}>
-        Uses GET/POST /supervisor-routes — an assumed endpoint (not yet in the Unified Backend Spec).
+        Reads GET /admin/v1/campaigns/{'{id}'}/supervisor-routes (Backend Spec v3 §4.2).
       </div>
     </div>
   );
 
-  function setAssignOpen() { push('Route assignment form is next on the build list — wire to POST /supervisor-routes.'); }
+  function setAssignOpen() { push('Route assignment form is next on the build list — wire to POST /admin/v1/campaigns/:id/supervisor-routes.'); }
 }
