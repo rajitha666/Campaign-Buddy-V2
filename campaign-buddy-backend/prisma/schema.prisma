@@ -292,6 +292,10 @@ model Campaign {
   startDate  DateTime
   endDate    DateTime
   status     CampaignStatus @default(upcoming)
+  // Set when an adm/usr sets `status` explicitly via PATCH. While true, the
+  // date-derived auto-sync (§5.8) leaves `status` alone; changing startDate or
+  // endDate clears it so the date rule takes over again.
+  statusManuallySet Boolean  @default(false)
   timezone   String         @default("Asia/Colombo")
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt

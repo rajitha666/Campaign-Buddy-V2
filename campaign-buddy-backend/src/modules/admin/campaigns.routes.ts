@@ -19,12 +19,18 @@ router.get(
         : { accessGrants: { some: { userId: req.user!.sub } } };
     const campaigns = await prisma.campaign.findMany({ where, include: { client: true } });
 
-    // Auto-sync status on read (§5.8) — only persist if it actually changed.
+    // Auto-sync status on read (§5.8) — skip campaigns with a manual override,
+    // only persist when the date-derived value actually changed.
     const synced = await Promise.all(
       campaigns.map(async (c) => {
+        if (c.statusManuallySet) return c;
         const computed = computeCampaignStatus(c.startDate, c.endDate);
         if (computed !== c.status) {
-          return prisma.campaign.update({ where: { id: c.id }, data: { status: computed } });
+          return prisma.campaign.update({
+            where: { id: c.id },
+            data: { status: computed },
+            include: { client: true },
+          });
         }
         return c;
       })
@@ -53,7 +59,10 @@ router.get(
     const campaign = await prisma.campaign.findUnique({ where: { id: req.params.campaignId }, include: { client: true } });
     if (!campaign) throw notFound("Campaign");
     const computed = computeCampaignStatus(campaign.startDate, campaign.endDate);
-    const synced = computed !== campaign.status ? await prisma.campaign.update({ where: { id: campaign.id }, data: { status: computed } }) : campaign;
+    const synced =
+      !campaign.statusManuallySet && computed !== campaign.status
+        ? await prisma.campaign.update({ where: { id: campaign.id }, data: { status: computed }, include: { client: true } })
+        : campaign;
     res.json(ok(synced));
   })
 );
@@ -63,9 +72,16 @@ router.patch(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    // A manual `status` in the body is a deliberate override (§5.8) — otherwise
-    // dates alone drive status via the auto-sync in the GET handlers above.
-    const updated = await prisma.campaign.update({ where: { id: req.params.campaignId }, data: req.body });
+    // A manual `status` in the body is a deliberate override (§5.8) — it sticks
+    // until the dates change, at which point the date-derived rule resumes.
+    const body = req.body as Record<string, unknown>;
+    const data: Record<string, unknown> = { ...body };
+    if (body.status !== undefined) {
+      data.statusManuallySet = true;
+    } else if (body.startDate !== undefined || body.endDate !== undefined) {
+      data.statusManuallySet = false;
+    }
+    const updated = await prisma.campaign.update({ where: { id: req.params.campaignId }, data });
     res.json(ok(updated));
   })
 );
