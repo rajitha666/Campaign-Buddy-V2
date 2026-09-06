@@ -66,9 +66,11 @@ router.get(
       include: { salesRecords: { where: { date: today } }, campaignItem: true },
     });
     const soldAcrossAllOutletsToday = activationItems.reduce((sum, ai) => sum + (ai.salesRecords[0]?.soldToday ?? 0), 0);
-    const addedToCampaignAt = activationItems.length
+    const earliestAdded = activationItems.length
       ? activationItems.map((ai) => ai.campaignItem.addedAt).sort((a, b) => a.getTime() - b.getTime())[0]
       : null;
+    // spec §2.9 — `addedToCampaignAt` is a date, not a datetime
+    const addedToCampaignAt = earliestAdded ? earliestAdded.toISOString().slice(0, 10) : null;
 
     // CampaignBuddy_API_Spec.md §6.4 — ProductDetails.
     res.json(ok({

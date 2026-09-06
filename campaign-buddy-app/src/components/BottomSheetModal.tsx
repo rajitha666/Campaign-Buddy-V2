@@ -43,6 +43,10 @@ export function BottomSheetModal({ visible, onClose, children }: BottomSheetModa
 
 const styles = StyleSheet.create({
   scrim: {
+    // absoluteFill rather than flex:1 — on RN Web the Modal's host node has no
+    // intrinsic height, so a flex child collapses and the sheet lands below the
+    // fold. Filling the viewport explicitly keeps it pinned to the bottom.
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
     backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
