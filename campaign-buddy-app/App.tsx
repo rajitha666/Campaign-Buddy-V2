@@ -14,6 +14,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/context/AuthContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { colors } from '@/theme';
@@ -50,13 +51,15 @@ export default function App() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface }} onLayout={onLayoutRootView}>
-      <StatusBar style="light" />
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <RootNavigator />
-        </AuthProvider>
-      </QueryClientProvider>
-    </View>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <View style={{ flex: 1, backgroundColor: colors.surface }} onLayout={onLayoutRootView}>
+        <StatusBar style="light" />
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </QueryClientProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }
