@@ -6,6 +6,7 @@ import {
   tracking as trackingApi,
   salesRecords as salesApi,
   attendance as attendanceApi,
+  activations as activationsApi,
 } from '../lib/endpoints';
 import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
@@ -20,6 +21,7 @@ export default function SponsorDashboard() {
   const [error, setError] = useState(null);
   const [today, setToday] = useState({ outletCount: 0, totalSales: 0, footFall: 0 });
   const [live, setLive] = useState([]);
+  const [outlets, setOutlets] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
 
   useEffect(() => {
@@ -28,14 +30,18 @@ export default function SponsorDashboard() {
     (async () => {
       setLoading(true); setError(null);
       try {
-        const [statsRes, liveRes, skuRes, salesRes, attRes] = await Promise.all([
+        const [statsRes, liveRes, skuRes, salesRes, attRes, actRes] = await Promise.all([
           dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
           trackingApi.live(currentCampaignId),
           reportsApi.skuWise(currentCampaignId, { dateFrom: todayISO(-30), dateTo: todayISO() }),
           salesApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
           attendanceApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
+          activationsApi.list(currentCampaignId).catch(() => null),
         ]);
         if (cancelled) return;
+        const outletMap = new Map();
+        for (const a of actRes?.data || []) { if (a.outlet && !outletMap.has(a.outlet.id)) outletMap.set(a.outlet.id, a.outlet); }
+        setOutlets([...outletMap.values()]);
         const totals = statsRes?.data?.totals || { footFall: 0 };
         const salesRows = salesRes?.data || [];
         const attRows = attRes?.data || [];
@@ -76,7 +82,7 @@ export default function SponsorDashboard() {
       <div className="panel" style={{ marginBottom: 16 }}>
         <div className="panel-title">Seller live locations</div>
         <div className="panel-sub">Foreground-tracked, updates while a promoter is checked in.</div>
-        <div style={{ marginTop: 14 }}><LiveMapView pings={live} /></div>
+        <div style={{ marginTop: 14 }}><LiveMapView pings={live} outlets={outlets} /></div>
       </div>
       <div className="panel">
         <div className="panel-title">Top products (last 30 days)</div>

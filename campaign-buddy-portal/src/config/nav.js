@@ -7,7 +7,7 @@ export const NAV = [
   ]},
   { section: 'Client & Catalog', roles: ['admin'], items: [
     { path: '/clients', label: 'Clients', icon: 'clients', roles: ['admin'] },
-    { label: 'Items', icon: 'items', roles: ['admin'], children: [
+    { label: 'Products', icon: 'items', roles: ['admin'], children: [
       { path: '/items', label: 'List' },
       { path: '/brands', label: 'Brands' },
       { path: '/reorder', label: 'Reorder' },

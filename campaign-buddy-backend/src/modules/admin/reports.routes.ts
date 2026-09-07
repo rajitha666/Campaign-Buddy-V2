@@ -130,18 +130,24 @@ router.get(
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
     const outlets = outletScope(req);
+    const brandId = req.query.brandId as string | undefined;
     const day = dayDate(req.query.date as string | undefined);
     const records = await prisma.salesRecord.findMany({
       where: {
         date: day,
         reorderFlag: true,
-        activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
+        activationItem: {
+          ...(brandId ? { campaignItem: { item: { brandId } } } : {}),
+          activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+        },
       },
-      include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { outlet: true } } } } },
+      include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } }, activation: { include: { outlet: true } } } } },
     });
     const rows = records.map((r) => ({
       id: r.id,
       itemName: r.activationItem.campaignItem.item.name,
+      brandId: r.activationItem.campaignItem.item.brandId,
+      brandName: r.activationItem.campaignItem.item.brand.name,
       outletName: r.activationItem.activation.outlet.name,
       activationName: r.activationItem.activation.name,
       date: r.date,

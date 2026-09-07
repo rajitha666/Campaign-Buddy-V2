@@ -7,6 +7,7 @@ export default function FilterBar({ filters, values, onChange, onLoad }) {
           <label>{f.label}</label>
           {f.type === 'select' ? (
             <select value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)}>
+              {f.allLabel ? <option value="">{f.allLabel}</option> : null}
               {(f.options || []).map((o) => (
                 <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
               ))}

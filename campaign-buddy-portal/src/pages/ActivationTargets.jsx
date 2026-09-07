@@ -41,7 +41,7 @@ export default function ActivationTargets() {
   const fields = [
     { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
     { key: 'repeat', label: 'Repeat', type: 'radio', options: [{ value: false, label: 'Disabled' }, { value: true, label: 'Enabled' }] },
-    { key: 'targetItemId', label: 'Target Item', type: 'select', required: true, options: itemOptions },
+    { key: 'targetItemId', label: 'Target Product', type: 'select', required: true, options: itemOptions },
     { key: 'targetValue', label: 'Target', type: 'text', required: true, placeholder: 'Quantity or LKR, per the activation\'s Target Unit' },
   ];
 
@@ -71,7 +71,7 @@ export default function ActivationTargets() {
           ) : (
             <div className="table-scroll">
               <table className="data-table">
-                <thead><tr><th>From</th><th>To</th><th>Item</th><th>Target</th><th>Repeat</th></tr></thead>
+                <thead><tr><th>From</th><th>To</th><th>Product</th><th>Target</th><th>Repeat</th></tr></thead>
                 <tbody>
                   {targets.map((t) => (
                     <tr key={t.id}>

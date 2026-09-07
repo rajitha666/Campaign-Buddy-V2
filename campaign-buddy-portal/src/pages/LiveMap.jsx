@@ -1,19 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { tracking as trackingApi } from '../lib/endpoints';
+import { tracking as trackingApi, activations as activationsApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import LiveMapView from '../components/LiveMapView';
 
+function uniqueOutlets(activationRows) {
+  const map = new Map();
+  for (const a of activationRows || []) {
+    if (a.outlet && !map.has(a.outlet.id)) map.set(a.outlet.id, a.outlet);
+  }
+  return [...map.values()];
+}
+
 export default function LiveMap() {
   const { currentCampaignId, currentCampaign } = useAuth();
   const [live, setLive] = useState([]);
+  const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!currentCampaignId) { setLoading(false); return; }
     let cancelled = false;
+    activationsApi.list(currentCampaignId)
+      .then((res) => { if (!cancelled) setOutlets(uniqueOutlets(res?.data)); })
+      .catch(() => {});
     async function load() {
       try {
         const res = await trackingApi.live(currentCampaignId);
@@ -38,7 +50,7 @@ export default function LiveMap() {
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} /> : (
         <>
-          <div className="panel"><LiveMapView pings={live} /></div>
+          <div className="panel"><LiveMapView pings={live} outlets={outlets} height={420} /></div>
           <div className="table-card" style={{ marginTop: 16 }}>
             <div className="table-toolbar"><div className="entries-select">Currently checked in ({live.length})</div></div>
             <div className="table-scroll">
