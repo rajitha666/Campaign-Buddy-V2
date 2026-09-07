@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-campaign_buddy}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./campaign-buddy-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
+      PORT: 4000
+      STAFF_JWT_SECRET: ${STAFF_JWT_SECRET:-change-me-staff-secret}
+      STAFF_JWT_EXPIRES_IN: ${STAFF_JWT_EXPIRES_IN:-86400}
+      STAFF_REFRESH_TOKEN_TTL_DAYS: ${STAFF_REFRESH_TOKEN_TTL_DAYS:-30}
+      USER_JWT_SECRET: ${USER_JWT_SECRET:-change-me-user-secret}
+      USER_JWT_EXPIRES_IN: ${USER_JWT_EXPIRES_IN:-8h}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  portal:
+    build:
+      context: ./campaign-buddy-portal
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
+    depends_on:
+      - portal
+      - backend
+    profiles:
+      - production
+
+volumes:
+  postgres_data:

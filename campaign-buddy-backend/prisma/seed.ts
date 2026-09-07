@@ -23,60 +23,98 @@ async function main() {
     update: {},
   });
 
-  // ---- Sample catalog ----
-  const client = await prisma.client.create({
-    data: { companyName: "Prisha Naturals (Pvt) Ltd", clientName: "Prisha Naturals", contactNumber: "+94 11 234 5678", email: "contact@prishanaturals.lk" },
-  });
-  const brand = await prisma.brand.create({ data: { name: "Sulfate Free Shampoo Range", clientId: client.id } });
-  const item = await prisma.item.create({
-    data: { brandId: brand.id, sku: "TT-320", name: "Tea Tree Shampoo 320ml", unitPrice: 3200, reorderLevel: 5 },
+  // ---- Sample catalog (idempotent) ----
+  let client = await prisma.client.findFirst({ where: { companyName: "Prisha Naturals (Pvt) Ltd" } });
+  if (!client) {
+    client = await prisma.client.create({
+      data: { companyName: "Prisha Naturals (Pvt) Ltd", clientName: "Prisha Naturals", contactNumber: "+94 11 234 5678", email: "contact@prishanaturals.lk" },
+    });
+  }
+
+  let brand = await prisma.brand.findFirst({ where: { name: "Sulfate Free Shampoo Range", clientId: client.id } });
+  if (!brand) {
+    brand = await prisma.brand.create({ data: { name: "Sulfate Free Shampoo Range", clientId: client.id } });
+  }
+
+  let item = await prisma.item.findFirst({ where: { sku: "TT-320" } });
+  if (!item) {
+    item = await prisma.item.create({
+      data: { brandId: brand.id, sku: "TT-320", name: "Tea Tree Shampoo 320ml", unitPrice: 3200, reorderLevel: 5 },
+    });
+  }
+
+  let city = await prisma.city.findFirst({ where: { name: "Nawala", province: "Western" } });
+  if (!city) {
+    city = await prisma.city.create({ data: { name: "Nawala", province: "Western", district: "Colombo" } });
+  }
+
+  let outlet = await prisma.outlet.findFirst({ where: { outletNo: "OUT-0001" } });
+  if (!outlet) {
+    outlet = await prisma.outlet.create({
+      data: { outletNo: "OUT-0001", name: "Nawala Retail Outlet", cityId: city.id, latitude: 6.8845, longitude: 79.8887 },
+    });
+  }
+
+  let campaign = await prisma.campaign.findFirst({ where: { campaignNo: "CMP-0001" } });
+  if (!campaign) {
+    campaign = await prisma.campaign.create({
+      data: {
+        campaignNo: "CMP-0001",
+        name: "Sktest Activation",
+        clientId: client.id,
+        startDate: new Date(Date.now() - 5 * 86400000),
+        endDate: new Date(Date.now() + 25 * 86400000),
+      },
+    });
+  }
+
+  await prisma.campaignAccessGrant.upsert({
+    where: { userId_campaignId: { userId: adminUser.id, campaignId: campaign.id } },
+    create: { userId: adminUser.id, campaignId: campaign.id, scopeType: "all", outletIds: [] },
+    update: {},
   });
 
-  const city = await prisma.city.create({ data: { name: "Nawala", province: "Western", district: "Colombo" } });
-  const outlet = await prisma.outlet.create({
-    data: { outletNo: "OUT-0001", name: "Nawala Retail Outlet", cityId: city.id, latitude: 6.8845, longitude: 79.8887 },
-  });
-
-  const campaign = await prisma.campaign.create({
-    data: {
-      campaignNo: "CMP-0001",
-      name: "Sktest Activation",
-      clientId: client.id,
-      startDate: new Date(Date.now() - 5 * 86400000),
-      endDate: new Date(Date.now() + 25 * 86400000),
-    },
-  });
-  await prisma.campaignAccessGrant.create({
-    data: { userId: adminUser.id, campaignId: campaign.id, scopeType: "all", outletIds: [] },
-  });
-  const campaignItem = await prisma.campaignItem.create({ data: { campaignId: campaign.id, itemId: item.id } });
+  let campaignItem = await prisma.campaignItem.findFirst({ where: { campaignId: campaign.id, itemId: item.id } });
+  if (!campaignItem) {
+    campaignItem = await prisma.campaignItem.create({ data: { campaignId: campaign.id, itemId: item.id } });
+  }
 
   // ---- Sample mobile Staff login ----
   const staffPasswordHash = await bcrypt.hash("Field123!", 10);
-  const staff = await prisma.staff.create({
-    data: {
-      employeeId: "EMP-0001",
-      fullName: "Sanduni Kumari",
-      displayName: "Sanduni",
-      userType: "promoter",
-      mobileUsername: "sktest",
-      passwordHash: staffPasswordHash,
-      cityId: city.id,
-      status: "active",
-    },
-  });
+  let staff = await prisma.staff.findFirst({ where: { employeeId: "EMP-0001" } });
+  if (!staff) {
+    staff = await prisma.staff.create({
+      data: {
+        employeeId: "EMP-0001",
+        fullName: "Sanduni Kumari",
+        displayName: "Sanduni",
+        userType: "promoter",
+        mobileUsername: "sktest",
+        passwordHash: staffPasswordHash,
+        cityId: city.id,
+        status: "active",
+      },
+    });
+  }
 
-  const activation = await prisma.activation.create({
-    data: {
-      name: "Nawala Weekday Push",
-      campaignId: campaign.id,
-      outletId: outlet.id,
-      staffId: staff.id,
-      dateFrom: campaign.startDate,
-      dateTo: campaign.endDate,
-    },
-  });
-  await prisma.activationItem.create({ data: { activationId: activation.id, campaignItemId: campaignItem.id } });
+  let activation = await prisma.activation.findFirst({ where: { campaignId: campaign.id, outletId: outlet.id, staffId: staff.id } });
+  if (!activation) {
+    activation = await prisma.activation.create({
+      data: {
+        name: "Nawala Weekday Push",
+        campaignId: campaign.id,
+        outletId: outlet.id,
+        staffId: staff.id,
+        dateFrom: campaign.startDate,
+        dateTo: campaign.endDate,
+      },
+    });
+  }
+
+  const existingActivationItem = await prisma.activationItem.findFirst({ where: { activationId: activation.id, campaignItemId: campaignItem.id } });
+  if (!existingActivationItem) {
+    await prisma.activationItem.create({ data: { activationId: activation.id, campaignItemId: campaignItem.id } });
+  }
 
   // Note: no SupervisorRoute seed row — new entity in v3, left empty by default.
 
