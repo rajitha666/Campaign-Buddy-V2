@@ -20,6 +20,18 @@ Server starts on `http://localhost:4000`. `GET /health` is a quick liveness chec
 - **Admin portal:** `admin` / `ChangeMe123!`
 - **Mobile app:** `sktest` / `Field123!`
 
+## Tests
+```bash
+cp .env.test.example .env.test    # must point DATABASE_URL at a *_test database
+npm test                          # vitest run  (19 integration tests, supertest)
+npm run test:watch
+```
+`test/setup.ts` refuses to run unless `DATABASE_URL` ends in `_test` — the suite
+`TRUNCATE`s every table between files. Covers the load-bearing logic, not just
+2xx: geofence soft-flag, one-open-shift lock, supervisor auto-grant, status
+manual-override persistence, RBAC 403s, `passwordHash` scrub, zod 400s,
+FK-delete 409s.
+
 ## What's implemented
 Every endpoint in Backend Spec v3 §4, including the three items new in v3:
 - `GET /admin/v1/staff/:staffId/evaluation` — Staff Profiles evaluation view
@@ -60,18 +72,24 @@ reports. These were added and every portal screen now has a real route:
   `itemName`/`brandName` fields and accept `outletId` + `dateFrom`/`dateTo`.
 
 All computed reports follow §5.2 (derive at read time, never store).
-`errorHandler` now maps Prisma `P2025`/`P2002`/`P2003` and validation errors to
+`errorHandler` maps Prisma `P2025`/`P2002`/`P2003` and validation errors to
 proper 4xx codes. `utils/dates.ts` centralises UTC-midnight parsing for the
 `@db.Date` columns.
+
+## Runtime request validation
+
+Every write route (`/v1/*` and `/admin/v1/*`) runs its body/query/params through a
+zod schema before the handler — `src/middleware/validate.ts` + `src/schemas.ts`
+(~40 schemas). Bad input returns `400 VALIDATION_ERROR` with the offending
+`field`. Date-only strings (`YYYY-MM-DD`) are coerced to `Date` for Prisma
+`DateTime` columns; `staff` / `activation` writes additionally whitelist columns.
 
 ## What's still deliberately NOT implemented (see Spec v3 §8)
 - Staff password reset delivery (stub, generic response only)
 - User (portal) refresh-token flow (re-login required on expiry, by design)
 - Configurable geofence radius / grace period per campaign (both are fixed defaults for now)
 - Staff HR photo upload / the ~30-field HR form (schema comment: out of scope for v3)
-- Automated test suite
-- Request-body schema validation library (zod etc.) — writes are field-whitelisted
-  where it matters, but there is still no general runtime validation layer
+- `SupervisorTask` is configurable via the portal, but the mobile app doesn't consume it yet
 
 ## Project layout
 ```
@@ -85,6 +103,8 @@ src/
     staffAuth.ts / userAuth.ts   the two independent JWT verifiers
     campaignAccess.ts           requireCampaignAccess + outletIdsAllowed/assertOutletAllowed
     errorHandler.ts             formats every ApiError per the spec's response envelope
+    validate.ts                zod body/query/params middleware
+  schemas.ts                   ~40 zod schemas for every write route
   utils/
     apiResponse.ts              ApiError, ok()/okList() envelope helpers (+ passwordHash scrub)
     geo.ts                      haversine distance (geofence soft-flag calc only)
@@ -95,10 +115,10 @@ src/
   modules/
     mobile/          one file per endpoint group — auth, attendance, location, stats, products, sales-summary, time-off, performance
     admin/           one file per endpoint group — auth, catalog, staff, campaigns, activations, operations, reports, rbac
+test/              vitest + supertest integration suite (setup.ts, helpers.ts, *.test.ts)
 ```
 
 ## Known gaps in this scaffold (worth hardening before production)
-- No request-body schema validation library wired in (e.g. zod) — inputs are trusted/typed at the TS layer only, not runtime-validated. Add before exposing publicly.
-- No automated tests (matches Spec v3 §8 — flagged there too).
 - No rate limiting / helmet / request logging middleware.
 - Prisma `include` depth in a few report/list endpoints is a straightforward first pass — profile and add indexes/pagination limits under real data volume.
+- `SalesSummary` / `DailyStats` rollups recompute on every read (§5.2) — fine now, revisit with caching/materialized views if a campaign's per-day item count grows very large.

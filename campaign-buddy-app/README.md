@@ -10,8 +10,9 @@ Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 
 - **npm install**: use `npm install --ignore-scripts` (npm 11 + `react-native-screens@3.31.0`'s `prepare` script don't get along); native builds aren't needed for the web preview.
 - **Fonts**: now loaded from `@expo-google-fonts/poppins` (JS-bundled TTFs) — no manual `assets/fonts/*.ttf` needed. `assets/fonts/README.md` is stale.
-- **Auth**: `AuthContext` fetches `/me` after login because the v3 `/auth/login` returns tokens only.
+- **Auth**: `AuthContext` fetches `/me` after login because the v3 `/auth/login` returns tokens only. Access-token refresh is wired into the axios response interceptor (`src/api/client.ts` — `registerAuthFailureHandler`, single in-flight refresh, retry-once); a failed refresh clears the session.
 - **Web**: `expo start --web` works. `expo-secure-store` has no web implementation, so token storage is split — `secureStore.ts` (native Keychain/Keystore) / `secureStore.web.ts` (localStorage). The `BottomSheetModal` (product details / time-off form / checkout confirm) renders but its layout on web is imperfect — it's fine on a device, or swap in `@gorhom/bottom-sheet` as noted below.
+- **Scaffold complete**: date rendering pinned to UTC via `src/lib/date.ts`; `otherInterestedCustomers` threaded through the products list → `ProductUpdateScreen`; real date pickers (`@react-native-community/datetimepicker`) in the time-off sheet; `ForgotPasswordScreen` wired into the auth stack. No `TODO`/`FIXME` markers remain.
 - Verified on web against the live backend: Login, Home, Sales, Attendance (incl. check-out), Performance, Time off, Profile, Update Stock.
 
 ## Setup
@@ -110,21 +111,19 @@ an endpoint's response shape.
 
 ## Known gaps
 
-1. **Date display.** Several screens render `@db.Date` values (leave-request
-   dates, attendance-history rows) with a raw/short format — the backend sends
-   `…T00:00:00.000Z` and the RN formatters treat it as local, so a negative-UTC
-   device shows the previous day / a day-only string. Format these in UTC.
-2. **`otherInterestedCustomers` isn't in the products list endpoint** —
-   `ProductUpdateScreen` defaults it to `0` on entry. Add it to the list
-   response or a `GET /products/{cpaId}/stock` if the mount value matters.
-3. **Date pickers are placeholders.** `TimeOffRequestSheet` shows fixed
-   from/to dates — wire up `@react-native-community/datetimepicker`.
-4. **Forgot-password has no screen.** `authApi.forgotPassword()` is ready.
-5. **Token refresh isn't wired into the axios interceptor.** `authApi.ts` has
-   `refreshAccessToken()`; add a 401 response interceptor in `client.ts`. (The
-   backend's `/v1/auth/refresh` returns `{ accessToken }` only.)
-6. **`BottomSheetModal` on web** — layout is imperfect; native is fine, or swap
+1. **`BottomSheetModal` on web** — layout is imperfect; native is fine, or swap
    in `@gorhom/bottom-sheet` (contained change, same call signature).
+2. **No offline write queue.** Check-in, stock saves and sales-summary confirm
+   need a live connection — there's no local queue / replay. Reads are cached
+   (TanStack Query) and refetch on reconnect.
+3. **Native device / emulator run is untried on the current dev machine** — only
+   the Expo web preview has been exercised end to end. The native check-in path
+   (real GPS) is covered by the backend's integration tests.
+4. **Forgot-password delivery is a backend stub.** The screen and
+   `authApi.forgotPassword()` work, but the backend sends no email/SMS
+   (`docs/backend-spec.md` §8).
+5. `assets/fonts/README.md` is stale — fonts now come from
+   `@expo-google-fonts/poppins`, no manual TTF files needed.
 
 ## Design system discipline
 
