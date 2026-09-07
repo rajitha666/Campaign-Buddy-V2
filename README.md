@@ -82,6 +82,7 @@ cd campaign-buddy-app     && npm test    # vitest unit
 | File | What it is |
 |---|---|
 | [`docs/product-documentation.md`](docs/product-documentation.md) | Every feature of CB Office and CB Mobile, in plain language |
+| [`docs/technical-requirements.md`](docs/technical-requirements.md) | What each app needs to build and run (Node, PostgreSQL, Expo, ports, env vars) |
 | [`docs/backend-spec.md`](docs/backend-spec.md) | **Canonical** backend specification (data model, endpoints, business rules) |
 | [`docs/admin-panel-spec.md`](docs/admin-panel-spec.md) | CB Office feature & field-level specification |
 | [`docs/api-spec.md`](docs/api-spec.md) | Mobile `/v1` API contract (what CB Mobile is built to) |
