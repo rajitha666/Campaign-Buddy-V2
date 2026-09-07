@@ -42,9 +42,7 @@ export default function Login() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <div className="hint-note" style={{ marginTop: 16, textAlign: 'center' }}>
-          Calls <code>POST /admin/v1/auth/login</code> on your backend.
-        </div>
+        <div className="login-credit">Dyuro Technologies</div>
       </div>
     </div>
   );

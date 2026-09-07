@@ -3,7 +3,7 @@ import { NAV } from '../config/nav';
 import { ICONS } from './Icons';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed = false, onToggleCollapse }) {
   const { persona } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,10 +19,23 @@ export default function Sidebar() {
             <path d="M14 8H20V14" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <div>
+        <div className="brand-text">
           <div className="brand-name h-display">Campaign Buddy</div>
           <div className="brand-role-pill">{roleLabel}</div>
         </div>
+        {onToggleCollapse ? (
+          <button
+            type="button"
+            className="nav-collapse-btn"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d={collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : null}
       </div>
       <div className="nav-scroll">
         {NAV.map((sec, si) => {
@@ -47,11 +60,12 @@ function NavEntry({ item, pathname, navigate }) {
   if (item.children) {
     const activeParent = item.children.some((c) => c.path === pathname);
     return (
-      <div>
+      <div className="nav-group">
         <div className={`nav-item ${activeParent ? 'active' : ''}`}>
           {ICONS[item.icon]}<span>{item.label}</span>
         </div>
         <div className="nav-children">
+          <div className="nav-flyout-title">{item.label}</div>
           {item.children.map((c) => (
             <div
               key={c.path}
@@ -66,8 +80,15 @@ function NavEntry({ item, pathname, navigate }) {
     );
   }
   return (
-    <div className={`nav-item ${item.path === pathname ? 'active' : ''}`} onClick={() => navigate(item.path)}>
-      {ICONS[item.icon]}<span>{item.label}</span>
+    <div className="nav-group">
+      <div
+        className={`nav-item ${item.path === pathname ? 'active' : ''}`}
+        onClick={() => navigate(item.path)}
+        title={item.label}
+      >
+        {ICONS[item.icon]}<span>{item.label}</span>
+      </div>
+      <div className="nav-flyout-label">{item.label}</div>
     </div>
   );
 }

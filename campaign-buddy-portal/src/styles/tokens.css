@@ -4,7 +4,9 @@
   --mango:#FF7A33; --mango-dark:#E8641F; --mango-tint:#FFE6D6;
   --success:#1F9D55; --success-tint:#E4F5EA; --pending:#C77F00; --pending-tint:#FBF0DA;
   --alert:#D8483F; --alert-tint:#FBE6E4; --info:#2673B0; --info-tint:#E3F0FA;
-  --sidebar-w:250px; --topbar-h:64px;
+  --sidebar-w:250px; --sidebar-w-collapsed:66px; --topbar-h:64px;
+  --scroll-thumb:#CBD4CD; --scroll-thumb-hover:#AEBAB2;
+  --scroll-thumb-dark:#33514A; --scroll-thumb-dark-hover:#456259;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 html,body,#root { height:100%; }
