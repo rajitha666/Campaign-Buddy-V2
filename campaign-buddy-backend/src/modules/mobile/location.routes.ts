@@ -16,7 +16,7 @@ router.post(
       longitude: number;
       accuracyMeters?: number;
       capturedAt?: string;
-      timestamp?: string; // CampaignBuddy_API_Spec.md §5 names it `timestamp`
+      timestamp?: string; // docs/api-spec.md §5 names it `timestamp`
       appState?: "foreground" | "background";
       batteryPercent?: number;
     };

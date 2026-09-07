@@ -1,7 +1,7 @@
 # Campaign Buddy — Mobile App
 
 React Native (Expo) implementation of the Campaign Buddy field-rep app, built
-from the interactive HTML prototype and `CampaignBuddy_API_Spec.md`. This
+from the interactive HTML prototype and `docs/api-spec.md`. This
 README is the handoff doc — read it before touching code.
 
 ## Status
@@ -42,7 +42,7 @@ coverage is manual.
 App.tsx                     — entry point: fonts, QueryClientProvider, AuthProvider
 src/
   theme/                     — colors, typography, spacing tokens (design system, do not bypass)
-  api/                       — one file per backend resource, matches CampaignBuddy_API_Spec.md 1:1
+  api/                       — one file per backend resource, matches docs/api-spec.md 1:1
     types.ts                 — TypeScript models mirroring the spec's data models exactly
     client.ts                — shared axios instance + auth token attachment
   context/

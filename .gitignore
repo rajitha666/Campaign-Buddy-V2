@@ -1,0 +1,12 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Local editor / tooling config
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Archived source snapshots — git history is the archive; don't commit zips
+*.zip
+/Archive/

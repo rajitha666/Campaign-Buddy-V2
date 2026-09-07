@@ -16,7 +16,7 @@ function startOfDay(d: Date) {
   return x;
 }
 
-// CampaignBuddy_API_Spec.md §2.5 AttendanceRecord — the app expects userId /
+// docs/api-spec.md §2.5 AttendanceRecord — the app expects userId /
 // assignmentId, which are activation.staffId / activation.id in v3.
 function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
   return {
@@ -54,7 +54,7 @@ router.get(
     });
     if (!record) return res.json(ok(empty));
 
-    // CampaignBuddy_API_Spec.md §5 GET /attendance/today — the slim view.
+    // docs/api-spec.md §5 GET /attendance/today — the slim view.
     const checkedIn = !!record.checkInAt && !record.checkOutAt;
     const end = record.checkOutAt ?? new Date();
     const shiftDurationSeconds = record.checkInAt

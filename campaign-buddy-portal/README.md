@@ -13,7 +13,7 @@ state until your backend is reachable.
 ## Changelog
 
 - **Seller Live Locations is now visible to all three roles** (Admin, Supervisor, Sponsor), not just Sponsor — same `/tracking/live` page and endpoint, just added to the Admin's Tracking submenu and as a standalone item for Supervisor. No API change; this was a nav-visibility-only gap.
-- **Staff profile photo upload is now a separate endpoint.** `POST /staff` and `PATCH /staff/{id}` stay plain JSON — the picked file is uploaded via a new `POST /staff/{id}/photo` (`multipart/form-data`) call, made automatically right after create/update only if the admin actually picked a new file. See `CampaignBuddy_Full_Backend_Contract.md` §4.9.1 / §10.10 for the backend side.
+- **Staff profile photo upload is now a separate endpoint.** `POST /staff` and `PATCH /staff/{id}` stay plain JSON — the picked file is uploaded via a new `POST /staff/{id}/photo` (`multipart/form-data`) call, made automatically right after create/update only if the admin actually picked a new file. See `docs/archive/full-backend-contract.md` §4.9.1 / §10.10 for the backend side.
 - **Staff form completed** (full ~30-field HR record) and a **CRUD-wiring
   audit fixed 8 resources** where an Edit or Delete button was rendered but
   had no `updateItem`/`deleteItem` function behind it — meaning Edit would
@@ -21,7 +21,7 @@ state until your backend is reachable.
   would have done nothing. Fixed for: `staff`, `brands`, `items`, `outlets`,
   `distributors`, `cities`, `campaigns` (delete), `supervisorTasks`,
   `roles` (update). Matching `PATCH`/`DELETE` endpoints were added to
-  `lib/endpoints.js` for all of these — see `CampaignBuddy_Full_Backend_Contract.md`
+  `lib/endpoints.js` for all of these — see `docs/archive/full-backend-contract.md`
   if any of those paths need reconciling with what the backend actually
   implements.
 

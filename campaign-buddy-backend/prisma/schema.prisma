@@ -2,10 +2,10 @@
 // Campaign Buddy — Unified Backend Schema (v3)
 // Serves: Mobile app (Staff), Admin/Supervisor/Sponsor web portal (User)
 // Canonical stack: Node.js / Express / PostgreSQL / Prisma — confirmed v3.
-// See CampaignBuddy_Backend_Spec_v3.md for the design rationale and
-// CampaignBuddy_Changelog_v3.md for what changed from the prior schema and why.
+// See docs/backend-spec.md for the design rationale and
+// docs/changelog.md for what changed from the prior schema and why.
 //
-// RETIRED: CampaignBuddy_Full_Backend_Contract.md described a PHP(Slim 3)/MySQL
+// RETIRED: docs/archive/full-backend-contract.md described a PHP(Slim 3)/MySQL
 // stack. That was never implemented and is not the target — this Prisma/
 // PostgreSQL schema is canonical. Full Backend Contract is kept only as a
 // historical decision-log reference (see Changelog v3).

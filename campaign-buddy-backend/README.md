@@ -1,6 +1,6 @@
 # Campaign Buddy — Backend (v3)
 
-Implements `CampaignBuddy_Backend_Spec_v3.md` end to end: mobile app (`/v1/*`) and the
+Implements `docs/backend-spec.md` end to end: mobile app (`/v1/*`) and the
 Admin/Supervisor/Sponsor portal (`/admin/v1/*`), one codebase, one database.
 
 ## Stack
@@ -76,7 +76,7 @@ proper 4xx codes. `utils/dates.ts` centralises UTC-midnight parsing for the
 ## Project layout
 ```
 prisma/
-  schema.prisma      canonical data model (matches CampaignBuddy_schema_v3.prisma)
+  schema.prisma      canonical data model (matches docs/archive/schema-v3.prisma)
   seed.ts            seed data — 4 roles, 1 admin user, 1 sample campaign/activation/staff login
 src/
   app.ts             Express app wiring (mounts /v1 and /admin/v1, error handler last)

@@ -1,5 +1,5 @@
 /**
- * Types mirror `CampaignBuddy_API_Spec.md` field-for-field (§2 Data Models).
+ * Types mirror `docs/api-spec.md` field-for-field (§2 Data Models).
  * If the backend changes a field name or type, update it here FIRST — every
  * screen imports from this file, so TypeScript will flag every call site
  * that needs updating.

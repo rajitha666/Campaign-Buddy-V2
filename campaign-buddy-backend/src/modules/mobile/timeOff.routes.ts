@@ -11,7 +11,7 @@ const router = Router();
 const inclusiveDays = (from: Date, to: Date) =>
   Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
 
-// CampaignBuddy_API_Spec.md §2.12 — TimeOffRequest carries userId, a derived
+// docs/api-spec.md §2.12 — TimeOffRequest carries userId, a derived
 // inclusive `days` count, and the denormalised approverName.
 function toTimeOffRequest(r: LeaveRequest & { staff: { reportsTo: Staff | null } }) {
   return {

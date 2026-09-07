@@ -18,7 +18,7 @@ async function currentActivationOrThrow(staffId: string) {
   return activation;
 }
 
-// CampaignBuddy_API_Spec.md §2.11 — SalesSummary carries id/userId/assignmentId/date
+// docs/api-spec.md §2.11 — SalesSummary carries id/userId/assignmentId/date
 // on top of the computed rollup.
 async function fullSummary(activationId: string, staffId: string, date: Date) {
   const [rollup, row] = await Promise.all([

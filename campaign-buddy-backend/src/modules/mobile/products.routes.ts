@@ -25,7 +25,7 @@ router.get(
       include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: today } } },
     });
 
-    // CampaignBuddy_API_Spec.md §6.3 — CampaignProductListItem shape.
+    // docs/api-spec.md §6.3 — CampaignProductListItem shape.
     const rows = activationItems
       .map((ai) => {
         const rec = ai.salesRecords[0];
@@ -75,7 +75,7 @@ router.get(
     // spec §2.9 — `addedToCampaignAt` is a date, not a datetime
     const addedToCampaignAt = earliestAdded ? earliestAdded.toISOString().slice(0, 10) : null;
 
-    // CampaignBuddy_API_Spec.md §6.4 — ProductDetails.
+    // docs/api-spec.md §6.4 — ProductDetails.
     res.json(ok({
       id: item.id,
       sku: item.sku,
@@ -132,7 +132,7 @@ router.patch(
         ...(reorderFlag != null ? { reorderFlag } : {}),
       },
     });
-    // CampaignBuddy_API_Spec.md §2.10 — StockEntry.
+    // docs/api-spec.md §2.10 — StockEntry.
     res.json(ok({
       id: record.id,
       campaignProductAssignmentId: record.activationItemId,

@@ -1,4 +1,4 @@
-// One function per endpoint in CampaignBuddy_Backend_Spec_v3.md §4.2, plus the
+// One function per endpoint in docs/backend-spec.md §4.2, plus the
 // portal-completion endpoints added to the backend so every screen here has a
 // real route (catalog PATCH/DELETE, campaign/staff DELETE, role PATCH,
 // activation-items GET, supervisor-tasks CRUD, staff-absence, outlet-attendance,

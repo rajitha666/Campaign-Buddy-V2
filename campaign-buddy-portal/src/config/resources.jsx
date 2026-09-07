@@ -4,7 +4,7 @@
 // page component instead — see App.jsx for the full route map.
 //
 // `fetchList({ campaignId, query })` must resolve to `{ data, meta }`
-// matching CampaignBuddy_API_Spec.md §1.1's list envelope.
+// matching docs/api-spec.md §1.1's list envelope.
 // `hydrate(rows)` is optional client-side joining (e.g. attach a clientName
 // onto a Campaign row) for endpoints that return bare foreign keys.
 import Badge from '../components/Badge';

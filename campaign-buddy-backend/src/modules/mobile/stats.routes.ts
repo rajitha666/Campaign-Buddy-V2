@@ -9,7 +9,7 @@ import { s } from "../../schemas";
 const router = Router();
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 
-// CampaignBuddy_API_Spec.md §2.7 / §6.1 — DailyStats with the derived conversionRate.
+// docs/api-spec.md §2.7 / §6.1 — DailyStats with the derived conversionRate.
 function toDailyStats(s: { footFall: number; approached: number; converted: number }, totalSales: number) {
   return {
     footFall: s.footFall,

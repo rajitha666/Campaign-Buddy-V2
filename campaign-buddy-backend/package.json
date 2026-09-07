@@ -1,7 +1,7 @@
 {
   "name": "campaign-buddy-backend",
   "version": "3.0.0",
-  "description": "Campaign Buddy unified backend — mobile app + admin/supervisor/sponsor portal. Implements CampaignBuddy_Backend_Spec_v3.md.",
+  "description": "Campaign Buddy unified backend — mobile app + admin/supervisor/sponsor portal. Implements docs/backend-spec.md.",
   "main": "dist/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

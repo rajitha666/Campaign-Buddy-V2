@@ -36,7 +36,7 @@ router.get(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, amount]) => ({ date, amount }));
 
-    // CampaignBuddy_API_Spec.md §8 — topProducts as { productId, name, unitPrice, unitsSold }.
+    // docs/api-spec.md §8 — topProducts as { productId, name, unitPrice, unitsSold }.
     const byItem = new Map<string, { productId: string; name: string; unitPrice: number; unitsSold: number }>();
     for (const rec of salesRecords) {
       const item = rec.activationItem.campaignItem.item;

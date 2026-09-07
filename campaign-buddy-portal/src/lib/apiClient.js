@@ -1,7 +1,7 @@
 // Thin fetch wrapper matching the Unified Backend Spec's response envelope:
 //   success -> { data: ... } or { data: [...], meta: { total } }
 //   error   -> { error: { code, message, field } }
-// See CampaignBuddy_API_Spec.md §1.1 and CampaignBuddy_Unified_Backend_Spec.md §3.
+// See docs/api-spec.md §1.1 and CampaignBuddy_Unified_Backend_Spec.md §3.
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/admin/v1';
 

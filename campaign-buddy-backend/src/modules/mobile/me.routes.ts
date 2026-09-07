@@ -5,7 +5,7 @@ import { ok, notFound } from "../../utils/apiResponse";
 
 const router = Router();
 
-// The mobile app is built to CampaignBuddy_API_Spec.md, whose data models
+// The mobile app is built to docs/api-spec.md, whose data models
 // pre-date the v3 schema's Activation/Staff naming. `/v1/*` is consumed only by
 // that app, so these handlers translate the v3 rows into the shapes the app
 // expects (User, TodayAssignment, …).
