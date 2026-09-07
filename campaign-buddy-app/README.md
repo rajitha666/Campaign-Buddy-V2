@@ -8,7 +8,8 @@ README is the handoff doc — read it before touching code.
 
 Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 
-- **npm install**: use `npm install --ignore-scripts` (npm 11 + `react-native-screens@3.31.0`'s `prepare` script don't get along); native builds aren't needed for the web preview.
+- **Expo SDK 57** (upgraded from 51 on 2026-09-07 so the App Store Expo Go — latest SDK only — can open it): RN 0.86 / React 19.2 / React Navigation 7. `.npmrc` pins `legacy-peer-deps=true`; `npx expo-doctor` is clean.
+- **npm install**: use `npm install --ignore-scripts` (npm 11 blocks lifecycle scripts); native builds aren't needed for the web preview or Expo Go.
 - **Fonts**: now loaded from `@expo-google-fonts/poppins` (JS-bundled TTFs) — no manual `assets/fonts/*.ttf` needed. `assets/fonts/README.md` is stale.
 - **Auth**: `AuthContext` fetches `/me` after login because the v3 `/auth/login` returns tokens only. Access-token refresh is wired into the axios response interceptor (`src/api/client.ts` — `registerAuthFailureHandler`, single in-flight refresh, retry-once); a failed refresh clears the session.
 - **Web**: `expo start --web` works. `expo-secure-store` has no web implementation, so token storage is split — `secureStore.ts` (native Keychain/Keystore) / `secureStore.web.ts` (localStorage). The `BottomSheetModal` (product details / time-off form / checkout confirm) renders but its layout on web is imperfect — it's fine on a device, or swap in `@gorhom/bottom-sheet` as noted below.
@@ -19,10 +20,21 @@ Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 
 ```bash
 npm install --ignore-scripts
-cp .env.example .env         # EXPO_PUBLIC_API_BASE_URL, default http://localhost:4000/v1
-npm run start -- --web       # browser preview
-# or:  npm run android / npm run ios   (device / emulator, once native builds are set up)
+cp .env.example .env         # EXPO_PUBLIC_API_BASE_URL — see the file's comments
+npm run start -- --web       # browser preview  (EXPO_PUBLIC_API_BASE_URL = http://localhost:4000/v1)
 ```
+
+### On a physical iPhone / Android via Expo Go
+
+1. Install **Expo Go** from the App Store / Play Store (it tracks the latest SDK — this app is on 57).
+2. Phone and dev machine on the **same Wi-Fi**.
+3. `.env` → `EXPO_PUBLIC_API_BASE_URL=http://<dev-machine-LAN-IP>:4000/v1` (not `localhost`; find it with `ipconfig`).
+4. Allow inbound TCP **4000** (backend) and **8081** (Metro) through the dev machine's firewall. One-time, admin PowerShell:
+   ```powershell
+   New-NetFirewallRule -DisplayName "CampaignBuddy dev (Expo+API)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8081,4000 -Profile Private,Public -RemoteAddress LocalSubnet
+   ```
+5. Start the backend (`cd ../campaign-buddy-backend && npm run dev`), then `npx expo start` here and scan the QR with the iPhone Camera.
+   - Different networks / firewall you can't touch: `npx expo start --tunnel` (Metro only — the backend URL in `.env` must still be reachable from the phone).
 
 ## Tests
 
@@ -116,9 +128,11 @@ an endpoint's response shape.
 2. **No offline write queue.** Check-in, stock saves and sales-summary confirm
    need a live connection — there's no local queue / replay. Reads are cached
    (TanStack Query) and refetch on reconnect.
-3. **Native device / emulator run is untried on the current dev machine** — only
-   the Expo web preview has been exercised end to end. The native check-in path
-   (real GPS) is covered by the backend's integration tests.
+3. **Native run** — post-SDK-57, the app has been exercised on Expo web against the
+   live backend (login, all tabs, native-stack push, bottom sheet). Running in
+   Expo Go on a physical device follows the steps above; an iOS **Simulator** /
+   Android emulator still needs the usual native toolchain (Xcode / Android
+   Studio) which isn't set up on the current Windows dev machine.
 4. **Forgot-password delivery is a backend stub.** The screen and
    `authApi.forgotPassword()` work, but the backend sends no email/SMS
    (`docs/backend-spec.md` §8).
