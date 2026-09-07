@@ -96,20 +96,65 @@ curl http://localhost:4000/health
 
 **Change these immediately after first login!**
 
-## Cloudflare Tunnel (Optional)
+## Cloudflare Tunnel (Recommended for Production)
 
-For public HTTPS access without exposing ports:
+Expose services via Cloudflare Tunnel instead of binding to public ports.
 
-1. Create a tunnel in [Cloudflare Zero Trust](https://one.dash.cloudflare.com/)
-2. Copy the tunnel token
-3. Add to `.env`:
-   ```env
-   CLOUDFLARED_TUNNEL_TOKEN=eyJh...
-   ```
-4. Restart with production profile:
-   ```bash
-   docker compose --profile production up -d
-   ```
+### 1. Create Tunnel in Cloudflare
+
+1. Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) → Networks → Tunnels
+2. Click **Create a tunnel** → choose **Cloudflared**
+3. Name it (e.g., `campaign-buddy-vps`)
+4. Copy the **tunnel token**
+
+### 2. Configure Public Hostnames
+
+In the tunnel config, add:
+
+| Public Hostname | Service |
+|-----------------|---------|
+| `cb.yourdomain.com` | `http://portal:80` |
+
+This routes all traffic through the portal's nginx, which proxies:
+- `/admin/v1/*` → backend (portal API)
+- `/v1/*` → backend (mobile API)
+- `/health` → backend health check
+- `/*` → portal SPA
+
+### 3. Update `.env`
+
+```env
+CLOUDFLARED_TUNNEL_TOKEN=eyJh...
+```
+
+### 4. Run with Production Profile
+
+```bash
+# Stop current services
+docker compose down
+
+# Start with tunnel, skip override (no ports exposed publicly)
+docker compose -f docker-compose.yml --profile production up -d
+```
+
+> **Note:** `docker-compose.override.yml` exposes ports for local dev. Using `-f docker-compose.yml` skips it.
+
+### 5. Verify
+
+```bash
+docker compose ps
+# cloudflared should be running
+
+# Test via tunnel URL
+curl https://cb.yourdomain.com/health
+```
+
+### Local Dev (ports exposed)
+
+```bash
+# Uses docker-compose.override.yml to expose ports
+docker compose up -d
+```
 
 ## Firewall (Recommended)
 
