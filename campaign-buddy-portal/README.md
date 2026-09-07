@@ -1,42 +1,39 @@
-# Campaign Buddy — Web Portal (Admin / Supervisor / Sponsor)
+# Campaign Buddy — Web Portal (CB Office)
 
-React + Vite frontend for the unified web portal described in
-`CampaignBuddy_Unified_Backend_Spec.md`. One app, one login, one set of
-routes — what a signed-in user sees is driven entirely by their `roleId`
-and `CampaignAccessGrant`s, per that spec's §3 (Auth & RBAC Model).
+React + Vite frontend for the Campaign Buddy web portal — **one app, one login**
+serving three personas (Admin, Supervisor, Sponsor). What a signed-in user sees is
+driven entirely by their `roleId` and their `CampaignAccessGrant`s.
 
-This is **frontend only**. It expects your backend to implement the
-`/admin/v1/*` API described in the spec docs. No mock data is baked in —
-every screen calls a real endpoint and will show a loading/error/empty
-state until your backend is reachable.
+Canonical backend contract: [`docs/backend-spec.md`](../docs/backend-spec.md)
+(data model, endpoints, RBAC in §3). UI-level feature detail:
+[`docs/admin-panel-spec.md`](../docs/admin-panel-spec.md).
 
-## Changelog
+This is **frontend only**. It calls the backend's `/admin/v1/*` API — no mock data
+is baked in; every screen hits a real endpoint and shows a loading / error / empty
+state until the backend is reachable.
 
-- **Seller Live Locations is now visible to all three roles** (Admin, Supervisor, Sponsor), not just Sponsor — same `/tracking/live` page and endpoint, just added to the Admin's Tracking submenu and as a standalone item for Supervisor. No API change; this was a nav-visibility-only gap.
-- **Staff profile photo upload is now a separate endpoint.** `POST /staff` and `PATCH /staff/{id}` stay plain JSON — the picked file is uploaded via a new `POST /staff/{id}/photo` (`multipart/form-data`) call, made automatically right after create/update only if the admin actually picked a new file. See `docs/archive/full-backend-contract.md` §4.9.1 / §10.10 for the backend side.
-- **Staff form completed** (full ~30-field HR record) and a **CRUD-wiring
-  audit fixed 8 resources** where an Edit or Delete button was rendered but
-  had no `updateItem`/`deleteItem` function behind it — meaning Edit would
-  have silently created a duplicate record instead of updating, and Delete
-  would have done nothing. Fixed for: `staff`, `brands`, `items`, `outlets`,
-  `distributors`, `cities`, `campaigns` (delete), `supervisorTasks`,
-  `roles` (update). Matching `PATCH`/`DELETE` endpoints were added to
-  `lib/endpoints.js` for all of these — see `docs/archive/full-backend-contract.md`
-  if any of those paths need reconciling with what the backend actually
-  implements.
+## Status
+
+Wired to `campaign-buddy-backend` and verified in-browser (2026-09-06) for all
+three personas — CRUD, leave approval, activation-item management, live map,
+reports. The backend implements **every endpoint this portal calls**; there are no
+"assumed" / unbuilt endpoints anymore (`lib/endpoints.js` still exports a small
+`assumed.*` object, but it's just back-compat aliases onto the real functions).
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env      # point VITE_API_BASE_URL at your backend, or leave
-                           # blank to use the Vite dev proxy (see vite.config.js)
-npm run dev
+cp .env.example .env      # point VITE_API_BASE_URL at your backend, or leave it
+                          # blank to use the Vite dev proxy (see vite.config.js)
+npm run dev               # http://localhost:5173
 ```
 
-Default dev proxy forwards `/admin/v1/*` to `http://localhost:4000`. Override
-with `VITE_API_PROXY_TARGET=http://your-host:port npm run dev`, or set
+The dev proxy forwards `/admin/v1/*` to `http://localhost:4000`. Override with
+`VITE_API_PROXY_TARGET=http://your-host:port npm run dev`, or set
 `VITE_API_BASE_URL` directly for a production build (`npm run build`).
+
+Sign in with the seeded Super Admin: `admin` / `ChangeMe123!`.
 
 ## Tests
 
@@ -46,132 +43,103 @@ npm run test:watch
 ```
 
 `src/lib/endpoints.test.js` pins the path/verb every endpoint helper builds
-(catalog CRUD, campaign-scoped id nesting, the `assumed.*` compat shims →
-real v3 routes). `src/config/resources.test.jsx` checks every resource entry
-is wired end to end (list/edit/delete handlers, form-field shapes). No
-network — `apiClient` is mocked.
+(catalog CRUD, campaign-scoped id nesting, the `assumed.*` aliases → real routes).
+`src/config/resources.test.jsx` checks every resource entry is wired end to end
+(list / edit / delete handlers present, form-field shapes valid). No network —
+`apiClient` is mocked.
 
 ## How roles map to the UI
 
-`AuthContext.roleToPersona()` collapses the backend's `roleId` values down
-to three UI personas:
+`AuthContext.roleToPersona()` collapses `roleId` into the three personas the UI
+renders differently:
 
-| roleId (backend)      | persona (frontend) | behavior                          |
-|------------------------|---------------------|------------------------------------|
-| `adm`, `usr`, `super`  | `admin`             | full sidebar, all CRUD actions     |
-| `supervisor`           | `supervisor`        | narrow sidebar, read-only          |
-| `sponsor`, `client`    | `sponsor`           | campaign overview + reports, read-only |
+| `roleId` (backend) | persona | behaviour |
+|---|---|---|
+| `adm` (Super Admin), `usr` (Campaign Admin) | `admin` | full sidebar, all CRUD |
+| `supervisor` | `supervisor` | narrow sidebar, read-only, outlet-scoped |
+| `sponsor` | `sponsor` | campaign overview + reports, read-only, campaign-scoped |
 
-Read-only enforcement here is a UI convenience (hides Add/Edit/Delete
-buttons) — **the spec requires the backend to enforce this too** (§3, step
-3: "Admin roles get full CRUD; supervisor and sponsor roles are read-only
-at the API level regardless of what's passed"). Don't rely on the frontend
-alone.
+The four seeded roles are `adm`, `usr`, `supervisor`, `sponsor` — there is no
+`super` or `client` role in this system. `roleToPersona()` still maps those two
+legacy ids (`super`→admin, `client`→sponsor) as a harmless fallback; an unknown
+`roleId` defaults to the read-only `supervisor` persona.
 
-The campaign switcher in the top bar lists whatever `GET /campaigns`
-returns for the logged-in user — i.e. exactly their `CampaignAccessGrant`s.
+`adm` and `usr` share the `admin` nav persona but are **not** equivalent for data
+access: `adm` bypasses `CampaignAccessGrant` entirely and sees every campaign;
+`usr` is grant-scoped exactly like supervisor/sponsor.
+
+Read-only enforcement in the UI (hiding Add/Edit/Delete) is a convenience only —
+**the backend enforces it too** (`requireRole("adm","usr")` on every write route),
+so a supervisor/sponsor token is rejected on writes regardless of what the client
+does.
+
+The campaign switcher in the top bar lists exactly what `GET /admin/v1/campaigns`
+returns for the user — their granted campaigns (or all, for `adm`). Switching
+re-scopes every campaign-bound screen.
 
 ## Project structure
 
 ```
 src/
-  lib/apiClient.js       fetch wrapper: base URL, auth header, error envelope
-  lib/endpoints.js       one function per endpoint in the Unified Backend Spec §4
+  lib/apiClient.js       fetch wrapper: base URL, auth header, error envelope, 401 -> logout
+  lib/endpoints.js       one function per /admin/v1 endpoint
   context/AuthContext    login/logout, current user, persona, campaign switcher
   context/ToastContext   toast notifications
   config/nav.js          sidebar structure + per-persona visibility
   config/resources.jsx   list/CRUD page configs (columns, filters, forms, endpoints)
-  components/            Sidebar, Topbar, DataTable, Drawer (add/edit forms), etc.
-  pages/ResourcePage.jsx generic list+CRUD page driven by config/resources.jsx
-  pages/*.jsx            bespoke pages that don't fit the generic table shape
-                          (Dashboard, Sponsor overview, live map, calendar,
-                          monthly attendance grid, staff evaluation, Update Sales,
-                          Campaign/Activation Items, Activation Targets)
+  components/             AppShell, Sidebar, Topbar, DataTable, Drawer (add/edit forms), etc.
+  pages/ResourcePage.jsx  generic list + CRUD page driven by config/resources.jsx
+  pages/DashboardRouter   renders Dashboard (admin/supervisor) or SponsorDashboard
+  pages/*.jsx             bespoke pages that don't fit the generic table shape:
+                          Dashboard, SponsorDashboard, LiveMap, MonthlyAttendance,
+                          StaffProfiles (evaluation), UpdateSales, CampaignItems,
+                          ActivationItems, ActivationTargets, AssignRoutes
+  styles/                 tokens.css (design tokens) + app.css
 ```
 
-Most admin-panel screens (Clients, Campaigns, Outlets, Staff, Items, Users,
-Roles, all the report tables, etc.) are one config entry in
-`config/resources.jsx` rendered by the generic `ResourcePage`. Add a new
-list/CRUD screen by adding a config entry, not a new component.
+Most screens (Clients, Campaigns, Outlets, Staff, Items, Users, Roles, every log
+and report table) are a single config entry in `config/resources.jsx` rendered by
+the generic `ResourcePage`. Add a new list/CRUD screen by adding a config entry,
+not a new component. A screen only gets its own file when it isn't a table
+(dashboards, the map, the month grid, the cascading-filter editors).
 
-## ⚠️ Endpoints this frontend calls that aren't in the spec yet
+## Staff form
 
-The Unified Backend Spec (§4) doesn't cover every screen in the Admin Panel
-Feature Spec. Where a screen exists in the feature spec but has no
-documented endpoint, `lib/endpoints.js` exports it under `assumed` with a
-best-guess path/shape, and the page itself has an inline note. **Confirm
-these with the backend team before relying on them**:
+The Add/Edit Staff form matches the **v3 HR field set** (`docs/backend-spec.md`
+§2.4) — Basic Info, Login, Emergency Contact, Bank Account, as sections in one
+drawer. This is the final, deliberate scope: **no profile-photo upload, no marital
+status / proficiency ratings / work-type pick-lists.** The backend whitelists these
+columns and ignores extras. If the fuller HR form is ever wanted it's a schema
+migration + spec revision, not a gap to fill here.
 
-- `GET  /campaigns/{id}/absence` — Staff Absence report
-- `GET  /staff/{staffId}/evaluation` — Staff Profiles performance analytics
-- `GET/POST /campaigns/{id}/supervisor-tasks` — Supervisor QA task checklist
-- `GET  /campaigns/{id}/outlet-attendance` — Supervisor outlet-visit log
-- `GET/POST /supervisor-routes` — Assign Routes calendar
-- `GET  /sales/lookup` — Update Sales' cascading-filter lookup (loads a
-  day's SalesRecords for editing; the save itself uses the documented
-  `PATCH /campaigns/{id}/sales/{salesRecordId}`)
-- `GET  /campaigns/{id}/reports/sku-wise-client`,
-  `GET  /campaigns/{id}/reports/brand-wise-client` — the sponsor/client-scoped
-  report variants (admin spec §3.11's `item_wise_c` / `brand_wise_c`)
-- `GET  /campaigns/{id}/tracking/promoter-history`,
-  `GET  /tracking/supervisor-history` — historical GPS breadcrumb trail.
-  The spec only defines *live* tracking (`GET /campaigns/{id}/tracking/live`,
-  used by the Sponsor's live map); the Admin Panel's raw lat/lng/time trail
-  tables need a separate history endpoint.
+## Reports — no client-scoped variants
 
-Also worth raising with the backend team:
-- **Activation Items has no GET or DELETE** in the spec — only
-  `POST .../activations/{id}/items`. The Activation Items page can attach
-  items but can't show what's already attached after a page reload. Add a
-  GET (and ideally a DELETE) to close this gap.
-- **No dashboard aggregation endpoint.** `Dashboard.jsx` and
-  `SponsorDashboard.jsx` compose `GET /campaigns/{id}/stats` +
-  `/reports/sku-wise` client-side. Fine for now; consider a dedicated
-  endpoint if a campaign's daily-stats volume makes that slow.
-- **Outlet Wise sales rollup** is derived client-side from `DailyStats` for
-  the same reason — a real `/reports/outlet-wise` endpoint would be cleaner
-  and scale better.
+Sponsor / "client" reports use the **same** endpoints as Admin
+(`/reports/sku-wise`, `/reports/brand-wise`) — the response is automatically
+filtered to the caller's grant. There is no `-client` route variant. The
+`clientReports` / `brandWiseClient` resource configs and the `/reports/client-*`
+routes are just alternate UI entry points onto those same endpoints.
 
-## Staff form (now complete)
+## Known simplifications (fine for now, worth revisiting at scale)
 
-The Add/Edit Staff form covers the full ~30-field HR record from
-`CampaignBuddy_AdminPanel_Feature_Specification.md` §3.5.1 — Basic Info,
-Emergency Contact, Bank Account Details, Skills & Qualifications, and Work
-Details, as five visually-divided sections in one drawer (see the `section`
-field type in `components/Drawer.jsx`). Two field types were added to
-`Drawer.jsx` to support this:
-- `type: 'date'` — a single date input (distinct from the existing `daterange`).
-- `type: 'creatable'` — a select with a fixed option list plus an "Other
-  (type below)" choice that reveals a free-text input; used for Designation,
-  which the admin panel spec describes as "choose from the list or type
-  custom."
-
-Confirm the exact field names in `config/resources.jsx` (`staff.formFields`)
-match your `Staff` table's real column names before first test — they're
-named to match the spec's HR field labels as closely as possible
-(`emergencyContactName`, `bankAccountNumber`, `englishSpeaking`, etc.) but
-weren't specified verbatim anywhere, so this is the one form where a rename
-on the backend side is likely to need a matching rename here.
-
-## Known simplifications (fine for a first pass, worth revisiting)
-
-- Foreign keys (`clientId`, `brandId`, `outletId`, `staffId`, …) are
-  resolved to display names via a client-side lookup fetch (see `hydrate`
-  in `config/resources.jsx`), not a backend join. This re-fetches the
-  lookup list on every page load — cheap at prototype scale, worth caching
-  (React Query or similar) once real data volumes show up.
-- Excel export buttons generate a CSV client-side from whatever rows are
-  currently loaded (not a true server-side export of the full filtered set).
-- The live map (`LiveMapView`) lays out pins in a grid, not on a real
-  geographic projection — swap in Mapbox/Leaflet using the real
-  `latitude`/`longitude` once you want accurate positioning.
-- No token refresh flow — a 401 anywhere logs the user out and sends them
-  to `/login`. Add `POST /admin/v1/auth/refresh` if/when the backend
-  supports it (the mobile API already does; the admin auth endpoint in the
-  spec doesn't mention one).
+- **Foreign keys are resolved to display names client-side** (`hydrate` in
+  `config/resources.jsx`) — a lookup-list fetch per page load, not a backend join.
+  Cheap now; cache it (React Query or similar) once data volumes grow.
+- **Excel/CSV export is generated client-side** from the currently-loaded rows,
+  not a true server-side export of the full filtered set.
+- **The live map (`LiveMapView`) lays pins out in a grid**, not on a geographic
+  projection — swap in Mapbox/Leaflet using the real `latitude`/`longitude` when
+  accurate positioning matters.
+- **No token-refresh flow.** Per `docs/backend-spec.md` §3.2 the portal's User
+  tokens are not refreshable by design — a 401 anywhere clears the token and sends
+  the user to `/login`. (CB Mobile's staff tokens *do* refresh; the portal's don't.)
+- **Dashboard KPIs are composed client-side** from `GET /campaigns/:id/stats` +
+  `/reports/*` — there's no single dashboard-aggregation endpoint. Fine at current
+  scale.
 
 ## Design system
 
-Reuses the mobile app's tokens (`src/styles/tokens.css`): ink-green
-(`#12241F`) + mango (`#FF7A33`), Poppins for headings/stats, Liberation
-Sans for body text, rounded status chips as badges.
+Tokens live in `src/styles/tokens.css` — ink-green (`--ink: #12241F`) + mango
+(`--mango: #FF7A33`), Poppins for headings/stats (`.h-display`), Liberation Sans
+for body, rounded status chips as badges. Shares the palette with CB Mobile. Don't
+hardcode colours inline — add a token.
