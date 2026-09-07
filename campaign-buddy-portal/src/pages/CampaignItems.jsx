@@ -24,7 +24,7 @@ export default function CampaignItems() {
       setCampaignItems(ciRes?.data || []);
       setAllItems(itemsRes?.data || []);
     } catch (e) {
-      setError(e.message || 'Could not load campaign items.');
+      setError(e.message || 'Could not load campaign products.');
     } finally {
       setLoading(false);
     }
@@ -39,25 +39,25 @@ export default function CampaignItems() {
     if (!pickItemId) return;
     try {
       await campaignsApi.addItem(campaignId, { itemId: pickItemId });
-      push('Item added to campaign');
+      push('Product added to campaign');
       setPickItemId('');
       load();
-    } catch (e) { push(e.message || 'Could not add item', 'error'); }
+    } catch (e) { push(e.message || 'Could not add product', 'error'); }
   }
   async function removeItem(campaignItemId) {
     try {
       await campaignsApi.removeItem(campaignId, campaignItemId);
-      push('Item removed');
+      push('Product removed');
       load();
-    } catch (e) { push(e.message || 'Could not remove item', 'error'); }
+    } catch (e) { push(e.message || 'Could not remove product', 'error'); }
   }
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1>Campaign Items</h1>
-          <p className="page-sub">Items sellable anywhere in this campaign — Activations later pick a subset of these.</p>
+          <h1>Campaign Products</h1>
+          <p className="page-sub">Products sellable anywhere in this campaign — Activations later pick a subset of these.</p>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => navigate('/campaigns')}>← Back to Campaigns</button>
       </div>
@@ -66,9 +66,9 @@ export default function CampaignItems() {
           {isAdmin ? (
             <div className="filter-bar">
               <div className="filter-field" style={{ minWidth: 260 }}>
-                <label>Add item</label>
+                <label>Add product</label>
                 <select value={pickItemId} onChange={(e) => setPickItemId(e.target.value)}>
-                  <option value="">Select an item…</option>
+                  <option value="">Select a product…</option>
                   {available.map((i) => <option key={i.id} value={i.id}>{i.name} — LKR {Number(i.unitPrice || 0).toLocaleString()}</option>)}
                 </select>
               </div>
@@ -77,11 +77,11 @@ export default function CampaignItems() {
           ) : null}
           <div className="table-card">
             {campaignItems.length === 0 ? (
-              <div className="empty-state"><div className="big">No items yet</div>Add items above to build this campaign's catalog.</div>
+              <div className="empty-state"><div className="big">No products yet</div>Add products above to build this campaign's catalog.</div>
             ) : (
               <div className="table-scroll">
                 <table className="data-table">
-                  <thead><tr><th>Item</th><th>Price</th>{isAdmin ? <th>Action</th> : null}</tr></thead>
+                  <thead><tr><th>Product</th><th>Price</th>{isAdmin ? <th>Action</th> : null}</tr></thead>
                   <tbody>
                     {campaignItems.map((ci) => {
                       const item = itemMap[ci.itemId] || {};

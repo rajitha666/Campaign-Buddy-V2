@@ -27,7 +27,7 @@ export default function ActivationItems() {
       setAllItems(itemsRes?.data || []);
       setAttached(aiRes?.data || []);
     } catch (e) {
-      setError(e.message || 'Could not load this activation\'s items.');
+      setError(e.message || 'Could not load this activation\'s products.');
     } finally {
       setLoading(false);
     }
@@ -41,43 +41,43 @@ export default function ActivationItems() {
   async function addOne(campaignItemId) {
     try {
       await activationsApi.addItems(campaignId, activationId, { campaignItemIds: [campaignItemId] });
-      push('Item attached to activation');
+      push('Product attached to activation');
       load();
-    } catch (e) { push(e.message || 'Could not attach item', 'error'); }
+    } catch (e) { push(e.message || 'Could not attach product', 'error'); }
   }
   async function addAll() {
     try {
       await activationsApi.addItems(campaignId, activationId, { addAll: true });
-      push('All campaign items attached');
+      push('All campaign products attached');
       load();
-    } catch (e) { push(e.message || 'Could not attach items', 'error'); }
+    } catch (e) { push(e.message || 'Could not attach products', 'error'); }
   }
   async function removeOne(campaignItemId) {
     const ai = attachedRowByCampaignItemId[campaignItemId];
     if (!ai) return;
     try {
       await activationsApi.removeItem(campaignId, activationId, ai.id);
-      push('Item removed');
+      push('Product removed');
       load();
-    } catch (e) { push(e.message || 'Could not remove item', 'error'); }
+    } catch (e) { push(e.message || 'Could not remove product', 'error'); }
   }
 
   return (
     <div>
       <div className="page-head">
-        <div><h1>Activation Items</h1><p className="page-sub">Pick which of this campaign's items are sold at this activation.</p></div>
+        <div><h1>Activation Products</h1><p className="page-sub">Pick which of this campaign's products are sold at this activation.</p></div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-secondary btn-sm" onClick={addAll} disabled={campaignItems.length === 0}>Add all</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>← Back</button>
         </div>
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} /> : campaignItems.length === 0 ? (
-        <ErrorState message="This campaign has no items yet — add some under Campaigns → Items first." />
+        <ErrorState message="This campaign has no products yet — add some under Campaigns → Products first." />
       ) : (
         <div className="table-card">
           <div className="table-scroll">
             <table className="data-table">
-              <thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
+              <thead><tr><th>Product</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
                 {campaignItems.map((ci) => {
                   const item = itemMap[ci.itemId] || {};

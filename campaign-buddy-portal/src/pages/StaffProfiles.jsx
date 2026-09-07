@@ -61,7 +61,7 @@ export default function StaffProfiles() {
               <div className="stat-card" style={{ padding: 13 }}><div className="l">Overall Performance</div><div className="n" style={{ fontSize: 17 }}>{data.overallPerformancePct ?? '—'}%</div></div>
               <div className="stat-card" style={{ padding: 13 }}><div className="l">Attendance</div><div className="n" style={{ fontSize: 17 }}>{data.attendancePct ?? '—'}%</div></div>
               <div className="stat-card" style={{ padding: 13 }}><div className="l">Total Sales</div><div className="n" style={{ fontSize: 17 }}>LKR {(data.totalSales ?? 0).toLocaleString()}</div></div>
-              <div className="stat-card" style={{ padding: 13 }}><div className="l">Total Items</div><div className="n" style={{ fontSize: 17 }}>{data.totalItems ?? 0} units</div></div>
+              <div className="stat-card" style={{ padding: 13 }}><div className="l">Total Products</div><div className="n" style={{ fontSize: 17 }}>{data.totalItems ?? 0} units</div></div>
               <div className="stat-card" style={{ padding: 13 }}><div className="l">Avg Sales / Month</div><div className="n" style={{ fontSize: 17 }}>LKR {(data.avgSalesPerMonth ?? 0).toLocaleString()}</div></div>
               <div className="stat-card" style={{ padding: 13 }}><div className="l">Highest Daily Sales</div><div className="n" style={{ fontSize: 17 }}>LKR {(data.highestDailySales ?? 0).toLocaleString()}</div></div>
             </div>

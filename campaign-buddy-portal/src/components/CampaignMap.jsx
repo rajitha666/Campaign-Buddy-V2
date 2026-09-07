@@ -1,148 +1,131 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-// Plots outlets + live sales-staff positions on their real lat/lng, projected
-// (equirectangular, longitude scaled by cos(meanLat)) into the panel's own
-// pixel box — no map tiles / maps API, but relative positions are geographically
-// accurate. Swap in Leaflet/Mapbox later if a basemap is wanted.
-const PAD = 46;
+// Real basemap (OpenStreetMap tiles via Leaflet) with outlet + live sales-staff
+// markers. Staff use their last GPS ping; when none exists we fall back to the
+// outlet they're checked in at (flagged "approx." in the popup).
+const INK = '#12241F';
+
+const staffIcon = L.divIcon({
+  className: 'geo-staff-icon',
+  html: '<span class="geo-staff-pulse-el"></span><span class="geo-staff-dot"></span>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
 
 export default function CampaignMap({ outlets = [], staff = [], height = 380 }) {
-  const wrapRef = useRef(null);
-  const [box, setBox] = useState({ w: 900, h: height });
-  const [hover, setHover] = useState(null);
+  const elRef = useRef(null);
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
+
+  const model = useMemo(() => resolvePoints(outlets, staff), [outlets, staff]);
 
   useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return undefined;
-    const measure = () => setBox({ w: el.clientWidth || 900, h: el.clientHeight || height });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [height]);
+    if (!elRef.current || mapRef.current) return undefined;
+    const map = L.map(elRef.current, { scrollWheelZoom: false, attributionControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+    map.setView([7.8731, 80.7718], 7); // Sri Lanka, until points load
+    layerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+    // The container is often still settling its width on first paint.
+    const timers = [60, 250, 600, 1200].map((ms) => setTimeout(() => map.invalidateSize(), ms));
+    return () => { timers.forEach(clearTimeout); map.remove(); mapRef.current = null; };
+  }, []);
 
-  const model = useMemo(() => buildModel(outlets, staff, box), [outlets, staff, box]);
+  // Keep the map sized to its container (panel width changes, sidebar collapse…).
+  useEffect(() => {
+    const host = elRef.current?.parentElement;
+    if (!host) return undefined;
+    const resize = () => mapRef.current?.invalidateSize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(host);
+    if (elRef.current) ro.observe(elRef.current);
+    window.addEventListener('resize', resize);
+    return () => { ro.disconnect(); window.removeEventListener('resize', resize); };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = layerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+
+    model.outletPts.forEach((o) => {
+      if (o.geofence > 0) {
+        L.circle([o.lat, o.lng], { radius: o.geofence, color: '#2673B0', weight: 1, fillColor: '#2673B0', fillOpacity: 0.08 }).addTo(layer);
+      }
+      L.circleMarker([o.lat, o.lng], { radius: 7, color: '#fff', weight: 2.5, fillColor: INK, fillOpacity: 1 })
+        .bindTooltip(`<b>${esc(o.name)}</b>${o.address ? `<br>${esc(o.address)}` : ''}`, { direction: 'top' })
+        .addTo(layer);
+    });
+
+    model.staffPts.forEach((s) => {
+      L.marker([s.lat, s.lng], { icon: staffIcon })
+        .bindTooltip(
+          `<b>${esc(s.staffName)}</b>${s.outletName ? `<br>${esc(s.outletName)}` : ''}${s.approx ? '<br><i>approx. — last GPS unavailable</i>' : ''}`,
+          { direction: 'top' }
+        )
+        .addTo(layer);
+    });
+
+    const pts = [...model.outletPts, ...model.staffPts].map((p) => [p.lat, p.lng]);
+    const fit = () => {
+      if (pts.length === 0) return;
+      map.invalidateSize();
+      if (pts.length === 1) { map.setView(pts[0], 15); return; }
+      const b = L.latLngBounds(pts);
+      // Coincident / near-coincident points give a degenerate box — just centre.
+      if (!b.isValid() || b.getNorth() - b.getSouth() < 0.001) map.setView(b.getCenter(), 15);
+      else map.fitBounds(b.pad(0.3), { maxZoom: 16 });
+    };
+    fit();
+    const t = setTimeout(fit, 350); // re-fit once the container has its real size
+    return () => clearTimeout(t);
+  }, [model]);
 
   return (
-    <div className="map-shell map-shell--geo" style={{ height }} ref={wrapRef}>
-      {!model ? (
-        <div className="empty-state" style={{ paddingTop: height / 2 - 30 }}>
-          No outlet locations for this campaign yet.
-        </div>
-      ) : (
-        <>
-          <svg viewBox={`0 0 ${box.w} ${box.h}`} width={box.w} height={box.h} className="geo-map">
-            <defs>
-              <pattern id="geo-grid" width="46" height="46" patternUnits="userSpaceOnUse">
-                <path d="M46 0H0V46" fill="none" stroke="rgba(18,36,31,0.08)" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect x="0" y="0" width={box.w} height={box.h} fill="url(#geo-grid)" />
-
-            {model.outletPts.map((o) => (
-              <g key={`o-${o.id}`} transform={`translate(${o.x} ${o.y})`}
-                 onMouseEnter={() => setHover({ kind: 'outlet', name: o.name, sub: o.address })}
-                 onMouseLeave={() => setHover(null)}>
-                {o.r > 0 ? <circle r={o.r} className="geo-geofence" /> : null}
-                <circle r="7" className="geo-outlet" />
-              </g>
-            ))}
-
-            {model.staffPts.map((s, i) => (
-              <g key={`s-${i}`} transform={`translate(${s.x} ${s.y})`}
-                 onMouseEnter={() => setHover({ kind: 'staff', name: s.staffName, sub: s.outletName, approx: s.approx })}
-                 onMouseLeave={() => setHover(null)}>
-                <circle r="14" className="geo-staff-pulse" />
-                <circle r="6.5" className="geo-staff" />
-              </g>
-            ))}
-          </svg>
-
-          {hover ? (
-            <div className={`geo-tip ${hover.kind}`}>
-              <b>{hover.name}</b>
-              {hover.sub ? <span>{hover.sub}</span> : null}
-              {hover.approx ? <span className="geo-tip-note">approx. — last GPS unavailable</span> : null}
-            </div>
-          ) : null}
-
-          <div className="map-legend">
-            <div className="item"><span className="sw sw-staff" />Sales staff live ({model.staffPts.length})</div>
-            <div className="item"><span className="sw sw-outlet" />Outlet ({model.outletPts.length})</div>
-          </div>
-        </>
-      )}
+    <div className="map-shell" style={{ height, position: 'relative' }}>
+      <div ref={elRef} className="leaflet-host" style={{ height: '100%' }} />
+      {model.outletPts.length === 0 && model.staffPts.length === 0 ? (
+        <div className="map-overlay-note">No outlet locations or checked-in staff to show yet.</div>
+      ) : null}
+      <div className="map-legend">
+        <div className="item"><span className="sw sw-staff" />Sales staff live ({model.staffPts.length})</div>
+        <div className="item"><span className="sw sw-outlet" />Outlet ({model.outletPts.length})</div>
+      </div>
     </div>
   );
 }
 
-function buildModel(outlets, staff, box) {
-  const cleanOutlets = outlets.filter((o) => isNum(o.latitude) && isNum(o.longitude));
-
-  // Resolve a position for every checked-in staffer: real last ping if we have
-  // one, else the outlet they're at (jittered so co-located staff don't stack).
+function resolvePoints(outlets, staff) {
+  const cleanOutlets = (outlets || []).filter((o) => isNum(o.latitude) && isNum(o.longitude));
   const outletByName = new Map(cleanOutlets.map((o) => [o.name, o]));
-  const resolvedStaff = staff.map((s, i) => {
+
+  const staffPts = (staff || []).map((s, i) => {
     const pos = s.lastPosition;
     if (pos && isNum(pos.latitude) && isNum(pos.longitude)) {
-      return { ...s, latitude: pos.latitude, longitude: pos.longitude, approx: false };
+      return { lat: pos.latitude, lng: pos.longitude, staffName: label(s), outletName: s.outletName || '', approx: false };
     }
     const o = outletByName.get(s.outletName);
     if (o) {
-      const a = (i * 2.399963) % (Math.PI * 2);
-      return { ...s, latitude: o.latitude + Math.sin(a) * 0.0006, longitude: o.longitude + Math.cos(a) * 0.0006, approx: true };
+      const a = (i * 2.399963) % (Math.PI * 2); // golden-angle jitter so co-located staff don't stack
+      return { lat: o.latitude + Math.sin(a) * 0.0007, lng: o.longitude + Math.cos(a) * 0.0007, staffName: label(s), outletName: s.outletName || '', approx: true };
     }
     return null;
   }).filter(Boolean);
 
-  const all = [
-    ...cleanOutlets.map((o) => ({ lat: o.latitude, lng: o.longitude })),
-    ...resolvedStaff.map((s) => ({ lat: s.latitude, lng: s.longitude })),
-  ];
-  if (all.length === 0) return null;
+  const outletPts = cleanOutlets.map((o) => ({
+    lat: o.latitude, lng: o.longitude, name: o.name, address: o.address || '',
+    geofence: o.geofenceRadiusMeters || 0,
+  }));
 
-  const lats = all.map((p) => p.lat);
-  const meanLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const kx = Math.cos((meanLat * Math.PI) / 180) || 1;
-  const xs = all.map((p) => p.lng * kx);
-
-  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-  const cy = (Math.min(...lats) + Math.max(...lats)) / 2;
-  // Half-spans, floored (~2.2 km) so a single outlet isn't an infinite zoom.
-  const MIN_HALF = 0.01;
-  let halfX = Math.max((Math.max(...xs) - Math.min(...xs)) / 2, MIN_HALF) * 1.18;
-  let halfY = Math.max((Math.max(...lats) - Math.min(...lats)) / 2, MIN_HALF) * 1.18;
-
-  // Match the data aspect ratio to the panel box so nothing is stretched.
-  const boxAspect = (box.w - PAD * 2) / (box.h - PAD * 2);
-  const dataAspect = halfX / halfY;
-  if (dataAspect < boxAspect) halfX = halfY * boxAspect;
-  else halfY = halfX / boxAspect;
-
-  const minX = cx - halfX, minY = cy - halfY;
-  const scale = (box.w - PAD * 2) / (halfX * 2);
-
-  const project = (lat, lng) => ({
-    x: PAD + (lng * kx - minX) * scale,
-    y: box.h - (PAD + (lat - minY) * scale), // invert: north = up
-  });
-  const metersToPx = scale / 111320;
-
-  return {
-    outletPts: cleanOutlets.map((o) => ({
-      id: o.id,
-      name: o.name,
-      address: o.address || '',
-      r: Math.min((o.geofenceRadiusMeters || 0) * metersToPx, 46),
-      ...project(o.latitude, o.longitude),
-    })),
-    staffPts: resolvedStaff.map((s) => ({
-      staffName: s.staffName || s.userId || 'Staff',
-      outletName: s.outletName || '',
-      approx: s.approx,
-      ...project(s.latitude, s.longitude),
-    })),
-  };
+  return { outletPts, staffPts };
 }
 
-function isNum(v) { return typeof v === 'number' && !Number.isNaN(v); }
+const label = (s) => s.staffName || s.userId || 'Staff';
+const isNum = (v) => typeof v === 'number' && !Number.isNaN(v);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

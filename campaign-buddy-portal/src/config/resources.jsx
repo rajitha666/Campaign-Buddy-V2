@@ -83,9 +83,15 @@ export const RESOURCES = {
     title: 'Brands', subtitle: 'Brand catalog, owned by clients.', addLabel: 'Add New Brand',
     columns: [
       { key: 'name', label: 'Brand Name', render: (r) => <Avatar name={r.name} /> },
+      { key: 'clientName', label: 'Client', render: (r) => r.clientName || r.clientId || '—' },
     ],
     actions: ['edit', 'delete'],
     fetchList: ({ query }) => brandsApi.list(query),
+    hydrate: async (rows) => {
+      const clientRes = await clientsApi.list().catch(() => null);
+      const map = buildLookup(clientRes?.data, 'clientName');
+      return rows.map((r) => ({ ...r, clientName: map[r.clientId] }));
+    },
     createItem: ({ values }) => brandsApi.create({ name: values.name, clientId: values.clientId }),
     updateItem: ({ id, values }) => brandsApi.update(id, { name: values.name, clientId: values.clientId }),
     deleteItem: ({ id }) => brandsApi.remove(id),
@@ -96,9 +102,9 @@ export const RESOURCES = {
   },
 
   items: {
-    title: 'Items', subtitle: 'Catalog-level products, shared across campaigns.', addLabel: 'Add New Item',
+    title: 'Products', subtitle: 'Catalog-level products, shared across campaigns.', addLabel: 'Add New Product',
     columns: [
-      { key: 'name', label: 'Item', render: (r) => <Avatar name={r.name} sub={r.sku} /> },
+      { key: 'name', label: 'Product', render: (r) => <Avatar name={r.name} sub={r.sku} /> },
       { key: 'brandName', label: 'Brand', render: (r) => r.brandName || r.brandId },
       { key: 'description', label: 'Description' },
       { key: 'unitPrice', label: 'Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}` },
@@ -121,7 +127,7 @@ export const RESOURCES = {
     }),
     deleteItem: ({ id }) => itemsApi.remove(id),
     formFields: [
-      { key: 'name', label: 'Item Name', type: 'text', required: true },
+      { key: 'name', label: 'Product Name', type: 'text', required: true },
       { key: 'brandId', label: 'Brand', type: 'select', required: true, optionsLoader: () => optionsFrom(brandsApi.list) },
       { key: 'shortDescription', label: 'Short Description', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
@@ -223,7 +229,8 @@ export const RESOURCES = {
       { key: 'endDate', label: 'To', render: (r) => fmtDate(r.endDate) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : r.status === 'ended' ? 'muted' : 'pending'}>{r.status}</Badge> },
     ],
-    actions: ['items', 'edit', 'delete'],
+    actions: ['viewItems', 'items', 'edit', 'delete'],
+    viewItemsModal: 'campaignProducts',
     fetchList: ({ query }) => campaignsApi.list(query),
     hydrate: async (rows) => {
       const clientRes = await clientsApi.list().catch(() => null);
@@ -296,7 +303,7 @@ export const RESOURCES = {
       { key: 'supervisorStaffId', label: 'Supervisor', type: 'select', required: true, optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
       { key: 'distributorPointId', label: 'Distributor Point', type: 'select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
-      { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Item Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
+      { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Product Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
       { key: 'targetCategorization', label: 'Target Categorization', type: 'radio', options: [{ value: 'daily', label: 'Daily' }, { value: 'monthly', label: 'Monthly' }] },
       { key: 'targetUnit', label: 'Target Unit', type: 'radio', options: [{ value: 'unit_wise', label: 'Unit Wise' }, { value: 'sales_wise', label: 'Sales Wise' }] },
     ],
@@ -476,7 +483,7 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
-      { key: 'itemName', label: 'Item', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
+      { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
@@ -505,14 +512,14 @@ export const RESOURCES = {
     title: 'Overall SKU Wise', subtitle: 'Aggregated sales by item, across the campaign.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
-    columns: [{ key: 'itemName', label: 'Item' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
   },
 
   reportBrandWise: {
     title: 'Overall Brand Wise', subtitle: 'Aggregated sales by brand.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: ({ campaignId, query }) => reportsApi.brandWise(campaignId, query),
   },
 
@@ -520,23 +527,28 @@ export const RESOURCES = {
     title: 'Client Reports', subtitle: 'Item-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }],
-    columns: [{ key: 'itemName', label: 'Item' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
   },
 
   brandWiseClient: {
     title: 'Overall Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Item Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: ({ campaignId, query }) => reportsApi.brandWise(campaignId, query),
   },
 
   reorder: {
-    title: 'Reorder', subtitle: 'Items at or below their reorder level, per outlet.', excel: true, noAdd: true,
+    title: 'Reorder', subtitle: 'Products at or below their reorder level, per outlet.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    filters: [{ key: 'date', label: 'Date', type: 'date' }],
+    filters: [
+      { key: 'outletId', label: 'Outlet', type: 'select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'brandId', label: 'Brand', type: 'select', allLabel: 'All brands', optionsLoader: () => optionsFrom(brandsApi.list) },
+      { key: 'date', label: 'Date', type: 'date' },
+    ],
     columns: [
-      { key: 'activationName', label: 'Activation' }, { key: 'itemName', label: 'Item' },
+      { key: 'activationName', label: 'Activation' }, { key: 'itemName', label: 'Product' },
+      { key: 'brandName', label: 'Brand', render: (r) => r.brandName || '—' },
       { key: 'outletName', label: 'Outlet' }, { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'remainingStock', label: 'Remaining' },
     ],

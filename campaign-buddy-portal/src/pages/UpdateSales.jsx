@@ -81,7 +81,7 @@ export default function UpdateSales() {
         <div className="table-card">
           <div className="table-scroll">
             <table className="data-table">
-              <thead><tr><th></th><th>Item</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th></tr></thead>
+              <thead><tr><th></th><th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.id || i}>

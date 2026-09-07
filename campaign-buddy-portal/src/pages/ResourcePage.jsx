@@ -4,6 +4,7 @@ import { RESOURCES } from '../config/resources';
 import DataTable from '../components/DataTable';
 import FilterBar from '../components/FilterBar';
 import Drawer from '../components/Drawer';
+import CampaignProductsModal from '../components/CampaignProductsModal';
 import ErrorState from '../components/ErrorState';
 import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +22,17 @@ export default function ResourcePage({ resourceKey }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState('');
-  const [filterValues, setFilterValues] = useState({});
+  // Single-date filters (convention: key === 'date') default to today so the
+  // picker never shows an empty "YYYY-MM-DD". Date ranges stay open.
+  const [filterValues, setFilterValues] = useState(() => {
+    const init = {};
+    (config?.filters || []).forEach((f) => {
+      if (f.type === 'date' && f.key === 'date' && f.defaultToday !== false) {
+        init[f.key] = new Date().toISOString().slice(0, 10);
+      }
+    });
+    return init;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,6 +40,7 @@ export default function ResourcePage({ resourceKey }) {
   const [drawerMode, setDrawerMode] = useState('add');
   const [drawerRow, setDrawerRow] = useState(null);
   const [resolvedFields, setResolvedFields] = useState([]);
+  const [productsRow, setProductsRow] = useState(null);
 
   const needsCampaign = !!config?.scopeToCampaign;
   const campaignId = currentCampaignId;
@@ -88,6 +100,7 @@ export default function ResourcePage({ resourceKey }) {
 
   async function handleAction(action, row) {
     if (action === 'target' && config.targetRoute) { navigate(config.targetRoute(row, campaignId)); return; }
+    if (action === 'viewItems') { setProductsRow(row); return; }
     if (action === 'items' && config.itemsRoute) { navigate(config.itemsRoute(row, campaignId)); return; }
     if (action === 'edit') { openDrawer('edit', row); return; }
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
@@ -129,7 +142,7 @@ export default function ResourcePage({ resourceKey }) {
   if (!config) return <ErrorState message={`Unknown resource: ${resourceKey}`} />;
 
   const readOnly = !isAdmin;
-  const visibleActions = readOnly ? (config.actions || []).filter((a) => ['view', 'target'].includes(a)) : (config.actions || []);
+  const visibleActions = readOnly ? (config.actions || []).filter((a) => ['view', 'target', 'viewItems'].includes(a)) : (config.actions || []);
 
   return (
     <div>
@@ -181,6 +194,10 @@ export default function ResourcePage({ resourceKey }) {
         onClose={() => setDrawerOpen(false)}
         onSubmit={handleSubmit}
       />
+
+      {config.viewItemsModal === 'campaignProducts' ? (
+        <CampaignProductsModal campaign={productsRow} onClose={() => setProductsRow(null)} />
+      ) : null}
     </div>
   );
 }

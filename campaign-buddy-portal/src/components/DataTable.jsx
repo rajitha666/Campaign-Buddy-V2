@@ -1,5 +1,10 @@
 import { ICONS } from './Icons';
 
+const ACTION_TITLES = {
+  view: 'View', edit: 'Edit', delete: 'Delete', target: 'Targets',
+  items: 'Edit products', viewItems: 'View products', approve: 'Approve', decline: 'Decline',
+};
+
 // Presentational only — ResourcePage (or any custom page) owns data fetching,
 // paging state, and passes rows already resolved to the shape it wants.
 export default function DataTable({
@@ -54,7 +59,7 @@ export default function DataTable({
                     <td>
                       <div className="row-actions">
                         {actions.map((a) => (
-                          <div key={a} className={`icon-btn ${a}`} title={a} onClick={() => onAction?.(a, row)}>
+                          <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
                             {ICONS[a]}
                           </div>
                         ))}

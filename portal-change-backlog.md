@@ -32,4 +32,27 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 
 ---
 
-## Batch 2 — (add new requests below)
+## Batch 2 — SHIPPED (branch `portal-changes-batch-2`, stacked on batch 1)
+
+| # | Change | Status | Where |
+|---|--------|--------|-------|
+| 1 | Collapsed sidebar header was cramped (logo vs expand toggle overlapped) | ✅ | `.nav-collapsed .brand-row` now stacks logo + toggle vertically ([`app.css`](campaign-buddy-portal/src/styles/app.css)) |
+| 2 | Rename **Items → Products** across the UI | ✅ | [`nav.js`](campaign-buddy-portal/src/config/nav.js), [`resources.jsx`](campaign-buddy-portal/src/config/resources.jsx) (titles/subtitles/columns/form labels), [`CampaignItems.jsx`](campaign-buddy-portal/src/pages/CampaignItems.jsx), [`ActivationItems.jsx`](campaign-buddy-portal/src/pages/ActivationItems.jsx), `ActivationTargets`/`UpdateSales`/`StaffProfiles`. API/route/data-model names unchanged. |
+| 3 | Client column on the Brands table | ✅ | [`resources.jsx`](campaign-buddy-portal/src/config/resources.jsx) `brands` — client-side hydrate by `clientId` (no backend change) |
+| 4 | Reorder DATE defaults to today | ✅ | see #8 |
+| 5 | Reorder: Outlet + Brand filter dropdowns | ✅ | [`resources.jsx`](campaign-buddy-portal/src/config/resources.jsx) `reorder` filters; `FilterBar` gained an `allLabel` "All …" option; backend `reports/reorder` now accepts `brandId` and returns `brandName` ([`reports.routes.ts`](campaign-buddy-backend/src/modules/admin/reports.routes.ts)) |
+| 6 | Real OpenStreetMap basemap on **all** map views | ✅ | `leaflet@1.9.4` added; [`CampaignMap.jsx`](campaign-buddy-portal/src/components/CampaignMap.jsx) rewritten on Leaflet + OSM tiles; [`LiveMapView.jsx`](campaign-buddy-portal/src/components/LiveMapView.jsx) now delegates to it; `LiveMap` + `SponsorDashboard` pass outlet coords through |
+| 7 | Campaigns list: read-only products popup (kept the editable one) | ✅ | new [`Modal.jsx`](campaign-buddy-portal/src/components/Modal.jsx) + [`CampaignProductsModal.jsx`](campaign-buddy-portal/src/components/CampaignProductsModal.jsx); `viewItems` row action in [`resources.jsx`](campaign-buddy-portal/src/config/resources.jsx) / [`ResourcePage.jsx`](campaign-buddy-portal/src/pages/ResourcePage.jsx) |
+| 8 | Every single-date filter defaults to today | ✅ | [`ResourcePage.jsx`](campaign-buddy-portal/src/pages/ResourcePage.jsx) seeds `filterValues` for filters with `key: 'date'`. Applies to Reorder, Staff Absence, Sales Update Status, Outlet Attendance, Promoter/Supervisor Tracking. `dateFrom`/`dateTo` **ranges left open** on purpose (standard for range filters); form-entry dates (DOB, campaign/activation ranges) untouched. Month pickers + Update Sales already defaulted. |
+
+### Decisions taken
+- **Leaflet, not react-leaflet** — plain imperative Leaflet keeps the dep tree tiny and avoids React-version coupling. OSM tiles need network at runtime (fine for a normal web app).
+- **Items→Products is UI-only** — endpoint paths (`/items`), API method names, Prisma models, and the `item_wise` enum value are unchanged; only visible text moved. The "Item Wise" activation target option is now labelled "Product Wise" (value still `item_wise`).
+- **Brand column on Brands** done client-side (fetch clients, map by id) — same pattern as the existing Items→Brand hydrate; no backend change. The reorder brand **filter** did need a backend tweak because reorder rows had no brand info.
+- **Date-range filters stay empty.** #8 said "wherever there is a date picker" but defaulting a From/To pair to today would silently hide all history; single-date filters are the ones that showed the ugly `YYYY-MM-DD`.
+
+### Follow-ups
+- Sponsor dashboard + `/tracking/live` now use the Leaflet map too, but their surrounding layouts weren't otherwise revisited.
+- `CampaignProductsModal` footer scrolls with the list on very long catalogs (header X always works).
+
+## Batch 3 — (add new requests below)
