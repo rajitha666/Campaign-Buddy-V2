@@ -46,6 +46,7 @@ export const NAV = [
     { path: '/my-leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['supervisor'] },
   ]},
   { section: 'Sales', roles: ['admin', 'supervisor', 'sponsor'], items: [
+    { path: '/sales', label: 'Sales Overview', icon: 'sales', roles: ['admin'] },
     { label: 'Sales', icon: 'sales', roles: ['admin'], children: [
       { path: '/sales/sku-wise', label: 'SKU Wise Sales' },
       { path: '/sales/status', label: 'Sales Update Status' },

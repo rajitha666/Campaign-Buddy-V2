@@ -55,6 +55,9 @@ async function main() {
     });
   }
 
+  const campaignStart = new Date(Date.now() - 5 * 86400000);
+  const campaignEnd = new Date(Date.now() + 25 * 86400000);
+
   let campaign = await prisma.campaign.findFirst({ where: { campaignNo: "CMP-0001" } });
   if (!campaign) {
     campaign = await prisma.campaign.create({
@@ -62,9 +65,14 @@ async function main() {
         campaignNo: "CMP-0001",
         name: "Sktest Activation",
         clientId: client.id,
-        startDate: new Date(Date.now() - 5 * 86400000),
-        endDate: new Date(Date.now() + 25 * 86400000),
+        startDate: campaignStart,
+        endDate: campaignEnd,
       },
+    });
+  } else {
+    campaign = await prisma.campaign.update({
+      where: { id: campaign.id },
+      data: { startDate: campaignStart, endDate: campaignEnd },
     });
   }
 
@@ -108,6 +116,11 @@ async function main() {
         dateFrom: campaign.startDate,
         dateTo: campaign.endDate,
       },
+    });
+  } else {
+    activation = await prisma.activation.update({
+      where: { id: activation.id },
+      data: { dateFrom: campaign.startDate, dateTo: campaign.endDate },
     });
   }
 

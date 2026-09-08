@@ -5,7 +5,7 @@
  */
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet, Alert, Platform } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent, DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { BottomSheetModal } from './BottomSheetModal';
 import { Button } from './Button';
@@ -61,13 +61,33 @@ export function TimeOffRequestSheet({
     };
   }
 
+  function openDatePicker(which: 'from' | 'to') {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: new Date(which === 'from' ? fromDate : toDate),
+        mode: 'date',
+        onChange: onPick(which),
+        ...(which === 'to' ? { minimumDate: new Date(fromDate) } : {}),
+      });
+    } else {
+      setPicking(which);
+    }
+  }
+
   const submitMutation = useMutation({
     mutationFn: () => timeOffApi.createTimeOffRequest({ fromDate, toDate, reason, note: note || undefined }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-off'] });
+      Alert.alert('Request submitted', 'Your leave request has been sent for approval.');
+      setFromDate(defaultFromDate);
+      setToDate(defaultToDate);
+      setReason('sick_leave');
+      setNote('');
       onClose();
     },
-    onError: (err) => Alert.alert('Could not submit request', getApiErrorMessage(err)),
+    onError: (err) => {
+      Alert.alert('Could not submit request', getApiErrorMessage(err));
+    },
   });
 
   return (
@@ -77,8 +97,8 @@ export function TimeOffRequestSheet({
       </View>
 
       <View style={styles.dateRow}>
-        <DateField label="From" value={fromDate} onPress={() => setPicking('from')} />
-        <DateField label="To" value={toDate} onPress={() => setPicking('to')} />
+        <DateField label="From" value={fromDate} onPress={() => openDatePicker('from')} />
+        <DateField label="To" value={toDate} onPress={() => openDatePicker('to')} />
       </View>
 
       {picking === 'from' && (

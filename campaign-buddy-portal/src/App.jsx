@@ -11,6 +11,7 @@ import ActivationItems from './pages/ActivationItems';
 import ActivationTargets from './pages/ActivationTargets';
 import StaffProfiles from './pages/StaffProfiles';
 import UpdateSales from './pages/UpdateSales';
+import SalesPage from './pages/SalesPage';
 import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
 import LiveMap from './pages/LiveMap';
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/supervisor-attendance" element={R('supervisorAttendance')()} />
               <Route path="/assign-routes" element={<AssignRoutes />} />
 
+              <Route path="/sales" element={<SalesPage />} />
               <Route path="/sales/sku-wise" element={R('skuSales')()} />
               <Route path="/sponsor/sales" element={R('skuSales')()} />
               <Route path="/sales/status" element={R('salesStatus')()} />
