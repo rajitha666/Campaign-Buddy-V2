@@ -53,6 +53,7 @@ export const NAV = [
       { path: '/sales/outlet-wise', label: 'Outlet wise' },
     ]},
     { path: '/sales/update', label: 'Update Sales', icon: 'updatesales', roles: ['admin'] },
+    { path: '/sales/custom-fields', label: 'Custom Fields', icon: 'sales', roles: ['admin'] },
     { path: '/sales/sku-wise', label: 'SKU Wise Sales', icon: 'sales', roles: ['supervisor'] },
     { path: '/sponsor/sales', label: 'Sales & Foot Fall', icon: 'sales', roles: ['sponsor'] },
   ]},

@@ -143,6 +143,14 @@ export const supervisorRoutes = {
 export const salesLookup = {
   load: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales/lookup`, { query }), // {staffId, outletId, activationId, date}
 };
+// Custom sales fields (#13)
+export const salesFields = {
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales-fields`, { query }), // {includeArchived}
+  create: (campaignId, body) => api.post(`/campaigns/${campaignId}/sales-fields`, body),
+  update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/sales-fields/${id}`, body),
+  remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/sales-fields/${id}`),
+  saveValues: (campaignId, body) => api.put(`/campaigns/${campaignId}/sales/custom-values`, body), // {activationId, date, day, products}
+};
 export const supervisorTasks = {
   list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
