@@ -61,6 +61,11 @@ Error:
 
 `VALIDATION_ERROR`, `NOT_CHECKED_IN`, `ALREADY_CHECKED_IN`, `LOCATION_OUT_OF_RANGE`, `OVERLAPPING_LEAVE_REQUEST`, `INSUFFICIENT_STOCK`, `TOKEN_EXPIRED`, `FORBIDDEN`.
 
+For `VALIDATION_ERROR`, `error.message` is always a plain, user-facing sentence
+that names the field (e.g. `"From date is required"`, `"Foot fall must be 0 or
+more"`) — safe to show directly in the UI. The raw Zod wording is never sent.
+See `src/utils/validationMessages.ts`.
+
 ---
 
 ## 2. Data Models

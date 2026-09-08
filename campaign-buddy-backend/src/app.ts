@@ -3,6 +3,11 @@ import cors from "cors";
 import mobileRoutes from "./modules/mobile";
 import adminRoutes from "./modules/admin";
 import { errorHandler } from "./middleware/errorHandler";
+import { installValidationMessages } from "./utils/validationMessages";
+
+// Rewrite Zod's stock validation text into plain, field-named sentences
+// before any schema is parsed (issue #4).
+installValidationMessages();
 
 export const app = express();
 
