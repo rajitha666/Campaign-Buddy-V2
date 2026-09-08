@@ -50,8 +50,8 @@ Error:
 | 401 | `TOKEN_EXPIRED` — missing, invalid, or expired token |
 | 403 | `FORBIDDEN` (or, on `/admin/v1/*`, `CAMPAIGN_ACCESS_DENIED` / `OUTLET_ACCESS_DENIED` / `READ_ONLY_ROLE` — authenticated but not permitted (role, grant, or outlet scope) |
 | 404 | `NOT_FOUND` |
-| 409 | `ALREADY_CHECKED_IN`, `OVERLAPPING_LEAVE_REQUEST` |
-| 422 | `NOT_CHECKED_IN` — action requires an open shift that doesn't exist |
+| 409 | `ALREADY_CHECKED_IN`, `OVERLAPPING_LEAVE_REQUEST`, `IN_USE`, `SUMMARY_CONFIRMED` |
+| 422 | `NOT_CHECKED_IN` — action requires an open shift that doesn't exist; `MISSING_REQUIRED_FIELD` — a required custom sales field (#13) is empty |
 | 500 | `SERVER_ERROR` |
 
 ---
@@ -170,6 +170,12 @@ Relations: `campaign`, `outlet`, `staff`, `supervisor`, `distributorPoint`, and 
 **SalesSummary** (`sales_summaries`) — one row per `(activationId, date)`, the rep's end-of-day confirmation
 `id`, `activationId` (FK, cascade), `date` (DATE), `remarks?`, `confirmed: Boolean` (default false), `confirmedAt?`, `updatedAt`. Unique on `(activationId, date)`. Rollup fields (`itemsReceived`, `itemsSold`, `itemsRemaining`, `totalSales`, `footFall`, `approached`, `converted`) are **not stored** — computed at read time from `SalesRecord` + `DailyStats` in `buildSummary()`.
 
+**SalesFieldDefinition** (`sales_field_definitions`) — admin-defined extra field on the daily sales update, per campaign (issue #13)
+`id`, `campaignId` (FK, cascade), `key` (slug, unique per campaign, frozen after create), `label`, `type: SalesFieldType` (`number`/`text`/`boolean`/`select`), `scope: SalesFieldScope` (`day`/`product`), `options: String[]` (`select` only), `required: Boolean`, `sortOrder: Int`, `archivedAt?` (soft-delete), timestamps. `type`/`scope` are immutable once any value exists.
+
+**SalesFieldValue** (`sales_field_values`) — one captured value
+`id`, `definitionId` (FK, cascade), `activationId` (FK, cascade), `activationItemId?` (FK, cascade — null for `day` scope, set for `product`), `date` (DATE), `value: String` (canonical string form, cast per `type` on read), `updatedAt`. Two **partial unique indexes** (in the migration, not the Prisma schema) enforce one row per `(definition, activation, date)` for day-scope and per `(definition, activationItem, date)` for product-scope. Writes replace rows in a transaction (`deleteMany` + `create`).
+
 **TrackingPing** (`tracking_pings`) — high-frequency, foreground-only location log
 `id`, `activationId` (FK, cascade), `latitude: Float`, `longitude: Float`, `accuracyMeters?: Float`, `capturedAt` (device clock), `receivedAt` (server clock, default now), `appState: AppState` (default `foreground`), `batteryPercent?: Int`. Indexed on `(activationId, capturedAt)`.
 
@@ -279,10 +285,11 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | PATCH | `/stats/today` | partial update, absolute values not deltas |
 | GET | `/campaigns/:campaignId/outlets/:outletId/products?reorderOnly=` | resolves the staff's own `Activation` for that campaign+outlet |
 | GET | `/products/:productId` | `soldAcrossAllOutletsToday` and `addedToCampaignAt` computed across all `CampaignItem`/`ActivationItem` rows for that Item |
-| PATCH | `/products/:campaignProductAssignmentId/stock` | `:campaignProductAssignmentId` = `ActivationItem.id`; enforces `soldToday ≤ openingStock` |
-| GET | `/sales-summary/today` | |
-| PATCH | `/sales-summary/today` | remarks only |
-| POST | `/sales-summary/today/confirm` | idempotent |
+| PATCH | `/products/:campaignProductAssignmentId/stock` | `:campaignProductAssignmentId` = `ActivationItem.id`; enforces `soldToday ≤ openingStock`; accepts `customFields` (product-scope, #13), `422 MISSING_REQUIRED_FIELD` on an empty required one |
+| GET | `/sales-fields` | day + product custom-field definitions (#13) for the staff's current campaign, day values filled in |
+| GET | `/sales-summary/today` | includes `customFields` (day-scope) |
+| PATCH | `/sales-summary/today` | `remarks` and/or `customFields`; `409 SUMMARY_CONFIRMED` once the day is confirmed |
+| POST | `/sales-summary/today/confirm` | idempotent; `422 MISSING_REQUIRED_FIELD` if a required day-scope `customFields` value is empty |
 | GET | `/time-off/balance` | |
 | GET | `/time-off/requests` | |
 | POST | `/time-off/requests` | checks for overlapping pending/approved requests → `409` |
@@ -355,7 +362,9 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/campaigns/:campaignId/attendance?outletId=&dateFrom=&dateTo=` | grant required, outlet-filtered |
 | GET | `/campaigns/:campaignId/sales?outletId=&dateFrom=&dateTo=` | grant required, outlet-filtered |
 | PATCH | `/campaigns/:campaignId/sales/:salesRecordId` | **[adm/usr]** — correction, re-validates outlet ownership; can raise `openingStock` mid-day (§2.6) |
-| GET | `/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` | grant required — **new in v3**, folded in from the retired contract doc's §7.7.4. The cascading-dropdown load step before the portal's editable Update Sales grid. Response: `[{ id (=salesRecordId), itemName, unitPrice, openingStock, soldToday }]`. Nested under the campaign-scoped router (the original draft had this as a global endpoint with `campaignId` as a query param — moved here for consistency with every other grant-enforced resource) |
+| GET | `/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` | grant required — **new in v3**, folded in from the retired contract doc's §7.7.4. The cascading-dropdown load step before the portal's editable Update Sales grid. Response: `data: [{ id (=salesRecordId), activationItemId, itemName, unitPrice, openingStock, soldToday, customFields }]`, `meta: { total, activationId, date, dayCustomFields }` (#13). Nested under the campaign-scoped router (the original draft had this as a global endpoint with `campaignId` as a query param — moved here for consistency with every other grant-enforced resource) |
+| GET/POST/PATCH/DELETE | `/campaigns/:campaignId/sales-fields[/:id]` | `salesFields.routes.ts` — **[adm/usr]** for writes. Custom sales-field definitions (#13): auto-slugged `key`, `type`/`scope` frozen once values exist, `DELETE` 409s when values exist (archive instead via `PATCH { archived: true }`) |
+| PUT | `/campaigns/:campaignId/sales/custom-values` | **[adm/usr]** — bulk save `{ activationId, date, day: {key:val}, products: {activationItemId: {key:val}} }`; `null` clears a value |
 | GET | `/campaigns/:campaignId/stats?outletId=&dateFrom=&dateTo=` | returns `{ totals, byDay }` |
 | GET | `/campaigns/:campaignId/tracking/live` | current position of every checked-in staff member (open `AttendanceRecord` + latest `TrackingPing`), outlet-filtered — **powers the Supervisor/Sponsor live map**. **Confirmed campaign-scoped** (not global — see Changelog v3 for why the retired contract doc's "global" call doesn't carry forward: a global endpoint would sidestep `CampaignAccessGrant` scoping entirely, which conflicts with the rest of this API's design) |
 | GET | `/campaigns/:campaignId/leave-requests` | grant required, filtered to staff on this campaign's activations |
