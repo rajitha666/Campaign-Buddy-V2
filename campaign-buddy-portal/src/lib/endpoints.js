@@ -150,6 +150,7 @@ export const salesFields = {
   update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/sales-fields/${id}`, body),
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/sales-fields/${id}`),
   saveValues: (campaignId, body) => api.put(`/campaigns/${campaignId}/sales/custom-values`, body), // {activationId, date, day, products}
+  dayValues: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales-field-values`, { query }), // {dateFrom, dateTo}
 };
 export const supervisorTasks = {
   list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),

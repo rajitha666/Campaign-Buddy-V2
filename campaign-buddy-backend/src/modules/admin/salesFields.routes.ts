@@ -9,7 +9,7 @@ import { requireCampaignAccess } from "../../middleware/campaignAccess";
 import { dayDate } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
-import { slugifyFieldKey, coerceFieldValue, serializeDefinition } from "../../utils/salesFields";
+import { slugifyFieldKey, coerceFieldValue, serializeDefinition, readFieldValue } from "../../utils/salesFields";
 
 // Admin CRUD for the campaign's custom sales-field definitions + a bulk value
 // save for the portal correction screen (issue #13).
@@ -130,6 +130,42 @@ router.delete(
     }
     await prisma.salesFieldDefinition.delete({ where: { id: field.id } });
     res.status(204).send();
+  })
+);
+
+// Day-scope custom values across a date range — backs the portal's "Last 7 Days"
+// panel. Product-scope values are per-SKU and not summarised here.
+router.get(
+  "/campaigns/:campaignId/sales-field-values",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const { dateFrom, dateTo } = req.query as { dateFrom?: string; dateTo?: string };
+    const rows = await prisma.salesFieldValue.findMany({
+      where: {
+        activationItemId: null,
+        definition: { campaignId: req.params.campaignId, scope: "day" },
+        ...(dateFrom || dateTo
+          ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } }
+          : {}),
+      },
+      include: {
+        definition: true,
+        activation: { include: { outlet: true, staff: true } },
+      },
+      orderBy: { date: "desc" },
+    });
+    res.json(okList(
+      rows.map((r) => ({
+        date: r.date,
+        activationId: r.activationId,
+        outletName: r.activation.outlet.name,
+        staffName: r.activation.staff.displayName || r.activation.staff.fullName,
+        key: r.definition.key,
+        label: r.definition.label,
+        value: readFieldValue(r.definition, r.value),
+      })),
+      rows.length
+    ));
   })
 );
 

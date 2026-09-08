@@ -4,15 +4,16 @@ import {
   activations as activationsApi,
   outlets as outletsApi,
   staff as staffApi,
-  salesLookup,
   salesRecords as salesRecordsApi,
   dailyStats as dailyStatsApi,
   attendance as attendanceApi,
+  salesFields as salesFieldsApi,
 } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
 import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import SalesCorrectionGrid from '../components/SalesCorrectionGrid';
 
 function todayISO(offsetDays = 0) {
   const d = new Date();
@@ -67,14 +68,12 @@ export default function SalesPage() {
   const [staffList, setStaffList] = useState([]);
   const [activationsList, setActivationsList] = useState([]);
   const [form, setForm] = useState({ outletId: '', staffId: '', activationId: '', date: todayISO() });
-  const [rows, setRows] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const [recentSales, setRecentSales] = useState(null);
   const [recentLoading, setRecentLoading] = useState(false);
   const [today, setToday] = useState({ totalSales: 0, outletCount: 0, footFall: 0, approached: 0, converted: 0 });
   const [week, setWeek] = useState([]);
+  const [dayFieldValues, setDayFieldValues] = useState([]);
 
   const [statsFootFall, setStatsFootFall] = useState(null);
   const [statsApproached, setStatsApproached] = useState(null);
@@ -104,17 +103,19 @@ export default function SalesPage() {
       .catch(() => { setStatsFootFall(0); setStatsApproached(0); setStatsConverted(0); });
   }
 
-  useEffect(() => {
+  function loadRecent() {
     if (!currentCampaignId) return;
     setRecentLoading(true);
     Promise.all([
       salesRecordsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }),
       dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }),
       attendanceApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
+      salesFieldsApi.dayValues(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }).catch(() => null),
     ])
-      .then(([salesRes, statsRes, attRes]) => {
+      .then(([salesRes, statsRes, attRes, fieldRes]) => {
         const salesRows = salesRes?.data || [];
         setRecentSales(salesRows);
+        setDayFieldValues(fieldRes?.data || []);
 
         const todaySales = salesRows.filter((r) => String(r.date).slice(0, 10) === todayISO());
         const totalSales = todaySales.reduce((s, r) => s + saleValue(r), 0);
@@ -143,37 +144,8 @@ export default function SalesPage() {
       })
       .catch(() => setRecentSales([]))
       .finally(() => setRecentLoading(false));
-  }, [currentCampaignId]);
-
-  async function loadSales() {
-    setLoading(true); setError(null);
-    try {
-      const res = await salesLookup.load(currentCampaignId, form);
-      setRows((res?.data || []).map((r) => ({ ...r, selected: false })));
-    } catch (e) {
-      setError(e.message || 'Could not load sales for this selection.');
-    } finally {
-      setLoading(false);
-    }
   }
-
-  function setCell(idx, key, val) {
-    setRows((r) => r.map((row, i) => (i === idx ? { ...row, [key]: val } : row)));
-  }
-
-  async function saveCorrections() {
-    try {
-      await Promise.all((rows || []).filter((r) => r.selected).map((r) =>
-        salesRecordsApi.correct(currentCampaignId, r.id, { openingStock: Number(r.openingStock), soldToday: Number(r.soldToday) })
-      ));
-      push('Sales corrections saved');
-      salesRecordsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() })
-        .then((res) => setRecentSales(res?.data || []))
-        .catch(() => {});
-    } catch (e) {
-      push(e.message || 'Could not save corrections', 'error');
-    }
-  }
+  useEffect(loadRecent, [currentCampaignId]);
 
   async function saveTodayStats() {
     setStatsSaving(true);
@@ -206,7 +178,7 @@ export default function SalesPage() {
     if (!recentSales) return [];
     const map = {};
     for (let i = 6; i >= 0; i--) {
-      map[todayISO(-i)] = { date: todayISO(-i), items: [], totalSales: 0, totalUnits: 0 };
+      map[todayISO(-i)] = { date: todayISO(-i), items: [], totalSales: 0, totalUnits: 0, fields: [] };
     }
     for (const r of recentSales) {
       const day = String(r.date).slice(0, 10);
@@ -218,12 +190,39 @@ export default function SalesPage() {
       map[day].totalSales += val;
       map[day].totalUnits += r.soldToday || 0;
     }
+    for (const f of dayFieldValues) {
+      const day = String(f.date).slice(0, 10);
+      if (map[day]) map[day].fields.push(f);
+    }
     return Object.values(map).sort((a, b) => b.date.localeCompare(a.date));
-  }, [recentSales]);
+  }, [recentSales, dayFieldValues]);
 
   const conversionRate = statsApproached && statsApproached > 0 ? Math.round(((statsConverted ?? 0) / statsApproached) * 100) : 0;
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
+
+  const filterSlot = (
+    <div className="filter-bar">
+      <div className="filter-field"><label>Outlet</label>
+        <select value={form.outletId} onChange={(e) => setForm((f) => ({ ...f, outletId: e.target.value }))}>
+          <option value="">Select...</option>{outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+      </div>
+      <div className="filter-field"><label>Promoter</label>
+        <select value={form.staffId} onChange={(e) => setForm((f) => ({ ...f, staffId: e.target.value }))}>
+          <option value="">Select...</option>{staffList.map((s) => <option key={s.id} value={s.id}>{s.displayName || s.fullName}</option>)}
+        </select>
+      </div>
+      <div className="filter-field"><label>Activation</label>
+        <select value={form.activationId} onChange={(e) => setForm((f) => ({ ...f, activationId: e.target.value }))}>
+          <option value="">Select...</option>{activationsList.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+      <div className="filter-field"><label>Date</label>
+        <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -297,50 +296,8 @@ export default function SalesPage() {
 
       <div className="panel" style={{ marginBottom: 16 }}>
         <div className="panel-title">Update Sales</div>
-        <div className="panel-sub">Select outlet, promoter, activation and date to correct sales.</div>
-        <div className="filter-bar" style={{ marginTop: 12 }}>
-          <div className="filter-field"><label>Outlet</label>
-            <select value={form.outletId} onChange={(e) => setForm((f) => ({ ...f, outletId: e.target.value }))}>
-              <option value="">Select...</option>{outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-          </div>
-          <div className="filter-field"><label>Promoter</label>
-            <select value={form.staffId} onChange={(e) => setForm((f) => ({ ...f, staffId: e.target.value }))}>
-              <option value="">Select...</option>{staffList.map((s) => <option key={s.id} value={s.id}>{s.displayName || s.fullName}</option>)}
-            </select>
-          </div>
-          <div className="filter-field"><label>Activation</label>
-            <select value={form.activationId} onChange={(e) => setForm((f) => ({ ...f, activationId: e.target.value }))}>
-              <option value="">Select...</option>{activationsList.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </div>
-          <div className="filter-field"><label>Date</label>
-            <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={loadSales} style={{ alignSelf: 'flex-end' }}>Load sales</button>
-        </div>
-
-        {loading ? <Loader /> : error ? <ErrorState message={error} /> : rows ? (
-          <div className="table-card" style={{ marginTop: 12 }}>
-            <div className="table-scroll">
-              <table className="data-table">
-                <thead><tr><th></th><th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th></tr></thead>
-                <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={r.id || i}>
-                      <td><input type="checkbox" checked={!!r.selected} onChange={(e) => setCell(i, 'selected', e.target.checked)} /></td>
-                      <td className="cell-strong">{r.itemName}</td>
-                      <td>LKR {Number(r.unitPrice || 0).toLocaleString()}</td>
-                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.openingStock} onChange={(e) => setCell(i, 'openingStock', e.target.value)} /></td>
-                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.soldToday} onChange={(e) => setCell(i, 'soldToday', e.target.value)} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="table-footer"><span /><button className="btn btn-primary btn-sm" onClick={saveCorrections}>Save corrections</button></div>
-          </div>
-        ) : null}
+        <div className="panel-sub">Select outlet, promoter, activation and date to correct sales and record custom fields.</div>
+        <SalesCorrectionGrid campaignId={currentCampaignId} form={form} filterSlot={filterSlot} onSaved={loadRecent} />
       </div>
 
       <div className="panel">
@@ -358,6 +315,15 @@ export default function SalesPage() {
                     {day.totalUnits} units &middot; LKR {day.totalSales.toLocaleString()}
                   </div>
                 </div>
+                {day.fields.length > 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+                    {day.fields.map((f, i) => (
+                      <span key={i} style={{ marginRight: 12 }}>
+                        <strong>{f.staffName}</strong> · {f.label}: {String(f.value)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {day.items.length === 0 ? (
                   <div className="cell-muted" style={{ fontSize: 12, padding: '4px 0' }}>No sales recorded</div>
                 ) : (

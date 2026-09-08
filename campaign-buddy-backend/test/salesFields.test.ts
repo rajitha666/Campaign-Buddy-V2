@@ -115,4 +115,34 @@ describe("admin custom sales fields — bulk value save", () => {
     expect(res.status).toBe(400);
     expect(res.body.error.field).toBe("samples");
   });
+
+  it("sales/lookup carries per-row customFields + meta.dayCustomFields", async () => {
+    const { token, campaign, activation } = await setup();
+    const base = `/admin/v1/campaigns/${campaign.id}/sales-fields`;
+    await request(app).post(base).set("Authorization", `Bearer ${token}`).send({ label: "Weather", type: "text", scope: "day" });
+    await request(app).post(base).set("Authorization", `Bearer ${token}`).send({ label: "Damaged", type: "number", scope: "product" });
+
+    const res = await request(app).get(`/admin/v1/campaigns/${campaign.id}/sales/lookup?activationId=${activation.id}&date=${today}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.activationId).toBe(activation.id);
+    expect(res.body.meta.dayCustomFields.map((f: any) => f.key)).toEqual(["weather"]);
+    expect(res.body.data[0].customFields.map((f: any) => f.key)).toEqual(["damaged"]);
+    expect(res.body.data[0].activationItemId).toBeTypeOf("string");
+  });
+
+  it("sales-field-values returns day values across a date range with names", async () => {
+    const { token, campaign, activation } = await setup();
+    const base = `/admin/v1/campaigns/${campaign.id}/sales-fields`;
+    await request(app).post(base).set("Authorization", `Bearer ${token}`).send({ label: "Weather", type: "text", scope: "day" });
+    await request(app).put(`/admin/v1/campaigns/${campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
+      .send({ activationId: activation.id, date: today, day: { weather: "Rain" } });
+
+    const res = await request(app).get(`/admin/v1/campaigns/${campaign.id}/sales-field-values?dateFrom=${today}&dateTo=${today}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0]).toMatchObject({ key: "weather", label: "Weather", value: "Rain" });
+    expect(res.body.data[0].staffName).toBeTypeOf("string");
+  });
 });
