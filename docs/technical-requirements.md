@@ -1,7 +1,8 @@
 # Campaign Buddy — Technical Requirements
 
 What each part of the system needs to build and run. Versions are drawn from the
-committed `package.json` / lockfiles / `.env.example` / `app.json` (2026-09-06).
+committed `package.json` / lockfiles / `.env.example` / `app.json`
+(backend/portal 2026-09-06; mobile app on **Expo SDK 57** as of 2026-09-07).
 
 - [Backend](#backend--campaign-buddy-backend) — the API, required by everything else
 - [Mobile app](#mobile-app--campaign-buddy-app) — CB Mobile
@@ -76,19 +77,24 @@ npm run build && npm start     # compiles to dist/, runs node dist/src/server.js
 
 | Requirement | Version | Notes |
 |---|---|---|
-| **Node.js** | 18+ | Built on 24. React Native 0.74 requires ≥ 18. |
-| **npm** | — | Use `npm install --ignore-scripts` (npm 11 vs `react-native-screens@3.31.0` postinstall). |
-| **Expo SDK** | **51** | via `npx expo` — no global CLI install needed |
-| **React Native** | **0.74.0** | React 18.2.0 |
-| **TypeScript** | ~5.3 | extends `expo/tsconfig.base` |
+| **Node.js** | **20+** | Built on 24. React Native 0.86 requires ≥ 20. |
+| **npm** | — | Use `npm install --ignore-scripts` (npm 11 blocks lifecycle scripts). `.npmrc` pins `legacy-peer-deps=true`. |
+| **Expo SDK** | **57** | Upgraded from 51 on 2026-09-07 so the App Store Expo Go (latest SDK only) can open it. Via `npx expo` — no global CLI install needed. `npx expo-doctor` is clean. |
+| **React Native** | **0.86.3** | React 19.2.3 / React Navigation 7 |
+| **TypeScript** | ~6.0 | extends `expo/tsconfig.base` |
 | Watchman | recommended on macOS | |
 
 ### Environment (`.env`)
 
-- `EXPO_PUBLIC_API_BASE_URL` — the backend's **`/v1`** base URL.
-  - Emulator or web on the same machine: `http://localhost:4000/v1`
-  - **Physical device: the dev machine's LAN IP**, e.g.
-    `http://192.168.1.20:4000/v1` (not `localhost`)
+- `EXPO_PUBLIC_API_BASE_URL` — the backend's **`/v1`** base URL. Baked into the
+  JS bundle at build time.
+  - Expo web / iOS Simulator / Android emulator on the same machine:
+    `http://localhost:4000/v1`
+  - **Physical device via Expo Go (same Wi-Fi): the dev machine's LAN IP**, e.g.
+    `http://192.168.1.20:4000/v1` (not `localhost`; find it with `ipconfig` /
+    `ifconfig`)
+  - `npx expo start --tunnel` (any network): the backend URL must be publicly
+    reachable — localhost / LAN IPs will not work through the tunnel.
 
 ### Run in a browser (the path exercised in this build)
 
@@ -101,13 +107,14 @@ npm run start -- --web        # Metro on :8081, opens the browser
 Needs a modern evergreen browser; grant **geolocation** permission for check-in.
 `react-native-web` / `react-dom` / `@expo/metro-runtime` are already included.
 
-### Run on a device / emulator (not tested on the current dev machine)
+### Run on a device / emulator
 
 | Target | Needs |
 |---|---|
-| **Expo Go (fastest)** | The **Expo Go** app on the device (iOS 13+ / Android 6+), device on the **same Wi‑Fi** as the dev machine, then `npm start` and scan the QR |
-| **iOS native build** | macOS + **Xcode 15+**, CocoaPods, iOS **13.4+** target device/simulator |
-| **Android native build** | **Android Studio** + SDK, **JDK 17**, Android **7.0 / API 24+** target |
+| **Expo Go (fastest)** | The **Expo Go** app from the App Store / Play Store (tracks the latest SDK — this app is on 57), device on the **same Wi‑Fi** as the dev machine, then `npx expo start` and scan the QR. Open inbound TCP **4000** (backend) + **8081** (Metro) on the dev machine's firewall. Exercised on Expo web against the live backend post-SDK-57. |
+| **iOS Simulator** | macOS + **Xcode 15+**, CocoaPods — not set up on the current Windows dev machine |
+| **Android emulator** | **Android Studio** + SDK, **JDK 17**, Android **7.0 / API 24+** target — not set up on the current Windows dev machine |
+| **iOS / Android native build** | as above; `npx expo prebuild` then the platform toolchain |
 | **Standalone binaries** (`.ipa` / `.aab`) | **EAS Build** + a free Expo account — not configured in this repo yet |
 
 Bundle identifiers are set: iOS & Android `com.dyuro.campaignbuddy`.
@@ -125,9 +132,9 @@ Bundle identifiers are set: iOS & Android `com.dyuro.campaignbuddy`.
 
 ### Key libraries
 
-@react-navigation v6 (native-stack + bottom-tabs) · @tanstack/react-query v5 ·
-axios 1.6 · react-native-svg 15.2 · react-native-safe-area-context 4.10 ·
-react-native-screens 3.31 · @react-native-community/datetimepicker 8.0.1 ·
+@react-navigation v7 (native-stack + bottom-tabs) · @tanstack/react-query v5 ·
+axios 1.6 · react-native-svg 15.15 · react-native-safe-area-context 5.7 ·
+react-native-screens 4.26 · @react-native-community/datetimepicker 9.1.0 ·
 @expo-google-fonts/poppins
 
 ---
@@ -163,7 +170,7 @@ npm run build             # -> static dist/
 
 | | Backend | Mobile | Portal |
 |---|---|---|---|
-| Node | 18+ (built on 24) | 18+ | 18+ |
+| Node | 18+ (built on 24) | 20+ (built on 24) | 18+ |
 | Extra runtime | PostgreSQL 14+ | device location services | — (static after build) |
 | Listens on | `:4000` | Metro `:8081` (dev) | `:5173` (dev) |
 | Production artifact | `dist/` + `node` process | `.ipa` / `.aab` via EAS | static `dist/` |
