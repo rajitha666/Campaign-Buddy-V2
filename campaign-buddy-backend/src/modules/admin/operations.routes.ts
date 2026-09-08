@@ -8,6 +8,7 @@ import { dayDate, dayBounds } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { computeTotalSales } from "../../utils/salesCalc";
+import { activeDefsForCampaign, dayValueMap, serializeWithValues } from "../../utils/salesFieldStore";
 
 const router = Router();
 
@@ -105,23 +106,42 @@ router.get(
     if (!activation) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
 
-    const activationItems = await prisma.activationItem.findMany({
-      where: { activationId: activation.id },
-      include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: dayDate(date) } } },
-    });
+    const when = dayDate(date);
+    const [activationItems, salesDefs] = await Promise.all([
+      prisma.activationItem.findMany({
+        where: { activationId: activation.id },
+        include: {
+          campaignItem: { include: { item: true } },
+          salesRecords: { where: { date: when } },
+          salesFieldValues: { where: { date: when } },
+        },
+      }),
+      activeDefsForCampaign(req.params.campaignId),
+    ]);
+    const dayDefs = salesDefs.filter((d) => d.scope === "day");
+    const productDefs = salesDefs.filter((d) => d.scope === "product");
+    const dayValues = await dayValueMap(activation.id, when);
 
-    res.json(
-      okList(
-        activationItems.map((ai) => ({
+    res.json({
+      data: activationItems.map((ai) => {
+        const vals = new Map(ai.salesFieldValues.map((v) => [v.definitionId, v.value]));
+        return {
           id: ai.salesRecords[0]?.id ?? null,
+          activationItemId: ai.id,
           itemName: ai.campaignItem.item.name,
           unitPrice: ai.campaignItem.item.unitPrice,
           openingStock: ai.salesRecords[0]?.openingStock ?? 0,
           soldToday: ai.salesRecords[0]?.soldToday ?? 0,
-        })),
-        activationItems.length
-      )
-    );
+          customFields: serializeWithValues(productDefs, vals),
+        };
+      }),
+      meta: {
+        total: activationItems.length,
+        activationId: activation.id,
+        date,
+        dayCustomFields: serializeWithValues(dayDefs, dayValues),
+      },
+    });
   })
 );
 

@@ -12,6 +12,7 @@ import ActivationTargets from './pages/ActivationTargets';
 import StaffProfiles from './pages/StaffProfiles';
 import UpdateSales from './pages/UpdateSales';
 import SalesPage from './pages/SalesPage';
+import CustomSalesFields from './pages/CustomSalesFields';
 import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
 import LiveMap from './pages/LiveMap';
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="/sales/status" element={R('salesStatus')()} />
               <Route path="/sales/outlet-wise" element={R('outletWise')()} />
               <Route path="/sales/update" element={<UpdateSales />} />
+              <Route path="/sales/custom-fields" element={<CustomSalesFields />} />
 
               <Route path="/tracking/promoter" element={R('promoterTracking')()} />
               <Route path="/tracking/supervisor" element={R('supervisorTracking')()} />

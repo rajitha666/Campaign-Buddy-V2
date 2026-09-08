@@ -135,6 +135,21 @@ async function main() {
 
   // Note: no SupervisorRoute seed row — new entity in v3, left empty by default.
 
+  // ---- Sample custom sales fields (issue #13) ----
+  const salesFields: Array<Parameters<typeof prisma.salesFieldDefinition.create>[0]["data"]> = [
+    { campaignId: campaign.id, key: "weather", label: "Weather", type: "select", scope: "day", options: ["Sunny", "Cloudy", "Rain"], sortOrder: 1 },
+    { campaignId: campaign.id, key: "competitor_promo", label: "Competitor promo running?", type: "boolean", scope: "day", sortOrder: 2 },
+    { campaignId: campaign.id, key: "samples_given", label: "Samples given", type: "number", scope: "day", required: true, sortOrder: 3 },
+    { campaignId: campaign.id, key: "damaged_units", label: "Damaged units", type: "number", scope: "product", sortOrder: 1 },
+  ];
+  for (const data of salesFields) {
+    await prisma.salesFieldDefinition.upsert({
+      where: { campaignId_key: { campaignId: data.campaignId as string, key: data.key as string } },
+      create: data,
+      update: {},
+    });
+  }
+
   console.log("Seed complete:");
   console.log("  Admin portal login → admin / ChangeMe123!");
   console.log("  Mobile app login   → sktest / Field123!");

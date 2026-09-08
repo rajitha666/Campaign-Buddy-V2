@@ -96,6 +96,6 @@ export async function makeCampaignWithActivation() {
       dateTo: campaign.endDate,
     },
   });
-  await prisma.activationItem.create({ data: { activationId: activation.id, campaignItemId: campaignItem.id } });
-  return { client, brand, item, city, outlet, campaign, campaignItem, activation, staff };
+  const activationItem = await prisma.activationItem.create({ data: { activationId: activation.id, campaignItemId: campaignItem.id } });
+  return { client, brand, item, city, outlet, campaign, campaignItem, activation, activationItem, staff };
 }

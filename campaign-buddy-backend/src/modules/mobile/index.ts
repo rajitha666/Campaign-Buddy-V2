@@ -7,6 +7,7 @@ import locationRoutes from "./location.routes";
 import statsRoutes from "./stats.routes";
 import productsRoutes from "./products.routes";
 import salesSummaryRoutes from "./salesSummary.routes";
+import salesFieldsRoutes from "./salesFields.routes";
 import timeOffRoutes from "./timeOff.routes";
 import performanceRoutes from "./performance.routes";
 
@@ -22,6 +23,7 @@ router.use(locationRoutes);
 router.use(statsRoutes);
 router.use(productsRoutes);
 router.use(salesSummaryRoutes);
+router.use(salesFieldsRoutes);
 router.use(timeOffRoutes);
 router.use(performanceRoutes);
 

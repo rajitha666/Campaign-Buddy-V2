@@ -92,22 +92,35 @@ enum OutletScopeType {
   subset
 }
 
+// Admin-defined extra fields captured on the daily sales update (issue #13).
+enum SalesFieldType {
+  number
+  text
+  boolean
+  select
+}
+
+enum SalesFieldScope {
+  day // one value per activation per day  (mobile: Daily Sales screen)
+  product // one value per activation-item per day (mobile: Update Stock screen)
+}
+
 // ============================================================================
 // Catalog: Client / Brand / Item
 // ============================================================================
 
 model Client {
-  id            String     @id @default(uuid())
+  id            String   @id @default(uuid())
   companyName   String
   clientName    String
   contactNumber String?
   email         String?
   address       String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  brands        Brand[]
-  campaigns     Campaign[]
+  brands    Brand[]
+  campaigns Campaign[]
 
   @@map("clients")
 }
@@ -127,18 +140,18 @@ model Brand {
 }
 
 model Item {
-  id            String   @id @default(uuid())
-  brandId       String
-  sku           String
-  name          String
-  unitPrice     Int // integer LKR
-  reorderLevel  Int      @default(0)
-  imageUrl      String?
-  description   String?
-  attributes    String[] @default([])
-  supplierName  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(uuid())
+  brandId      String
+  sku          String
+  name         String
+  unitPrice    Int // integer LKR
+  reorderLevel Int      @default(0)
+  imageUrl     String?
+  description  String?
+  attributes   String[] @default([])
+  supplierName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
   campaignItems CampaignItem[]
@@ -153,7 +166,7 @@ model Item {
 // ============================================================================
 
 model City {
-  id       String  @id @default(uuid())
+  id       String @id @default(uuid())
   name     String
   province String
   district String
@@ -166,20 +179,20 @@ model City {
 }
 
 model Outlet {
-  id                  String   @id @default(uuid())
-  outletNo            String   @unique
-  name                String
-  contactPerson       String?
-  address             String?
-  cityId              String
-  phone               String?
-  mobile              String?
-  fax                 String?
-  latitude            Float
-  longitude           Float
-  geofenceRadiusMeters Int     @default(150)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  outletNo             String   @unique
+  name                 String
+  contactPerson        String?
+  address              String?
+  cityId               String
+  phone                String?
+  mobile               String?
+  fax                  String?
+  latitude             Float
+  longitude            Float
+  geofenceRadiusMeters Int      @default(150)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   city        City         @relation(fields: [cityId], references: [id])
   activations Activation[]
@@ -245,14 +258,14 @@ model Staff {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  city         City?            @relation(fields: [cityId], references: [id])
-  reportsTo    Staff?           @relation("StaffReportsTo", fields: [reportsToStaffId], references: [id])
-  reports      Staff[]          @relation("StaffReportsTo")
-  linkedUser   User?            @relation(fields: [linkedUserId], references: [id])
-  activations  Activation[]     @relation("ActivationStaff")
-  supervising  Activation[]     @relation("ActivationSupervisor")
-  refreshTokens StaffRefreshToken[]
-  leaveRequests LeaveRequest[]
+  city             City?               @relation(fields: [cityId], references: [id])
+  reportsTo        Staff?              @relation("StaffReportsTo", fields: [reportsToStaffId], references: [id])
+  reports          Staff[]             @relation("StaffReportsTo")
+  linkedUser       User?               @relation(fields: [linkedUserId], references: [id])
+  activations      Activation[]        @relation("ActivationStaff")
+  supervising      Activation[]        @relation("ActivationSupervisor")
+  refreshTokens    StaffRefreshToken[]
+  leaveRequests    LeaveRequest[]
   supervisorRoutes SupervisorRoute[]
 
   @@index([cityId])
@@ -261,11 +274,11 @@ model Staff {
 }
 
 model StaffRefreshToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   staffId   String
   tokenHash String
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -285,38 +298,39 @@ model StaffRefreshToken {
 // manually (e.g. to end a campaign early) — see Backend Spec v3 §5.8.
 
 model Campaign {
-  id         String         @id @default(uuid())
-  campaignNo String         @unique
-  name       String
-  clientId   String
-  description String?
-  startDate  DateTime
-  endDate    DateTime
-  status     CampaignStatus @default(upcoming)
+  id                String         @id @default(uuid())
+  campaignNo        String         @unique
+  name              String
+  clientId          String
+  description       String?
+  startDate         DateTime
+  endDate           DateTime
+  status            CampaignStatus @default(upcoming)
   // Set when an adm/usr sets `status` explicitly via PATCH. While true, the
   // date-derived auto-sync (§5.8) leaves `status` alone; changing startDate or
   // endDate clears it so the date rule takes over again.
-  statusManuallySet Boolean  @default(false)
-  timezone   String         @default("Asia/Colombo")
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  statusManuallySet Boolean        @default(false)
+  timezone          String         @default("Asia/Colombo")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  client          Client                @relation(fields: [clientId], references: [id])
-  campaignItems   CampaignItem[]
-  activations     Activation[]
-  accessGrants    CampaignAccessGrant[]
-  supervisorTasks SupervisorTask[]
-  supervisorRoutes SupervisorRoute[]
+  client                Client                 @relation(fields: [clientId], references: [id])
+  campaignItems         CampaignItem[]
+  activations           Activation[]
+  accessGrants          CampaignAccessGrant[]
+  supervisorTasks       SupervisorTask[]
+  supervisorRoutes      SupervisorRoute[]
+  salesFieldDefinitions SalesFieldDefinition[]
 
   @@index([clientId])
   @@map("campaigns")
 }
 
 model CampaignItem {
-  id          String   @id @default(uuid())
-  campaignId  String
-  itemId      String
-  addedAt     DateTime @default(now())
+  id         String   @id @default(uuid())
+  campaignId String
+  itemId     String
+  addedAt    DateTime @default(now())
 
   campaign        Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   item            Item             @relation(fields: [itemId], references: [id])
@@ -328,28 +342,28 @@ model CampaignItem {
 }
 
 model Activation {
-  id                  String               @id @default(uuid())
-  name                String
-  campaignId          String
-  outletId            String
-  staffId             String
-  supervisorStaffId   String?
-  distributorPointId  String?
-  dateFrom            DateTime
-  dateTo              DateTime
-  targetType          TargetType           @default(item_wise)
+  id                   String               @id @default(uuid())
+  name                 String
+  campaignId           String
+  outletId             String
+  staffId              String
+  supervisorStaffId    String?
+  distributorPointId   String?
+  dateFrom             DateTime
+  dateTo               DateTime
+  targetType           TargetType           @default(item_wise)
   targetCategorization TargetCategorization @default(daily)
-  targetUnit          TargetUnit           @default(unit_wise)
-  shiftStart          DateTime?
-  shiftEnd            DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  targetUnit           TargetUnit           @default(unit_wise)
+  shiftStart           DateTime?
+  shiftEnd             DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
-  campaign         Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  outlet           Outlet             @relation(fields: [outletId], references: [id])
-  staff            Staff              @relation("ActivationStaff", fields: [staffId], references: [id])
-  supervisor       Staff?             @relation("ActivationSupervisor", fields: [supervisorStaffId], references: [id])
-  distributorPoint DistributorPoint?  @relation(fields: [distributorPointId], references: [id])
+  campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  outlet           Outlet            @relation(fields: [outletId], references: [id])
+  staff            Staff             @relation("ActivationStaff", fields: [staffId], references: [id])
+  supervisor       Staff?            @relation("ActivationSupervisor", fields: [supervisorStaffId], references: [id])
+  distributorPoint DistributorPoint? @relation(fields: [distributorPointId], references: [id])
 
   activationItems   ActivationItem[]
   activationTargets ActivationTarget[]
@@ -357,6 +371,7 @@ model Activation {
   dailyStats        DailyStats[]
   salesSummaries    SalesSummary[]
   trackingPings     TrackingPing[]
+  salesFieldValues  SalesFieldValue[]
 
   @@index([campaignId])
   @@index([outletId])
@@ -371,9 +386,10 @@ model ActivationItem {
   campaignItemId String
   addedAt        DateTime @default(now())
 
-  activation   Activation     @relation(fields: [activationId], references: [id], onDelete: Cascade)
-  campaignItem CampaignItem   @relation(fields: [campaignItemId], references: [id])
-  salesRecords SalesRecord[]
+  activation       Activation        @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  campaignItem     CampaignItem      @relation(fields: [campaignItemId], references: [id])
+  salesRecords     SalesRecord[]
+  salesFieldValues SalesFieldValue[]
 
   @@unique([activationId, campaignItemId])
   @@index([activationId])
@@ -405,24 +421,24 @@ model ActivationTarget {
 // check-in is NEVER rejected on that basis. See Backend Spec v3 §5.6.
 
 model AttendanceRecord {
-  id                             String            @id @default(uuid())
-  activationId                   String
-  date                           DateTime          @db.Date
-  checkInAt                      DateTime?
-  checkInLat                     Float?
-  checkInLng                     Float?
-  checkInLocationVerified        Boolean           @default(false)
-  checkOutAt                     DateTime?
-  checkOutLat                    Float?
-  checkOutLng                    Float?
+  id                              String           @id @default(uuid())
+  activationId                    String
+  date                            DateTime         @db.Date
+  checkInAt                       DateTime?
+  checkInLat                      Float?
+  checkInLng                      Float?
+  checkInLocationVerified         Boolean          @default(false)
+  checkOutAt                      DateTime?
+  checkOutLat                     Float?
+  checkOutLng                     Float?
   salesSummaryConfirmedAtCheckout Boolean          @default(false)
-  status                         AttendanceStatus  @default(pending)
-  leaveRequestId                 String?
-  createdAt                      DateTime          @default(now())
-  updatedAt                      DateTime          @updatedAt
+  status                          AttendanceStatus @default(pending)
+  leaveRequestId                  String?
+  createdAt                       DateTime         @default(now())
+  updatedAt                       DateTime         @updatedAt
 
-  activation    Activation     @relation(fields: [activationId], references: [id], onDelete: Cascade)
-  leaveRequest  LeaveRequest?  @relation(fields: [leaveRequestId], references: [id])
+  activation   Activation    @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
 
   @@unique([activationId, date])
   @@index([activationId])
@@ -478,16 +494,64 @@ model SalesSummary {
   @@map("sales_summaries")
 }
 
+// Admin-defined extra field on the daily sales update, scoped to one campaign
+// (issue #13). `key` is slugged from `label` at creation and then frozen so
+// exports and stored values stay stable. Soft-deleted via `archivedAt`.
+model SalesFieldDefinition {
+  id         String          @id @default(uuid())
+  campaignId String
+  key        String
+  label      String
+  type       SalesFieldType
+  scope      SalesFieldScope @default(day)
+  options    String[]        @default([]) // `select` only, in display order
+  required   Boolean         @default(false)
+  sortOrder  Int             @default(0)
+  archivedAt DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  campaign Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  values   SalesFieldValue[]
+
+  @@unique([campaignId, key])
+  @@index([campaignId])
+  @@map("sales_field_definitions")
+}
+
+// One captured value. `activationItemId` is null for `day`-scope definitions and
+// set for `product`-scope. Two partial unique indexes (added in the migration,
+// Prisma can't express them) keep one row per (definition, day) and per
+// (definition, product, day). `value` is the canonical string form — see
+// docs/custom-sales-fields-spec.md for the per-type encoding.
+model SalesFieldValue {
+  id               String   @id @default(uuid())
+  definitionId     String
+  activationId     String
+  activationItemId String?
+  date             DateTime @db.Date
+  value            String
+  updatedAt        DateTime @updatedAt
+
+  definition     SalesFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  activation     Activation           @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  activationItem ActivationItem?      @relation(fields: [activationItemId], references: [id], onDelete: Cascade)
+
+  @@index([activationId, date])
+  @@index([definitionId])
+  @@map("sales_field_values")
+}
+
 model TrackingPing {
-  id              String   @id @default(uuid())
-  activationId    String
-  latitude        Float
-  longitude       Float
-  accuracyMeters  Float?
-  capturedAt      DateTime
-  receivedAt      DateTime @default(now())
-  appState        AppState @default(foreground)
-  batteryPercent  Int?
+  id             String   @id @default(uuid())
+  activationId   String
+  latitude       Float
+  longitude      Float
+  accuracyMeters Float?
+  capturedAt     DateTime
+  receivedAt     DateTime @default(now())
+  appState       AppState @default(foreground)
+  batteryPercent Int?
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
 
@@ -496,16 +560,16 @@ model TrackingPing {
 }
 
 model LeaveRequest {
-  id           String      @id @default(uuid())
-  staffId      String
-  fromDate     DateTime    @db.Date
-  toDate       DateTime    @db.Date
-  reason       LeaveReason
-  note         String?
-  status       LeaveStatus @default(pending)
-  approverId   String?
-  createdAt    DateTime    @default(now())
-  decidedAt    DateTime?
+  id         String      @id @default(uuid())
+  staffId    String
+  fromDate   DateTime    @db.Date
+  toDate     DateTime    @db.Date
+  reason     LeaveReason
+  note       String?
+  status     LeaveStatus @default(pending)
+  approverId String?
+  createdAt  DateTime    @default(now())
+  decidedAt  DateTime?
 
   staff             Staff              @relation(fields: [staffId], references: [id], onDelete: Cascade)
   attendanceRecords AttendanceRecord[]
@@ -558,13 +622,13 @@ model SupervisorRoute {
 // ============================================================================
 
 model Role {
-  id           String   @id // short code, e.g. "adm", "usr", "supervisor", "sponsor"
-  label        String
-  description  String?
-  modules      String[] @default([])
+  id            String   @id // short code, e.g. "adm", "usr", "supervisor", "sponsor"
+  label         String
+  description   String?
+  modules       String[] @default([])
   functionality String[] @default([])
-  defaultUrl   String
-  isActive     Boolean  @default(true)
+  defaultUrl    String
+  isActive      Boolean  @default(true)
 
   users User[]
 
@@ -582,21 +646,21 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  role          Role                  @relation(fields: [roleId], references: [id])
-  accessGrants  CampaignAccessGrant[]
-  staffProfile  Staff?
+  role         Role                  @relation(fields: [roleId], references: [id])
+  accessGrants CampaignAccessGrant[]
+  staffProfile Staff?
 
   @@index([roleId])
   @@map("users")
 }
 
 model CampaignAccessGrant {
-  id          String          @id @default(uuid())
-  userId      String
-  campaignId  String
-  scopeType   OutletScopeType @default(all)
-  outletIds   String[]        @default([]) // used only when scopeType = subset
-  createdAt   DateTime        @default(now())
+  id         String          @id @default(uuid())
+  userId     String
+  campaignId String
+  scopeType  OutletScopeType @default(all)
+  outletIds  String[]        @default([]) // used only when scopeType = subset
+  createdAt  DateTime        @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)

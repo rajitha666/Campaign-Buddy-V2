@@ -4,6 +4,13 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound, validationError } from "../../utils/apiResponse";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import {
+  activeDefsForCampaign,
+  productValueMap,
+  serializeWithValues,
+  writeValues,
+  assertRequired,
+} from "../../utils/salesFieldStore";
 
 const router = Router();
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -20,18 +27,26 @@ router.get(
     });
     if (!activation) throw notFound("Your assignment at this outlet");
 
-    const activationItems = await prisma.activationItem.findMany({
-      where: { activationId: activation.id },
-      include: { campaignItem: { include: { item: true } }, salesRecords: { where: { date: today } } },
-    });
+    const [activationItems, productDefs] = await Promise.all([
+      prisma.activationItem.findMany({
+        where: { activationId: activation.id },
+        include: {
+          campaignItem: { include: { item: true } },
+          salesRecords: { where: { date: today } },
+          salesFieldValues: { where: { date: today } },
+        },
+      }),
+      activeDefsForCampaign(campaignId, "product"),
+    ]);
 
-    // docs/api-spec.md §6.3 — CampaignProductListItem shape.
+    // docs/api-spec.md §6.3 — CampaignProductListItem shape (+ customFields, #13).
     const rows = activationItems
       .map((ai) => {
         const rec = ai.salesRecords[0];
         const item = ai.campaignItem.item;
         const openingStock = rec?.openingStock ?? 0;
         const soldToday = rec?.soldToday ?? 0;
+        const values = new Map(ai.salesFieldValues.map((v) => [v.definitionId, v.value]));
         return {
           campaignProductAssignmentId: ai.id,
           product: {
@@ -46,6 +61,7 @@ router.get(
           otherInterestedCustomers: rec?.otherInterestedCustomers ?? 0,
           remainingStock: openingStock - soldToday,
           reorderFlag: rec?.reorderFlag ?? false,
+          customFields: serializeWithValues(productDefs, values),
         };
       })
       .filter((r) => !reorderOnly || r.reorderFlag);
@@ -98,8 +114,9 @@ router.patch(
   asyncHandler(async (req, res) => {
     // :campaignProductAssignmentId = ActivationItem.id (Spec v3 §4.1 naming note)
     const activationItemId = req.params.campaignProductAssignmentId;
-    const { openingStock, soldToday, otherInterestedCustomers, reorderFlag } = req.body as {
+    const { openingStock, soldToday, otherInterestedCustomers, reorderFlag, customFields } = req.body as {
       openingStock?: number; soldToday?: number; otherInterestedCustomers?: number; reorderFlag?: boolean;
+      customFields?: Record<string, unknown>;
     };
     const today = startOfDay(new Date());
 
@@ -118,20 +135,38 @@ router.patch(
       throw validationError("soldToday cannot exceed openingStock", "soldToday");
     }
 
-    const record = await prisma.salesRecord.upsert({
-      where: { activationItemId_date: { activationItemId, date: today } },
-      create: {
-        activationItemId, date: today,
-        openingStock: effectiveOpeningStock, soldToday: effectiveSoldToday,
-        otherInterestedCustomers: otherInterestedCustomers ?? 0, reorderFlag: reorderFlag ?? false,
-      },
-      update: {
-        ...(openingStock != null ? { openingStock } : {}),
-        ...(soldToday != null ? { soldToday } : {}),
-        ...(otherInterestedCustomers != null ? { otherInterestedCustomers } : {}),
-        ...(reorderFlag != null ? { reorderFlag } : {}),
-      },
+    const productDefs = await activeDefsForCampaign(activationItem.activation.campaignId, "product");
+    if (productDefs.length) {
+      const currentValues = await productValueMap(activationItemId, today);
+      assertRequired(productDefs, currentValues, customFields ?? {});
+    }
+
+    const record = await prisma.$transaction(async (tx) => {
+      const rec = await tx.salesRecord.upsert({
+        where: { activationItemId_date: { activationItemId, date: today } },
+        create: {
+          activationItemId, date: today,
+          openingStock: effectiveOpeningStock, soldToday: effectiveSoldToday,
+          otherInterestedCustomers: otherInterestedCustomers ?? 0, reorderFlag: reorderFlag ?? false,
+        },
+        update: {
+          ...(openingStock != null ? { openingStock } : {}),
+          ...(soldToday != null ? { soldToday } : {}),
+          ...(otherInterestedCustomers != null ? { otherInterestedCustomers } : {}),
+          ...(reorderFlag != null ? { reorderFlag } : {}),
+        },
+      });
+      if (customFields) {
+        await writeValues(
+          tx,
+          { activationId: activationItem.activation.id, activationItemId, date: today },
+          productDefs,
+          customFields
+        );
+      }
+      return rec;
     });
+    const values = await productValueMap(activationItemId, today);
     // docs/api-spec.md §2.10 — StockEntry.
     res.json(ok({
       id: record.id,
@@ -144,6 +179,7 @@ router.patch(
       reorderFlag: record.reorderFlag,
       remainingStock: record.openingStock - record.soldToday,
       updatedAt: record.updatedAt,
+      customFields: serializeWithValues(productDefs, values),
     }));
   })
 );

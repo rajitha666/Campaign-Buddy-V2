@@ -76,7 +76,7 @@ Sidebar sections, with which roles see them:
 3. Campaigns ▾ — List, Activation — `adm`, `usr` (write); read-only variant reachable by `supervisor`/`sponsor` for their granted campaign(s) only
 4. Outlets ▾ — List, Distributor Point, Cities — `adm`, `usr`
 5. Staff ▾ — List, Attendance, Absence, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
-6. Sales ▾ — SKU Wise Sales, Sales Update Status, Outlet wise — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
+6. Sales ▾ — SKU Wise Sales, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
 7. Supervisors ▾ — Tasks *(not buildable yet, §3.7.1)*, Outlet Attendance, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
 8. Items ▾ — List, Brands, Reorder — `adm`, `usr`
 9. Tracking ▾ — Promoter, Supervisor — `adm`, `usr` (full); `supervisor`/`sponsor` see a **live map** view (backed by `GET /campaigns/:id/tracking/live`) scoped to their granted outlets
@@ -139,7 +139,10 @@ Performance evaluation view, backed by the **new v3 endpoint** `GET /admin/v1/st
 Read-only variant; also reachable by `supervisor`.
 
 ### 3.6 Sales
-All four sub-sections campaign-scoped and outlet-filtered per the caller's grant. **Update Sales (`§3.6.4`-equivalent)** now has a real lookup endpoint backing its cascading dropdowns: `GET /admin/v1/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` (Backend Spec v3 §4.2) — saves still go through the existing `PATCH /campaigns/:campaignId/sales/:salesRecordId`.
+All sub-sections campaign-scoped and outlet-filtered per the caller's grant. **Update Sales** now has a real lookup endpoint backing its cascading dropdowns: `GET /admin/v1/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` (Backend Spec v3 §4.2) — stock corrections go through `PATCH /campaigns/:campaignId/sales/:salesRecordId`.
+
+#### 3.6.5 Custom Sales Fields (`/sales/custom-fields`) — issue #13, `adm` write
+Per-campaign definitions of extra fields promoters record on the daily sales update. Each field has a label, an "applies to" scope (**Whole day** → one value per promoter/day, or **Each product** → one value per SKU/day), a type (Number / Text / Yes-No / Dropdown, with an options list for Dropdown), a Required flag and a sort order. Type and scope are frozen once the field has recorded values; a used field is archived (soft-delete) rather than deleted. Backed by `GET/POST/PATCH/DELETE /admin/v1/campaigns/:campaignId/sales-fields`. On the Update Sales / Sales page, day fields render above the product grid and product fields as extra columns, saved via `PUT /admin/v1/campaigns/:campaignId/sales/custom-values`; day values also show in the "Last 7 Days" panel and CSV export.
 
 ### 3.7 Supervisors
 #### 3.7.1 Supervisor Tasks (`/supervisor/all`) — still blocked

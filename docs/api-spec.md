@@ -258,6 +258,21 @@ Aggregated per `(userId, assignmentId, date)` — mostly a rollup of `StockEntry
 | `createdAt` | date-time | |
 | `decidedAt` | date-time, nullable | |
 
+### 2.14 CustomSalesField (issue #13)
+
+Admin-defined extra field on the daily sales update, configured per campaign in
+the portal. The mobile app only reads definitions and reads/writes values.
+
+| Field | Type | Notes |
+|---|---|---|
+| `key` | string | stable slug (e.g. `competitor_promo`) — use as the map key when writing values |
+| `label` | string | display label |
+| `type` | enum: `number`, `text`, `boolean`, `select` | |
+| `scope` | enum: `day`, `product` | `day` → one value per assignment per day; `product` → one per product per day |
+| `options` | string[] | `select` only, in display order |
+| `required` | boolean | a required `day` field blocks `POST /sales-summary/today/confirm`; a required `product` field blocks that product's stock `PATCH` |
+| `value` | number \| boolean \| string \| null | present on read; typed per `type` (`null` = unset) |
+
 ### 2.13 PerformanceSummary (computed, response-only — no table)
 
 See `GET /campaigns/{campaignId}/performance` in §6.9 for shape.
@@ -483,6 +498,7 @@ Backs both the Home embedded list and the full Campaign product list. **Response
   ]
 }
 ```
+Each row also carries `customFields` — an array of the campaign's product-scope custom fields (§2.14) with this product's current values.
 Optional query param `reorderOnly=true` filters to `reorderFlag = true` (powers the "Reorder only" toggle on the Campaign list screen).
 
 ### 6.4 `GET /products/{productId}`
@@ -518,24 +534,29 @@ Updates today's `StockEntry` for this rep. All fields optional — send only wha
 | `otherInterestedCustomers` | integer, ≥ 0 | no |
 | `reorderFlag` | boolean | no |
 
-**Response `200`** → updated `StockEntry` (includes server-computed `remainingStock`).
-**Errors:** `400 VALIDATION_ERROR` if `soldToday > openingStock`.
+| `customFields` | object `{ <key>: value \| null }` | no — product-scope custom fields (§2.14); `null` clears one |
+
+**Response `200`** → updated `StockEntry` (includes server-computed `remainingStock` and `customFields`).
+**Errors:** `400 VALIDATION_ERROR` if `soldToday > openingStock` or a custom value doesn't match its type; `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required product field would be left empty.
 
 > Note: updating `soldToday` here is what changes `DailyStats.totalSales` — the server recalculates the sum across all of the rep's `StockEntry` rows for the day whenever any one of them changes.
 
 ### 6.6 `GET /sales-summary/today`
-**Response `200`** → full `SalesSummary` object (§2.11), including `remarks` and `confirmed`.
+**Response `200`** → full `SalesSummary` object (§2.11), including `remarks`, `confirmed`, and `customFields` (array of day-scope §2.14 fields with values).
 
 ### 6.7 `PATCH /sales-summary/today`
-Updates only the editable field.
-**Request:** `{ "remarks": "Slow foot fall after 4pm due to rain" }`
+**Request:** `{ "remarks": "Slow foot fall after 4pm due to rain", "customFields": { "weather": "Rain", "samples_given": 12 } }` — both fields optional; a `null` value clears that custom field.
 **Response `200`** → updated `SalesSummary`.
+**Errors:** `400` if a custom value doesn't match its type; `409 SUMMARY_CONFIRMED` once the day is confirmed (promoter is locked out — admin corrects via the portal).
 
 ### 6.8 `POST /sales-summary/today/confirm`
 Marks today confirmed — this is the action the "No, confirm sales summary" path in the checkout popup ultimately drives, and also what the **Confirm & submit** button on the Sales page calls directly.
-**Request:** `{}` (or `{ "remarks": "..." }` to save remarks in the same call)
+**Request:** `{}` (or `{ "remarks": "...", "customFields": { ... } }` to save in the same call)
 **Response `200`** → `SalesSummary` with `confirmed: true`, `confirmedAt` set.
-**Errors:** `409` if already confirmed (idempotent — treat as success on the client).
+**Errors:** `409` if already confirmed (idempotent — treat as success on the client); `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required day-scope custom field is still empty.
+
+### 6.9 `GET /sales-fields`
+The custom fields configured for the promoter's current campaign (§2.14). Returns `{ "data": { "day": [...], "product": [...] } }`; `day` entries carry today's `value`, `product` entries are definitions only (values come with each product in §6.3). Empty lists when there's no assignment today.
 
 ---
 
