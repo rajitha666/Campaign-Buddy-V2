@@ -39,11 +39,11 @@ describe("auth", () => {
   });
 
   it("GET /v1/me returns the API-spec User shape", async () => {
-    await makeStaff({ mobileUsername: "field3", fullName: "Jane Roe", userType: "supervisor" });
+    await makeStaff({ mobileUsername: "field3", fullName: "Jane Roe", displayName: "Janey", userType: "supervisor" });
     const login = await request(app).post("/v1/auth/login").send({ username: "field3", password: "field-pw" });
     const me = await request(app).get("/v1/me").set("Authorization", `Bearer ${login.body.data.accessToken}`);
     expect(me.status).toBe(200);
-    expect(me.body.data).toMatchObject({ username: "field3", fullName: "Jane Roe", role: "campaign_owner" });
+    expect(me.body.data).toMatchObject({ username: "field3", fullName: "Jane Roe", displayName: "Janey", role: "campaign_owner" });
     expect(me.body.data.avatarInitials).toBeTypeOf("string");
     expect(me.body.data).not.toHaveProperty("passwordHash");
     expect(me.body.data).not.toHaveProperty("mobileUsername");

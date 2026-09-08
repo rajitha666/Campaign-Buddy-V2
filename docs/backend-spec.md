@@ -563,7 +563,7 @@ store §5.2).
 
 Concretely, per endpoint:
 
-- `GET /me` → `{ id, employeeId, fullName, username, phone, role
+- `GET /me` → `{ id, employeeId, fullName, displayName, username, phone, role
   (promoter→field_rep / supervisor→campaign_owner), avatarInitials,
   reportsToUserId, reportsToName }`
 - `GET /me/assignments/today` → `{ assignmentId, campaign:{id,name,startDate},

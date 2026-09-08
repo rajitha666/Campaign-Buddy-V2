@@ -27,6 +27,7 @@ router.get(
         id: staff.id,
         employeeId: staff.employeeId,
         fullName: staff.fullName,
+        displayName: staff.displayName,
         username: staff.mobileUsername,
         phone: staff.phone ?? "",
         role: staff.userType === "supervisor" ? "campaign_owner" : "field_rep",

@@ -21,6 +21,8 @@ export interface User {
   id: UUID;
   employeeId: string;
   fullName: string;
+  /** Preferred short name for greetings; backend always sends it. */
+  displayName: string;
   username: string;
   phone: string;
   role: UserRole;

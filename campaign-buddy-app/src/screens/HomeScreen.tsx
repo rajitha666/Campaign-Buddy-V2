@@ -57,7 +57,7 @@ export function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.greetRow}>
           <View>
-            <Text style={styles.greetName}>Good morning, {user?.fullName?.split(' ')[0] ?? ''}</Text>
+            <Text style={styles.greetName}>Good morning, {user?.displayName ?? user?.fullName?.split(' ')[0] ?? ''}</Text>
             <Text style={styles.greetSub}>
               {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>

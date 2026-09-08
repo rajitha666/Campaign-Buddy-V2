@@ -72,10 +72,11 @@ Error:
 | `id` | string (UUID) | |
 | `employeeId` | string | e.g. `"DYR-0142"` — human-readable, shown in Profile |
 | `fullName` | string | |
+| `displayName` | string | preferred short name; used for the home-screen greeting |
 | `username` | string | login identifier |
 | `phone` | string | E.164 format, e.g. `"+94771234567"` |
 | `role` | enum: `field_rep`, `campaign_owner`, `admin` | |
-| `avatarInitials` | string | 2 chars, derived server-side or client-side from `fullName` |
+| `avatarInitials` | string | 2 chars, derived server-side from `displayName` (falls back to `fullName`) |
 | `reportsToUserId` | string (UUID), nullable | approver for leave requests |
 | `reportsToName` | string | denormalized for display without a join |
 
