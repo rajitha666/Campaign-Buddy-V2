@@ -318,7 +318,7 @@ export const RESOURCES = {
       { key: 'displayName', label: 'Name', render: (r) => <Avatar initials={(r.displayName || '?').slice(0, 2).toUpperCase()} name={r.displayName || r.fullName} sub={r.employeeId} /> },
       { key: 'userType', label: 'Type', render: (r) => <Badge type={r.userType === 'supervisor' ? 'success' : 'info'}>{r.userType}</Badge> },
       { key: 'mobileUsername', label: 'App Username' },
-      { key: 'cityName', label: 'City', render: (r) => r.cityName || r.cityId || '—' },
+      { key: 'cityName', label: 'Home City', render: (r) => r.cityName || r.cityId || '—' },
       { key: 'phone', label: 'Mobile' },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : 'muted'}>{r.status}</Badge> },
     ],
@@ -349,7 +349,9 @@ export const RESOURCES = {
       { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
       { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number', validate: validators.nic() },
       { key: 'phone', label: 'Mobile', type: 'text', defaultValue: '+94', validate: validators.mobile() },
-      { key: 'cityId', label: 'City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
+      // Promoter's city of residence — HR profile data, independent of any outlet
+      // or activation. See issue #5: it is NOT derived from the assigned outlet.
+      { key: 'cityId', label: 'Home City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
       { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea' },
       { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
 
