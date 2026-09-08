@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Campaign Buddy | Field marketing execution for agencies</title>
+<meta name="description" content="Field marketing execution platform for agencies running in-store product activations. A field app for promoters and supervisors, plus a live portal for head office and sponsors." />
+<meta property="og:title" content="Campaign Buddy" />
+<meta property="og:description" content="Run the whole in-store activation on one platform: a field app for promoters and supervisors, plus a live portal for head office and sponsors." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23FF7A33'/%3E%3Cpath d='M4 17L9 12L13 16L20 8' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 8H20V14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #12241F;
+    --ink-soft: #23413A;
+    --ink-line: #2B4A41;
+    --surface: #F4F6F3;
+    --card: #FFFFFF;
+    --line: #E3E7E1;
+    --text: #16211C;
+    --text-muted: #647169;
+    --text-on-ink: #F4F6F3;
+    --muted-on-ink: #9FB2AA;
+    --mango: #FF7A33;
+    --mango-dark: #E8641F;
+    --mango-tint: #FFE6D6;
+    --success: #1F9D55; --success-tint: #E4F5EA;
+    --pending: #C77F00; --pending-tint: #FBF0DA;
+    --alert: #D8483F; --alert-tint: #FBE6E4;
+    --info: #2673B0; --info-tint: #E3F0FA;
+    --maxw: 1160px;
+    --font-display: "Poppins", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --shadow-card: 0 1px 3px rgba(18, 36, 31, 0.06), 0 14px 34px -14px rgba(18, 36, 31, 0.16);
+    --shadow-float: 0 30px 60px -24px rgba(18, 36, 31, 0.34);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.12; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--mango); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 26px; }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mango-dark);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 20px; height: 2px; background: var(--mango); border-radius: 2px; }
+  .eyebrow.on-ink { color: #FFB98C; }
+  .eyebrow.on-ink::before { background: var(--mango); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 600; font-size: 0.92rem;
+    padding: 12px 20px; border-radius: 12px; border: 1.5px solid transparent; cursor: pointer;
+    transition: transform 0.12s, background 0.15s, border-color 0.15s; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--mango); color: #fff; }
+  .btn-primary:hover { background: var(--mango-dark); }
+  .btn-ghost { border-color: var(--line); color: var(--text); background: var(--card); }
+  .btn-ghost:hover { border-color: #C7D0C9; }
+  .btn-ghost.on-ink { background: rgba(255,255,255,0.06); border-color: var(--ink-line); color: #fff; }
+  .btn-ghost.on-ink:hover { background: rgba(255,255,255,0.12); }
+  .btn svg { width: 16px; height: 16px; flex: none; }
+
+  /* ---------- nav ---------- */
+  header.nav { position: sticky; top: 0; z-index: 60; background: rgba(244,246,243,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; white-space: nowrap; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--mango); display: grid; place-items: center; flex: none; }
+  .brand-mark svg { width: 17px; height: 17px; }
+  .nav-links { display: flex; align-items: center; gap: 26px; }
+  .nav-links a { font-size: 0.9rem; color: var(--text-muted); white-space: nowrap; }
+  .nav-links .menu-cta { display: none; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { display: flex; align-items: center; gap: 10px; }
+  .nav-toggle { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 8px; width: 40px; height: 36px; font-size: 1.1rem; cursor: pointer; color: var(--text); }
+
+  /* ---------- ink band ---------- */
+  .band-ink { background: var(--ink); color: var(--text-on-ink); }
+  .band-ink h2 { color: #fff; }
+  .band-ink .lede { color: var(--muted-on-ink); }
+
+  section { padding: clamp(3.75rem, 8vw, 6.5rem) 0; }
+
+  .section-head { max-width: 42em; }
+  .section-head h2 { font-size: clamp(1.75rem, 3.4vw, 2.6rem); margin-top: 14px; }
+  .section-head .lede { margin-top: 14px; color: var(--text-muted); font-size: 1.04rem; }
+  .band-ink .section-head .lede { color: var(--muted-on-ink); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: clamp(3rem, 6vw, 5rem) 0 clamp(3.5rem, 7vw, 5.5rem); }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1.02fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.5rem); font-weight: 700; margin-top: 20px; }
+  .hero h1 .soft { color: var(--muted-on-ink); }
+  .hero .lede { margin-top: 20px; font-size: 1.06rem; color: #C6D4CC; max-width: 34em; }
+  .hero-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero-meta { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 0.78rem; color: var(--muted-on-ink); }
+  .hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
+  .hero-meta span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--mango); }
+
+  /* ---------- device frames ---------- */
+  .frame-browser { background: var(--card); border-radius: 14px; box-shadow: var(--shadow-float); overflow: hidden; border: 1px solid rgba(18,36,31,0.08); max-width: 100%; }
+  .fb-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #EDF0EC; border-bottom: 1px solid var(--line); }
+  .fb-dot { width: 9px; height: 9px; border-radius: 50%; background: #CBD4CD; }
+  .fb-url { margin-left: 8px; font-size: 11px; color: var(--text-muted); background: var(--card); border: 1px solid var(--line); border-radius: 7px; padding: 4px 12px; font-family: var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fb-body { display: flex; max-height: 460px; overflow: hidden; }
+
+  .frame-phone { width: 300px; background: #0B0F0D; border-radius: 40px; padding: 10px; box-shadow: var(--shadow-float); flex: none; }
+  .fp-screen { background: var(--surface); border-radius: 30px; overflow: hidden; position: relative; }
+  .fp-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 18px; background: #0B0F0D; border-radius: 0 0 12px 12px; z-index: 5; }
+
+  /* ---------- portal mock (CB Office) ---------- */
+  .pmock { font-family: var(--font-body); font-size: 12px; color: var(--text); width: 100%; }
+  .pm-side { width: 132px; flex: none; background: var(--ink); color: var(--text-on-ink); padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .pm-brand { display: flex; align-items: center; gap: 7px; padding: 4px 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; }
+  .pm-brand .m { width: 20px; height: 20px; border-radius: 6px; background: var(--mango); display: grid; place-items: center; flex: none; }
+  .pm-brand .m svg { width: 11px; height: 11px; }
+  .pm-brand .n { font-family: var(--font-display); font-weight: 600; font-size: 11px; }
+  .pm-navlabel { font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px; color: #7C948A; padding: 8px 8px 3px; text-transform: uppercase; }
+  .pm-nav { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 7px; font-size: 10.5px; font-weight: 600; color: #C6D4CC; }
+  .pm-nav svg { width: 12px; height: 12px; opacity: 0.8; flex: none; }
+  .pm-nav.active { background: var(--mango); color: #fff; }
+  .pm-nav.active svg { opacity: 1; }
+
+  .pm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface); }
+  .pm-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line); gap: 10px; }
+  .pm-top .t { font-family: var(--font-display); font-weight: 600; font-size: 12px; }
+  .pm-top .c { font-size: 9.5px; color: var(--text-muted); }
+  .pm-pill { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; color: var(--text-muted); white-space: nowrap; }
+  .pm-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--mango-tint); color: var(--mango-dark); display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 9.5px; flex: none; }
+  .pm-content { padding: 14px 16px; overflow-y: auto; }
+
+  .pm-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .pm-stat { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 10px 11px; }
+  .pm-stat .l { font-size: 8px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: var(--text-muted); }
+  .pm-stat .n { font-family: var(--font-display); font-weight: 600; font-size: 15px; margin-top: 5px; }
+  .pm-stat .d { font-size: 8.5px; font-weight: 600; margin-top: 3px; }
+  .pm-stat .d.up { color: var(--success); }
+  .pm-stat .d.down { color: var(--alert); }
+
+  .pm-dash { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-top: 10px; }
+  .pm-panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .pm-panel .pt { font-size: 10.5px; font-weight: 700; }
+  .pm-panel .ps { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+  .pm-bars { display: flex; align-items: flex-end; gap: 9px; height: 84px; margin-top: 14px; }
+  .pm-bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .pm-bars .bar { width: 100%; border-radius: 4px 4px 0 0; background: var(--mango); }
+  .pm-bars .bar.today { background: var(--ink); }
+  .pm-bars .day { font-size: 8px; color: var(--text-muted); font-weight: 600; }
+  .pm-feed { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .pm-feed:last-child { border-bottom: none; }
+  .pm-feed .fd { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex: none; }
+  .pm-feed .ft { font-size: 9.5px; line-height: 1.35; }
+  .pm-feed .fm { font-size: 8px; color: var(--text-muted); margin-top: 1px; }
+
+  table.pm-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  table.pm-table th { text-align: left; font-size: 8px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: var(--text-muted); padding: 8px 10px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  table.pm-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.pm-table tr:last-child td { border-bottom: none; }
+  table.pm-table td.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+  .pm-total td { font-weight: 700; background: var(--surface); border-top: 1px solid var(--line); }
+  .pm-total td.mango { color: var(--mango-dark); }
+  .pm-tbl-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .pm-tbl-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 9.5px; color: var(--text-muted); }
+  .pm-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 8px; font-weight: 700; padding: 3px 7px; border-radius: 14px; }
+  .pm-badge.success { background: var(--success-tint); color: var(--success); }
+  .pm-badge.pending { background: var(--pending-tint); color: var(--pending); }
+  .pm-badge.info { background: var(--info-tint); color: var(--info); }
+  .pm-badge.muted { background: var(--surface); color: var(--text-muted); border: 1px solid var(--line); }
+  .pm-avatar-mini { width: 18px; height: 18px; border-radius: 5px; background: var(--mango-tint); color: var(--mango-dark); display: inline-grid; place-items: center; font-weight: 600; font-size: 8px; margin-right: 6px; vertical-align: middle; }
+
+  /* portal live map */
+  .pm-map { position: relative; height: 210px; border-radius: 11px; overflow: hidden; border: 1px solid var(--line); background: #E8EEE7; }
+  .pm-map .basemap { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .pm-zoom { position: absolute; top: 9px; right: 9px; display: flex; flex-direction: column; border-radius: 5px; overflow: hidden; border: 1px solid rgba(18,36,31,0.18); background: #fff; }
+  .pm-zoom span { width: 17px; height: 16px; display: grid; place-items: center; font-size: 11px; line-height: 1; color: var(--text-muted); }
+  .pm-zoom span:first-child { border-bottom: 1px solid var(--line); }
+  .pm-scale { position: absolute; right: 9px; bottom: 9px; font-size: 6.5px; color: var(--text-muted); text-align: center; letter-spacing: 0.02em; }
+  .pm-scale i { display: block; height: 3px; width: 42px; border: 1px solid var(--text-muted); border-top: none; }
+  .pm-pin { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); z-index: 2; }
+  .pm-pin .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--mango); border: 2.5px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.25); }
+  .pm-pin.outlet .dot { background: var(--ink); }
+  .pm-pin .pulse { position: absolute; top: -3px; width: 17px; height: 17px; border-radius: 50%; background: rgba(255,122,51,0.32); animation: pulse 1.9s infinite; }
+  @keyframes pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.1); opacity: 0; } }
+  .pm-pin .tag { margin-top: 5px; background: var(--ink); color: #fff; font-size: 7.5px; font-weight: 600; padding: 3px 6px; border-radius: 6px; white-space: nowrap; }
+  .pm-legend { position: absolute; left: 10px; bottom: 10px; background: rgba(255,255,255,0.94); border-radius: 8px; padding: 6px 9px; font-size: 8px; display: flex; gap: 10px; z-index: 2; }
+  .pm-legend .it { display: flex; align-items: center; gap: 4px; }
+  .pm-legend .sw { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ---------- phone mock (CB Mobile) ---------- */
+  .mmock { font-family: var(--font-body); color: var(--text); }
+  .mm-status { height: 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px 0 20px; font-size: 10px; font-weight: 600; }
+  .mm-scroll { padding: 12px 15px 14px; max-height: 486px; overflow-y: auto; }
+  .mm-greetrow { display: flex; align-items: center; justify-content: space-between; }
+  .mm-greet { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
+  .mm-greetsub { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+  .mm-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--mango-tint); color: var(--mango-dark); display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 12px; flex: none; }
+  .mm-campaign { background: var(--ink); border-radius: 15px; padding: 13px 15px; color: #fff; margin-top: 12px; }
+  .mm-campaign .loc { font-size: 10px; color: var(--muted-on-ink); display: flex; align-items: center; gap: 4px; }
+  .mm-campaign .cname { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; margin-top: 6px; }
+  .mm-chip-in { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.12); color: #DCE9E3; font-size: 10px; font-weight: 600; padding: 5px 9px; border-radius: 16px; margin-top: 11px; }
+  .mm-sec { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 8px; }
+  .mm-sec .l { font-size: 11px; font-weight: 700; }
+  .mm-sec .c { font-size: 10px; color: var(--text-muted); }
+  .mm-stats { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 11px 4px; }
+  .mm-stat { flex: 1; text-align: center; }
+  .mm-stat .l { font-size: 8.5px; color: var(--text-muted); font-weight: 600; }
+  .mm-stat .v { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--ink); margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; }
+  .mm-stat .u { width: 13px; height: 13px; border-radius: 5px; background: var(--mango-tint); color: var(--mango-dark); display: grid; place-items: center; font-size: 9px; line-height: 1; }
+  .mm-div { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; }
+  .mm-prod { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .mm-prod:last-child { border-bottom: none; }
+  .mm-prod-img { width: 40px; height: 40px; border-radius: 10px; background: #EEF1EC; display: grid; place-items: center; flex: none; }
+  .mm-prod-name { font-size: 11px; font-weight: 600; line-height: 1.3; }
+  .mm-prod-price { font-size: 9.5px; color: var(--text-muted); margin-top: 1px; }
+  .mm-qty-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .mm-qty { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 7px; }
+  .mm-qty.avail { background: var(--info-tint); color: var(--info); }
+  .mm-qty.sold { background: var(--success-tint); color: var(--success); }
+  .mm-qty.reorder { background: var(--pending-tint); color: var(--pending); }
+  .mm-bottomnav { display: flex; background: var(--card); border-top: 1px solid var(--line); padding: 8px 4px 12px; }
+  .mm-navitem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8.5px; font-weight: 600; color: var(--text-muted); }
+  .mm-navitem.active { color: var(--mango); }
+  .mm-navitem svg { width: 17px; height: 17px; }
+
+  .mm-pu-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); gap: 10px; }
+  .mm-pu-row .l { font-size: 11.5px; font-weight: 600; }
+  .mm-pu-row .s { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+  .mm-stepper { display: flex; align-items: center; gap: 8px; flex: none; }
+  .mm-stepbtn { width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 13px; color: var(--text-muted); }
+  .mm-stepval { font-family: var(--font-display); font-weight: 600; font-size: 13px; min-width: 22px; text-align: center; }
+  .mm-switch { width: 40px; height: 23px; border-radius: 16px; background: var(--mango); position: relative; flex: none; }
+  .mm-switch .knob { position: absolute; top: 3px; left: 20px; width: 17px; height: 17px; border-radius: 50%; background: #fff; }
+  .mm-remain { display: flex; align-items: center; justify-content: space-between; background: var(--success-tint); color: var(--success); border-radius: 10px; padding: 9px 12px; font-size: 11px; font-weight: 600; margin-top: 12px; }
+
+  /* ---------- strip ---------- */
+  .strip { background: var(--card); border-block: 1px solid var(--line); }
+  .strip .wrap { padding-block: clamp(2.25rem, 4vw, 3.25rem); }
+  .strip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 4vw, 3rem); }
+  .then h3, .now h3 { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; }
+  .then h3 { color: var(--text-muted); }
+  .now h3 { color: var(--mango-dark); }
+  .then ul, .now ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .then li, .now li { position: relative; padding-left: 24px; font-size: 0.97rem; }
+  .then li { color: var(--text-muted); }
+  .then li::before { content: "\00D7"; position: absolute; left: 4px; color: var(--alert); font-weight: 700; }
+  .now li::before { content: ""; position: absolute; left: 3px; top: 0.5em; width: 8px; height: 8px; border-right: 2px solid var(--success); border-bottom: 2px solid var(--success); transform: rotate(45deg); }
+
+  /* ---------- two surfaces ---------- */
+  .surfaces { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 42px; align-items: start; }
+  .surface-col { display: flex; flex-direction: column; gap: 18px; }
+  .surface-col .tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mango-dark); }
+  .surface-col h3 { font-size: 1.2rem; margin-top: 6px; }
+  .surface-col p { margin-top: 8px; color: var(--text-muted); font-size: 0.94rem; }
+  .surface-frame { align-self: center; }
+
+  /* ---------- lifecycle ---------- */
+  .stage { display: grid; grid-template-columns: 290px 1fr; gap: clamp(1.5rem, 4vw, 3.25rem); padding: clamp(2.25rem, 4vw, 3.25rem) 0; border-top: 1px solid var(--line); }
+  .stage:first-of-type { border-top: none; }
+  .stage-side { position: sticky; top: 88px; align-self: start; height: max-content; }
+  .stage-num { font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.12em; color: var(--mango-dark); display: flex; align-items: center; gap: 9px; }
+  .stage-num::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--mango); }
+  .stage-side h3 { font-size: 1.45rem; margin-top: 12px; }
+  .stage-side p { margin-top: 9px; color: var(--text-muted); font-size: 0.93rem; }
+  .stage-body { display: grid; gap: 18px; align-content: start; }
+  .feat-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 11px; }
+  .feat-list li { padding-left: 22px; position: relative; color: var(--text-muted); font-size: 0.96rem; }
+  .feat-list li strong { color: var(--text); font-weight: 600; }
+  .feat-list li::before { content: ""; position: absolute; left: 0; top: 0.52em; width: 11px; height: 2px; background: var(--mango); border-radius: 2px; }
+
+  .repro-toast { display: inline-flex; gap: 9px; align-items: flex-start; background: var(--ink); color: #fff; border-radius: 12px; padding: 11px 15px; font-size: 0.86rem; max-width: 27em; }
+  .repro-toast svg { width: 15px; height: 15px; color: var(--mango); flex: none; margin-top: 2px; }
+
+  /* ---------- card grids ---------- */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 40px; }
+  .mini-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-card); }
+  .mini-card .m { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mango-dark); }
+  .mini-card h3 { font-size: 1.02rem; margin-top: 9px; }
+  .mini-card p { margin-top: 8px; color: var(--text-muted); font-size: 0.9rem; }
+
+  /* ---------- sponsor ---------- */
+  .sponsor-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; margin-top: 8px; }
+  .sponsor-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sponsor-stat { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 15px 16px; box-shadow: var(--shadow-card); }
+  .sponsor-stat .l { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .sponsor-stat .n { font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; margin-top: 6px; }
+  .sponsor-stat .d { font-size: 0.72rem; font-weight: 600; margin-top: 4px; color: var(--success); }
+  .sponsor-list { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 13px; }
+  .sponsor-list li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
+  .sponsor-list svg { width: 17px; height: 17px; color: var(--mango-dark); margin-top: 2px; flex: none; }
+  .sponsor-list strong { display: block; font-weight: 600; font-size: 0.95rem; }
+  .sponsor-list span { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* ---------- rules ---------- */
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1px; margin-top: 40px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .rule { background: var(--card); padding: 22px; }
+  .rule h3 { font-size: 1rem; }
+  .rule p { margin-top: 8px; color: var(--text-muted); font-size: 0.89rem; }
+
+  /* ---------- vision ---------- */
+  .vision-note { margin-top: 14px; display: inline-flex; align-items: center; gap: 9px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #FFB98C; border: 1px solid var(--ink-line); border-radius: 999px; padding: 6px 14px; }
+  .vision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 36px; }
+  .vision-card { background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: 13px; padding: 22px; }
+  .vision-card .n { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFB98C; }
+  .vision-card h3 { color: #fff; font-size: 1.06rem; margin-top: 9px; }
+  .vision-card p { margin-top: 8px; color: var(--muted-on-ink); font-size: 0.89rem; }
+  .vision-card .q { margin-top: 11px; font-size: 0.82rem; color: #FFCBA8; background: rgba(255,122,51,0.12); border-radius: 8px; padding: 8px 11px; }
+
+  /* ---------- proven ---------- */
+  .stat-band { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 38px; }
+  .stat-band .s { border-left: 3px solid var(--mango); padding: 2px 0 2px 15px; }
+  .stat-band .v { font-family: var(--font-display); font-weight: 600; font-size: 1.7rem; }
+  .stat-band .k { color: var(--text-muted); font-size: 0.85rem; margin-top: 3px; }
+  .disclaimer { font-size: 0.74rem; color: var(--text-muted); margin-top: 16px; }
+
+  /* ---------- trust ---------- */
+  .trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px 30px; margin-top: 36px; }
+  .trust-item { display: grid; grid-template-columns: auto 1fr; gap: 12px; }
+  .trust-item svg { width: 18px; height: 18px; color: var(--mango-dark); margin-top: 2px; flex: none; }
+  .trust-item strong { display: block; font-weight: 600; margin-bottom: 3px; }
+  .trust-item span { color: var(--text-muted); font-size: 0.89rem; }
+  .trust-tag { margin-top: 32px; font-family: var(--font-display); font-weight: 500; font-size: 1.1rem; color: var(--text-muted); }
+  .trust-tag b { color: var(--text); font-weight: 600; }
+
+  /* ---------- pilot ---------- */
+  .pilot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 3.5rem); align-items: start; }
+  .pilot .lede { margin-top: 14px; }
+  .pilot-alt { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .pilot-alt a { color: #FFB98C; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; }
+  .pilot-alt a svg { width: 15px; height: 15px; flex: none; }
+  .pilot-alt a:hover { text-decoration: underline; }
+  form.pilot-form { background: var(--card); border-radius: 16px; padding: 24px; display: grid; gap: 14px; box-shadow: var(--shadow-float); }
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .field input, .field select, .field textarea {
+    font-family: var(--font-body); font-size: 0.95rem; color: var(--text);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--mango); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  form.pilot-form button { margin-top: 2px; justify-content: center; }
+  .form-note { font-size: 0.78rem; color: var(--text-muted); }
+
+  /* ---------- footer ---------- */
+  footer { background: var(--ink); color: var(--muted-on-ink); padding: 46px 0 38px; }
+  .foot-grid { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 28px; }
+  .foot-brand { max-width: 22em; }
+  .foot-brand .brand { color: #fff; }
+  .foot-brand p { margin-top: 12px; font-size: 0.87rem; }
+  .foot-col h4 { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #7C948A; margin-bottom: 12px; }
+  .foot-col a { display: block; font-size: 0.89rem; margin-bottom: 8px; color: var(--muted-on-ink); }
+  .foot-col a:hover { color: #FFB98C; }
+  .foot-base { margin-top: 38px; padding-top: 20px; border-top: 1px solid var(--ink-line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.8rem; }
+  .placeholder { color: #FFB98C; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 940px) {
+    .hero-grid, .stage, .strip-grid, .surfaces, .sponsor-grid, .pilot-grid { grid-template-columns: minmax(0, 1fr); }
+    .surface-col, .stage-body { min-width: 0; }
+    .stage-side { position: static; }
+    .pm-stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .pm-dash { grid-template-columns: 1fr; }
+    .fb-body { max-height: none; }
+    .surface-frame { align-self: start; }
+    .frame-phone { width: min(300px, calc(100vw - 52px)); margin-inline: auto; }
+  }
+  @media (max-width: 860px) {
+    .fb-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .pm-main { min-width: 300px; }
+    .pm-content { overflow-x: auto; }
+    .pm-tbl-card { overflow-x: auto; }
+  }
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .nav-links.open { display: flex; position: absolute; top: 64px; left: 0; right: 0; flex-direction: column; gap: 0; background: var(--card); border-bottom: 1px solid var(--line); padding: 8px 0 12px; }
+    .nav-links.open a { padding: 12px 26px; }
+    .nav-links.open .menu-cta { display: block; }
+    .nav-links.open a.menu-cta { margin: 8px 26px 4px; padding: 12px 18px; background: var(--mango); color: #fff; border-radius: 10px; text-align: center; font-family: var(--font-display); font-weight: 600; }
+    .nav-toggle { display: block; }
+    .nav-cta .btn-ghost, .nav-cta .btn-primary { display: none; }
+    .field-row { grid-template-columns: 1fr; }
+    .foot-grid { flex-direction: column; }
+  }
+  @media (max-width: 620px) {
+    .pm-side { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 18px; }
+    .sponsor-stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Campaign Buddy
+    </a>
+    <nav class="nav-links" id="navlinks">
+      <a href="#platform">Platform</a>
+      <a href="#lifecycle">Lifecycle</a>
+      <a href="#sponsors">For sponsors</a>
+      <a href="#vision">Vision</a>
+      <a href="#pilot">Pilot</a>
+      <a href="#pilot" class="menu-cta">Start a pilot</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#pilot" class="btn btn-ghost">Talk to us</a>
+      <a href="#pilot" class="btn btn-primary">Start a pilot</a>
+      <button class="nav-toggle" id="navtoggle" aria-label="Menu" aria-expanded="false">&#8801;</button>
+    </div>
+  </div>
+</header>
+
+<a id="top"></a>
+<main>
+  <section class="hero band-ink">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow on-ink">Field marketing execution for activation agencies</span>
+        <h1>Run the whole campaign. <span class="soft">Head office to the shelf, on one platform.</span></h1>
+        <p class="lede">Everything an in-store activation needs: a field app every promoter and supervisor works from, and a live portal where your agency and your sponsors watch the same campaign unfold.</p>
+        <div class="hero-actions">
+          <a href="#pilot" class="btn btn-primary">Start a pilot campaign
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="#wa" class="btn btn-ghost on-ink" id="wa-hero">Message us on WhatsApp</a>
+        </div>
+        <div class="hero-meta">
+          <span>One backend, two apps</span>
+          <span>Runs on the phones your team already has</span>
+        </div>
+      </div>
+
+      <div class="frame-browser" aria-label="CB Office admin dashboard, sample data">
+        <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/dashboard</span></div>
+        <div class="fb-body pmock">
+          <div class="pm-side">
+            <div class="pm-brand"><span class="m"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="n">Campaign Buddy</span></div>
+            <div class="pm-nav active"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Dashboard</div>
+            <div class="pm-navlabel">Campaigns</div>
+            <div class="pm-nav"><svg viewBox="0 0 24 24" fill="none"><path d="M3 11l14-7v16L3 13z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Campaigns</div>
+            <div class="pm-nav"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9 11l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Activations</div>
+            <div class="pm-navlabel">Sales</div>
+            <div class="pm-nav"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>SKU Wise Sales</div>
+            <div class="pm-nav"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Live Locations</div>
+          </div>
+          <div class="pm-main">
+            <div class="pm-top">
+              <div><div class="t">Overview</div><div class="c">Dashboard</div></div>
+              <div style="display:flex;align-items:center;gap:7px">
+                <span class="pm-pill">Radiance Q3 Push</span>
+                <span class="pm-avatar">DY</span>
+              </div>
+            </div>
+            <div class="pm-content">
+              <div class="pm-stat-grid">
+                <div class="pm-stat"><div class="l">Active Outlets Today</div><div class="n">24</div><div class="d up">Up 3 vs yesterday</div></div>
+                <div class="pm-stat"><div class="l">Sales Today</div><div class="n">LKR 1.94M</div><div class="d up">Up 8.4%</div></div>
+                <div class="pm-stat"><div class="l">Outlets Yesterday</div><div class="n">21</div><div class="d down">Down 1</div></div>
+                <div class="pm-stat"><div class="l">Sales Yesterday</div><div class="n">LKR 1.79M</div><div class="d up">Up 2.1%</div></div>
+              </div>
+              <div class="pm-dash">
+                <div class="pm-panel">
+                  <div class="pt">Sales this week</div><div class="ps">Mon 1 Sep to Fri 5 Sep 2026</div>
+                  <div class="pm-bars">
+                    <div class="col"><div class="bar" style="height:48px"></div><div class="day">Mon</div></div>
+                    <div class="col"><div class="bar" style="height:53px"></div><div class="day">Tue</div></div>
+                    <div class="col"><div class="bar" style="height:66px"></div><div class="day">Wed</div></div>
+                    <div class="col"><div class="bar" style="height:68px"></div><div class="day">Thu</div></div>
+                    <div class="col"><div class="bar today" style="height:62px"></div><div class="day">Fri</div></div>
+                  </div>
+                </div>
+                <div class="pm-panel">
+                  <div class="pt">Recent activity</div>
+                  <div style="margin-top:8px">
+                    <div class="pm-feed"><span class="fd" style="background:var(--success)"></span><div><div class="ft"><b>Sanduni Kumari</b> checked in at Nawala Retail Outlet</div><div class="fm">9:49 AM</div></div></div>
+                    <div class="pm-feed"><span class="fd" style="background:var(--pending)"></span><div><div class="ft"><b>Tea Tree 320ml</b> flagged for reorder at Nawala</div><div class="fm">11:20 AM</div></div></div>
+                    <div class="pm-feed"><span class="fd" style="background:var(--alert)"></span><div><div class="ft"><b>Nadeesha Silva</b> missed sales submission</div><div class="fm">Yesterday</div></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip">
+    <div class="wrap strip-grid">
+      <div class="then">
+        <h3>How it runs today</h3>
+        <ul>
+          <li>Check-in is a photo in a group chat</li>
+          <li>Stock is counted on a paper sheet</li>
+          <li>Sales land as a spreadsheet on Monday</li>
+          <li>The sponsor emails to ask how it is going</li>
+        </ul>
+      </div>
+      <div class="now">
+        <h3>How it runs on Campaign Buddy</h3>
+        <ul>
+          <li>GPS verified check-in against the outlet geofence</li>
+          <li>Stock and units sold updated per SKU through the day</li>
+          <li>Sales, footfall and location visible as they happen</li>
+          <li>The sponsor logs in and sees today for themselves</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <section id="platform">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">The platform</span>
+        <h2>One backend. A field app and a portal that never disagree.</h2>
+        <p class="lede">Every check-in, stock update and sales figure lands in one system. Agencies, supervisors and sponsors read the same live data, shaped by their role and the outlets they can see.</p>
+      </div>
+      <div class="surfaces">
+        <div class="surface-col">
+          <div>
+            <span class="tag">CB Mobile, the field app</span>
+            <h3>What the promoter carries</h3>
+            <p>Runs on the phone every promoter and field supervisor already has. Check in and out with a GPS fix, update stock and units sold per SKU, log footfall, and confirm the day's summary before checkout.</p>
+          </div>
+          <div class="frame-phone surface-frame" aria-label="CB Mobile promoter home screen, sample data">
+            <div class="fp-screen mmock">
+              <div class="fp-notch"></div>
+              <div class="mm-status" style="padding-top:6px"><span>9:49</span><span>Wi-Fi 82%</span></div>
+              <div class="mm-scroll">
+                <div class="mm-greetrow">
+                  <div><div class="mm-greet">Good morning, Sanduni</div><div class="mm-greetsub">Friday, 5 September</div></div>
+                  <span class="mm-avatar">SK</span>
+                </div>
+                <div class="mm-campaign">
+                  <div class="loc"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke="#A9BDB4" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="#A9BDB4" stroke-width="1.8"/></svg>Nawala Retail Outlet</div>
+                  <div class="cname">Radiance Q3 Push</div>
+                  <span class="mm-chip-in"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7FE3B4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Checked in at 9:49 AM</span>
+                </div>
+                <div class="mm-sec"><span class="l">Today's stats</span></div>
+                <div class="mm-stats">
+                  <div class="mm-stat"><div class="l">Sales</div><div class="v">86.4K</div></div>
+                  <div class="mm-div"></div>
+                  <div class="mm-stat"><div class="l">Foot fall</div><div class="v">12 <span class="u">+</span></div></div>
+                  <div class="mm-div"></div>
+                  <div class="mm-stat"><div class="l">Approached</div><div class="v">20 <span class="u">+</span></div></div>
+                  <div class="mm-div"></div>
+                  <div class="mm-stat"><div class="l">Converted</div><div class="v">11 <span class="u">+</span></div></div>
+                </div>
+                <div class="mm-sec"><span class="l">Campaign products</span><span class="c">3 products</span></div>
+                <div class="mm-prod">
+                  <div class="mm-prod-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="3" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="15" rx="3" fill="#2B2420"/><rect x="6" y="11" width="12" height="4" fill="#8B5FBF"/></svg></div>
+                  <div style="flex:1"><div class="mm-prod-name">Sulfate Free Shampoo, Lavender 320ml</div><div class="mm-prod-price">LKR 3,200 per unit</div><div class="mm-qty-row"><span class="mm-qty avail">Available 12</span><span class="mm-qty sold">Sold 0</span></div></div>
+                </div>
+                <div class="mm-prod">
+                  <div class="mm-prod-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="3" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="15" rx="3" fill="#2B2420"/><rect x="6" y="11" width="12" height="4" fill="#4E8C5E"/></svg></div>
+                  <div style="flex:1"><div class="mm-prod-name">Sulfate Free Shampoo, Tea Tree 320ml</div><div class="mm-prod-price">LKR 3,200 per unit</div><div class="mm-qty-row"><span class="mm-qty avail">Available 3</span><span class="mm-qty sold">Sold 9</span><span class="mm-qty reorder">Reorder</span></div></div>
+                </div>
+                <div class="mm-prod">
+                  <div class="mm-prod-img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="3" rx="1" fill="#2B2420"/><rect x="6" y="6" width="12" height="15" rx="3" fill="#2B2420"/><rect x="6" y="11" width="12" height="4" fill="#2F9E8F"/></svg></div>
+                  <div style="flex:1"><div class="mm-prod-name">Sulfate Free Shampoo, Aloe Vera 320ml</div><div class="mm-prod-price">LKR 3,200 per unit</div><div class="mm-qty-row"><span class="mm-qty avail">Available 12</span><span class="mm-qty sold">Sold 0</span></div></div>
+                </div>
+              </div>
+              <div class="mm-bottomnav">
+                <div class="mm-navitem active"><svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Home</div>
+                <div class="mm-navitem"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l4-2 4 5 6-10 4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales</div>
+                <div class="mm-navitem"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Attendance</div>
+                <div class="mm-navitem"><svg viewBox="0 0 24 24" fill="none"><path d="M5 20V12M12 20V4M19 20V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Performance</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface-col">
+          <div>
+            <span class="tag">CB Office, the portal</span>
+            <h3>What head office runs</h3>
+            <p>Set up clients, catalogs, campaigns, outlets and staff; build activations; watch attendance, live location and sales as they land; correct data; and pull reports by SKU or brand. Supervisors and sponsors get read-only views scoped to their outlets.</p>
+          </div>
+          <div class="frame-browser surface-frame" aria-label="CB Office activations list, sample data">
+            <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/campaigns/activations</span></div>
+            <div class="fb-body pmock">
+              <div class="pm-main">
+                <div class="pm-top">
+                  <div><div class="t">Activations</div><div class="c">Campaigns</div></div>
+                  <span class="pm-pill">Add New Activation</span>
+                </div>
+                <div class="pm-content">
+                  <div class="pm-tbl-card">
+                    <div class="pm-tbl-head"><span>Show 25 entries</span><span>Search</span></div>
+                    <table class="pm-table">
+                      <thead><tr><th>Activation</th><th>Outlet</th><th>Promoter</th><th>Supervisor</th><th>Dates</th><th>Status</th></tr></thead>
+                      <tbody>
+                        <tr><td>Nawala Weekday Push</td><td>Nawala Retail Outlet</td><td>Sanduni Kumari</td><td>Dinesh Ranatunga</td><td>1 to 14 Sep</td><td><span class="pm-badge success">Active</span></td></tr>
+                        <tr><td>Rajagiriya Weekend</td><td>Keells Rajagiriya</td><td>Kasun Perera</td><td>Dinesh Ranatunga</td><td>1 to 14 Sep</td><td><span class="pm-badge success">Active</span></td></tr>
+                        <tr><td>Colombo City Center</td><td>CCC Food Hall</td><td>Nadeesha Silva</td><td>Ishara Fernando</td><td>20 Aug to 30 Sep</td><td><span class="pm-badge success">Active</span></td></tr>
+                        <tr><td>Dehiwala Outlet</td><td>Arpico Dehiwala</td><td>Tharindu Jayasuriya</td><td>Dinesh Ranatunga</td><td>5 to 14 Sep</td><td><span class="pm-badge pending">Upcoming</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style="margin-top:10px" class="repro-toast">
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>Dinesh Ranatunga now has portal access to Nawala Retail Outlet on this campaign.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="lifecycle" style="background:var(--card);border-block:1px solid var(--line)">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">The campaign lifecycle</span>
+        <h2>Five stages, end to end, and Campaign Buddy carries all of them.</h2>
+        <p class="lede">From the first client record to the final brand report, the whole activation programme lives in one place.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-side">
+          <span class="stage-num">01 &middot; Plan</span>
+          <h3>Build the campaign</h3>
+          <p>Clients, brands and a client wide SKU catalog. Campaigns with a date range and a status that tracks it.</p>
+        </div>
+        <div class="stage-body">
+          <ul class="feat-list">
+            <li>Outlets carry <strong>GPS coordinates and a geofence radius</strong> (150&nbsp;m default) that drive check-in verification</li>
+            <li>An <strong>activation</strong> is the unit of work: one promoter, one outlet, one campaign, one date range</li>
+            <li>Targets set <strong>by item or by brand</strong>, daily or monthly, by units or by sales value</li>
+          </ul>
+          <div class="frame-browser" aria-label="CB Office new activation form, sample data">
+            <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/campaigns/activations/new</span></div>
+            <div class="fb-body pmock">
+              <div class="pm-main">
+                <div class="pm-top"><div><div class="t">Add New Activation</div><div class="c">Radiance Q3 Push</div></div></div>
+                <div class="pm-content" style="display:grid;gap:8px">
+                  <div class="pm-tbl-card" style="padding:12px 14px">
+                    <table class="pm-table" style="font-size:10px">
+                      <tbody>
+                        <tr><td style="color:var(--text-muted)">Activation name</td><td class="num">Nawala Weekday Push</td></tr>
+                        <tr><td style="color:var(--text-muted)">Outlet</td><td class="num">Nawala Retail Outlet</td></tr>
+                        <tr><td style="color:var(--text-muted)">Promoter</td><td class="num">Sanduni Kumari</td></tr>
+                        <tr><td style="color:var(--text-muted)">Supervisor</td><td class="num">Dinesh Ranatunga</td></tr>
+                        <tr><td style="color:var(--text-muted)">Date range</td><td class="num">1 Sep to 14 Sep 2026</td></tr>
+                        <tr><td style="color:var(--text-muted)">Target</td><td><span class="pm-badge info">By brand, daily, by unit</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <span class="pm-badge muted">Lavender 320ml, LKR 3,200</span>
+                    <span class="pm-badge muted">Tea Tree 320ml, LKR 3,200</span>
+                    <span class="pm-badge muted">Aloe Vera 320ml, LKR 3,200</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-side">
+          <span class="stage-num">02 &middot; Deploy</span>
+          <h3>Staff the outlets</h3>
+          <p>Create promoters and supervisors with a mobile number login, then assign them to outlets with a shift window and targets.</p>
+        </div>
+        <div class="stage-body">
+          <ul class="feat-list">
+            <li>Promoters sign in with <strong>their mobile number</strong> in whatever format they already write it</li>
+            <li>Name a field supervisor on an activation and Campaign Buddy <strong>gives them portal access</strong> to that outlet, automatically</li>
+          </ul>
+          <div class="frame-browser" aria-label="CB Office staff list, sample data">
+            <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/staff</span></div>
+            <div class="fb-body pmock">
+              <div class="pm-main">
+                <div class="pm-top"><div><div class="t">Staff</div><div class="c">People</div></div><span class="pm-pill">Add New Member</span></div>
+                <div class="pm-content">
+                  <div class="pm-tbl-card">
+                    <table class="pm-table">
+                      <thead><tr><th>Name</th><th>Type</th><th>Home City</th><th>Mobile</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="pm-avatar-mini">SK</span>Sanduni Kumari</td><td><span class="pm-badge info">Promoter</span></td><td>Nawala</td><td>077 123 4567</td></tr>
+                        <tr><td><span class="pm-avatar-mini">DR</span>Dinesh Ranatunga</td><td><span class="pm-badge success">Supervisor</span></td><td>Rajagiriya</td><td>077 555 1122</td></tr>
+                        <tr><td><span class="pm-avatar-mini">KP</span>Kasun Perera</td><td><span class="pm-badge info">Promoter</span></td><td>Rajagiriya</td><td>076 222 3344</td></tr>
+                        <tr><td><span class="pm-avatar-mini">NS</span>Nadeesha Silva</td><td><span class="pm-badge info">Promoter</span></td><td>Colombo</td><td>071 333 4455</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-side">
+          <span class="stage-num">03 &middot; In the field</span>
+          <h3>The promoter's day</h3>
+          <p>Everything that used to be a photo, a paper count or a memory becomes structured data, captured on the shift.</p>
+        </div>
+        <div class="stage-body">
+          <ul class="feat-list">
+            <li><strong>Check-in</strong> takes a GPS fix and flags it against the outlet geofence for review</li>
+            <li>Stock, units sold and "other interested customers" updated per SKU, with a live remaining readout</li>
+            <li>Re-order flags, footfall counts, and the campaign's custom fields, all recorded on the shift</li>
+          </ul>
+          <div class="frame-phone" aria-label="CB Mobile product update screen, sample data">
+            <div class="fp-screen mmock">
+              <div class="fp-notch"></div>
+              <div class="mm-status" style="padding-top:6px"><span>2:41</span><span>Wi-Fi 74%</span></div>
+              <div class="mm-scroll">
+                <div class="mm-greet" style="font-size:14px">Sulfate Free Shampoo</div>
+                <div class="mm-greetsub">Tea Tree 320ml &middot; LKR 3,200 per unit</div>
+                <div style="margin-top:14px">
+                  <div class="mm-pu-row"><div><div class="l">Opening stock</div><div class="s">Raise it for a mid day restock</div></div><div class="mm-stepper"><span class="mm-stepbtn">&minus;</span><span class="mm-stepval">12</span><span class="mm-stepbtn">+</span></div></div>
+                  <div class="mm-pu-row"><div><div class="l">Sold today</div><div class="s">Cannot exceed opening stock</div></div><div class="mm-stepper"><span class="mm-stepbtn">&minus;</span><span class="mm-stepval">9</span><span class="mm-stepbtn">+</span></div></div>
+                  <div class="mm-pu-row"><div><div class="l">Other interested customers</div><div class="s">Demand you could not fill</div></div><div class="mm-stepper"><span class="mm-stepbtn">&minus;</span><span class="mm-stepval">4</span><span class="mm-stepbtn">+</span></div></div>
+                  <div class="mm-pu-row"><div><div class="l">Re-order</div><div class="s">Flag low stock to head office</div></div><div class="mm-switch"><span class="knob"></span></div></div>
+                </div>
+                <div class="mm-remain"><span>Remaining stock</span><span>3 units</span></div>
+                <div style="margin-top:12px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Additional details</div>
+                <div class="mm-pu-row"><div><div class="l">Damaged units</div><div class="s">Custom field on this campaign</div></div><span class="mm-stepval">1</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-side">
+          <span class="stage-num">04 &middot; Watch it live</span>
+          <h3>See the campaign as it happens</h3>
+          <p>Head office, supervisors and sponsors open the portal to a picture that is minutes old, not a week old.</p>
+        </div>
+        <div class="stage-body">
+          <ul class="feat-list">
+            <li>A <strong>live map</strong> of every checked-in promoter's latest position, refreshing every 15 seconds or so</li>
+            <li>Attendance with <strong>on time and late</strong> badges</li>
+            <li>A daily view of <strong>who has submitted their sales</strong> and who has not</li>
+            <li>A correction tool for head office to fix opening stock or sold quantity without the promoter</li>
+          </ul>
+          <div class="frame-browser" aria-label="CB Office seller live locations, sample data">
+            <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/tracking/live</span></div>
+            <div class="fb-body pmock">
+              <div class="pm-main">
+                <div class="pm-top"><div><div class="t">Seller Live Locations</div><div class="c">Tracking &middot; Radiance Q3 Push</div></div><span class="pm-pill">Sponsor view</span></div>
+                <div class="pm-content">
+                  <div class="pm-map">
+                    <svg class="basemap" viewBox="0 0 400 210" preserveAspectRatio="none" aria-hidden="true">
+                      <rect width="400" height="210" fill="#E8EEE7"/>
+                      <path d="M0 0H44C39 38 50 68 39 108 49 148 33 178 43 210H0Z" fill="#C3D9DE"/>
+                      <path d="M56 150C74 138 116 141 126 160 131 183 102 197 76 193 53 188 44 162 56 150Z" fill="#C3D9DE"/>
+                      <rect x="150" y="22" width="46" height="34" rx="4" fill="#D6E7CD"/>
+                      <rect x="300" y="118" width="56" height="42" rx="4" fill="#D6E7CD"/>
+                      <rect x="226" y="150" width="30" height="26" rx="3" fill="#D6E7CD"/>
+                      <g fill="none" stroke="#D9E1D6" stroke-width="7" stroke-linecap="round">
+                        <path d="M44 60H400"/><path d="M44 132H400"/><path d="M120 0V210"/><path d="M250 0V210"/><path d="M38 20C120 40 200 10 400 30"/>
+                      </g>
+                      <g fill="none" stroke="#FCFDFB" stroke-width="4" stroke-linecap="round">
+                        <path d="M44 60H400"/><path d="M44 132H400"/><path d="M120 0V210"/><path d="M250 0V210"/><path d="M38 20C120 40 200 10 400 30"/>
+                      </g>
+                      <g fill="none" stroke="#EFF3ED" stroke-width="2">
+                        <path d="M72 0V210"/><path d="M170 0V210"/><path d="M210 0V210"/><path d="M320 0V210"/><path d="M362 0V210"/>
+                        <path d="M44 30H400"/><path d="M44 95H400"/><path d="M44 168H400"/>
+                      </g>
+                      <g fill="#DEE6DC">
+                        <rect x="128" y="66" width="34" height="22" rx="2"/><rect x="176" y="66" width="30" height="22" rx="2"/>
+                        <rect x="258" y="66" width="40" height="22" rx="2"/><rect x="128" y="100" width="34" height="26" rx="2"/>
+                        <rect x="258" y="138" width="34" height="24" rx="2"/><rect x="330" y="66" width="30" height="22" rx="2"/>
+                      </g>
+                    </svg>
+                    <div class="pm-zoom"><span>+</span><span>&minus;</span></div>
+                    <div class="pm-scale"><span>2 km</span><i></i></div>
+                    <div class="pm-pin outlet" style="left:19%;top:44%"><span class="dot"></span><span class="tag">Nawala Retail Outlet</span></div>
+                    <div class="pm-pin" style="left:30%;top:24%"><span class="pulse"></span><span class="dot"></span><span class="tag">Sanduni, in 9:49</span></div>
+                    <div class="pm-pin outlet" style="left:52%;top:70%"><span class="dot"></span><span class="tag">Keells Rajagiriya</span></div>
+                    <div class="pm-pin" style="left:61%;top:50%"><span class="pulse"></span><span class="dot"></span><span class="tag">Kasun, in 9:52</span></div>
+                    <div class="pm-pin outlet" style="left:76%;top:46%"><span class="dot"></span><span class="tag">CCC Food Hall</span></div>
+                    <div class="pm-pin" style="left:87%;top:24%"><span class="pulse"></span><span class="dot"></span><span class="tag">Nadeesha, in 10:16</span></div>
+                    <div class="pm-pin outlet" style="left:41%;top:84%"><span class="dot"></span><span class="tag">Arpico Dehiwala, not in</span></div>
+                    <div class="pm-legend"><span class="it"><span class="sw" style="background:var(--mango)"></span>Promoter (live)</span><span class="it"><span class="sw" style="background:var(--ink)"></span>Outlet</span></div>
+                  </div>
+                  <div class="pm-tbl-card" style="margin-top:10px">
+                    <div class="pm-tbl-head"><span>Currently checked in</span></div>
+                    <table class="pm-table">
+                      <thead><tr><th>Promoter</th><th>Outlet</th><th>Since</th><th>Last ping</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="pm-avatar-mini">SK</span>Sanduni Kumari</td><td>Nawala Retail Outlet</td><td>9:49 AM</td><td style="color:var(--text-muted)">14 seconds ago</td></tr>
+                        <tr><td><span class="pm-avatar-mini">KP</span>Kasun Perera</td><td>Keells Rajagiriya</td><td>9:52 AM</td><td style="color:var(--text-muted)">41 seconds ago</td></tr>
+                        <tr><td><span class="pm-avatar-mini">NS</span>Nadeesha Silva</td><td>CCC Food Hall</td><td>10:16 AM</td><td style="color:var(--text-muted)">1 min ago</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-side">
+          <span class="stage-num">05 &middot; Prove the outcome</span>
+          <h3>Turn the shift data into the report</h3>
+          <p>The numbers the sponsor signed up for, built from the raw daily counters.</p>
+        </div>
+        <div class="stage-body">
+          <ul class="feat-list">
+            <li>Overall sales <strong>by SKU and by brand</strong> across the campaign, with grand totals</li>
+            <li>Per promoter <strong>performance scoreboards</strong> covering overall percentage, attendance, best day and brand contribution</li>
+            <li>Monthly attendance grid, exportable to CSV</li>
+            <li><strong>Per campaign licence metering</strong> so each activation's seat usage is accounted for</li>
+          </ul>
+          <div class="frame-browser" aria-label="CB Office overall SKU report, sample data">
+            <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/reports/sku-wise</span></div>
+            <div class="fb-body pmock">
+              <div class="pm-main">
+                <div class="pm-top"><div><div class="t">Overall SKU Wise</div><div class="c">Reports &middot; 1 to 30 Sep 2026</div></div><span class="pm-pill">Export to Excel</span></div>
+                <div class="pm-content">
+                  <div class="pm-tbl-card">
+                    <table class="pm-table">
+                      <thead><tr><th>Item</th><th>Brand</th><th style="text-align:right">Units</th><th style="text-align:right">Total Sales</th></tr></thead>
+                      <tbody>
+                        <tr><td>Tea Tree 320ml</td><td>Sulfate Free Shampoo Range</td><td class="num" style="text-align:right">61</td><td class="num" style="text-align:right">LKR 195,200</td></tr>
+                        <tr><td>Lavender 320ml</td><td>Sulfate Free Shampoo Range</td><td class="num" style="text-align:right">47</td><td class="num" style="text-align:right">LKR 150,400</td></tr>
+                        <tr><td>Aloe Vera 320ml</td><td>Sulfate Free Shampoo Range</td><td class="num" style="text-align:right">34</td><td class="num" style="text-align:right">LKR 108,800</td></tr>
+                        <tr class="pm-total"><td colspan="2">Grand total</td><td class="num" style="text-align:right">142</td><td class="num mango" style="text-align:right">LKR 454,400</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="field">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Field insight</span>
+        <h2>The things a spreadsheet never captured.</h2>
+        <p class="lede">Every promoter is a sensor on the shelf. Campaign Buddy captures what they see, not just what they sold, and hands it to the brand team as structured, dated, location tagged data.</p>
+      </div>
+      <div class="cards-grid">
+        <div class="mini-card"><span class="m">Demand you could not fill</span><h3>Other interested customers</h3><p>A per SKU count of shoppers who wanted the product when it was out of stock. The sales you lost, quantified.</p></div>
+        <div class="mini-card"><span class="m">Why a day moved</span><h3>Custom sales fields</h3><p>Defined by an admin per campaign: weather, competitor promo, samples given, damaged units. Day level or per product, required or optional.</p></div>
+        <div class="mini-card"><span class="m">Restock signals</span><h3>Re-order flags</h3><p>Raised by the promoter the moment stock runs low, rolled up per outlet per day for the supply team.</p></div>
+        <div class="mini-card"><span class="m">Where the day went</span><h3>GPS breadcrumb</h3><p>A timestamped location trail for every shift. Proof that a promoter was where the plan said, when it said.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sponsors" style="background:var(--card);border-block:1px solid var(--line)">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">For your sponsors</span>
+        <h2>A window into the campaign, not a weekly deck.</h2>
+        <p class="lede">Give every sponsor a read-only login, automatically limited to the campaign and outlets they are granted. They stop emailing for updates because they can see today for themselves, and that visibility is something your agency can now offer that others cannot.</p>
+      </div>
+      <div class="sponsor-grid">
+        <div>
+          <div class="sponsor-stats">
+            <div class="sponsor-stat"><div class="l">Sales today</div><div class="n">LKR 86,400</div><div class="d">Up 12% vs yesterday</div></div>
+            <div class="sponsor-stat"><div class="l">Foot fall today</div><div class="n">62</div><div class="d">Up 6</div></div>
+            <div class="sponsor-stat"><div class="l">Outlets live now</div><div class="n">5 of 6</div><div class="d" style="color:var(--text-muted)">1 not checked in</div></div>
+            <div class="sponsor-stat"><div class="l">Units sold</div><div class="n">142</div><div class="d" style="color:var(--text-muted)">Day 5 of 14</div></div>
+          </div>
+          <p class="disclaimer">Sponsor view, sample campaign data.</p>
+        </div>
+        <ul class="sponsor-list">
+          <li>
+            <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
+            <span><strong>Sponsor dashboard</strong> shows today's outlet count, sales, footfall, top products and a live promoter map</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 9h12M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span><strong>Self serve reports</strong> for sales by SKU or brand across any date range, exported to Excel</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9.5l3.5 3.5L14 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><strong>Access is scoped automatically</strong> with nothing to configure on the sponsor's side, and read-only is enforced on the server</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="staff">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Staff management</span>
+        <h2>Keep the field honest, and keep promoters informed.</h2>
+        <p class="lede">The rules that stop shifts being gamed, and the workflows that keep a team of promoters and supervisors running without a phone call.</p>
+      </div>
+      <div class="rules">
+        <div class="rule"><h3>One open shift at a time</h3><p>A promoter can be assigned to concurrent activations, but checked in to only one, anywhere. No double claimed shifts.</p></div>
+        <div class="rule"><h3>On time versus late</h3><p>Every check-in is timed against the planned shift start plus a 10 minute grace, and recorded as on time or late.</p></div>
+        <div class="rule"><h3>Leave, requested from the shift</h3><p>Promoters submit time off from the app, the "reports to" person approves it in the portal, and the decision shows back up on the phone.</p></div>
+        <div class="rule"><h3>Supervisor routes and QA</h3><p>Plan a supervisor's outlet visits on a calendar, and hold them to a per campaign QA checklist across nine categories.</p></div>
+        <div class="rule"><h3>Performance per promoter</h3><p>Overall performance, attendance, total sales, best day and brand contribution over any date range.</p></div>
+        <div class="rule"><h3>Geofence is a soft flag</h3><p>A check-in outside the radius is never blocked. It is marked "location unverified" for a human to review.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="band-ink" id="vision">
+    <div class="wrap" style="padding-block:clamp(3.75rem,8vw,6.5rem)">
+      <span class="eyebrow on-ink">Where Campaign Buddy is going</span>
+      <h2 style="font-size:clamp(1.75rem,3.4vw,2.6rem);margin-top:14px">Intelligence on top of clean field data.</h2>
+      <p class="lede" style="margin-top:14px;max-width:44em">Campaign Buddy already captures structured, dated, geo verified data from every outlet every day. That is the hard part, and it is the foundation for a layer of intelligence built for the sponsor's sales and marketing teams.</p>
+      <span class="vision-note">Directional. Shared so you know where a pilot is heading</span>
+      <div class="vision-grid">
+        <div class="vision-card"><span class="n">Forecasting</span><h3>Sales and demand forecasting</h3><p>Project SKU and outlet sales from the campaign's own history, flag outlets drifting off target early, and suggest where to move stock.</p></div>
+        <div class="vision-card"><span class="n">Summarisation</span><h3>Field insight summaries</h3><p>Turn a week of promoter remarks, competitor notes and custom field values into a written briefing for the brand team.</p></div>
+        <div class="vision-card"><span class="n">Integrity</span><h3>Anomaly and fraud signals</h3><p>Surface implausible sales, suspicious check-in patterns and attendance gaming before they reach a report.</p></div>
+        <div class="vision-card"><span class="n">Analytics</span><h3>Ask in plain language</h3><p>Put a question to the campaign in plain English and get the answer, not a pivot table to build.</p><div class="q">"Which outlets beat their target last week, and which are trending down?"</div></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="proven">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Proven in the field</span>
+        <h2>Shaped by real activations, not generic field-service software.</h2>
+        <p class="lede">The model, the defaults and the workflows come from how in-store activation programmes actually run: a promoter on a shelf, a supervisor on a route, a brand team that wants yesterday's numbers this morning.</p>
+      </div>
+      <div class="stat-band">
+        <div class="s"><div class="v">40+</div><div class="k">outlets on a single activation</div></div>
+        <div class="s"><div class="v">300+</div><div class="k">GPS verified check-ins a week</div></div>
+        <div class="s"><div class="v">Same day</div><div class="k">sales visible from every outlet</div></div>
+      </div>
+      <p class="disclaimer">Aggregate figures shown for illustration.</p>
+    </div>
+  </section>
+
+  <section id="trust" style="background:var(--card);border-top:1px solid var(--line)">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">The engineering underneath</span>
+        <h2>Modern where it helps. Boring where it counts.</h2>
+        <p class="lede">A field platform is only as good as the numbers it produces. These are the choices that keep them trustworthy.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 2l6 2v4c0 4-2.7 6.7-6 8-3.3-1.3-6-4-6-8V4l6-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <div><strong>Roles enforced on the server</strong><span>A supervisor or sponsor token is rejected on every write endpoint, regardless of what any screen shows.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 13l4-4 3 3 5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div><strong>Totals computed, never stored</strong><span>Sales, roll ups and remaining stock are calculated on read from the raw daily counters, so there are no stale cached numbers.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M6 9l2 2 4-4M9 2l6 2v4c0 4-2.7 6.7-6 8-3.3-1.3-6-4-6-8V4l6-2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          <div><strong>Every write is validated</strong><span>Runtime validation on every write route, with errors that come back as plain sentences naming the field, safe to show a user directly.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M9 5v4l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <div><strong>Sessions that do not drop</strong><span>CB Mobile refreshes its token in the background, so a promoter is never signed out mid shift.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v10H3zM3 7h12" stroke="currentColor" stroke-width="1.4"/></svg>
+          <div><strong>Automated test suite</strong><span>Integration tests across the backend plus unit tests on the portal and app cover the load bearing business rules.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <div><strong>Additive access only</strong><span>The supervisor auto grant widens access and confirms it in the interface. It never silently removes a grant.</span></div>
+        </div>
+      </div>
+      <p class="trust-tag">The parts that face the field feel new. The parts that hold the data are <b>deliberately unexciting.</b></p>
+    </div>
+  </section>
+
+  <section class="band-ink pilot" id="pilot">
+    <div class="wrap">
+      <div class="pilot-grid">
+        <div>
+          <span class="eyebrow on-ink">Start a pilot</span>
+          <h2 style="color:#fff;font-size:clamp(1.8rem,3.4vw,2.6rem);margin-top:14px">Run one live campaign on Campaign Buddy.</h2>
+          <p class="lede">We start agencies on a single active campaign, your own outlets and your own promoters, so you can see it working before you commit the rest of your book. Tell us what you would run and we will set it up.</p>
+          <div class="pilot-alt">
+            <a href="#wa" id="wa-pilot">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 00-5.6 9.8L1.5 14.5l3.4-.9A6.5 6.5 0 108 1.5z" stroke="currentColor" stroke-width="1.3"/></svg>
+              WhatsApp <span class="placeholder">+94 76 000 0000</span>
+            </a>
+            <a href="mailto:hello@campaignbuddy.lk">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12v8H2zM2 4l6 5 6-5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+              <span class="placeholder">hello@campaignbuddy.lk</span>
+            </a>
+          </div>
+        </div>
+        <form class="pilot-form" id="pilot-form" novalidate>
+          <div class="field"><label for="f-name">Your name</label><input type="text" id="f-name" name="name" autocomplete="name" required /></div>
+          <div class="field"><label for="f-org">Organisation</label><input type="text" id="f-org" name="org" autocomplete="organization" required /></div>
+          <div class="field-row">
+            <div class="field"><label for="f-role">You are a</label>
+              <select id="f-role" name="role"><option>Marketing agency</option><option>Brand or sponsor</option><option>Distributor</option><option>Other</option></select>
+            </div>
+            <div class="field"><label for="f-email">Email</label><input type="email" id="f-email" name="email" autocomplete="email" required /></div>
+          </div>
+          <div class="field"><label for="f-msg">What would you run as a pilot?</label><textarea id="f-msg" name="msg" placeholder="Campaign, rough outlet count, timeline"></textarea></div>
+          <button type="submit" class="btn btn-primary">Send pilot request
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <p class="form-note" id="form-note">Opens your email app addressed to the Campaign Buddy team. Pricing is quoted per engagement.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <span class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span>
+        <p>Field marketing execution for agencies running in-store product activations.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Platform</h4>
+        <a href="#platform">The two apps</a>
+        <a href="#lifecycle">Campaign lifecycle</a>
+        <a href="#field">Field insight</a>
+        <a href="#trust">Engineering</a>
+      </div>
+      <div class="foot-col">
+        <h4>Audiences</h4>
+        <a href="#sponsors">For sponsors</a>
+        <a href="#staff">Staff management</a>
+        <a href="#vision">Vision</a>
+        <a href="#pilot">Start a pilot</a>
+      </div>
+      <div class="foot-col">
+        <h4>Contact</h4>
+        <a href="mailto:hello@campaignbuddy.lk" class="placeholder">hello@campaignbuddy.lk</a>
+        <a href="#wa" id="wa-foot" class="placeholder">WhatsApp +94 76 000 0000</a>
+        <a href="#top">CampaignBuddy.lk</a>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span class="placeholder">Campaign Buddy (Pvt) Ltd</span>
+      <span>CampaignBuddy.lk</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var toggle = document.getElementById('navtoggle');
+    var links = document.getElementById('navlinks');
+    if (toggle && links) {
+      toggle.addEventListener('click', function () {
+        var open = links.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      links.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') { links.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }
+      });
+    }
+
+    var WA_NUMBER = '94760000000';
+    var waHref = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi Campaign Buddy, we would like to talk about running a pilot campaign.');
+    ['wa-hero', 'wa-pilot', 'wa-foot'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { el.setAttribute('href', waHref); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener'); }
+    });
+
+    var form = document.getElementById('pilot-form');
+    var note = document.getElementById('form-note');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var data = new FormData(form);
+        var name = (data.get('name') || '').toString().trim();
+        var org = (data.get('org') || '').toString().trim();
+        var email = (data.get('email') || '').toString().trim();
+        var role = (data.get('role') || '').toString();
+        var msg = (data.get('msg') || '').toString().trim();
+        if (!name || !org || !email || email.indexOf('@') === -1) {
+          note.textContent = 'Add your name, organisation and a valid email first.';
+          note.style.color = 'var(--alert)';
+          return;
+        }
+        var subject = 'Campaign Buddy pilot request from ' + org;
+        var body = 'Name: ' + name + '\n' + 'Organisation: ' + org + '\n' + 'Type: ' + role + '\n' + 'Email: ' + email + '\n\n' + 'Pilot idea:\n' + (msg || '(not specified)');
+        window.location.href = 'mailto:hello@campaignbuddy.lk?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        note.textContent = 'Opening your email app now.';
+        note.style.color = '#FFB98C';
+      });
+    }
+  })();
+</script>
+</body>
+</html>
