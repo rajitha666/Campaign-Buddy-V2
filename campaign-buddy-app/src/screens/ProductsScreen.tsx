@@ -86,6 +86,7 @@ export function ProductsScreen() {
                 otherInterestedCustomers: item.otherInterestedCustomers,
                 reorderFlag: item.reorderFlag,
                 bandColor: BAND_COLORS[i % BAND_COLORS.length],
+                customFields: item.customFields,
               })
             }
           />

@@ -7,5 +7,6 @@ export * as locationApi from './location';
 export * as statsApi from './stats';
 export * as productsApi from './products';
 export * as salesSummaryApi from './salesSummary';
+export * as salesFieldsApi from './salesFields';
 export * as timeOffApi from './timeOff';
 export * as performanceApi from './performance';

@@ -31,6 +31,22 @@ export interface User {
   reportsToName: string;
 }
 
+/** Admin-defined extra field on the daily sales update (issue #13, spec §2.14). */
+export type CustomSalesFieldType = 'number' | 'text' | 'boolean' | 'select';
+export interface CustomSalesField {
+  key: string;
+  label: string;
+  type: CustomSalesFieldType;
+  scope: 'day' | 'product';
+  options: string[];
+  required: boolean;
+  sortOrder: number;
+  value: number | boolean | string | null;
+}
+
+/** Map of custom-field key → new value (`null` clears it). */
+export type CustomFieldWrite = Record<string, number | boolean | string | null>;
+
 export interface Campaign {
   id: UUID;
   name: string;
@@ -134,6 +150,7 @@ export interface CampaignProductListItem {
   otherInterestedCustomers: number;
   remainingStock: number; // read-only
   reorderFlag: boolean;
+  customFields: CustomSalesField[]; // product-scope, with current values
 }
 
 /** GET /products/{id} response — includes the popup-only fields */
@@ -151,6 +168,7 @@ export interface StockUpdateRequest {
   soldToday?: number;
   otherInterestedCustomers?: number;
   reorderFlag?: boolean;
+  customFields?: CustomFieldWrite; // product-scope custom fields (#13)
 }
 
 export interface StockEntry {
@@ -164,6 +182,7 @@ export interface StockEntry {
   reorderFlag: boolean;
   remainingStock: number; // read-only
   updatedAt: ISODateTime;
+  customFields: CustomSalesField[];
 }
 
 export interface SalesSummary {
@@ -181,6 +200,7 @@ export interface SalesSummary {
   remarks: string | null;
   confirmed: boolean;
   confirmedAt: ISODateTime | null;
+  customFields: CustomSalesField[]; // day-scope, with current values
 }
 
 export type TimeOffReason = 'sick_leave' | 'annual_leave' | 'personal' | 'other';

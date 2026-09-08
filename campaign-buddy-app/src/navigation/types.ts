@@ -2,6 +2,8 @@
  * Central param-list definitions so `navigation.navigate(...)` calls are
  * type-checked. Add new screens/params here, not inline in each screen.
  */
+import type { CustomSalesField } from '@/api/types';
+
 export type HomeStackParamList = {
   Home: undefined;
   Products: undefined;
@@ -21,6 +23,7 @@ export type HomeStackParamList = {
     otherInterestedCustomers: number;
     reorderFlag: boolean;
     bandColor: string;
+    customFields?: CustomSalesField[];
   };
   StatsUpdate: undefined;
   Profile: undefined;

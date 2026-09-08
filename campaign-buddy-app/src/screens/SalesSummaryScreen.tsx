@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as salesSummaryApi from '@/api/salesSummary';
 import { Button } from '@/components/Button';
+import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
@@ -14,11 +15,30 @@ export function SalesSummaryScreen() {
   const queryClient = useQueryClient();
   const summaryQuery = useQuery({ queryKey: ['sales-summary', 'today'], queryFn: salesSummaryApi.getTodaySalesSummary });
   const [remarks, setRemarks] = useState<string | null>(null);
+  const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>({});
 
   const displayedRemarks = remarks ?? summaryQuery.data?.remarks ?? '';
+  const customFields = summaryQuery.data?.customFields ?? [];
+  const confirmed = !!summaryQuery.data?.confirmed;
+
+  // Seed the editable map from the server once the summary loads / changes.
+  useEffect(() => {
+    if (!summaryQuery.data) return;
+    setCustomValues((prev) => {
+      const next = { ...prev };
+      for (const f of summaryQuery.data.customFields ?? []) {
+        if (!(f.key in next)) next[f.key] = f.value;
+      }
+      return next;
+    });
+  }, [summaryQuery.data]);
 
   const confirmMutation = useMutation({
-    mutationFn: () => salesSummaryApi.confirmSalesSummary(displayedRemarks || undefined),
+    mutationFn: () =>
+      salesSummaryApi.confirmSalesSummary({
+        remarks: displayedRemarks || undefined,
+        customFields: customFields.length ? customValues : undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
       // Land back on Home after confirming — matches the prototype's
@@ -94,11 +114,28 @@ export function SalesSummaryScreen() {
             style={styles.remarksInput}
             value={displayedRemarks}
             onChangeText={setRemarks}
+            editable={!confirmed}
             placeholder="Add any notes about today"
             placeholderTextColor={colors.textMuted}
             multiline
           />
         </View>
+
+        {customFields.length > 0 && (
+          <View style={styles.customBlock}>
+            <Text style={styles.fieldLabel}>Additional details</Text>
+            {customFields.map((f, i) => (
+              <CustomFieldInput
+                key={f.key}
+                field={f}
+                value={customValues[f.key] ?? null}
+                onChange={(v) => setCustomValues((prev) => ({ ...prev, [f.key]: v }))}
+                disabled={confirmed}
+                last={i === customFields.length - 1}
+              />
+            ))}
+          </View>
+        )}
 
         <Button
           label={s?.confirmed ? 'Confirmed ✓' : 'Confirm & submit'}
@@ -160,6 +197,7 @@ const styles = StyleSheet.create({
   convNote: { textAlign: 'center', fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.sm },
   convBold: { color: colors.success, fontWeight: '700' },
   remarksBlock: { marginTop: spacing.xl },
+  customBlock: { marginTop: spacing.xl },
   fieldLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textMuted, marginBottom: spacing.sm },
   remarksInput: {
     borderWidth: 1.5,

@@ -139,11 +139,17 @@ values. Last 7 Days panel lists day-level values per day. CSV export gains colum
 - `ProductUpdateScreen.tsx` — product-level fields as extra rows, saved with the stock PATCH.
 - New `CustomFieldInput` component: number → numeric `TextInput`, text → `TextInput`, boolean → `ToggleSwitch`, select → tap-to-cycle chips / simple modal list.
 
-## Build order (one branch `custom-sales-fields`, commit per layer)
-1. schema + migration + seed sample fields
-2. backend admin CRUD + zod schemas + tests
-3. backend mobile GET/PATCH + confirm/stock required-checks + tests
-4. portal admin page + nav + endpoints
-5. portal Sales page render + CSV + Last 7 Days
-6. mobile screens + `CustomFieldInput`
-7. docs (api-spec, backend-spec, admin-panel-spec) + this file cross-links
+## Build order (branch `custom-sales-fields`, commit per layer) — all shipped
+
+1. ✅ schema + migration (2 partial unique indexes) + seed sample fields
+2. ✅ backend admin CRUD (`salesFields.routes.ts`) + zod schemas + tests
+3. ✅ backend mobile `GET /v1/sales-fields`, sales-summary / products / confirm / stock wiring + required-checks + tests
+4. ✅ portal admin page `CustomSalesFields.jsx` + nav + `endpoints.js`
+5. ✅ portal `SalesCorrectionGrid` (shared by SalesPage + UpdateSales) + CSV + Last 7 Days + `GET …/sales-field-values`
+6. ✅ mobile `CustomFieldInput` + `SalesSummaryScreen` (day) + `ProductUpdateScreen` (product)
+7. ✅ docs — api-spec §2.14/§6, backend-spec §2/§4, admin-panel-spec §3.6.5, app README
+
+### Known follow-ups (not in this pass)
+- Reports pages (SKU-wise / brand-wise) don't surface custom values yet — only the Sales page, CSV and Last-7-Days panel do.
+- `@db.Date` key: mobile writes use local start-of-day (matches the existing SalesRecord/DailyStats convention); on a non-UTC server this can differ from the admin route's UTC-midnight key. Pre-existing across the codebase — not introduced here.
+- Product-scope values are not locked by `SalesSummary.confirmed` (they follow the existing stock rules, which aren't either).

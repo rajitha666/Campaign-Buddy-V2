@@ -10,6 +10,7 @@ import * as productsApi from '@/api/products';
 import { ProductThumb } from '@/components/ProductThumb';
 import { Stepper } from '@/components/Stepper';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
+import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { Button } from '@/components/Button';
 import { ProductDetailsSheet } from '@/components/ProductDetailsSheet';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
@@ -29,6 +30,11 @@ export function ProductUpdateScreen() {
   const [reorderFlag, setReorderFlag] = useState(params.reorderFlag);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
+  const customFields = params.customFields ?? [];
+  const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>(() =>
+    Object.fromEntries(customFields.map((f) => [f.key, f.value]))
+  );
+
   const remaining = Math.max(openingStock - soldToday, 0);
 
   const saveMutation = useMutation({
@@ -38,6 +44,7 @@ export function ProductUpdateScreen() {
         soldToday,
         otherInterestedCustomers: otherInterested,
         reorderFlag,
+        customFields: customFields.length ? customValues : undefined,
       }),
     onSuccess: () => {
       // Invalidate so Home/Products/Stats refetch with the new numbers —
@@ -104,6 +111,21 @@ export function ProductUpdateScreen() {
           last
           noBorder
         />
+
+        {customFields.length > 0 && (
+          <View style={styles.customBlock}>
+            <Text style={styles.customHeading}>Additional details</Text>
+            {customFields.map((f, i) => (
+              <CustomFieldInput
+                key={f.key}
+                field={f}
+                value={customValues[f.key] ?? null}
+                onChange={(v) => setCustomValues((prev) => ({ ...prev, [f.key]: v }))}
+                last={i === customFields.length - 1}
+              />
+            ))}
+          </View>
+        )}
 
         <View style={styles.remainingCard}>
           <Text style={styles.remainingLabel}>Remaining in stock</Text>
@@ -193,6 +215,8 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
   rowSub: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
+  customBlock: { marginTop: spacing.lg },
+  customHeading: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
   remainingCard: {
     marginTop: spacing.lg,
     backgroundColor: colors.successTint,
