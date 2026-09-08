@@ -18,7 +18,7 @@ Server starts on `http://localhost:4000`. `GET /health` is a quick liveness chec
 
 ## Seeded logins (after `npm run prisma:seed`)
 - **Admin portal:** `admin` / `ChangeMe123!`
-- **Mobile app:** `sktest` / `Field123!`
+- **Mobile app:** `0770000001` (or the legacy username `sktest`) / `Field123!`
 
 ## Tests
 ```bash

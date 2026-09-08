@@ -6,6 +6,7 @@ import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { normalizeLkPhone } from "../../utils/phone";
 
 const router = Router();
 
@@ -23,8 +24,15 @@ const STAFF_WRITABLE = [
 function pickStaff(body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
   for (const key of STAFF_WRITABLE) {
-    if (body[key] !== undefined) {
-      data[key] = key === "dateOfBirth" && body[key] ? new Date(body[key] as string) : body[key];
+    if (body[key] === undefined) continue;
+    if (key === "dateOfBirth" && body[key]) {
+      data[key] = new Date(body[key] as string);
+    } else if (key === "phone" && typeof body[key] === "string" && body[key]) {
+      // Store the mobile number in canonical E.164 so login-by-number matches
+      // regardless of how the admin typed it (issue #3).
+      data[key] = normalizeLkPhone(body[key] as string) ?? body[key];
+    } else {
+      data[key] = body[key];
     }
   }
   return data;

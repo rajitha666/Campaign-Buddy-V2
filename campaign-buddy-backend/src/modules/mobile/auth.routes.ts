@@ -8,8 +8,25 @@ import { ApiError, ok } from "../../utils/apiResponse";
 import { staffAuth } from "../../middleware/staffAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { normalizeLkPhone } from "../../utils/phone";
 
 const router = Router();
+
+// Resolve the login identifier to a Staff row. Accepts either the mobile number
+// (any common Sri Lankan format — issue #3) or the legacy app username. Username
+// is unique so it's tried first; phone is not a unique column, so a phone that
+// matches more than one active staff member is rejected as ambiguous.
+async function findStaffByIdentifier(identifier: string) {
+  const raw = identifier.trim();
+
+  const byUsername = await prisma.staff.findUnique({ where: { mobileUsername: raw } });
+  if (byUsername) return byUsername;
+
+  const phone = normalizeLkPhone(raw);
+  if (!phone) return null;
+  const matches = await prisma.staff.findMany({ where: { phone }, take: 2 });
+  return matches.length === 1 ? matches[0] : null;
+}
 
 router.post(
   "/auth/login",
@@ -17,7 +34,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { username, password } = req.body as { username: string; password: string };
 
-    const staff = await prisma.staff.findUnique({ where: { mobileUsername: username } });
+    const staff = await findStaffByIdentifier(username);
     if (!staff || staff.status !== "active" || !(await bcrypt.compare(password, staff.passwordHash))) {
       throw new ApiError(401, "TOKEN_EXPIRED", "Invalid credentials");
     }

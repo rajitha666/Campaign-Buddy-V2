@@ -38,6 +38,22 @@ describe("auth", () => {
     expect(res.status).toBe(401);
   });
 
+  it("mobile login accepts the mobile number in any common format (#3)", async () => {
+    await makeStaff({ mobileUsername: "field2b", phone: "+94771234567" });
+    for (const id of ["+94771234567", "0771234567", "077 123 4567"]) {
+      const res = await request(app).post("/v1/auth/login").send({ username: id, password: "field-pw" });
+      expect(res.status, id).toBe(200);
+      expect(res.body.data.accessToken).toBeTypeOf("string");
+    }
+  });
+
+  it("mobile login rejects a phone number shared by more than one staff member", async () => {
+    await makeStaff({ mobileUsername: "dup1", phone: "+94770000009" });
+    await makeStaff({ mobileUsername: "dup2", phone: "+94770000009" });
+    const res = await request(app).post("/v1/auth/login").send({ username: "0770000009", password: "field-pw" });
+    expect(res.status).toBe(401);
+  });
+
   it("GET /v1/me returns the API-spec User shape", async () => {
     await makeStaff({ mobileUsername: "field3", fullName: "Jane Roe", displayName: "Janey", userType: "supervisor" });
     const login = await request(app).post("/v1/auth/login").send({ username: "field3", password: "field-pw" });

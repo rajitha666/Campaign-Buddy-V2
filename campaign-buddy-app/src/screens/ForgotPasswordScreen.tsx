@@ -13,18 +13,18 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
 export function ForgotPasswordScreen() {
   const navigation = useNavigation<Nav>();
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   async function handleSubmit() {
-    if (!username) return;
+    if (!identifier) return;
     setLoading(true);
     try {
       // Backend returns the same generic message whether or not the account
       // exists (spec §3 — no user enumeration), so there is no error path to
       // surface here.
-      await authApi.forgotPassword(username);
+      await authApi.forgotPassword(identifier.trim());
     } catch {
       // ignored — still show the generic confirmation
     } finally {
@@ -38,7 +38,7 @@ export function ForgotPasswordScreen() {
       <View style={styles.hero}>
         <Text style={styles.brand}>Reset password</Text>
         <Text style={styles.tagline}>
-          Enter your username and we'll send reset instructions to the contact on file.
+          Enter your mobile number and we'll send reset instructions to the contact on file.
         </Text>
       </View>
 
@@ -51,7 +51,7 @@ export function ForgotPasswordScreen() {
               </Svg>
             </View>
             <Text style={styles.okText}>
-              If an account exists for <Text style={{ fontWeight: '700' }}>{username}</Text>, reset
+              If an account exists for <Text style={{ fontWeight: '700' }}>{identifier}</Text>, reset
               instructions have been sent. Check with your supervisor if you don't receive anything.
             </Text>
             <Button label="Back to sign in" onPress={() => navigation.goBack()} style={{ marginTop: spacing.xl }} />
@@ -59,14 +59,15 @@ export function ForgotPasswordScreen() {
         ) : (
           <>
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Username</Text>
+              <Text style={styles.fieldLabel}>Mobile number</Text>
               <TextInput
                 style={styles.input}
-                value={username}
-                onChangeText={setUsername}
+                value={identifier}
+                onChangeText={setIdentifier}
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="Username"
+                keyboardType="default"
+                placeholder="07X XXX XXXX"
                 placeholderTextColor={colors.textMuted}
               />
             </View>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { looksLikePhone } from "./utils/phone";
 
 // Shared building blocks -----------------------------------------------------
 const id = z.string().min(1);
@@ -275,8 +276,8 @@ export const s = {
     password: z.string().min(1),
     status: z.enum(["active", "inactive"]).optional(),
     phone: z.string().optional().refine(
-      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-      { message: "Invalid format (e.g., +94771234567)" }
+      (v) => !v || !v.trim() || looksLikePhone(v) || /^\+\d{10,14}$/.test(v.trim()),
+      { message: "Enter a valid mobile number (e.g. 0771234567 or +94771234567)" }
     ),
     cityId: id.optional(),
     reportsToStaffId: id.optional(),

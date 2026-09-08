@@ -15,17 +15,17 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 export function LoginScreen() {
   const { login } = useAuth();
   const navigation = useNavigation<Nav>();
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit() {
-    if (!username || !password) return;
+    if (!identifier || !password) return;
     setLoading(true);
     setError('');
     try {
-      await login(username, password);
+      await login(identifier.trim(), password);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -66,14 +66,17 @@ export function LoginScreen() {
 
         <View style={styles.sheet}>
           <View style={styles.field}>
-            <Text style={styles.fieldLabel}>Username</Text>
+            <Text style={styles.fieldLabel}>Mobile number</Text>
             <TextInput
               style={styles.input}
-              value={username}
-              onChangeText={(t) => { setUsername(t); setError(''); }}
+              value={identifier}
+              onChangeText={(t) => { setIdentifier(t); setError(''); }}
               autoCapitalize="none"
               autoCorrect={false}
-              placeholder="Username"
+              // Not phone-pad: staff onboarded before the switch still sign in
+              // with their old username (backend accepts either). See issue #3.
+              keyboardType="default"
+              placeholder="07X XXX XXXX"
               placeholderTextColor={colors.textMuted}
             />
           </View>

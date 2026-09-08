@@ -78,7 +78,7 @@ See `src/utils/validationMessages.ts`.
 | `employeeId` | string | e.g. `"DYR-0142"` — human-readable, shown in Profile |
 | `fullName` | string | |
 | `displayName` | string | preferred short name; used for the home-screen greeting |
-| `username` | string | login identifier |
+| `username` | string | app login username (mobile number also works — see §3) |
 | `phone` | string | E.164 format, e.g. `"+94771234567"` |
 | `role` | enum: `field_rep`, `campaign_owner`, `admin` | |
 | `avatarInitials` | string | 2 chars, derived server-side from `displayName` (falls back to `fullName`) |
@@ -269,12 +269,15 @@ See `GET /campaigns/{campaignId}/performance` in §6.9 for shape.
 ### `POST /auth/login`
 **Request**
 ```json
-{ "username": "sktest", "password": "••••••••" }
+{ "username": "0771234567", "password": "••••••••" }
 ```
 | Field | Type | Required |
 |---|---|---|
-| `username` | string | yes |
+| `username` | string | yes — the staff member's **mobile number** (any common Sri Lankan format: `0771234567`, `771234567`, `+94771234567`) **or** their legacy app username |
 | `password` | string | yes |
+
+The mobile number is matched after normalizing to E.164. A number that maps to
+more than one staff member is treated as invalid credentials.
 
 **Response `200`**
 ```json
@@ -293,7 +296,7 @@ See `GET /campaigns/{campaignId}/performance` in §6.9 for shape.
 **Request:** `{ "refreshToken": "..." }` → **Response:** new `accessToken` + `expiresIn`.
 
 ### `POST /auth/forgot-password`
-**Request:** `{ "username": "sktest" }` → **Response `200`**, always generic (`"If the account exists, a reset link was sent"`) to avoid user enumeration.
+**Request:** `{ "username": "0771234567" }` (mobile number or username) → **Response `200`**, always generic (`"If the account exists, a reset link was sent"`) to avoid user enumeration.
 
 ### `POST /auth/logout`
 Invalidates the current refresh token. **Response `204`.**

@@ -98,11 +98,15 @@ async function main() {
         displayName: "Sanduni",
         userType: "promoter",
         mobileUsername: "sktest",
+        phone: "+94770000001", // app login also accepts the mobile number (issue #3)
         passwordHash: staffPasswordHash,
         cityId: city.id,
         status: "active",
       },
     });
+  } else if (!staff.phone) {
+    // Backfill the mobile number on an already-seeded DB so number login works (issue #3).
+    staff = await prisma.staff.update({ where: { id: staff.id }, data: { phone: "+94770000001" } });
   }
 
   let activation = await prisma.activation.findFirst({ where: { campaignId: campaign.id, outletId: outlet.id, staffId: staff.id } });

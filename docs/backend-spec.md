@@ -219,7 +219,7 @@ Two entirely independent JWT spaces — different secrets, different payload sha
 
 ### 3.1 Staff (mobile)
 
-`POST /v1/auth/login` → `{ username, password }` → verifies against `Staff.mobileUsername` + `passwordHash` (bcrypt), rejects if `status !== "active"`. Issues:
+`POST /v1/auth/login` → `{ username, password }` → the `username` field is the staff member's mobile number (normalized to E.164 — see `src/utils/phone.ts`) or their legacy `Staff.mobileUsername`; resolves username first (unique), then phone (rejects if the number matches more than one staff row), verifies `passwordHash` (bcrypt), rejects if `status !== "active"`. Issues:
 - `accessToken` — JWT, payload `{ sub: staffId, type: "staff", userType }`, expires per `STAFF_JWT_EXPIRES_IN` (seconds).
 - `refreshToken` — random UUID, **hashed with SHA-256 before storage** in `StaffRefreshToken`, TTL `STAFF_REFRESH_TOKEN_TTL_DAYS`.
 
@@ -458,7 +458,7 @@ Running `npm run prisma:seed` provisions:
 - All four `Role`s (`adm`, `usr`, `supervisor`, `sponsor`).
 - A Super Admin `User`: `admin` / `ChangeMe123!`.
 - A sample `Client` (Prisha Naturals), `Brand`, `Item` (Tea Tree Shampoo 320ml), `City` (Nawala), `Outlet` (Nawala Retail Outlet), `Campaign` ("Sktest Activation", `CMP-0001`), with an `"all"`-scope `CampaignAccessGrant` for the admin user.
-- A sample `Staff` mobile login: `sktest` / `Field123!`, with an `Activation` on the seeded campaign/outlet and a linked `ActivationItem`/`CampaignItem`.
+- A sample `Staff` mobile login: `sktest` **or** `0770000001` / `Field123!`, with an `Activation` on the seeded campaign/outlet and a linked `ActivationItem`/`CampaignItem`.
 - **No `SupervisorRoute` seed row** — new entity, left empty by default.
 
 This is enough to exercise every mobile endpoint and every admin read endpoint against real data immediately after seeding.
