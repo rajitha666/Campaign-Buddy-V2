@@ -191,6 +191,19 @@ export const s = {
   campaignItemAdd: z
     .object({ itemId: id.optional(), newItem: z.record(z.string(), z.unknown()).optional() })
     .refine((v) => v.itemId || v.newItem, { message: "itemId or newItem required" }),
+  // License usage tracking — seat caps + warn threshold. All optional (PATCH
+  // semantics); `warnThresholdPct` accepts null to clear the per-campaign
+  // override and fall back to the global default.
+  licenseUpdate: z
+    .object({
+      promoterCap: z.number().int().min(0),
+      supervisorCap: z.number().int().min(0),
+      adminCap: z.number().int().min(0),
+      sponsorCap: z.number().int().min(0),
+      warnThresholdPct: z.number().int().min(1).max(99).nullable(),
+    })
+    .partial()
+    .refine((v) => Object.keys(v).length > 0, { message: "Provide at least one field to update" }),
   activationCreate: z.object({
     name: z.string().min(1),
     outletId: id,

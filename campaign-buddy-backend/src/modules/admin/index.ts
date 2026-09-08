@@ -9,6 +9,7 @@ import operationsRoutes from "./operations.routes";
 import reportsRoutes from "./reports.routes";
 import rbacRoutes from "./rbac.routes";
 import salesFieldsRoutes from "./salesFields.routes";
+import licenseRoutes from "./license.routes";
 
 // Admin/Supervisor/Sponsor portal — /admin/v1/*. One API, three personas —
 // role + CampaignAccessGrant decide what each caller can see/do (Spec v3 intro).
@@ -23,6 +24,7 @@ router.use(campaignsRoutes);      // includes GET /campaigns (no :campaignId pre
 router.use(activationsRoutes);    // nested under /campaigns/:campaignId/*, requireCampaignAccess applied per-route
 router.use(operationsRoutes);     // same
 router.use(salesFieldsRoutes);    // /campaigns/:campaignId/sales-fields — custom sales fields (#13)
+router.use(licenseRoutes);        // /campaigns/:campaignId/license + /license/usage — license usage tracking
 router.use(reportsRoutes);        // same
 router.use(rbacRoutes);           // /users, /roles — [adm] only, enforced inside the file
 

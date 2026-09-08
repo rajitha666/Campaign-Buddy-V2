@@ -92,6 +92,12 @@ enum OutletScopeType {
   subset
 }
 
+// Period granularity for stored license-usage snapshots (license usage tracking).
+enum LicenseUsagePeriod {
+  week
+  month
+}
+
 // Admin-defined extra fields captured on the daily sales update (issue #13).
 enum SalesFieldType {
   number
@@ -311,6 +317,19 @@ model Campaign {
   // endDate clears it so the date rule takes over again.
   statusManuallySet Boolean        @default(false)
   timezone          String         @default("Asia/Colombo")
+
+  // License usage tracking — named seat caps per user group, soft-limit only
+  // (over-cap never blocks assignment, it just raises an alert state). Defaults
+  // match the standard campaign profile (20 promoters / 5 supervisors / 2 admins
+  // / 2 sponsors). `licenseWarnThresholdPct` null => fall back to the global
+  // default (env LICENSE_WARN_THRESHOLD_PCT, itself defaulting to 80).
+  // See docs/license-usage-spec.md.
+  licensePromoterCap      Int  @default(20)
+  licenseSupervisorCap    Int  @default(5)
+  licenseAdminCap         Int  @default(2)
+  licenseSponsorCap       Int  @default(2)
+  licenseWarnThresholdPct Int?
+
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -321,9 +340,39 @@ model Campaign {
   supervisorTasks       SupervisorTask[]
   supervisorRoutes      SupervisorRoute[]
   salesFieldDefinitions SalesFieldDefinition[]
+  licenseUsageSnapshots CampaignLicenseUsageSnapshot[]
 
   @@index([clientId])
   @@map("campaigns")
+}
+
+// One stored license-usage reading for a campaign over a calendar period.
+// Written daily by the in-process snapshot job (src/jobs/licenseSnapshot.ts):
+// each of the four `*Used` counts is the PEAK seen for that group during the
+// period, `*Cap` is the cap as configured at capture time (so historical rows
+// stay meaningful after a cap is changed). Periods are computed in Asia/Colombo
+// (week = ISO Mon–Sun, month = calendar month). See docs/license-usage-spec.md.
+model CampaignLicenseUsageSnapshot {
+  id             String             @id @default(uuid())
+  campaignId     String
+  period         LicenseUsagePeriod
+  periodStart    DateTime           @db.Date
+  promoterUsed   Int                @default(0)
+  supervisorUsed Int                @default(0)
+  adminUsed      Int                @default(0)
+  sponsorUsed    Int                @default(0)
+  promoterCap    Int                @default(0)
+  supervisorCap  Int                @default(0)
+  adminCap       Int                @default(0)
+  sponsorCap     Int                @default(0)
+  capturedAt     DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, period, periodStart])
+  @@index([campaignId])
+  @@map("campaign_license_usage_snapshots")
 }
 
 model CampaignItem {

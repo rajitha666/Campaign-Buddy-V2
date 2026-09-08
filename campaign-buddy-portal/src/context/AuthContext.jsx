@@ -107,6 +107,7 @@ export function AuthProvider({ children }) {
     login, logout,
     isAdmin: persona === 'admin',
     isReadOnly: persona !== 'admin',
+    isSuperAdmin: user?.roleId === 'adm', // adm only — distinct from the 'usr' Campaign Admin
   };
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

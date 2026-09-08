@@ -128,3 +128,35 @@ These are prototype/implementation-level drifts, not spec conflicts, so they wer
 1. **`campaign-buddy-portal_Prototype.html` still has a separate "Client Reports" nav item** (`clientReports`, route `/reports/item_wise_c`, visible to `admin`/`sponsor`). Admin Panel Spec v3 §3.11 says this should be collapsed into the single Reports section — the prototype predates that reconciliation and needs updating when the portal is rebuilt.
 2. **The same prototype's role-gating uses literal `'admin'`/`'supervisor'`/`'sponsor'` strings**, not real backend `roleId` values. Fine as a nav-persona abstraction per decision #10 above, but the real auth integration needs an explicit `adm|usr → "admin"` mapping layer in code — don't let the prototype's hardcoded strings become the actual permission check.
 3. Neither prototype has any UI yet for the new `SupervisorRoute`/Assign Routes screen (didn't exist as a concept until this pass) or the Staff Profiles evaluation view (Spec v3 §4.2) — both need building, not just reconciling, in the next phase.
+
+---
+
+## Feature — License usage tracking (2026-09-08)
+
+New enhancement, not a spec-conflict resolution. Per-campaign metering of licensed
+"seats" for the four user groups (promoter / supervisor / admin / sponsor), with
+weekly + monthly usage history and in-portal alerting. Full spec:
+`docs/license-usage-spec.md`; backend summary in Backend Spec v3 §12.
+
+Design decisions settled with the product owner before build:
+
+- **Metered unit:** named seat caps per user group (not seat-days or a pooled
+  total), stored per campaign with defaults 20 / 5 / 2 / 2.
+- **Seat = used when assigned** (has an `Activation` or `CampaignAccessGrant`) —
+  login/activity irrelevant.
+- **Soft limits only** — over-cap never blocks assignment, consistent with the
+  geofence soft-flag precedent (§5.6). Alert states `ok`/`warn`/`at`/`over`;
+  warn threshold configurable per campaign, global default 80%.
+- **Sponsor-org users count** against the campaign's caps like agency users.
+  Supervisors existing as both mobile `Staff` and portal `User` count once
+  (de-duped via `Staff.linkedUserId`). Admin group = roles `adm` + `usr`.
+- **Usage over time:** daily in-process snapshot job (node-cron) records the
+  *peak* seat count per ISO week and per calendar month, in Asia/Colombo.
+- **Cap editing is `adm`-only**; `usr` (Campaign Admin) and the account-wide
+  rollup report are read-only for `usr`. Reporting surface is admin-personas
+  only — no sponsor/supervisor visibility in v1.
+- Caps are adjusted post-creation in the License Usage panel; the campaign
+  create form is unchanged.
+
+Out of scope (v1): hard limits, agency-level shared pools, email notifications,
+seat-days / cumulative-distinct-person metering.

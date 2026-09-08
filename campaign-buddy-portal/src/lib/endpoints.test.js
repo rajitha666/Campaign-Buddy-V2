@@ -48,6 +48,19 @@ describe('endpoints — path construction', () => {
     ]);
   });
 
+  it('license usage endpoints hit the campaign-scoped + account-wide routes', async () => {
+    await api.license.get('camp1');
+    await api.license.update('camp1', { promoterCap: 25 });
+    await api.license.history('camp1', { period: 'week' });
+    await api.license.usage({ state: 'over' });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'get /campaigns/camp1/license',
+      'patch /campaigns/camp1/license',
+      'get /campaigns/camp1/license/history',
+      'get /license/usage',
+    ]);
+  });
+
   it('client-scoped report shims point at the plain /reports/* routes (v3 §5.10)', async () => {
     await api.assumed.clientScopedReports.skuWise('camp1', {});
     await api.assumed.clientScopedReports.brandWise('camp1', {});

@@ -152,6 +152,14 @@ export const salesFields = {
   saveValues: (campaignId, body) => api.put(`/campaigns/${campaignId}/sales/custom-values`, body), // {activationId, date, day, products}
   dayValues: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales-field-values`, { query }), // {dateFrom, dateTo}
 };
+// License usage tracking
+export const license = {
+  get: (campaignId) => api.get(`/campaigns/${campaignId}/license`),
+  update: (campaignId, body) => api.patch(`/campaigns/${campaignId}/license`, body), // {promoterCap, supervisorCap, adminCap, sponsorCap, warnThresholdPct}
+  history: (campaignId, query) => api.get(`/campaigns/${campaignId}/license/history`, { query }), // {period:'week'|'month', limit}
+  usage: (query) => api.get('/license/usage', { query }), // {state:'warn'|'at'|'over'}
+};
+
 export const supervisorTasks = {
   list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),

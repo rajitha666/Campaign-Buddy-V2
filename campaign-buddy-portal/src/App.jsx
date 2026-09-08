@@ -13,6 +13,7 @@ import StaffProfiles from './pages/StaffProfiles';
 import UpdateSales from './pages/UpdateSales';
 import SalesPage from './pages/SalesPage';
 import CustomSalesFields from './pages/CustomSalesFields';
+import LicenseUsage from './pages/LicenseUsage';
 import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
 import LiveMap from './pages/LiveMap';
@@ -82,6 +83,7 @@ export default function App() {
 
               <Route path="/users" element={R('users')()} />
               <Route path="/roles" element={R('roles')()} />
+              <Route path="/license" element={<LicenseUsage />} />
 
               <Route path="*" element={<NotFound />} />
             </Route>

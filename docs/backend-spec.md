@@ -605,3 +605,30 @@ Concretely, per endpoint:
   totalDays, totalSales, totalUnitsSold, totalApproached, dailySales:[{date,
   amount}], topProducts:[{productId,name,unitPrice,unitsSold}] }`
 - `POST /location/ping` → also accepts `timestamp` as an alias for `capturedAt`
+
+---
+
+## 12. Addendum — License usage tracking (2026-09-08)
+
+Full detail in `docs/license-usage-spec.md`. Summary:
+
+- **Schema:** `Campaign` gains `licensePromoterCap` / `licenseSupervisorCap` /
+  `licenseAdminCap` / `licenseSponsorCap` (Int, defaults 20 / 5 / 2 / 2) and
+  `licenseWarnThresholdPct` (Int?, null → env `LICENSE_WARN_THRESHOLD_PCT`,
+  default 80). New model `CampaignLicenseUsageSnapshot` (one peak-usage row per
+  campaign per week/month period). Migration `20260908171132_add_license_usage_tracking`.
+- **Seat counting** (`src/utils/licenseUsage.ts`): a seat is used when an account
+  is *assigned* to the campaign — promoter/supervisor `Staff` via `Activation`,
+  admin/supervisor/sponsor `User` via `CampaignAccessGrant`. Supervisors are
+  de-duped across mobile+portal by `Staff.linkedUserId`. Admin group = roles
+  `adm` + `usr`.
+- **Soft limits:** over-cap never blocks an assignment. Per-group state
+  `ok` / `warn` / `at` / `over`; campaign `overallState` = worst group.
+- **Endpoints** (`/admin/v1`): `GET /campaigns/:id/license`,
+  `PATCH /campaigns/:id/license` (**`adm` only** — `usr` keeps read access),
+  `GET /campaigns/:id/license/history?period=week|month`,
+  `GET /license/usage?state=` (account-wide rollup; `adm` all campaigns, `usr`
+  granted ones).
+- **Snapshot job** (`src/jobs/licenseSnapshot.ts`): node-cron, 00:15 Asia/Colombo
+  daily + a catch-up run on boot, keeping the peak per period. Wired from
+  `server.ts` only. `LICENSE_SNAPSHOT_DISABLED=1` to opt out.

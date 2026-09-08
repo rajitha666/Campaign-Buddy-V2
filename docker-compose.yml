@@ -30,6 +30,11 @@ services:
       USER_JWT_SECRET: ${USER_JWT_SECRET:-change-me-user-secret}
       USER_JWT_EXPIRES_IN: ${USER_JWT_EXPIRES_IN:-8h}
       BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      # License usage tracking (docs/license-usage-spec.md). Both optional.
+      LICENSE_WARN_THRESHOLD_PCT: ${LICENSE_WARN_THRESHOLD_PCT:-80}
+      LICENSE_SNAPSHOT_DISABLED: ${LICENSE_SNAPSHOT_DISABLED:-0}
+      # The daily usage-snapshot job buckets periods in this timezone.
+      TZ: ${TZ:-Asia/Colombo}
     depends_on:
       postgres:
         condition: service_healthy
