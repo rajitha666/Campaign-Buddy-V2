@@ -7,6 +7,7 @@ import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "..
 import { dayDate, dayBounds } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { computeTotalSales } from "../../utils/salesCalc";
 
 const router = Router();
 
@@ -153,6 +154,38 @@ router.get(
       activationName: r.activation.name,
     }));
     res.json(ok({ totals, byDay }));
+  })
+);
+
+router.patch(
+  "/campaigns/:campaignId/stats/today",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  validate({ body: s.statsUpdate }),
+  asyncHandler(async (req, res) => {
+    const today = dayDate(new Date().toISOString().slice(0, 10));
+    const { footFall, approached, converted } = req.body as { footFall?: number; approached?: number; converted?: number };
+
+    const activation = await prisma.activation.findFirst({
+      where: {
+        campaignId: req.params.campaignId,
+        dateFrom: { lte: today },
+        dateTo: { gte: today },
+      },
+    });
+    if (!activation) throw notFound("Active activation for today");
+    assertOutletAllowed(req, activation.outletId);
+
+    const stats = await prisma.dailyStats.upsert({
+      where: { activationId_date: { activationId: activation.id, date: today } },
+      create: { activationId: activation.id, date: today, footFall: footFall ?? 0, approached: approached ?? 0, converted: converted ?? 0 },
+      update: { ...(footFall != null ? { footFall } : {}), ...(approached != null ? { approached } : {}), ...(converted != null ? { converted } : {}) },
+    });
+
+    const totalSales = await computeTotalSales(prisma, activation.id, today);
+    const conversionRate = stats.approached > 0 ? stats.converted / stats.approached : 0;
+
+    res.json(ok({ ...stats, totalSales, conversionRate }));
   })
 );
 
