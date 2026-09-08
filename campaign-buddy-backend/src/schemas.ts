@@ -47,10 +47,19 @@ export const s = {
       soldToday: nonNegInt,
       otherInterestedCustomers: nonNegInt,
       reorderFlag: z.boolean(),
+      customFields: z.record(z.string(), z.unknown()).optional(),
     })
     .partial(),
-  salesSummaryRemarks: z.object({ remarks: z.string().optional() }),
-  salesSummaryConfirm: z.object({ remarks: z.string().optional() }).partial(),
+  salesSummaryRemarks: z.object({
+    remarks: z.string().optional(),
+    customFields: z.record(z.string(), z.unknown()).optional(),
+  }),
+  salesSummaryConfirm: z
+    .object({
+      remarks: z.string().optional(),
+      customFields: z.record(z.string(), z.unknown()).optional(),
+    })
+    .partial(),
   timeOffCreate: z.object({
     fromDate: dateish,
     toDate: dateish,
@@ -265,6 +274,38 @@ export const s = {
       taskType: z.enum(["range", "feedback"]),
     })
     .partial(),
+
+  // ---- Admin: custom sales fields (issue #13) ----
+  salesFieldCreate: z
+    .object({
+      label: z.string().min(1),
+      type: z.enum(["number", "text", "boolean", "select"]),
+      scope: z.enum(["day", "product"]).optional(),
+      options: z.array(z.string().min(1)).optional(),
+      required: z.boolean().optional(),
+      sortOrder: z.number().int().optional(),
+    })
+    .refine((v) => v.type !== "select" || (v.options && v.options.length >= 2), {
+      message: "A dropdown field needs at least two options",
+      path: ["options"],
+    }),
+  salesFieldUpdate: z
+    .object({
+      label: z.string().min(1),
+      type: z.enum(["number", "text", "boolean", "select"]),
+      scope: z.enum(["day", "product"]),
+      options: z.array(z.string().min(1)),
+      required: z.boolean(),
+      sortOrder: z.number().int(),
+      archived: z.boolean(),
+    })
+    .partial(),
+  salesFieldValuesSave: z.object({
+    activationId: id,
+    date: dateish,
+    day: z.record(z.string(), z.unknown()).optional(),
+    products: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+  }),
 
   // ---- Admin: staff / RBAC ----
   staffCreate: z.object({
