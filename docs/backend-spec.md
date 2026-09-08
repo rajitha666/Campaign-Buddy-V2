@@ -39,6 +39,8 @@ Error:
 ```
 `field` is omitted when not applicable. Implemented via `ApiError` (`src/utils/apiResponse.ts`) and the central `errorHandler` middleware — every route handler is wrapped in `asyncHandler` so thrown `ApiError`s are caught and formatted consistently; anything else becomes a generic `500 SERVER_ERROR`.
 
+For `VALIDATION_ERROR`, `error.message` is a plain, user-facing sentence that names the field (`"From date is required"`, `"Foot fall must be 0 or more"`) — a global Zod error map (`src/utils/validationMessages.ts`, installed in `app.ts`) rewrites the stock Zod wording, so the message is always safe to show directly in a client UI. Explicit per-schema messages (`.regex(re, "...")`, `.refine`) still take precedence (issue #4).
+
 ### 1.2 HTTP status codes in use
 
 | Code | Meaning |

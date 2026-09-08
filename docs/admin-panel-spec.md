@@ -120,7 +120,9 @@ List, Distributor Points, Cities — map directly to catalog endpoints.
 
 ### 3.5 Staff (Promoters & Supervisors)
 #### 3.5.1 Staff List & Add form — **HR field scope confirmed final, v3**
-Fields: Basic Info (fullName, displayName, gender, dateOfBirth, nic, permanentAddress, currentAddress, cityId, phone), Emergency Contact (emergencyContactName, emergencyContactPhone), Bank Account (bankAccountName, bankName, bankAccountNumber, bankBranch). **This is the complete field set** — no profile photo upload, no marital status, no English-proficiency ratings, no work-type/designation pick-lists. If any of those turn out to be needed later, they're a schema change and a new spec revision, not an existing gap.
+Fields: Basic Info (fullName, `displayName` — labelled **"Display Name (App Name)"**, this is the name the promoter sees in CB Mobile and the greeting, gender, dateOfBirth, nic, permanentAddress, currentAddress, `cityId` — labelled **"Home City"**: the promoter's city of residence, HR data only, *not* derived from any outlet (issue #5), phone), Emergency Contact (emergencyContactName, emergencyContactPhone), Bank Account (bankAccountName, bankName, bankAccountNumber, bankBranch). **This is the complete field set** — no profile photo upload, no marital status, no English-proficiency ratings, no work-type/designation pick-lists. If any of those turn out to be needed later, they're a schema change and a new spec revision, not an existing gap.
+
+`phone` doubles as a **mobile-app login identifier** — CB Mobile accepts either the mobile number (any common Sri Lankan format, normalised to E.164) or the legacy app username (issue #3). Enter it in any format; it is stored canonical.
 One addition kept from v2: the Staff edit form should surface whether this Staff record has a linked portal `User` and, if not, offer a "Grant portal access" action — the manual complement to §3.3.2's auto-grant.
 
 #### 3.5.2 Staff Attendance (`/promoter/attendance`)

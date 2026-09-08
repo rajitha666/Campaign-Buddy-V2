@@ -1,6 +1,6 @@
 # Campaign Buddy — Product Documentation
 
-**Version:** v3 (feature-complete build, 2026-09-06)
+**Version:** v3 (feature-complete build, 2026-09-06; enhancement pass 2026-09-08 — issues #3–#6, #13, Expo SDK 57)
 **Scope of this document:** every feature implemented in the two shipping products —
 **CB Office** (the web portal for head office, supervisors and sponsors) and
 **CB Mobile** (the field-rep app) — described in plain language, organised so it can
@@ -79,9 +79,11 @@ every screen self-explanatory.
     *this* outlet,
   - **Activation Targets** — numeric targets per item over a date range.
 - **Staff** — a promoter or a field supervisor. One table, typed
-  `promoter` or `supervisor`. Has a mobile login (username + password), an
+  `promoter` or `supervisor`. Has a **mobile login** — the promoter signs in with
+  their **mobile number** *or* a legacy app username, plus a password — an
   employee ID, an HR profile (personal details, emergency contact, bank account),
-  a home city, a "reports to" person for leave approval, and — for supervisors —
+  a **home city** (their city of residence — HR data only, not tied to any
+  outlet), a "reports to" person for leave approval, and — for supervisors —
   an **optional linked portal login** so the same person can also log into CB
   Office.
 - **User** — a back-office / portal login. Has a **Role** (`adm`, `usr`,
@@ -101,6 +103,11 @@ every screen self-explanatory.
 - **Daily Stats** — one per activation per day: footfall, approached, converted.
 - **Sales Summary** — the promoter's end-of-day confirmation (remarks + confirmed
   flag). All the totals on it are computed live, never stored.
+- **Custom Sales Field** — an admin-defined extra field on the daily sales
+  update, configured **per campaign** (see §4.6). Each field is either *day-level*
+  (one value per activation per day) or *product-level* (one value per item per
+  day), and typed number / text / yes-no / dropdown. Its captured values are
+  stored alongside the standard sales data.
 - **Tracking Ping** — a GPS position logged every ~60 s while a promoter is
   checked in and has the app open.
 - **Leave Request** — a time-off request from the mobile app (from/to dates,
@@ -225,11 +232,16 @@ see a read-only **My Campaigns** card view.
 ### 4.5 Staff (People)  *(Admin write; Supervisor read-only on some screens)*
 
 - **Staff → List** — CRUD for promoters and supervisors. The form is grouped:
-  - **Basic Info**: employee ID, full name, display name (shown in the app), user
+  - **Basic Info**: employee ID, full name, **Display Name (App Name)** (the name
+    the promoter sees in CB Mobile, including the home-screen greeting), user
     type (promoter/supervisor), status (active/inactive), gender, date of birth,
-    NIC, mobile, city, permanent & current address.
+    NIC, **mobile** (also a login identifier — see below), **Home City** (the
+    promoter's city of residence; HR data, not derived from any outlet),
+    permanent & current address.
   - **Login**: mobile app username, password (set on create; leave blank on edit
-    to keep).
+    to keep). The promoter can sign in on CB Mobile with **either** their mobile
+    number (any common format — `0771234567`, `+94771234567` — stored canonical)
+    **or** this username.
   - **Emergency Contact**: name, phone.
   - **Bank Account**: account name, bank, account number, branch.
   - This 11-field HR set is the **final, deliberate scope** — no photo upload, no
@@ -264,7 +276,21 @@ see a read-only **My Campaigns** card view.
   promoter → activation → date) load that day's sales grid; the admin edits opening
   stock / sold qty for any row and saves. This is how head office fixes a
   promoter's mistake without touching the app. Raising opening stock mid-day is
-  allowed (mid-day restock).
+  allowed (mid-day restock). When the campaign has **custom sales fields**, the
+  day-level fields appear above the grid and each product-level field is an extra
+  column — the admin can enter or correct these here too, and they save with the
+  stock corrections. The same grid is on the main **Sales** overview page.
+- **Custom Fields** *(Admin, per campaign)* — define the extra fields promoters
+  record on the daily sales update. Each field has a **label**, an **applies-to**
+  scope (*Whole day* → one value per promoter per day, e.g. weather, competitor
+  activity, samples given; or *Each product* → one value per SKU per day, e.g.
+  damaged units), a **type** (Number / Text / Yes-No / Dropdown, with an options
+  list for Dropdown), a **Required** flag, and a sort order. A required field
+  blocks the promoter's *Confirm & submit* (day-level) or that product's save
+  (product-level). Type and applies-to are **locked once the field has recorded
+  values**; a used field is **archived** (hidden from entry forms, history kept)
+  rather than deleted. Day-level values also appear in the "Last 7 Days" panel and
+  the CSV export.
 - Sponsors get a dedicated **Sales & Foot Fall** view; supervisors get the SKU-wise
   view scoped to their outlets.
 
@@ -336,10 +362,13 @@ three screens reached by tapping through: Campaign Products, Time Off, Profile.
 
 ### 5.1 Sign in
 
-- Username + password (the mobile username set on the Staff record).
-- **Forgot password** screen — submits the username and shows a generic
-  confirmation (no account enumeration). *Delivery of the reset itself is not yet
-  wired — see §7.*
+- **Mobile number** + password — the promoter's number as held on the Staff
+  record, entered in any common format (`0771234567`, `+94771234567`). The legacy
+  app **username** still works in the same field, so staff onboarded before the
+  switch aren't locked out.
+- **Forgot password** screen — submits the mobile number (or username) and shows a
+  generic confirmation (no account enumeration). *Delivery of the reset itself is
+  not yet wired — see §7.*
 - The session persists (secure device storage) and **auto-refreshes the access
   token** in the background, so a promoter isn't kicked out mid-shift.
 
@@ -347,6 +376,8 @@ three screens reached by tapping through: Campaign Products, Time Off, Profile.
 
 The promoter's landing screen:
 
+- A **greeting by the promoter's display name** ("Good morning, Sanduni") — the
+  Display Name (App Name) on the Staff record, not a truncated legal name.
 - **Today's assignment** — campaign name, outlet name/address, planned shift
   window, pulled from the activation that covers today.
 - **Check-in status** — whether they're on shift and since when.
@@ -403,6 +434,8 @@ right on the tab.
   - a live **remaining** readout,
   - a **product details** sheet (SKU, price, description, when it was added to the
     campaign).
+  - **any product-level custom fields** the campaign defines (§4.6) — shown as
+    extra rows under "Additional details"; a required one blocks the save.
   - Saving updates stock and, because `sold today × unit price` feeds the
     server-computed sales total, the Home and Performance figures update too.
 
@@ -412,9 +445,13 @@ right on the tab.
 - **Items received / sold / remaining** roll-up.
 - **Footfall / approached / converted** with conversion %.
 - A **remarks** field for notes about the day.
+- **Any day-level custom fields** the campaign defines (§4.6), under "Additional
+  details" — weather, competitor activity, samples given, etc.
 - **Confirm & submit** — locks in the day's summary. This is the action the
   checkout flow asks the promoter to complete. It's idempotent — re-confirming is
-  safe.
+  safe. A **required** custom field that's still blank blocks the confirm with a
+  clear message. **Once confirmed, the promoter can no longer edit** the day's
+  remarks or custom values — corrections go through head office (§4.6).
 
 ### 5.6 Stats update
 
@@ -471,6 +508,10 @@ These are the rules a marketing/sales or training writer needs to state correctl
 | **Mid-day restock edits opening stock** | There's never a second stock row for the same item/day — you raise `opening stock` in place, on mobile or via the portal's Update Sales. |
 | **Location pings: foreground + checked-in only** | ~60 s heartbeat, paused on background, stopped on check-out, never before a shift. |
 | **Read-only roles are enforced server-side** | Supervisor and Sponsor tokens are rejected on every write, regardless of the UI. |
+| **Promoters sign in by mobile number** | Either the mobile number (any format, stored canonical as `+94…`) or the legacy app username — same field, same password. |
+| **Custom sales fields are per campaign** | Defined by an admin; day-level or product-level; number / text / yes-no / dropdown. A required one blocks the promoter's submit. Type/scope freeze once values exist; used fields are archived, not deleted. |
+| **A confirmed sales summary is locked to the promoter** | After *Confirm & submit*, the promoter can't change that day's remarks or custom values — only head office can, via Update Sales. |
+| **Validation errors are already user-facing** | Every `VALIDATION_ERROR` message is a plain sentence naming the field ("From date is required") — the UI shows it directly, no translation layer needed. |
 
 ---
 
@@ -492,6 +533,9 @@ These are the rules a marketing/sales or training writer needs to state correctl
 - **Fuller HR profile / staff photos** — the 11-field HR set is final for v3.
 - **Offline writes on mobile** — a connection is required for check-in, stock
   saves and confirmation.
+- **Custom sales fields in the SKU / brand reports** — custom-field values show on
+  the Sales page, the "Last 7 Days" panel and the CSV export, but not yet in the
+  aggregate Reports screens.
 
 ---
 
@@ -507,16 +551,20 @@ These are the rules a marketing/sales or training writer needs to state correctl
 6. Create **Activations** — one per promoter per outlet, setting the supervisor
    (which auto-grants their portal access), shift window, and targets.
 7. Per activation, set **Activation Items** and **Activation Targets**.
-8. Optionally grant **Sponsor** users access to the campaign.
-9. Optionally plan **Supervisor Routes**.
+8. Optionally define **Custom Sales Fields** for the campaign (Sales → Custom
+   Fields) — the extra data points promoters should record each day.
+9. Optionally grant **Sponsor** users access to the campaign.
+10. Optionally plan **Supervisor Routes**.
 
 ### 8.2 A promoter's shift (CB Mobile)
 
 1. Arrive at the outlet, open the app, **check in** (grants location, GPS fix).
-2. Through the day: update **stock and sales** per product as items sell; raise the
-   **re-order** flag when low; bump **footfall / approached / converted**.
-3. Near end of shift: open the **Sales** tab, review the day's numbers, add
-   **remarks**, **confirm & submit**.
+2. Through the day: update **stock and sales** per product as items sell (plus any
+   per-product custom fields); raise the **re-order** flag when low; bump
+   **footfall / approached / converted**.
+3. Near end of shift: open the **Sales** tab, review the day's numbers, fill any
+   **day-level custom fields** (weather, competitor activity…), add **remarks**,
+   **confirm & submit** (required custom fields must be filled first).
 4. **Check out** (confirms the summary was done, takes a final GPS fix).
 5. If needed, submit a **time-off request** for a future date.
 
@@ -550,13 +598,15 @@ granted — no configuration on their side.
 
 ### 9.1 Demo / seed credentials (local build)
 
-| Surface | Username | Password | Role |
+| Surface | Login | Password | Role |
 |---|---|---|---|
 | CB Office | `admin` | `ChangeMe123!` | Super Admin |
-| CB Mobile | `sktest` | `Field123!` | Promoter |
+| CB Mobile | `0770000001` (or the legacy username `sktest`) | `Field123!` | Promoter |
 
 Seed data includes one client (Prisha Naturals), one brand, one item, one city, one
-outlet, one campaign, and one activation linking `sktest` to it.
+outlet, one campaign, one activation linking `sktest` to it, and **four sample
+custom sales fields** on that campaign (Weather, Competitor promo, Samples given,
+Damaged units).
 
 ### 9.2 Technology
 
@@ -565,22 +615,44 @@ outlet, one campaign, and one activation linking `sktest` to it.
   validation (zod). Automated test suite (backend integration + portal + mobile
   unit tests).
 - **CB Office:** React + Vite single-page app.
-- **CB Mobile:** React Native (Expo SDK 51), React Navigation, TanStack Query.
+- **CB Mobile:** React Native (**Expo SDK 57** — RN 0.86 / React 19.2 / React
+  Navigation 7; runs in the current App Store / Play Store Expo Go), TanStack
+  Query.
 
 ### 9.3 API surface (for reference when writing integration docs)
 
-- **Mobile** (`/v1/*`): auth (login/refresh/forgot-password/logout), `me` +
-  today's assignment, attendance (today/check-in/check-out/history),
-  location ping, stats (today, patch), campaign products + product detail + stock
-  patch, sales summary (today/patch/confirm), time-off (balance/requests),
-  campaign performance.
+- **Mobile** (`/v1/*`): auth (login by mobile-number-or-username / refresh /
+  forgot-password / logout), `me` + today's assignment, attendance
+  (today/check-in/check-out/history), location ping, stats (today, patch),
+  campaign products + product detail + stock patch, **custom sales fields**
+  (`GET /sales-fields`), sales summary (today/patch/confirm, all carrying
+  day-level custom values), time-off (balance/requests), campaign performance.
 - **Portal** (`/admin/v1/*`): auth; catalog CRUD (clients, brands, items, cities,
   outlets, distributor points); staff pool + evaluation; campaigns + campaign
-  items + access; activations + activation items + targets; operations
-  (attendance, sales, sales lookup, stats, live tracking, tracking history,
-  leave requests, supervisor routes, supervisor tasks, absence, outlet
-  attendance); reports (sku-wise, brand-wise, reorder, outlet-wise,
-  attendance-monthly); RBAC administration (users, campaign access, roles).
+  items + access; activations + activation items + targets; **custom sales field
+  definitions + bulk value save** (`/campaigns/:id/sales-fields`,
+  `/sales/custom-values`, `/sales-field-values`); operations (attendance, sales,
+  sales lookup, stats, stats/today patch, live tracking, tracking history, leave
+  requests, supervisor routes, supervisor tasks, absence, outlet attendance);
+  reports (sku-wise, brand-wise, reorder, outlet-wise, attendance-monthly); RBAC
+  administration (users, campaign access, roles).
+
+---
+
+## 10. Recent changes
+
+### Enhancement pass — 2026-09-08
+
+| Ref | Change |
+|---|---|
+| Platform | **CB Mobile upgraded to Expo SDK 57** (from 51) — RN 0.86 / React 19.2 / React Navigation 7, so it opens in the current App Store / Play Store Expo Go. No feature change. |
+| #3 | **Promoters sign in with their mobile number** (or the legacy username), any common Sri Lankan format. Admin stores the number canonically. |
+| #4 | **Validation errors are now plain, field-named sentences** everywhere ("From date is required") — safe to show directly, no raw library wording. |
+| #5 | Staff **"City" renamed "Home City"** and confirmed as residence data only — not derived from the assigned outlet. |
+| #6 | CB Mobile **greets the promoter by their Display Name**, not a truncated legal name; the API exposes `displayName`. |
+| #13 | **Custom Sales Fields** — admin-defined, per-campaign extra fields on the daily sales update (day-level or product-level; number / text / yes-no / dropdown; optional/required). Captured on CB Mobile's daily summary and product screens; entered/corrected in CB Office; shown in the Sales page, "Last 7 Days" panel and CSV export. |
+
+Full design record for #13: `docs/custom-sales-fields-spec.md`.
 
 ---
 
