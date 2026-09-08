@@ -39,14 +39,18 @@ To serve it from the existing Docker setup, add a static service to `docker-comp
       - "8082:80"
 ```
 
-## Before going live — fill in the placeholders
+## Before going live
 
-Everything shown in orange on the page (class `placeholder`) is a stand-in:
+Set:
 
-- **Contact email** — currently `hello@campaignbuddy.lk` (in three `mailto:` links and the JS)
-- **WhatsApp number** — currently `+94 76 000 0000`; the click-to-chat link is built from
-  the `WA_NUMBER` constant (`94760000000`) near the bottom of the inline script
-- **Legal entity name** — currently `Campaign Buddy (Pvt) Ltd` in the footer
+- Legal entity: **Dyro Technologies (Pvt) Ltd** (footer)
+- WhatsApp: **+94 71 218 4846** — click-to-chat link built from the `WA_NUMBER` constant
+  (`94712184846`) near the bottom of the inline script
+
+Still a placeholder (shown in orange, class `placeholder`):
+
+- **Contact email** — currently `hello@campaignbuddy.lk`, in two visible links plus two
+  `mailto:` references in the inline script (the pilot-form handler and the footer link)
 
 The pilot form has no backend. On submit it composes a `mailto:` to the contact address.
 Swap in a real form endpoint (Formspree, a Worker, an API route) in the script's submit
