@@ -18,6 +18,7 @@ import {
   supervisorTasks as supervisorTasksApi, staffAbsence as staffAbsenceApi,
   outletAttendance as outletAttendanceApi, tracking as trackingApi,
 } from '../lib/endpoints';
+import { validators } from '../lib/validators';
 
 // @db.Date columns come back as "…T00:00:00.000Z"; render them in UTC so a
 // negative-offset browser doesn't show the previous day. Timestamps (checkInAt,
@@ -169,8 +170,8 @@ export const RESOURCES = {
       { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'address', label: 'Address', type: 'textarea', required: true },
       { key: 'cityId', label: 'City', type: 'select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
-      { key: 'phone', label: 'Phone', type: 'text' },
-      { key: 'mobile', label: 'Mobile', type: 'text' },
+      { key: 'phone', label: 'Phone', type: 'text', defaultValue: '+94', validate: validators.mobile() },
+      { key: 'mobile', label: 'Mobile', type: 'text', defaultValue: '+94', validate: validators.mobile() },
       { key: 'fax', label: 'Fax', type: 'text' },
       { key: 'geo', label: 'Coordinates', type: 'geocode' },
     ],
@@ -346,8 +347,8 @@ export const RESOURCES = {
       { key: 'status', label: 'Status', type: 'radio', required: true, options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
       { key: 'gender', label: 'Gender', type: 'radio', options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
       { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
-      { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number' },
-      { key: 'phone', label: 'Mobile', type: 'text' },
+      { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number', validate: validators.nic() },
+      { key: 'phone', label: 'Mobile', type: 'text', defaultValue: '+94', validate: validators.mobile() },
       { key: 'cityId', label: 'City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
       { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea' },
       { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
@@ -358,7 +359,7 @@ export const RESOURCES = {
 
       { type: 'section', label: 'Emergency Contact' },
       { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
-      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'text' },
+      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'text', defaultValue: '+94', validate: validators.mobile() },
 
       { type: 'section', label: 'Bank Account' },
       { key: 'bankAccountName', label: 'Account Name', type: 'text' },

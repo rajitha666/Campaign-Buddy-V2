@@ -20,7 +20,7 @@ export default function Drawer({
       fields.forEach((f) => {
         if (f.type === 'section') return;
         if (f.type === 'radio') defaults[f.key] = initialValues[f.key] ?? f.options?.[0]?.value ?? f.options?.[0];
-        else defaults[f.key] = initialValues[f.key] ?? '';
+        else defaults[f.key] = initialValues[f.key] ?? f.defaultValue ?? '';
       });
       setValues(defaults);
       const builders = {};
@@ -42,6 +42,10 @@ export default function Drawer({
     fields.forEach((f) => {
       if (f.type === 'section') return;
       if (f.required && !values[f.key] && f.type !== 'builder') errs[f.key] = 'Required';
+      else if (f.validate && values[f.key]) {
+        const msg = f.validate(values[f.key]);
+        if (msg) errs[f.key] = msg;
+      }
     });
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;

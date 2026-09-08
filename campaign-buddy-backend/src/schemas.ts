@@ -113,8 +113,14 @@ export const s = {
     longitude: lng,
     contactPerson: z.string().optional(),
     address: z.string().optional(),
-    phone: z.string().optional(),
-    mobile: z.string().optional(),
+    phone: z.string().optional().refine(
+      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+      { message: "Invalid format (e.g., +94771234567)" }
+    ),
+    mobile: z.string().optional().refine(
+      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+      { message: "Invalid format (e.g., +94771234567)" }
+    ),
     fax: z.string().optional(),
     geofenceRadiusMeters: z.number().int().positive().optional(),
   }),
@@ -127,8 +133,14 @@ export const s = {
       longitude: lng,
       contactPerson: z.string(),
       address: z.string(),
-      phone: z.string(),
-      mobile: z.string(),
+      phone: z.string().refine(
+        (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+        { message: "Invalid format (e.g., +94771234567)" }
+      ),
+      mobile: z.string().refine(
+        (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+        { message: "Invalid format (e.g., +94771234567)" }
+      ),
       fax: z.string(),
       geofenceRadiusMeters: z.number().int().positive(),
     })
@@ -262,17 +274,26 @@ export const s = {
     mobileUsername: z.string().min(1),
     password: z.string().min(1),
     status: z.enum(["active", "inactive"]).optional(),
-    phone: z.string().optional(),
+    phone: z.string().optional().refine(
+      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+      { message: "Invalid format (e.g., +94771234567)" }
+    ),
     cityId: id.optional(),
     reportsToStaffId: id.optional(),
     linkedUserId: id.optional(),
-    nic: z.string().optional(),
+    nic: z.string().optional().refine(
+      (v) => !v || /^(\d{9}[VXvX]|\d{12})$/.test(v.trim()),
+      { message: "Invalid NIC format (e.g., 891234567V or 198912345678)" }
+    ),
     dateOfBirth: z.string().optional(),
     gender: z.string().optional(),
     permanentAddress: z.string().optional(),
     currentAddress: z.string().optional(),
     emergencyContactName: z.string().optional(),
-    emergencyContactPhone: z.string().optional(),
+    emergencyContactPhone: z.string().optional().refine(
+      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
+      { message: "Invalid format (e.g., +94771234567)" }
+    ),
     bankAccountName: z.string().optional(),
     bankName: z.string().optional(),
     bankAccountNumber: z.string().optional(),

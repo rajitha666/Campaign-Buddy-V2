@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,16 +18,16 @@ export function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit() {
     if (!username || !password) return;
     setLoading(true);
+    setError('');
     try {
       await login(username, password);
-      // No manual navigation needed — RootNavigator swaps to MainTabs
-      // automatically once AuthContext's `user` is set.
     } catch (err) {
-      Alert.alert('Sign in failed', getApiErrorMessage(err));
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function LoginScreen() {
             <TextInput
               style={styles.input}
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(t) => { setUsername(t); setError(''); }}
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="Username"
@@ -82,12 +82,17 @@ export function LoginScreen() {
             <TextInput
               style={styles.input}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(t) => { setPassword(t); setError(''); }}
               secureTextEntry
               placeholder="Password"
               placeholderTextColor={colors.textMuted}
             />
           </View>
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
           <Button label="Sign in" onPress={handleSubmit} loading={loading} />
           <Text style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
             Forgot password?
@@ -130,6 +135,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     color: colors.textPrimary,
   },
+  errorBox: {
+    backgroundColor: colors.alertTint,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  errorText: { color: colors.alert, fontSize: fontSize.sm, fontWeight: '600' },
   forgot: {
     textAlign: 'center',
     fontSize: 13.5,

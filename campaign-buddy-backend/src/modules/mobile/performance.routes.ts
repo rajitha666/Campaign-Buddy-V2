@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, notFound } from "../../utils/apiResponse";
+import { ok } from "../../utils/apiResponse";
 
 const router = Router();
 
@@ -14,7 +14,24 @@ router.get(
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, campaignId, ...(outletId ? { outletId } : {}) },
     });
-    if (!activation) throw notFound("Your activation on this campaign");
+    const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+
+    if (!activation) {
+      res.json(
+        ok({
+          campaignName: campaign?.name ?? "",
+          startDate: null,
+          dayNumber: 0,
+          totalDays: 0,
+          totalSales: 0,
+          totalUnitsSold: 0,
+          totalApproached: 0,
+          dailySales: [],
+          topProducts: [],
+        })
+      );
+      return;
+    }
 
     const [dailyStats, salesRecords] = await Promise.all([
       prisma.dailyStats.findMany({ where: { activationId: activation.id }, orderBy: { date: "asc" } }),
@@ -36,7 +53,6 @@ router.get(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, amount]) => ({ date, amount }));
 
-    // docs/api-spec.md §8 — topProducts as { productId, name, unitPrice, unitsSold }.
     const byItem = new Map<string, { productId: string; name: string; unitPrice: number; unitsSold: number }>();
     for (const rec of salesRecords) {
       const item = rec.activationItem.campaignItem.item;
@@ -49,7 +65,6 @@ router.get(
     const totalUnitsSold = salesRecords.reduce((s, r) => s + r.soldToday, 0);
     const totalApproached = dailyStats.reduce((s, d) => s + d.approached, 0);
     const totalSales = Object.values(byDay).reduce((s, v) => s + v, 0);
-    const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
 
     res.json(
       ok({

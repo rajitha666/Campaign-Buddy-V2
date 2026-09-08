@@ -77,13 +77,25 @@ router.post(
   "/attendance/check-in",
   validate({ body: s.checkIn }),
   asyncHandler(async (req, res) => {
-    const { latitude, longitude } = req.body as { latitude: number; longitude: number };
+    const { assignmentId, latitude, longitude } = req.body as {
+      assignmentId?: string;
+      latitude: number;
+      longitude: number;
+    };
 
     const today = startOfDay(new Date());
-    const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
-      include: { outlet: true },
-    });
+    let activation;
+    if (assignmentId) {
+      activation = await prisma.activation.findFirst({
+        where: { id: assignmentId, staffId: req.staff!.sub },
+        include: { outlet: true },
+      });
+    } else {
+      activation = await prisma.activation.findFirst({
+        where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+        include: { outlet: true },
+      });
+    }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
     // Global one-open-shift lock (Spec v3 §5.1) — across EVERY Activation this staff
