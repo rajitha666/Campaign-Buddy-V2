@@ -27,6 +27,23 @@ export default function Topbar() {
 
   const initials = (user?.displayName || 'U').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
+  // Role training guides live in marketing/training/, served same-origin at
+  // /training/ (see nginx.conf + scripts/sync-training.mjs). Each persona sees
+  // its own guide; admins and supervisors also get the promoter guide since
+  // they support promoters in the field.
+  const GUIDE_LABELS = {
+    admin: 'Admin guide',
+    supervisor: 'Supervisor guide',
+    sponsor: 'Sponsor guide',
+    promoter: 'Promoter guide',
+  };
+  const GUIDES_BY_PERSONA = {
+    admin: ['admin', 'promoter'],
+    supervisor: ['supervisor', 'promoter'],
+    sponsor: ['sponsor'],
+  };
+  const guides = GUIDES_BY_PERSONA[persona] || [];
+
   return (
     <div className="topbar">
       <div>
@@ -68,6 +85,26 @@ export default function Topbar() {
                 <div className="cell-strong">{user?.displayName}</div>
                 <div className="cell-muted" style={{ fontSize: 11 }}>{user?.roleId}</div>
               </div>
+              {guides.length > 0 ? (
+                <div className="item" style={{ cursor: 'default', paddingBottom: 2 }}>
+                  <div className="cell-muted" style={{ fontSize: 11 }}>
+                    {guides.length > 1 ? 'Training guides' : 'Training guide'}
+                  </div>
+                </div>
+              ) : null}
+              {guides.map((g) => (
+                <a
+                  key={g}
+                  className="item"
+                  href={`/training/${g}.html`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+                >
+                  📖 {GUIDE_LABELS[g]}
+                </a>
+              ))}
               <div className="item" onClick={logout}>Log out</div>
             </div>
           ) : null}

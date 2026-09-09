@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "sync:training": "node scripts/sync-training.mjs",
+    "predev": "node scripts/sync-training.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/sync-training.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",

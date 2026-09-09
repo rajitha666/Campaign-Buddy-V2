@@ -54,6 +54,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+      # nginx proxies /training/ to the marketing container (see nginx.conf).
+      - marketing
 
   # Static marketing content, served from ./marketing:
   #   /landing-site/  -> marketing/landing-site/index.html

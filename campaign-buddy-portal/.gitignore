@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env
 *.log
+
+# Synced from marketing/training/ by scripts/sync-training.mjs (predev/prebuild)
+public/training/

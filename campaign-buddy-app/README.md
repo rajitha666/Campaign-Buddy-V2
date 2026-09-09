@@ -17,6 +17,14 @@ Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 - **Custom sales fields** (issue #13): admins define extra fields per campaign in the portal; `GET /v1/sales-fields` returns them. Day-scope fields render on `SalesSummaryScreen` (locked once the day is confirmed; a required one blocks *Confirm & submit* with a `422`), product-scope fields on `ProductUpdateScreen` (passed through the nav params from the products list). One `CustomFieldInput` component renders all four types.
 - Verified on web against the live backend: Login, Home, Sales, Attendance (incl. check-out), Performance, Time off, Profile, Update Stock.
 
+## Field guide
+
+The Profile screen and the `?` button on Home open the promoter training guide
+(`marketing/training/promoter.html`) in the device browser — see
+`src/lib/trainingGuide.ts`. Host it wherever the marketing site lives; override
+per environment with `EXPO_PUBLIC_TRAINING_URL`. Content is maintained in
+`marketing/training/` (`MAINTENANCE.md` there).
+
 ## Setup
 
 ```bash

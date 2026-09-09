@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendance } from '@/context/AttendanceContext';
+import { openPromoterGuide } from '@/lib/trainingGuide';
 import * as profileApi from '@/api/profile';
 import * as statsApi from '@/api/stats';
 import * as productsApi from '@/api/products';
@@ -62,9 +63,20 @@ export function HomeScreen() {
               {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('Profile')}>
-            <Avatar initials={user?.avatarInitials ?? '—'} />
-          </Pressable>
+          <View style={styles.greetActions}>
+            <Pressable
+              style={styles.helpBtn}
+              onPress={openPromoterGuide}
+              accessibilityLabel="Open the field guide"
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <HelpIcon />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('Profile')}>
+              <Avatar initials={user?.avatarInitials ?? '—'} />
+            </Pressable>
+          </View>
         </View>
 
         {assignmentQuery.data && (
@@ -197,6 +209,20 @@ function CheckIcon({ color }: { color: string }) {
     </Svg>
   );
 }
+function HelpIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke="#647169" strokeWidth={1.8} />
+      <Path
+        d="M9.5 9.2a2.6 2.6 0 015 .9c0 1.7-2.5 2-2.5 3.9"
+        stroke="#647169"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+      <Circle cx={12} cy={17} r={1} fill="#647169" />
+    </Svg>
+  );
+}
 function SearchIcon() {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -223,6 +249,17 @@ const styles = StyleSheet.create({
   frame: { flex: 1, backgroundColor: colors.surface },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
   greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  greetActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  helpBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.surfaceCard,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   greetName: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   greetSub: { fontSize: fontSize.base, color: colors.textMuted, marginTop: 2 },
   campaignCard: { backgroundColor: colors.ink, borderRadius: radius.xxl, padding: spacing.lg, marginTop: spacing.lg },

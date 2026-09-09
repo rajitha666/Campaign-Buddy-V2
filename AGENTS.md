@@ -10,7 +10,7 @@ Field-marketing execution platform for in-store product activations. One backend
 | `campaign-buddy-portal/` | CB Office (web portal) | React · Vite | `:5173` |
 | `campaign-buddy-app/` | CB Mobile (field-rep app) | React Native · Expo SDK 57 | Expo |
 | `docs/` | specs & product docs | — | — |
-| `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides) | static HTML, no build | — |
+| `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides, shipped in-product) | static HTML, no build | — |
 
 ## Prerequisites
 
@@ -58,6 +58,20 @@ Examples:
 - `[backend] Add bulk outlet import endpoint`
 - `[portal] Fix campaign list pagination`
 - `[app] Sync offline reports on reconnect`
+
+## Keep the user guides in sync
+
+`marketing/training/` is shipped **inside the product** — CB Office serves it at
+`/training/<role>.html` (account menu; `admin`/`supervisor` also get the promoter
+guide), CB Mobile links to `promoter.html` from Profile + the Home `?` button,
+and the marketing site serves the same files publicly.
+
+If a change alters what a user sees or does on a portal or app screen (nav,
+buttons, columns, fields, flow, a new feature a role can use), update the
+matching guide — `admin.html` / `supervisor.html` / `sponsor.html` /
+`promoter.html` — in the same PR. Screenshots are `assets/<role>/NN-<slug>.webp`;
+swap in place, same filename. Full procedure and the screen↔guide map:
+`marketing/training/MAINTENANCE.md`.
 
 ## Token usage — keep it minimal
 

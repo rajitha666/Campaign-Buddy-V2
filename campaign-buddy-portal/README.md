@@ -35,6 +35,15 @@ The dev proxy forwards `/admin/v1/*` to `http://localhost:4000`. Override with
 
 Sign in with the seeded Super Admin: `admin` / `ChangeMe123!`.
 
+## Training guides
+
+The account menu's "Training guide" link opens the role guide for the signed-in
+persona at `/training/<role>.html`. The content is `marketing/training/` — the
+`predev` / `prebuild` hooks copy it into `public/training/` (gitignored) via
+`scripts/sync-training.mjs`; in Docker, nginx proxies `/training/` to the
+`marketing` container instead. Edit the guides in `marketing/training/` only —
+see `marketing/training/MAINTENANCE.md`.
+
 ## Tests
 
 ```bash
