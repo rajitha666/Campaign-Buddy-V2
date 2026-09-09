@@ -243,3 +243,22 @@ Since Sponsor and Supervisor share the same codebase and API as Admin, the "port
 - **Every screen is either fully hidden** (write-only modules) **or rendered read-only** (Activations, Attendance, Sales, Stats, Live Tracking, Reports, Leave Requests) — conditional rendering plus server-side 403 on any write attempt.
 - **Supervisor-specific:** may see a narrower outlet set within a campaign than a Sponsor would — the UI should surface "N of M outlets" rather than making it look like the campaign only has N outlets.
 - **Sponsor-specific:** typically campaign-wide (`scopeType: "all"`), Reports/Stats/Live-Tracking are the screens worth polishing most.
+
+---
+
+## 8. Addendum — features added after v3
+
+### 8.1 License Usage (`/license`, Admin nav) — 2026-09-08
+
+Per-campaign seat metering panel. Spec: `docs/license-usage-spec.md`.
+
+### 8.2 Issue reporting (2026-09-09)
+
+- **Top bar:** a "🐞 Report issue" button, visible to the admin persona only,
+  opens a modal (type + severity + title + description, plus a read-only preview
+  of the auto-captured page/persona/campaign/version context).
+- **Issue Reports page** (`/issues`, Admin nav): table of filed reports with
+  sync-status badges, a link to the GitHub issue once synced, and a "Retry sync"
+  action for stuck rows. A banner states whether GitHub sync is on, enabled but
+  unconfigured, or off.
+- Both surfaces are `adm` + `usr` only. Full spec: `docs/issue-reporting-spec.md`.

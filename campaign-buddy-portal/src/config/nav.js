@@ -84,6 +84,7 @@ export const NAV = [
   { section: 'Admin', roles: ['admin'], items: [
     { path: '/promoter-list', label: 'Promoter List', icon: 'staff', roles: ['admin'] },
     { path: '/license', label: 'License Usage', icon: 'reports', roles: ['admin'] },
+    { path: '/issues', label: 'Issue Reports', icon: 'reports', roles: ['admin'] },
     { path: '/users', label: 'Users', icon: 'users', roles: ['admin'] },
     { path: '/roles', label: 'Roles', icon: 'roles', roles: ['admin'] },
   ]},

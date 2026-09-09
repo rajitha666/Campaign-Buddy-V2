@@ -160,6 +160,13 @@ export const license = {
   usage: (query) => api.get('/license/usage', { query }), // {state:'warn'|'at'|'over'}
 };
 
+// Portal "Report an issue" → GitHub Issues (docs/issue-reporting-spec.md)
+export const issueReports = {
+  list: (query) => api.get('/issue-reports', { query }), // {limit}
+  create: (body) => api.post('/issue-reports', body), // {title, body, category, severity?, context?}
+  retry: (id) => api.post(`/issue-reports/${id}/retry`, {}),
+};
+
 export const supervisorTasks = {
   list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),

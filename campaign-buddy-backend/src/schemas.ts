@@ -402,4 +402,22 @@ export const s = {
       isActive: z.boolean(),
     })
     .partial(),
+
+  // ---- Portal "Report an issue" (docs/issue-reporting-spec.md) ----
+  issueReportCreate: z.object({
+    title: z.string().trim().min(4).max(160),
+    body: z.string().trim().min(10).max(8000),
+    category: z.enum(["bug", "enhancement", "question"]).default("bug"),
+    severity: z.enum(["low", "normal", "high", "critical"]).optional(),
+    context: z
+      .object({
+        page: z.string().max(300),
+        persona: z.string().max(40),
+        campaignName: z.string().max(200),
+        portalVersion: z.string().max(50),
+        userAgent: z.string().max(500),
+      })
+      .partial()
+      .optional(),
+  }),
 };

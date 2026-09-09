@@ -160,3 +160,31 @@ Design decisions settled with the product owner before build:
 
 Out of scope (v1): hard limits, agency-level shared pools, email notifications,
 seat-days / cumulative-distinct-person metering.
+
+## Feature — Portal issue reporting → GitHub Issues (2026-09-09)
+
+New enhancement, not a spec-conflict resolution. A portal admin files a bug /
+enhancement / question from a top-bar button; the backend stores it and (when
+configured) opens a matching GitHub issue in the project repo. Full spec:
+`docs/issue-reporting-spec.md`; backend summary in Backend Spec v3 §13.
+
+Design decisions settled with the product owner before build:
+
+- **Transport:** backend proxy, never browser-to-GitHub. The portal POSTs to
+  `/admin/v1/issue-reports`; the backend holds the PAT and calls the GitHub REST
+  API. The token never reaches the client.
+- **Persist first, sync second.** Every report is written to `issue_reports`
+  before any GitHub call. If GitHub is disabled, unconfigured, or unreachable the
+  row stays `pending` and an hourly node-cron job (`issueSync.ts`) retries — so a
+  missing token at ship time loses nothing.
+- **Who can report:** `adm` + `usr` only. Supervisor/sponsor personas don't see
+  the button and are refused by the API.
+- **Target repo** is `GITHUB_ISSUES_REPO` (set to `rajitha666/Campaign-Buddy-V2`).
+  Titles get a `[portal]` prefix per the `AGENTS.md` naming convention; labels =
+  `portal,from-portal` + the category.
+- **Privacy:** the only personal data sent to GitHub is the reporter's display
+  name. Auto-captured context is limited to portal page, persona, campaign name,
+  portal version, and user-agent string.
+
+Out of scope (v1): editing/closing issues from the portal, comment sync-back,
+screenshot attachments, supervisor/sponsor reporting, per-campaign repo routing.

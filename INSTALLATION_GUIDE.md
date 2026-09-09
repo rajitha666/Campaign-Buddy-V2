@@ -75,6 +75,11 @@ BCRYPT_SALT_ROUNDS=10
 # License usage tracking — optional; shown with their defaults
 LICENSE_WARN_THRESHOLD_PCT=80
 LICENSE_SNAPSHOT_DISABLED=0
+# Portal issue reporting → GitHub Issues — optional; off by default
+GITHUB_ISSUES_ENABLED=0
+GITHUB_ISSUES_REPO="rajitha666/Campaign-Buddy-V2"
+GITHUB_TOKEN=""
+ISSUE_SYNC_DISABLED=0
 ```
 
 > The license-usage snapshot job also runs in local dev. To silence it, set
@@ -255,6 +260,16 @@ docker compose -f docker-compose.yml --profile production up -d
 # backup if you must remove them.
 ```
 
+### 4.3 What the issue-reporting change touches at deploy time
+
+| Concern | Detail |
+|---|---|
+| **Migration** | `20260909003626_add_issue_reports` — adds the `issue_reports` table + 3 enums. Additive; applied automatically by the entrypoint. |
+| **New env vars** | `GITHUB_ISSUES_ENABLED`, `GITHUB_ISSUES_REPO`, `GITHUB_TOKEN`, `GITHUB_ISSUES_DEFAULT_LABELS`, `ISSUE_SYNC_DISABLED` — all optional, wired into `docker-compose.yml`. With `GITHUB_ISSUES_ENABLED=0` (default) the feature still works: reports are stored in the DB and the "Report issue" button + `/issues` page function; nothing is sent to GitHub. |
+| **Enabling GitHub sync** | Create a fine-grained PAT (single repo, **Issues: Read and write**), put it in `.env` as `GITHUB_TOKEN`, set `GITHUB_ISSUES_REPO` and `GITHUB_ISSUES_ENABLED=1`, restart `backend`. The boot catch-up run flushes any reports queued while it was off. |
+| **Background job** | Hourly cron + boot catch-up, same single-container caveat as the license job — disable on all but one replica with `ISSUE_SYNC_DISABLED=1`. No-op until GitHub is configured. |
+| **Outbound network** | The backend container now makes HTTPS calls to `api.github.com` when sync is enabled. |
+
 ---
 
 ## 5. Environment variable reference
@@ -274,6 +289,11 @@ Set in `/opt/campaign-buddy/.env` (read by `docker-compose.yml`).
 | `BCRYPT_SALT_ROUNDS` | `10` | Password hash cost |
 | `LICENSE_WARN_THRESHOLD_PCT` | `80` | Global "near limit" threshold (% of cap) when a campaign has no per-campaign override. 1–99. |
 | `LICENSE_SNAPSHOT_DISABLED` | `0` | `1` disables the daily license-usage snapshot job |
+| `GITHUB_ISSUES_ENABLED` | `0` | `1` mirrors portal issue reports to GitHub Issues (needs `GITHUB_TOKEN` + `GITHUB_ISSUES_REPO`). Off = reports are stored in the DB only. |
+| `GITHUB_ISSUES_REPO` | *(empty)* | `owner/repo` that portal issue reports open in |
+| `GITHUB_TOKEN` | *(empty)* | Fine-grained PAT with **Issues: Read and write** on that repo. **Secret.** |
+| `GITHUB_ISSUES_DEFAULT_LABELS` | `portal,from-portal` | Labels applied to every portal-filed issue |
+| `ISSUE_SYNC_DISABLED` | `0` | `1` disables the hourly issue-report retry job |
 | `TZ` | `Asia/Colombo` | Backend container timezone; the snapshot job's week/month boundaries |
 | `CLOUDFLARED_TUNNEL_TOKEN` | *(empty)* | Cloudflare tunnel token — **never commit a real value** |
 
