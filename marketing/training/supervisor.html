@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Supervisor guide | Campaign Buddy training</title>
+<meta name="description" content="How a field supervisor uses Campaign Buddy: check attendance and the live map, spot absences, review sales, and log outlet visits." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23FF7A33'/%3E%3Cpath d='M4 17L9 12L13 16L20 8' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 8H20V14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/guide.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a class="tb-brand" href="index.html">
+    <span class="tb-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Campaign Buddy
+  </a>
+  <span class="tb-sep">User training</span>
+  <button class="tb-toc-toggle" aria-label="Contents">&#9776;</button>
+  <nav class="tb-roles">
+    <a href="admin.html">Admin</a>
+    <a href="supervisor.html" aria-current="page">Supervisor</a>
+    <a href="sponsor.html">Sponsor</a>
+    <a href="promoter.html">Promoter</a>
+  </nav>
+</header>
+<div class="progress"><i></i></div>
+
+<div class="layout">
+  <aside class="toc">
+    <nav class="tb-roles drawer">
+      <a href="admin.html">Admin</a>
+      <a href="supervisor.html" aria-current="page">Supervisor</a>
+      <a href="sponsor.html">Sponsor</a>
+      <a href="promoter.html">Promoter</a>
+    </nav>
+    <div class="role-label">Supervisor guide</div>
+    <h2>Running your outlets</h2>
+    <ol>
+      <li><a href="#t1">Sign in and get your bearings <span class="n">2 steps</span></a></li>
+      <li><a href="#t2">Start the day: attendance <span class="n">2 steps</span></a></li>
+      <li><a href="#t3">Watch the live map <span class="n">1 step</span></a></li>
+      <li><a href="#t4">Check who did not turn up <span class="n">2 steps</span></a></li>
+      <li><a href="#t5">Your promoters <span class="n">1 step</span></a></li>
+      <li><a href="#t6">Review sales for your outlets <span class="n">2 steps</span></a></li>
+      <li><a href="#t7">Your team's leave requests <span class="n">1 step</span></a></li>
+      <li><a href="#t8">Log your outlet visits <span class="n">2 steps</span></a></li>
+    </ol>
+  </aside>
+
+  <main class="content">
+    <div class="intro">
+      <span class="eyebrow">CB Office (read-only) &middot; and CB Mobile on the road</span>
+      <h1>Supervisor guide</h1>
+      <p>You work in two places. In the <b>web portal</b> your login is read-only and scoped to your assigned outlets on your campaign, use it to see who is on shift, who is late, what is selling, and where the gaps are. On the road you use the <b>Campaign Buddy app</b> to check in at each outlet you visit, exactly like a promoter.</p>
+      <div class="meta">
+        <b>What you need:</b> a browser and your portal login for the office view; the mobile app and location turned on for outlet visits. If you cannot see an outlet you expect, ask head office. Access is set per campaign, per outlet.
+      </div>
+    </div>
+
+    <details class="task" id="t1" open>
+      <summary><span class="num">01</span><div><h2>Sign in and get your bearings</h2><div class="sub">Every time you open the portal</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Sign in with your <b>username</b> and password. If you cover more than one campaign, pick the right one from the <b>campaign switcher</b> in the top-right. The header always shows which campaign and how many of its outlets you can see.</p></div>
+            <figure><img src="assets/portal-supervisor/01-dashboard.webp" alt="Supervisor dashboard showing today's KPIs and a live map for the assigned outlets" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>My Campaigns</b> for the list of activations you supervise, which promoter is at which outlet, and the dates. Tap the eye icon to see the detail of one.</p></div>
+            <figure><img src="assets/portal-supervisor/02-my-campaigns.webp" alt="My Campaigns activation list scoped to the supervisor's assigned outlets" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t2" open>
+      <summary><span class="num">02</span><div><h2>Start the day: attendance</h2><div class="sub">First thing, before you set off</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Attendance</b>. Each row is a check-in for one of your outlets, with the time and an <b>on time</b> or <b>late</b> badge. A row without a check-in time means the promoter has not started yet.</p></div>
+            <figure><img src="assets/portal-supervisor/03-staff-attendance.webp" alt="Attendance log for the supervisor's outlets with on-time and late badges" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Filter by <b>outlet</b> and a date range and press <b>Load</b> to look back over the week.</p>
+              <div class="tip"><b>Tip:</b> a promoter who looks absent here may be checked in on another campaign, the one-open-shift rule means they can only be checked in one place at a time. Call before you assume the worst.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t3" open>
+      <summary><span class="num">03</span><div><h2>Watch the live map</h2><div class="sub">On the road, to see where your promoters are</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Seller Live Locations</b>. Every promoter currently checked in shows on the map with their outlet, and the list below tells you since when. It refreshes on its own. A promoter who backgrounds the app stops updating until they reopen it, that is normal.</p></div>
+            <figure><img src="assets/portal-supervisor/08-tracking-live.webp" alt="Seller Live Locations map and a list of promoters currently checked in" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t4" open>
+      <summary><span class="num">04</span><div><h2>Check who did not turn up</h2><div class="sub">Mid-morning, once shifts should have started</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Absence</b> and pick today's date. It lists every promoter who had an activation covering today but <b>no check-in</b>, and marks whether they are <b>on leave</b> or just <b>not checked in</b>.</p></div>
+            <figure><img src="assets/portal-supervisor/04-staff-absence.webp" alt="Absence screen listing promoters with an activation today but no check-in" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>"On leave" is already approved; nothing to do. "No check-in" is the one to chase. Flag anything unexplained to head office.</p></div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t5" open>
+      <summary><span class="num">05</span><div><h2>Your promoters</h2><div class="sub">To look up a contact or a detail</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Promoter List</b> for a read-only directory, name, type, home city, phone. Use <b>Search</b> to find someone. Details are edited by head office, not here.</p></div>
+            <figure><img src="assets/portal-supervisor/06-promoter-list.webp" alt="Read-only promoter directory with name, type, city and phone" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t6" open>
+      <summary><span class="num">06</span><div><h2>Review sales for your outlets</h2><div class="sub">Any time, during the day or at the end</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>SKU Wise Sales</b> for the row-by-row log, product, outlet, date, start quantity, sold and remaining, for your outlets only. Filter by date and export with <b>Excel</b>.</p></div>
+            <figure><img src="assets/portal-supervisor/07-sales-sku-wise.webp" alt="SKU-wise sales log scoped to the supervisor's outlets" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Overall Reports</b> for the campaign totals per product, units and value, with a grand total.</p></div>
+            <figure><img src="assets/portal-supervisor/10-reports-sku-wise.webp" alt="Overall SKU-wise report with totals per product" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t7" open>
+      <summary><span class="num">07</span><div><h2>Your team's leave requests</h2><div class="sub">To know who is off and when</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text">
+              <p>Open <b>Leave Requests</b> for the time-off requests from promoters who report to you, the reason, the dates, and whether they are awaiting approval, approved or declined.</p>
+              <div class="tip"><b>Note:</b> this view is read-only. Approvals are made in head office by the promoter's "reports to" person. Chase there if a decision is holding you up.</div>
+            </div>
+            <figure><img src="assets/portal-supervisor/05-my-leave-requests.webp" alt="Leave requests from the supervisor's team, showing reason, dates and status" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t8" open>
+      <summary><span class="num">08</span><div><h2>Log your outlet visits</h2><div class="sub">On the app, at each outlet you visit</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>When you arrive at an outlet, open the <b>Campaign Buddy app</b> and check in, the same flow a promoter uses (see the <a href="promoter.html#t2">Promoter guide, step 2</a>). Check out when you leave. This records that you were there, and when.</p></div>
+          </li>
+          <li>
+            <div class="step-text"><p>Back in the portal, <b>Outlet Attendance</b> is your visit log, cross-checked against the promoters' own attendance for the same outlets. Pick a date and press <b>Load</b>.</p></div>
+            <figure><img src="assets/portal-supervisor/09-my-outlet-attendance.webp" alt="Outlet Attendance screen: the supervisor's visit log cross-checked against promoter attendance" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <div class="done-nav">
+      <a href="admin.html">&larr; Admin guide</a>
+      <a href="sponsor.html">Sponsor guide &rarr;</a>
+    </div>
+  </main>
+</div>
+
+<footer class="guide-foot">
+  Campaign Buddy &middot; Dyro Technologies (Pvt) Ltd &middot; Screens shown use a sample campaign ("Radiance Q3 Push") with illustrative data.
+</footer>
+
+<script src="assets/guide.js"></script>
+</body>
+</html>
