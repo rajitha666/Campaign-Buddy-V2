@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Campaign Buddy training</title>
+<meta name="description" content="Step-by-step user guides for Campaign Buddy: one for each of the four people who log in." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23FF7A33'/%3E%3Cpath d='M4 17L9 12L13 16L20 8' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 8H20V14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/guide.css" />
+<style>
+  .home { max-width: 900px; margin: 0 auto; padding: clamp(36px, 7vw, 72px) 22px 90px; }
+  .home .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mango-dark); }
+  .home h1 { font-size: clamp(1.9rem, 4vw, 2.7rem); margin-top: 12px; }
+  .home > p { margin-top: 14px; color: var(--text-muted); max-width: 60ch; font-size: 1.03rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 34px; }
+  .rolecard {
+    display: block; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; box-shadow: var(--shadow); transition: transform 0.12s, border-color 0.12s;
+  }
+  .rolecard:hover { text-decoration: none; transform: translateY(-2px); border-color: var(--line-strong); }
+  .rolecard .rc-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mango-dark); }
+  .rolecard h2 { font-size: 1.25rem; margin-top: 7px; color: var(--text); }
+  .rolecard p { margin-top: 8px; color: var(--text-muted); font-size: 0.9rem; }
+  .rolecard .rc-go { margin-top: 14px; font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; color: var(--mango-dark); display: inline-flex; align-items: center; gap: 6px; }
+  .home .note { margin-top: 30px; font-size: 0.85rem; color: var(--text-faint); border-top: 1px solid var(--line); padding-top: 18px; }
+  @media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="tb-brand">
+    <span class="tb-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Campaign Buddy
+  </span>
+  <span class="tb-sep">User training</span>
+</header>
+
+<div class="home">
+  <span class="eyebrow">Training</span>
+  <h1>Pick your guide</h1>
+  <p>Four people log in to Campaign Buddy, and each has a different job. Open the one that matches your role, every guide is a set of short, numbered tasks with a screenshot of each step, using a sample campaign so the screens match what you will see.</p>
+
+  <div class="cards">
+    <a class="rolecard" href="admin.html">
+      <span class="rc-tag">CB Office &middot; full access</span>
+      <h2>Admin</h2>
+      <p>Head office. Set up the catalog, outlets, staff and activations, then run the campaign day to day: attendance, corrections, reports.</p>
+      <span class="rc-go">Open the Admin guide <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+    <a class="rolecard" href="supervisor.html">
+      <span class="rc-tag">CB Office read-only &middot; and the app</span>
+      <h2>Supervisor</h2>
+      <p>Watch attendance and the live map for your outlets, spot the gaps, review sales, and check in at each outlet you visit.</p>
+      <span class="rc-go">Open the Supervisor guide <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+    <a class="rolecard" href="sponsor.html">
+      <span class="rc-tag">CB Office read-only</span>
+      <h2>Sponsor</h2>
+      <p>Follow your own campaign: the dashboard, the live promoter map, and self-serve sales reports, scoped to your brand.</p>
+      <span class="rc-go">Open the Sponsor guide <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+    <a class="rolecard" href="promoter.html">
+      <span class="rc-tag">CB Mobile &middot; the field app</span>
+      <h2>Promoter</h2>
+      <p>Your shift: check in, update stock and sales through the day, fill and confirm the daily summary, check out.</p>
+      <span class="rc-go">Open the Promoter guide <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+  </div>
+
+  <p class="note">Screens in these guides come from a sample campaign, "Radiance Q3 Push", with illustrative data. Your own campaign name, outlets and figures will be different.</p>
+</div>
+
+<footer class="guide-foot">
+  Campaign Buddy &middot; Dyro Technologies (Pvt) Ltd
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin guide | Campaign Buddy training</title>
+<meta name="description" content="How head office runs a campaign in Campaign Buddy: set up the catalog, outlets, staff and activations, then monitor attendance, sales and reports day to day." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23FF7A33'/%3E%3Cpath d='M4 17L9 12L13 16L20 8' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 8H20V14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+<link rel="stylesheet" href="assets/guide.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a class="tb-brand" href="index.html">
+    <span class="tb-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Campaign Buddy
+  </a>
+  <span class="tb-sep">User training</span>
+  <button class="tb-toc-toggle" aria-label="Contents">&#9776;</button>
+  <nav class="tb-roles">
+    <a href="admin.html" aria-current="page">Admin</a>
+    <a href="supervisor.html">Supervisor</a>
+    <a href="sponsor.html">Sponsor</a>
+    <a href="promoter.html">Promoter</a>
+  </nav>
+</header>
+<div class="progress"><i></i></div>
+
+<div class="layout">
+  <aside class="toc">
+    <nav class="tb-roles drawer">
+      <a href="admin.html" aria-current="page">Admin</a>
+      <a href="supervisor.html">Supervisor</a>
+      <a href="sponsor.html">Sponsor</a>
+      <a href="promoter.html">Promoter</a>
+    </nav>
+    <div class="role-label">Admin guide</div>
+    <h2>Running a campaign end to end</h2>
+    <ol>
+      <li><a href="#t1">Sign in and the campaign switcher <span class="n">2 steps</span></a></li>
+      <li><a href="#t2">Set up the catalog <span class="n">3 steps</span></a></li>
+      <li><a href="#t3">Cities and outlets <span class="n">2 steps</span></a></li>
+      <li><a href="#t4">Create the campaign <span class="n">3 steps</span></a></li>
+      <li><a href="#t5">Add your staff <span class="n">2 steps</span></a></li>
+      <li><a href="#t6">Create activations <span class="n">4 steps</span></a></li>
+      <li><a href="#t7">Custom sales fields <span class="n">2 steps</span></a></li>
+      <li><a href="#t8">Give supervisors and sponsors access <span class="n">2 steps</span></a></li>
+      <li><a href="#t9">Supervisor routes and QA <span class="n">2 steps</span></a></li>
+      <li><a href="#t10">Your daily view <span class="n">4 steps</span></a></li>
+      <li><a href="#t11">Correct a promoter's sales <span class="n">3 steps</span></a></li>
+      <li><a href="#t12">Approve leave <span class="n">1 step</span></a></li>
+      <li><a href="#t13">Tracking <span class="n">3 steps</span></a></li>
+      <li><a href="#t14">Reports and performance <span class="n">4 steps</span></a></li>
+      <li><a href="#t15">Users, roles and licence usage <span class="n">3 steps</span></a></li>
+    </ol>
+  </aside>
+
+  <main class="content">
+    <div class="intro">
+      <span class="eyebrow">CB Office &middot; the operations portal</span>
+      <h1>Admin guide</h1>
+      <p>You run everything from here: the client catalog, the campaign, the outlets, the staff, and every posting. Once a campaign is set up your day is mostly monitoring, who checked in, what is selling, what needs correcting. Tasks 2 to 9 are the one-time setup; tasks 10 to 15 are the day-to-day.</p>
+      <div class="meta">
+        <b>Before you start:</b> know your <b>client</b>, the <b>products</b> in scope, the <b>outlets</b> (with rough GPS), and your <b>promoter and supervisor roster</b>. Do the setup tasks in order, each one builds on the last.
+      </div>
+    </div>
+
+    <details class="task" id="t1" open>
+      <summary><span class="num">01</span><div><h2>Sign in and the campaign switcher</h2><div class="sub">Every session</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Sign in with your <b>username</b> and password. You land on the <b>Dashboard</b>.</p></div>
+            <figure><img src="assets/portal-admin/01-dashboard.webp" alt="Admin dashboard for Radiance Q3 Push with KPI tiles and a live map" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>The <b>campaign switcher</b> in the top-right (the folder) controls almost every screen, activations, attendance, sales, tracking, reports all follow it. The catalog, outlets, cities, staff pool and users are <b>not</b> campaign-bound and stay reachable whatever is selected.</p>
+              <div class="tip"><b>Habit:</b> glance at the switcher before you read any numbers or make any edit.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t2" open>
+      <summary><span class="num">02</span><div><h2>Set up the catalog</h2><div class="sub">One-time, client, brand, then products</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <p>The catalog is shared across all campaigns for that client, set a product up once and reuse it.</p>
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Clients</b> and add the brand owner: company name, contact, phone, email, address.</p></div>
+            <figure><img src="assets/portal-admin/02-clients.webp" alt="Clients list with an Add New Client button" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Products &rarr; Brands</b> and add a brand for that client.</p></div>
+            <figure><img src="assets/portal-admin/04-brands.webp" alt="Brands list" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Products &rarr; List</b> and add each SKU: name, brand, SKU code, <b>unit price in whole rupees</b>, re-order level, and an image if you have one.</p></div>
+            <figure><img src="assets/portal-admin/03-items.webp" alt="Products list showing SKUs with brand, price and reorder level" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t3" open>
+      <summary><span class="num">03</span><div><h2>Cities and outlets</h2><div class="sub">One-time, add new locations before the campaign</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Outlets &rarr; Cities</b> and add any city you need (name, province, district). Outlets and staff both reference this list.</p></div>
+            <figure><img src="assets/portal-admin/10-cities.webp" alt="Cities lookup list" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Open <b>Outlets &rarr; List</b> and add each retail location: name, contact person, address, city, phone, and its <b>GPS coordinates</b> (use the geocode helper). The coordinates and the geofence radius (150&nbsp;m by default) are what verify a promoter's check-in.</p>
+            </div>
+            <figure><img src="assets/portal-admin/08-outlets.webp" alt="Outlets list with GPS coordinates" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t4" open>
+      <summary><span class="num">04</span><div><h2>Create the campaign</h2><div class="sub">One per activation programme</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Campaigns &rarr; List</b> and add the campaign: number, name, client, description, and a <b>start and end date</b>. Creating it grants you full access to it automatically.</p></div>
+            <figure><img src="assets/portal-admin/06-campaigns.webp" alt="Campaigns list showing each campaign with client, dates and status" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>The <b>status</b> follows the dates on its own (upcoming &rarr; active &rarr; ended). You can override it, for example to end a campaign early, and the override sticks until you change the dates.</p></div>
+          </li>
+          <li>
+            <div class="step-text"><p>Open the campaign's <b>Campaign Items</b> and pick the SKUs that are sellable anywhere in this campaign. You can add an existing product or create-and-link a new one in one step.</p></div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t5" open>
+      <summary><span class="num">05</span><div><h2>Add your staff</h2><div class="sub">Promoters and supervisors</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text">
+              <p>Open <b>Staff &rarr; List</b> and add each person: employee ID, full name, <b>Display Name</b> (what they see in the app), type (promoter or supervisor), <b>mobile number</b>, home city, "reports to" for leave approval, and their emergency and bank details.</p>
+            </div>
+            <figure><img src="assets/portal-admin/11-staff.webp" alt="Staff list with promoters and supervisors" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Under <b>Login</b>, set a password. The promoter signs in on the app with <b>either their mobile number</b> (any common format) <b>or</b> an app username. For a supervisor who also needs the portal, link a portal login here.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t6" open>
+      <summary><span class="num">06</span><div><h2>Create activations</h2><div class="sub">One per promoter, per outlet, the heart of the setup</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>With the right campaign selected, open <b>Campaigns &rarr; Activation</b> and add one. An activation is <b>one promoter, at one outlet, for this campaign, over one date range</b>.</p></div>
+            <figure><img src="assets/portal-admin/07-activations.webp" alt="Activation list showing promoter, outlet, supervisor, dates and status" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Set the outlet, promoter, an optional <b>named supervisor</b>, the distributor point if any, the date range, the <b>shift window</b> (for on-time / late), and the three target settings (item- or brand-wise, daily or monthly, by units or by value).</p>
+              <div class="tip"><b>The auto-grant:</b> naming a supervisor here gives their portal login access to <b>that outlet on this campaign</b>, automatically. It only ever widens their access, and the portal confirms it.</div>
+            </div>
+          </li>
+          <li>
+            <div class="step-text"><p>Open the activation's <b>Activation Items</b> and tick which of the campaign's products this outlet actually stocks (there is an "add all" shortcut).</p></div>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Activation Targets</b> and set a numeric target per item over a date range, with an optional repeat.</p></div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t7" open>
+      <summary><span class="num">07</span><div><h2>Custom sales fields</h2><div class="sub">Optional, extra data points promoters record each day</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text">
+              <p>Open <b>Sales &rarr; Custom Fields</b> and add a field for this campaign: a label, an <b>applies-to</b> scope (<b>Whole day</b>, one value per promoter per day, like weather; or <b>Each product</b>, one value per SKU per day, like damaged units), a type (number / text / yes-no / dropdown), a <b>Required</b> flag, and a sort order.</p>
+            </div>
+            <figure><img src="assets/portal-admin/25-custom-fields.webp" alt="Custom Fields screen listing the extra fields defined for the campaign" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>A <b>Required</b> field blocks the promoter's Confirm &amp; submit until it is filled.</p>
+              <div class="tip"><b>Note:</b> once a field has recorded values, its type and scope lock. To retire it, archive it: the history is kept, and it is just hidden from the entry forms.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t8" open>
+      <summary><span class="num">08</span><div><h2>Give supervisors and sponsors access</h2><div class="sub">Per campaign, for the people who watch it</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open the campaign's <b>Campaign Access</b> tab. Add a portal user, choose their outlet scope (<b>all outlets</b> or a <b>named subset</b>), and save. This is how a sponsor gets their read-only view.</p></div>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Supervisors usually get their access from the activation auto-grant (task 6), but you can also grant or widen it here. To revoke, remove the grant.</p>
+              <div class="tip"><b>Reminder:</b> supervisor and sponsor logins are read-only on the server; they cannot change anything regardless of what any screen shows.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t9" open>
+      <summary><span class="num">09</span><div><h2>Supervisor routes and QA</h2><div class="sub">Optional, plan visits and the visit checklist</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Supervisors &rarr; Assign Routes</b>. Pick a supervisor, a set of outlets (only outlets already active on this campaign), and a date range. The month calendar shows the plan. This is planning only, it does not drive check-in.</p></div>
+            <figure><img src="assets/portal-admin/19-assign-routes.webp" alt="Assign Routes screen with a month calendar and a table of planned routes" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Supervisors &rarr; Tasks</b> to build the per-campaign QA checklist template: a category, a task type (range or feedback), and the question text, across the nine QA categories.</p></div>
+            <figure><img src="assets/portal-admin/17-supervisor-tasks.webp" alt="Supervisor Tasks screen with a QA checklist per campaign" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t10" open>
+      <summary><span class="num">10</span><div><h2>Your daily view</h2><div class="sub">Every morning</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Start on the <b>Dashboard</b>: active outlets today, sales today, month-to-date, top items, and the live map. Check <b>Products &rarr; Reorder</b> for anything the promoters have flagged as low.</p></div>
+            <figure><img src="assets/portal-admin/05-reorder.webp" alt="Reorder screen listing items at or below their reorder level per outlet" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Staff &rarr; Attendance</b> for the check-in log with on-time / late badges. A blank check-in time means the promoter has not started.</p></div>
+            <figure><img src="assets/portal-admin/12-staff-attendance.webp" alt="Staff attendance log with on-time, late, leave and pending statuses" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Staff &rarr; Absence</b> and pick today. It lists everyone with an activation today but no check-in, flagged "on leave" or "no check-in".</p></div>
+            <figure><img src="assets/portal-admin/13-staff-absence.webp" alt="Absence screen for the selected date" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>Open <b>Sales &rarr; Sales Update Status</b> and pick a date to see which activations have submitted their sales ("Completed") and which have not ("Missing"), with footfall.</p></div>
+            <figure><img src="assets/portal-admin/22-sales-status.webp" alt="Sales Update Status showing which activations submitted and which are missing" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t11" open>
+      <summary><span class="num">11</span><div><h2>Correct a promoter's sales</h2><div class="sub">Without a site visit</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Sales &rarr; Update Sales</b>. Work down the cascading dropdowns: <b>Outlet</b>, then <b>Promoter</b>, then <b>Activation</b>, then <b>Date</b>. Press <b>Load sales</b>.</p></div>
+            <figure><img src="assets/portal-admin/24-sales-update.webp" alt="Update Sales screen with cascading outlet, promoter, activation and date dropdowns" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p>That day's grid loads. Edit <b>opening stock</b> or <b>sold quantity</b> for any row, and any day-level or per-product custom fields, then save. Raising opening stock mid-day is allowed (a restock).</p></div>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>The correction is attributed to head office; the promoter's confirmed summary stays locked to them.</p>
+              <div class="tip"><b>Why it just works:</b> every total is computed from the raw counters on read, so the dashboard, reports and the promoter's performance all show the corrected figure the next time they load. There is no cached number to chase.</div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t12" open>
+      <summary><span class="num">12</span><div><h2>Approve leave</h2><div class="sub">As requests come in</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p>Open <b>Staff &rarr; Leave Requests</b>. Each row shows the employee, dates, reason and status. <b>Approve</b> or <b>decline</b> inline, "approved by" defaults to the requester's "reports to" person. The promoter sees the decision in the app.</p></div>
+            <figure><img src="assets/portal-admin/14-leave-requests.webp" alt="Leave Requests screen with approve and decline actions" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t13" open>
+      <summary><span class="num">13</span><div><h2>Tracking</h2><div class="sub">Where your people are</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p><b>Tracking &rarr; Seller Live Locations</b>, a live map of everyone checked in, refreshing on its own, with a list of who and since when.</p></div>
+            <figure><img src="assets/portal-admin/26-tracking-live.webp" alt="Seller Live Locations map for the admin" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Tracking &rarr; Promoter</b> (or Supervisor), the GPS breadcrumb trail for one person on one date, as a coordinate-and-time table.</p></div>
+            <figure><img src="assets/portal-admin/27-tracking-promoter.webp" alt="Promoter tracking breadcrumb table" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Supervisors &rarr; Outlet Attendance</b>, the supervisor visit log, cross-checked against the promoters' attendance for the same outlets and dates.</p></div>
+            <figure><img src="assets/portal-admin/18-outlet-attendance.webp" alt="Outlet Attendance showing supervisor visits" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t14" open>
+      <summary><span class="num">14</span><div><h2>Reports and performance</h2><div class="sub">During the campaign and at the end</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p><b>Sales &rarr; SKU Wise Sales</b> and <b>Sales &rarr; Outlet Wise</b>, the raw log and the per-outlet rollup, both filterable and exportable.</p></div>
+            <figure><img src="assets/portal-admin/23-sales-outlet-wise.webp" alt="Outlet Wise sales and footfall rollup" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Reports &rarr; Overall SKU Wise</b> / <b>Overall Brand Wise</b>, campaign totals by product or brand, with grand totals and Excel export.</p></div>
+            <figure><img src="assets/portal-admin/28-reports-sku-wise.webp" alt="Overall SKU Wise report with totals per product" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Admin Reports &rarr; Monthly Attendance</b>, a per-promoter day grid for a chosen month (present / absent / leave / not-started), exportable to CSV.</p></div>
+            <figure><img src="assets/portal-admin/30-reports-monthly-attendance.webp" alt="Monthly attendance grid, one column per day" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Staff &rarr; Profiles</b>, a performance evaluation for one promoter over a date range: overall %, attendance %, total sales, best day, brand contribution.</p></div>
+            <figure><img src="assets/portal-admin/15-staff-profiles.webp" alt="Staff Profiles performance evaluation for a promoter" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="task" id="t15" open>
+      <summary><span class="num">15</span><div><h2>Users, roles and licence usage</h2><div class="sub">Super Admin</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <div class="task-body">
+        <ol class="steps">
+          <li>
+            <div class="step-text"><p><b>Users</b>, create portal logins (username, password, display name, email, role). Campaign access is <b>not</b> set here; it is granted per campaign (task 8) or by the supervisor auto-grant.</p></div>
+            <figure><img src="assets/portal-admin/31-users.webp" alt="Users administration screen" /></figure>
+          </li>
+          <li>
+            <div class="step-text"><p><b>Roles</b>, view the four roles (Super Admin, Campaign Admin, Supervisor, Sponsor) and what each can do. Read-only enforcement is on the server; this screen is for reference.</p></div>
+            <figure><img src="assets/portal-admin/32-roles.webp" alt="Roles configuration screen" /></figure>
+          </li>
+          <li>
+            <div class="step-text">
+              <p><b>License Usage</b>, seat usage per campaign across the four groups (promoters, supervisors, admins, sponsors) against each cap, with weekly and monthly history and an alert as a campaign nears its limit. Limits are advisory: going over never blocks an assignment. <b>Edit caps</b> is Super Admin only.</p>
+            </div>
+            <figure><img src="assets/portal-admin/33-license.webp" alt="License Usage screen with seat usage per group and an all-campaigns table" /></figure>
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <div class="done-nav">
+      <span></span>
+      <a href="supervisor.html">Supervisor guide &rarr;</a>
+    </div>
+  </main>
+</div>
+
+<footer class="guide-foot">
+  Campaign Buddy &middot; Dyro Technologies (Pvt) Ltd &middot; Screens shown use a sample campaign ("Radiance Q3 Push") with illustrative data.
+</footer>
+
+<script src="assets/guide.js"></script>
+</body>
+</html>
