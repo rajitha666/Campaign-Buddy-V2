@@ -100,7 +100,7 @@ export function LoginScreen() {
           <Text style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
             Forgot password?
           </Text>
-          <Text style={styles.foot}>Dyuro Technologies</Text>
+          <Text style={styles.foot}>Dyro Technologies</Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

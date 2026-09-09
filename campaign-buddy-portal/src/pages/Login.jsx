@@ -42,7 +42,7 @@ export default function Login() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <div className="login-credit">Dyuro Technologies</div>
+        <div className="login-credit">Dyro Technologies</div>
       </div>
     </div>
   );
