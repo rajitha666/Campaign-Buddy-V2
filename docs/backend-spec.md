@@ -632,3 +632,24 @@ Full detail in `docs/license-usage-spec.md`. Summary:
 - **Snapshot job** (`src/jobs/licenseSnapshot.ts`): node-cron, 00:15 Asia/Colombo
   daily + a catch-up run on boot, keeping the peak per period. Wired from
   `server.ts` only. `LICENSE_SNAPSHOT_DISABLED=1` to opt out.
+
+## 13. Addendum — Portal issue reporting → GitHub Issues (2026-09-09)
+
+Full detail in `docs/issue-reporting-spec.md`. Summary:
+
+- **Schema:** new model `IssueReport` (table `issue_reports`, migration
+  `20260909003626_add_issue_reports`) — `title`, `body`, `category`
+  (`bug`/`enhancement`/`question`), `severity` (bug only), `context` JSON,
+  `reporterUserId`+`reporterName`, `syncStatus` (`pending`/`synced`/`failed`),
+  `githubIssueNumber`/`githubIssueUrl`, retry bookkeeping.
+- **Endpoints** (`/admin/v1`, roles `adm` + `usr` only — 403 for
+  supervisor/sponsor): `POST /issue-reports` (persist then best-effort GitHub
+  push), `GET /issue-reports` (`meta.integration` = enabled/configured/repo),
+  `POST /issue-reports/:id/retry`.
+- **GitHub push** (`src/utils/githubIssues.ts`): `POST /repos/{owner}/{repo}/issues`
+  via built-in `fetch`. Gated by `GITHUB_ISSUES_ENABLED=1` + `GITHUB_TOKEN` +
+  `GITHUB_ISSUES_REPO`. Title gets a `[portal]` prefix; labels = defaults +
+  category. Reports persist regardless of GitHub availability.
+- **Retry job** (`src/jobs/issueSync.ts`): node-cron hourly + boot catch-up,
+  flushes `pending`/`failed` rows once the integration is configured. Wired from
+  `server.ts` only. `ISSUE_SYNC_DISABLED=1` to opt out.

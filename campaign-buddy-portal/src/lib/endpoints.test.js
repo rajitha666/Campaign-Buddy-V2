@@ -61,6 +61,17 @@ describe('endpoints — path construction', () => {
     ]);
   });
 
+  it('issue-report endpoints hit /issue-reports', async () => {
+    await api.issueReports.list({ limit: 100 });
+    await api.issueReports.create({ title: 'x', body: 'y', category: 'bug' });
+    await api.issueReports.retry('r1');
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'get /issue-reports',
+      'post /issue-reports',
+      'post /issue-reports/r1/retry',
+    ]);
+  });
+
   it('client-scoped report shims point at the plain /reports/* routes (v3 §5.10)', async () => {
     await api.assumed.clientScopedReports.skuWise('camp1', {});
     await api.assumed.clientScopedReports.brandWise('camp1', {});

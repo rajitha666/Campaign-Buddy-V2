@@ -111,6 +111,26 @@ enum SalesFieldScope {
   product // one value per activation-item per day (mobile: Update Stock screen)
 }
 
+// Portal "Report an issue" — see docs/issue-reporting-spec.md.
+enum IssueReportCategory {
+  bug
+  enhancement
+  question
+}
+
+enum IssueReportSeverity {
+  low
+  normal
+  high
+  critical
+}
+
+enum IssueReportSyncStatus {
+  pending // not yet sent to GitHub (or GitHub integration disabled)
+  synced // an issue was created on GitHub
+  failed // last send attempt errored; the retry job will try again
+}
+
 // ============================================================================
 // Catalog: Client / Brand / Item
 // ============================================================================
@@ -698,9 +718,39 @@ model User {
   role         Role                  @relation(fields: [roleId], references: [id])
   accessGrants CampaignAccessGrant[]
   staffProfile Staff?
+  issueReports IssueReport[]
 
   @@index([roleId])
   @@map("users")
+}
+
+// A bug / enhancement / question raised from inside the web portal. Persisted
+// here first, then mirrored to GitHub Issues by githubIssues.ts (inline on
+// create, best-effort) or the issueSync job (retry). See
+// docs/issue-reporting-spec.md.
+model IssueReport {
+  id                String                @id @default(uuid())
+  title             String
+  body              String
+  category          IssueReportCategory   @default(bug)
+  severity          IssueReportSeverity?  // only meaningful for category = bug
+  context           Json? // { page, persona, campaignName, portalVersion, userAgent } — no PII beyond reporter display name
+  reporterUserId    String
+  reporterName      String // snapshot of User.displayName at report time
+  syncStatus        IssueReportSyncStatus @default(pending)
+  githubIssueNumber Int?
+  githubIssueUrl    String?
+  syncError         String? // last failure message, cleared on success
+  syncAttempts      Int                   @default(0)
+  lastAttemptAt     DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  reporter User @relation(fields: [reporterUserId], references: [id], onDelete: Cascade)
+
+  @@index([syncStatus])
+  @@index([reporterUserId])
+  @@map("issue_reports")
 }
 
 model CampaignAccessGrant {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NAV } from '../config/nav';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
+import ReportIssueModal from './ReportIssueModal';
 
 function findLabel(pathname) {
   for (const sec of NAV) {
@@ -21,6 +22,7 @@ export default function Topbar() {
   const { user, persona, campaignList, currentCampaignId, setCurrentCampaignId, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const { title, crumb } = findLabel(location.pathname);
 
   const initials = (user?.displayName || 'U').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -32,6 +34,16 @@ export default function Topbar() {
         <div className="page-title-mini">{title}</div>
       </div>
       <div className="topbar-right">
+        {persona === 'admin' ? (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setReportOpen(true)}
+            title="Report a bug or suggest an enhancement"
+          >
+            🐞 Report issue
+          </button>
+        ) : null}
         <div className="switcher">
           🗂️
           <select
@@ -61,6 +73,9 @@ export default function Topbar() {
           ) : null}
         </div>
       </div>
+      {persona === 'admin' ? (
+        <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} />
+      ) : null}
     </div>
   );
 }

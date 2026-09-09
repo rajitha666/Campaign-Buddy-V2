@@ -33,6 +33,14 @@ services:
       # License usage tracking (docs/license-usage-spec.md). Both optional.
       LICENSE_WARN_THRESHOLD_PCT: ${LICENSE_WARN_THRESHOLD_PCT:-80}
       LICENSE_SNAPSHOT_DISABLED: ${LICENSE_SNAPSHOT_DISABLED:-0}
+      # Portal "Report an issue" -> GitHub Issues (docs/issue-reporting-spec.md).
+      # All optional; reports persist regardless and sync only when ENABLED=1
+      # with a token + repo set.
+      GITHUB_ISSUES_ENABLED: ${GITHUB_ISSUES_ENABLED:-0}
+      GITHUB_ISSUES_REPO: ${GITHUB_ISSUES_REPO:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_ISSUES_DEFAULT_LABELS: ${GITHUB_ISSUES_DEFAULT_LABELS:-portal,from-portal}
+      ISSUE_SYNC_DISABLED: ${ISSUE_SYNC_DISABLED:-0}
       # The daily usage-snapshot job buckets periods in this timezone.
       TZ: ${TZ:-Asia/Colombo}
     depends_on:
