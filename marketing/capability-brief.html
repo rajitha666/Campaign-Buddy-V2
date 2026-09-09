@@ -186,6 +186,9 @@
   .commercial-list li { font-size: 12px; color: var(--text-muted); padding-left: 20px; position: relative; line-height: 1.55; }
   .commercial-list li strong { color: var(--text); }
   .commercial-list li::before { content: ""; position: absolute; left: 0; top: 0.5em; width: 10px; height: 10px; border: 2px solid var(--mango); border-radius: 3px; }
+  .commercial-list.roomy { gap: 16px; margin-top: 20px; }
+  .commercial-list.roomy li { font-size: 13px; padding-left: 24px; line-height: 1.6; }
+  .commercial-list.roomy li::before { width: 12px; height: 12px; top: 0.35em; }
 
   /* ---------- back cover ---------- */
   .steps { list-style: none; margin: 16px 0 0; padding: 0; counter-reset: s; display: grid; gap: 12px; }
@@ -584,30 +587,21 @@
 
   <!-- ============ 11 · PRACTICALITIES ============ -->
   <section class="page">
-    <header class="runhead"><span class="rh-brand"><span class="rh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span><span>The practicalities</span></header>
+    <header class="runhead"><span class="rh-brand"><span class="rh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span><span>Commercial model</span></header>
     <div class="pbody">
-      <span class="eyebrow">The practicalities</span>
-      <h2 class="title">How it's built, run, and priced.</h2>
+      <span class="eyebrow">Commercial model</span>
+      <h2 class="title">How it's priced.</h2>
+      <p class="lead">One model, matched to how campaigns actually run. You are billed per campaign, against seat allowances for the four groups of people who use Campaign Buddy. There is no separate charge for the software and no per-seat invoicing to reconcile.</p>
 
-      <div class="block">
-        <h3>Technology</h3>
-        <p>Backend: Node.js, TypeScript, Express, PostgreSQL, Prisma. Two independent JWT token spaces (field staff and portal users). Runtime validation on every write route; errors returned as plain, field-named sentences. An automated test suite covers the load-bearing rules: backend integration plus portal and mobile unit tests. Portal: React + Vite. Mobile: React Native / Expo SDK 57 (RN 0.86, React 19.2), TanStack Query.</p>
-      </div>
-      <div class="block">
-        <h3>Deployment</h3>
-        <p>Ships with Docker Compose and a single canonical installation guide. Runs on your infrastructure or hosted for you, so your data stays where you choose. Whole-rupee pricing and Asia/Colombo time are the defaults.</p>
-      </div>
-      <div class="block">
-        <h3>Commercial model</h3>
-        <ul class="commercial-list">
-          <li><strong>Priced per campaign,</strong> against seat allowances for the four user groups: promoters, supervisors, admins and sponsors.</li>
-          <li><strong>Metering is built in.</strong> CB Office tracks seat usage per campaign against each allowance, with weekly and monthly history and an in-portal alert as a campaign nears its limit. A seat counts from the moment an account is assigned; usage is captured as the peak for the period.</li>
-          <li><strong>Allowances are soft.</strong> Going over never blocks an assignment; it changes the reported state, so a campaign is never held up by a licence question mid-run.</li>
-          <li><strong>Pilot then rollout.</strong> Start on one live campaign at pilot terms; move the rest of the book across once it's proven.</li>
-          <li><strong>Included:</strong> both apps, all four roles, updates, onboarding for your ops team, and support.</li>
-          <li>Figures are quoted per engagement once campaign volume and team size are known.</li>
-        </ul>
-      </div>
+      <ul class="commercial-list roomy">
+        <li><strong>Priced per campaign.</strong> Seat allowances cover the four user groups: promoters, supervisors, admins and sponsors.</li>
+        <li><strong>Metering is built in.</strong> CB Office tracks seat usage per campaign against each allowance, with weekly and monthly history and an in-portal alert as a campaign nears its limit. A seat counts from the moment an account is assigned; usage is recorded as the peak for the period.</li>
+        <li><strong>Allowances are soft.</strong> Going over never blocks an assignment. It changes the reported state, so a campaign is never held up by a licence question mid-run.</li>
+        <li><strong>Pilot then rollout.</strong> Start on one live campaign at pilot terms; move the rest of the book across once it is proven.</li>
+        <li><strong>Everything is included.</strong> Both apps, all four roles, updates, onboarding for your ops team, and daily support.</li>
+      </ul>
+
+      <div class="sc-bottom">Figures are quoted per engagement, once campaign volume and team size are known.</div>
     </div>
     <footer class="runfoot"><span>Dyro Technologies (Pvt) Ltd &middot; CampaignBuddy.lk</span><span class="pgnum"></span></footer>
   </section>
