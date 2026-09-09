@@ -10,7 +10,7 @@ One backend serves two front ends:
 |---|---|---|---|
 | [`campaign-buddy-backend/`](campaign-buddy-backend/) | **API** — serves both clients | Node · TypeScript · Express · PostgreSQL · Prisma | `:4000` |
 | [`campaign-buddy-portal/`](campaign-buddy-portal/) | **CB Office** — web portal for head office, supervisors and sponsors | React · Vite | `:5173` |
-| [`campaign-buddy-app/`](campaign-buddy-app/) | **CB Mobile** — the field-rep app | React Native · Expo SDK 51 | Expo (web/device) |
+| [`campaign-buddy-app/`](campaign-buddy-app/) | **CB Mobile** — the field-rep app | React Native · Expo SDK 57 | Expo (web/device) |
 
 `campaign-buddy-portal` and `campaign-buddy-app` are independent apps — no shared
 package, no build orchestration. Each has its own `package.json`, `README.md` and
@@ -25,6 +25,7 @@ campaign-buddy-portal/    CB Office (React/Vite SPA)
 campaign-buddy-app/       CB Mobile (Expo / React Native)
 docs/                     specs, changelog, product documentation
   archive/                superseded specs — kept for history, do NOT build against
+marketing/                customer-facing collateral (landing site, evaluation brief, user-training guides)
 ```
 
 ## Prerequisites
@@ -45,6 +46,10 @@ npx prisma migrate dev          # create schema
 npm run prisma:seed             # demo client, campaign, outlet, one promoter
 npm run dev
 ```
+
+For a fuller dataset, run `npx ts-node prisma/demo-seed.ts` as well — it builds
+the "Radiance Q3 Push" sample campaign (4 outlets, 4 promoters, 2 supervisors, a
+week of activity) used by the demos and the training screenshots. Re-runnable.
 
 ### 2. CB Office portal (`:5173`)
 
@@ -88,6 +93,7 @@ cd campaign-buddy-app     && npm test    # vitest unit
 | [`docs/api-spec.md`](docs/api-spec.md) | Mobile `/v1` API contract (what CB Mobile is built to) |
 | [`docs/changelog.md`](docs/changelog.md) | v3 consolidation decision log |
 | `docs/archive/` | Superseded specs — historical context only, not a build target |
+| [`marketing/README.md`](marketing/README.md) | Landing site, evaluation brief, and per-role user-training guides |
 
 ## Demo credentials (seed data)
 

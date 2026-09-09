@@ -8,8 +8,9 @@ Field-marketing execution platform for in-store product activations. One backend
 |---|---|---|---|
 | `campaign-buddy-backend/` | API server | Node · TypeScript · Express · PostgreSQL · Prisma | `:4000` |
 | `campaign-buddy-portal/` | CB Office (web portal) | React · Vite | `:5173` |
-| `campaign-buddy-app/` | CB Mobile (field-rep app) | React Native · Expo SDK 51 | Expo |
+| `campaign-buddy-app/` | CB Mobile (field-rep app) | React Native · Expo SDK 57 | Expo |
 | `docs/` | specs & product docs | — | — |
+| `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides) | static HTML, no build | — |
 
 ## Prerequisites
 
@@ -28,6 +29,12 @@ cd campaign-buddy-portal && npm install && npm run dev
 # Mobile app
 cd campaign-buddy-app && npm install --ignore-scripts && cp .env.example .env && npm run start -- --web
 ```
+
+For a populated dataset (demos, marketing screenshots): after `npm run prisma:seed`,
+`cd campaign-buddy-backend && npx ts-node prisma/demo-seed.ts` builds the
+"Radiance Q3 Push" sample campaign — 4 outlets, 4 promoters, 2 supervisors, a
+week of attendance / sales / footfall / tracking data. Re-runnable; leaves the
+base seed's data alone.
 
 ## Tests
 
@@ -76,3 +83,4 @@ Examples:
 - `docs/api-spec.md` — Mobile `/v1` API contract
 - `docs/product-documentation.md` — feature reference
 - `docs/archive/` — superseded specs, do NOT build against
+- `marketing/README.md` — the landing site, evaluation brief and user-training guides

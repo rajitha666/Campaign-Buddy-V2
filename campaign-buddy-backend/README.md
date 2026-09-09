@@ -20,6 +20,23 @@ Server starts on `http://localhost:4000`. `GET /health` is a quick liveness chec
 - **Admin portal:** `admin` / `ChangeMe123!`
 - **Mobile app:** `0770000001` (or the legacy username `sktest`) / `Field123!`
 
+## Demo data (`prisma/demo-seed.ts`)
+
+For demos, sales walkthroughs and the marketing/training screenshots:
+
+```bash
+npx ts-node prisma/demo-seed.ts
+```
+
+Builds the **"Radiance Q3 Push"** sample campaign — 4 Colombo outlets, 4 promoters,
+2 supervisors, 3 SKUs, 4 custom fields, ~7 days of attendance / sales / footfall /
+custom-field / tracking data, supervisor visit activations and routes, and 3
+leave requests. Re-runnable (upserts, keyed on stable codes); does **not** touch
+the base seed's "Sktest Activation". Adds portal logins `supervisor` / `Portal123!`
+and `sponsor` / `Portal123!` (with campaign grants), and mobile logins for the
+new promoters (`0762223344` … / `Field123!`). Timestamps are written to
+Asia/Colombo wall-clock.
+
 ## Tests
 ```bash
 cp .env.test.example .env.test    # must point DATABASE_URL at a *_test database
@@ -95,7 +112,8 @@ zod schema before the handler — `src/middleware/validate.ts` + `src/schemas.ts
 ```
 prisma/
   schema.prisma      canonical data model (matches docs/archive/schema-v3.prisma)
-  seed.ts            seed data — 4 roles, 1 admin user, 1 sample campaign/activation/staff login
+  seed.ts            base seed — 4 roles, 1 admin user, 1 sample campaign/activation/staff login
+  demo-seed.ts       optional rich demo dataset — "Radiance Q3 Push" (see "Demo data" above)
 src/
   app.ts             Express app wiring (mounts /v1 and /admin/v1, error handler last)
   server.ts          entry point

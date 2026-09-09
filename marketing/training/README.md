@@ -29,13 +29,17 @@ image folders in `assets/`.
 
 `assets/portal-admin/`, `assets/portal-supervisor/`, `assets/portal-sponsor/` and
 `assets/mobile-promoter/` hold the screenshots (WebP, ~4 MB total). They were
-captured against a locally running instance seeded with **`prisma/demo-seed.ts`**
-(in `campaign-buddy-backend/`), which builds a sample campaign, "Radiance Q3
-Push", with a week of activity. Re-run that seeder and re-shoot if the UI changes
-materially:
+captured against a locally running instance seeded with
+**`campaign-buddy-backend/prisma/demo-seed.ts`**, which builds a sample campaign,
+"Radiance Q3 Push", with a week of activity:
 
-- Portal capture harness and the demo seeder are not committed with the guides;
-  ask if you need them. The seeder is worth keeping in the backend for demos.
+```bash
+cd campaign-buddy-backend && npx ts-node prisma/demo-seed.ts
+```
+
+- The Puppeteer capture harness that drives the portal and the Expo web app is
+  not in the repo. If a screen changes materially, re-seed, re-shoot that screen,
+  resize to WebP, and drop it in `assets/<role>/` under the same name.
 - Every screen shows the sample campaign's data. Names ("Sanduni Kumari",
   "Nawala Retail Outlet") and figures are illustrative and flagged as such on
   every page.

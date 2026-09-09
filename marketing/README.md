@@ -10,6 +10,7 @@ external request is the Poppins webfont, with a system-font fallback.
 |---|---|---|---|
 | `landing-site/` | One-page website | Agencies and their sponsors | Responsive web page |
 | `capability-brief.html` | 12-page evaluation brief | Decision makers doing due diligence | Print-ready A4, screen-viewable |
+| `training/` | Step-by-step user guides, one per login | Admin, supervisor, sponsor, promoter | Responsive web guides with real screenshots |
 
 ## capability-brief.html
 
@@ -25,11 +26,24 @@ still `hello@campaignbuddy.lk` as a placeholder.
 
 A slide-deck version of the same content is planned and will land here next.
 
+## training/
+
+Four task-based web guides (`admin.html`, `supervisor.html`, `sponsor.html`,
+`promoter.html`) plus an `index.html` role picker, with a real screenshot of
+every step. Shared `assets/guide.css` + `assets/guide.js` (sticky contents with
+scroll-spy, collapsible sections, click-to-zoom images, mobile drawer). See
+`training/README.md`.
+
+The screenshots were captured against a locally running instance seeded with
+**`campaign-buddy-backend/prisma/demo-seed.ts`** — a re-runnable seeder that
+builds the "Radiance Q3 Push" sample campaign with roughly a week of activity.
+That seeder is also handy on its own for demos and sales walkthroughs.
+
 ## Preview locally
 
 ```bash
 cd marketing && python -m http.server 8080
 ```
 
-Then open <http://localhost:8080/capability-brief.html> or
-<http://localhost:8080/landing-site/>.
+Then open <http://localhost:8080/capability-brief.html>,
+<http://localhost:8080/landing-site/> or <http://localhost:8080/training/>.

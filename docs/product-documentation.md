@@ -654,8 +654,23 @@ Damaged units).
 
 Full design record for #13: `docs/custom-sales-fields-spec.md`.
 
+### Derived material — 2026-09-09
+
+This document was the source for the customer-facing collateral now in
+`marketing/`:
+
+- `marketing/landing-site/` — the CampaignBuddy.lk one-page website.
+- `marketing/capability-brief.html` — a 12-page evaluation brief for buyers
+  (functional spec, three operational scenarios, the commercial model).
+- `marketing/training/` — a task-based web guide for each of the four logins
+  (Admin, Supervisor, Sponsor, Promoter), with a real screenshot of every step.
+
+The training screenshots were captured against
+`campaign-buddy-backend/prisma/demo-seed.ts`, a re-runnable seeder that builds a
+populated sample campaign ("Radiance Q3 Push").
+
 ---
 
-*End of product documentation. Take this file to a new chat to split into
-marketing/sales material, promoter training with day-to-day workflow, and the
-supervisor / sponsor portal guides.*
+*End of product documentation. It stays the single plain-language reference for
+every CB Office and CB Mobile feature; keep it current as the product changes,
+and regenerate the material above from it when a feature shifts.*
