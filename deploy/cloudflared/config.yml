@@ -1,0 +1,31 @@
+# Cloudflare tunnel — locally-managed ingress (runs `cloudflared` with this file).
+#
+# Create once, on any machine with cloudflared:
+#   cloudflared tunnel login
+#   cloudflared tunnel create campaign-buddy
+#   cloudflared tunnel route dns campaign-buddy campaignbuddy.lk
+#   cloudflared tunnel route dns campaign-buddy office.campaignbuddy.lk
+#   cloudflared tunnel route dns campaign-buddy api.campaignbuddy.lk
+#   cloudflared tunnel route dns campaign-buddy www.campaignbuddy.lk
+#
+# Then set TUNNEL_ID below and run:  docker compose --profile production up -d cloudflared
+
+tunnel: TUNNEL_ID
+credentials-file: /etc/cloudflared/TUNNEL_ID.json
+
+ingress:
+  # Marketing — landing site (/) and training guides (/training)
+  - hostname: campaignbuddy.lk
+    service: http://marketing:80
+  - hostname: www.campaignbuddy.lk
+    service: http://marketing:80
+
+  # CB Office portal — SPA + API (its nginx proxies /admin/v1 and /v1 to backend)
+  - hostname: office.campaignbuddy.lk
+    service: http://portal:80
+
+  # Direct API access (optional)
+  - hostname: api.campaignbuddy.lk
+    service: http://backend:4000
+
+  - service: http_status:404

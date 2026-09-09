@@ -97,7 +97,18 @@ cd campaign-buddy-app     && npm test    # vitest unit
 
 ## Demo credentials (seed data)
 
+Base seed (`npm run prisma:seed`):
+
 | Surface | Username | Password |
 |---|---|---|
 | CB Office | `admin` | `ChangeMe123!` |
 | CB Mobile | `sktest` | `Field123!` |
+
+Demo seed (`npx ts-node prisma/demo-seed.ts`, adds "Radiance Q3 Push"):
+
+| Surface | Username | Password |
+|---|---|---|
+| CB Office (supervisor) | `supervisor` | `Portal123!` |
+| CB Office (sponsor) | `sponsor` | `Portal123!` |
+| CB Mobile (Sanduni Kumari, Nawala) | `0771234567` | `Field123!` |
+| CB Mobile (Kasun Perera, Rajagiriya) | `0762223344` | `Field123!` |

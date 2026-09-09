@@ -16,6 +16,7 @@
  *   Mobile  0771234567 / Field123!    (Sanduni Kumari — Nawala Retail Outlet)
  *   Mobile  0762223344 / Field123!    (Kasun Perera — Keells Rajagiriya)
  */
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
