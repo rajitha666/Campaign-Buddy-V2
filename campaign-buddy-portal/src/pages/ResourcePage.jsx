@@ -104,6 +104,7 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'target' && config.targetRoute) { navigate(config.targetRoute(row, campaignId)); return; }
     if (action === 'viewItems') { setProductsRow(row); return; }
     if (action === 'items' && config.itemsRoute) { navigate(config.itemsRoute(row, campaignId)); return; }
+    if (action === 'admins' && config.adminsRoute) { navigate(config.adminsRoute(row, campaignId)); return; }
     if (action === 'edit') { openDrawer('edit', row); return; }
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {

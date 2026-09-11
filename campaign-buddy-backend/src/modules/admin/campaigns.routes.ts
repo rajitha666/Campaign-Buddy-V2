@@ -1,7 +1,8 @@
 import { Router } from "express";
+import bcrypt from "bcrypt";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, notFound } from "../../utils/apiResponse";
+import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess } from "../../middleware/campaignAccess";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
@@ -162,6 +163,98 @@ router.get(
       include: { user: { include: { role: true } } },
     });
     res.json(okList(grants, grants.length));
+  })
+);
+
+// Minimal, permission-safe lookup so a Campaign Admin (who cannot call the
+// [adm]-only GET /users) can still search for an existing Campaign Admin
+// account to link to this campaign. Only ever returns "usr"-role accounts,
+// and only the fields needed to pick one.
+router.get(
+  "/campaigns/:campaignId/admin-candidates",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const search = String(req.query.search || "").trim();
+    const rows = await prisma.user.findMany({
+      where: {
+        roleId: "usr",
+        ...(search
+          ? {
+              OR: [
+                { username: { contains: search, mode: "insensitive" } },
+                { displayName: { contains: search, mode: "insensitive" } },
+                { email: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      select: { id: true, username: true, displayName: true, email: true },
+      take: 100,
+    });
+    res.json(okList(rows, rows.length));
+  })
+);
+
+// Link a Campaign Admin (role "usr") to this campaign — Super Admin or any
+// existing Campaign Admin already granted to this campaign can call this
+// (requireCampaignAccess lets "adm" through unconditionally, and requires a
+// grant row for "usr"). Adding an admin never removes another campaign's
+// existing admins — CampaignAccessGrant is one row per (user, campaign).
+router.post(
+  "/campaigns/:campaignId/admins",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  validate({ body: s.campaignAdminAdd }),
+  asyncHandler(async (req, res) => {
+    const { userId, newUser } = req.body as {
+      userId?: string;
+      newUser?: { username: string; password: string; displayName: string; email?: string };
+    };
+    const campaignId = req.params.campaignId;
+
+    let resolvedUserId = userId;
+    if (!resolvedUserId && newUser) {
+      const existing = await prisma.user.findUnique({ where: { username: newUser.username } });
+      if (existing) throw new ApiError(409, "USERNAME_TAKEN", "That username is already in use");
+      const passwordHash = await bcrypt.hash(newUser.password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
+      const created = await prisma.user.create({
+        data: {
+          username: newUser.username,
+          displayName: newUser.displayName,
+          email: newUser.email,
+          passwordHash,
+          roleId: "usr", // this endpoint only ever creates Campaign Admins, never Super Admins
+        },
+      });
+      resolvedUserId = created.id;
+    } else if (resolvedUserId) {
+      const target = await prisma.user.findUniqueOrThrow({ where: { id: resolvedUserId } });
+      if (target.roleId !== "usr") {
+        throw new ApiError(400, "VALIDATION_ERROR", "Only Campaign Admin accounts can be linked to a campaign this way");
+      }
+    }
+
+    // Idempotent — linking an already-linked admin is a no-op, not a 409.
+    const grant = await prisma.campaignAccessGrant.upsert({
+      where: { userId_campaignId: { userId: resolvedUserId!, campaignId } },
+      create: { userId: resolvedUserId!, campaignId, scopeType: "all", outletIds: [] },
+      update: {},
+      include: { user: true },
+    });
+    res.status(201).json(ok(grant));
+  })
+);
+
+router.delete(
+  "/campaigns/:campaignId/admins/:userId",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    await prisma.campaignAccessGrant.delete({
+      where: { userId_campaignId: { userId: req.params.userId, campaignId: req.params.campaignId } },
+    });
+    res.status(204).send();
   })
 );
 

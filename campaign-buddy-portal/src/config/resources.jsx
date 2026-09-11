@@ -256,7 +256,7 @@ export const RESOURCES = {
       { key: 'endDate', label: 'To', render: (r) => fmtDate(r.endDate) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : r.status === 'ended' ? 'muted' : 'pending'}>{r.status}</Badge> },
     ],
-    actions: ['viewItems', 'items', 'edit', 'delete'],
+    actions: ['viewItems', 'items', 'admins', 'edit', 'delete'],
     viewItemsModal: 'campaignProducts',
     fetchList: ({ query }) => campaignsApi.list(query),
     hydrate: async (rows) => {
@@ -287,6 +287,7 @@ export const RESOURCES = {
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
     ],
     itemsRoute: (row) => `/campaigns/${row.id}/items`,
+    adminsRoute: (row) => `/campaigns/${row.id}/admins`,
   },
 
   activations: {

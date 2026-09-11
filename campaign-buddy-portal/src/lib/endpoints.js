@@ -60,6 +60,12 @@ export const campaigns = {
   items: (id) => api.get(`/campaigns/${id}/items`),
   addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} | {itemIds:[...]} | {newItem:{...}}
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
+  // Campaign Admin (role "usr") accounts linked to this campaign — callable by
+  // Super Admin or any existing admin already granted access to the campaign.
+  admins: (id) => api.get(`/campaigns/${id}/access`),
+  adminCandidates: (id, search) => api.get(`/campaigns/${id}/admin-candidates`, { query: { search } }),
+  addAdmin: (id, body) => api.post(`/campaigns/${id}/admins`, body), // {userId} | {newUser:{username,password,displayName,email?}}
+  removeAdmin: (id, userId) => api.delete(`/campaigns/${id}/admins/${userId}`),
 };
 
 // ---------- Staff & Activations ----------
