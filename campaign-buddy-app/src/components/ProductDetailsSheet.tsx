@@ -34,7 +34,7 @@ export function ProductDetailsSheet({ visible, onClose, productId, bandColor }: 
       ) : (
         <>
           <View style={styles.topRow}>
-            <ProductThumb size={72} bandColor={bandColor} />
+            <ProductThumb size={72} bandColor={bandColor} imageUrl={d.imageUrl} />
           </View>
           <Text style={styles.name}>{d.name}</Text>
           <Text style={styles.meta}>

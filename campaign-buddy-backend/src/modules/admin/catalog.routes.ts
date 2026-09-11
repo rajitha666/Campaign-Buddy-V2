@@ -1,12 +1,36 @@
 import { Router } from "express";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, notFound } from "../../utils/apiResponse";
+import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 
 const router = Router();
+
+// Product photo storage — local disk under <repo>/uploads/items, served
+// statically at /uploads (see app.ts). Simple, dependency-free choice for a
+// single-server deployment; swap for object storage (S3/etc.) later if the
+// app moves to multiple instances/no shared disk.
+const itemImagesDir = path.join(process.cwd(), "uploads", "items");
+fs.mkdirSync(itemImagesDir, { recursive: true });
+const itemImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, itemImagesDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+      cb(null, `${req.params.id}-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
+    cb(null, true);
+  },
+});
 
 function paginate(req: any) {
   const page = Number(req.query.page || 1);
@@ -78,6 +102,17 @@ router.delete("/items/:id", requireRole("adm"), asyncHandler(async (req, res) =>
   await prisma.item.delete({ where: { id: req.params.id } });
   res.status(204).send();
 }));
+router.post(
+  "/items/:id/image",
+  requireRole("adm", "usr"),
+  itemImageUpload.single("image"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) throw new ApiError(400, "VALIDATION_ERROR", "image file is required");
+    const imageUrl = `/uploads/items/${req.file.filename}`;
+    const updated = await prisma.item.update({ where: { id: req.params.id }, data: { imageUrl } });
+    res.json(ok(updated));
+  })
+);
 
 // ---- Cities ----
 router.get("/cities", asyncHandler(async (_req, res) => {

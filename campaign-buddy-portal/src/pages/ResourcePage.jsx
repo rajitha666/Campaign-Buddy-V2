@@ -74,7 +74,9 @@ export default function ResourcePage({ resourceKey }) {
     setDrawerMode(mode);
     // `editValues` lets a resource re-shape a row into form values (e.g. split a
     // startDate/endDate pair back into a dateRange) when opening the edit drawer.
-    const initial = mode === 'edit' && row && config.editValues ? { id: row.id, ...config.editValues(row) } : row;
+    const initial = mode === 'edit' && row && config.editValues
+      ? { id: row.id, ...config.editValues(row) }
+      : (mode === 'add' && config.addDefaults ? config.addDefaults(currentCampaign) : row);
     setDrawerRow(initial || null);
     const fields = await Promise.all((config.formFields || []).map(async (f) => {
       if (f.optionsLoader) {
@@ -102,6 +104,7 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'target' && config.targetRoute) { navigate(config.targetRoute(row, campaignId)); return; }
     if (action === 'viewItems') { setProductsRow(row); return; }
     if (action === 'items' && config.itemsRoute) { navigate(config.itemsRoute(row, campaignId)); return; }
+    if (action === 'admins' && config.adminsRoute) { navigate(config.adminsRoute(row, campaignId)); return; }
     if (action === 'edit') { openDrawer('edit', row); return; }
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {

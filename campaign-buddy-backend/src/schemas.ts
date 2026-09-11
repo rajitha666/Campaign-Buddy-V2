@@ -105,6 +105,7 @@ export const s = {
       unitPrice: z.number().int(),
       reorderLevel: z.number().int(),
       description: z.string(),
+      imageUrl: z.string().nullable(),
     })
     .partial(),
   cityCreate: z.object({
@@ -189,8 +190,28 @@ export const s = {
     })
     .partial(),
   campaignItemAdd: z
-    .object({ itemId: id.optional(), newItem: z.record(z.string(), z.unknown()).optional() })
-    .refine((v) => v.itemId || v.newItem, { message: "itemId or newItem required" }),
+    .object({
+      itemId: id.optional(),
+      itemIds: z.array(id).optional(),
+      newItem: z.record(z.string(), z.unknown()).optional(),
+    })
+    .refine((v) => v.itemId || v.itemIds || v.newItem, { message: "itemId, itemIds or newItem required" }),
+  // Link a Campaign Admin (role "usr") account to a campaign — either an
+  // existing user or a brand-new one created inline. Callable by Super Admin
+  // or any existing Campaign Admin of this campaign (see requireCampaignAccess).
+  campaignAdminAdd: z
+    .object({
+      userId: id.optional(),
+      newUser: z
+        .object({
+          username: z.string().min(1),
+          password: z.string().min(1),
+          displayName: z.string().min(1),
+          email: z.string().optional(),
+        })
+        .optional(),
+    })
+    .refine((v) => v.userId || v.newUser, { message: "userId or newUser required" }),
   // License usage tracking — seat caps + warn threshold. All optional (PATCH
   // semantics); `warnThresholdPct` accepts null to clear the per-campaign
   // override and fall back to the global default.

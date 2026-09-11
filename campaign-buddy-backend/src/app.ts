@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
 import mobileRoutes from "./modules/mobile";
 import adminRoutes from "./modules/admin";
@@ -13,6 +14,10 @@ export const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Uploaded product photos (see catalog.routes.ts POST /items/:id/image) —
+// served from wherever the process runs (cwd), matching where multer writes them.
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "campaign-buddy-backend", spec: "v3" }));
 

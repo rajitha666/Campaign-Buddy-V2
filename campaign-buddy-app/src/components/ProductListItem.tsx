@@ -23,7 +23,7 @@ export function ProductListItem({ item, bandColor, variant, onPress }: ProductLi
 
   return (
     <Pressable onPress={onPress} style={styles.row}>
-      <ProductThumb size={variant === 'compact' ? 46 : 52} bandColor={bandColor} />
+      <ProductThumb size={variant === 'compact' ? 46 : 52} bandColor={bandColor} imageUrl={item.product.imageUrl} />
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={2}>
           {item.product.name}

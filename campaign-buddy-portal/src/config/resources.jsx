@@ -9,6 +9,7 @@
 // onto a Campaign row) for endpoints that return bare foreign keys.
 import Badge from '../components/Badge';
 import Avatar from '../components/Avatar';
+import ProductThumb from '../components/ProductThumb';
 import {
   clients as clientsApi, brands as brandsApi, items as itemsApi, outlets as outletsApi,
   distributorPoints as distributorPointsApi, cities as citiesApi, campaigns as campaignsApi,
@@ -34,8 +35,23 @@ const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara 
   'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle'];
 
 async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
-  const res = await listFn();
+  // Explicit large pageSize — most list() endpoints default to a 25-per-page
+  // cap server-side; a bare call would silently truncate any dropdown (or a
+  // lookup map built from it) past the first page. Ignored by endpoints that
+  // don't paginate at all.
+  const res = await listFn({ pageSize: 1000 });
   return (res?.data || []).map((r) => ({ value: r[valueKey], label: r[labelKey] || r.fullName || r.displayName || r[valueKey] }));
+}
+
+// Staff dropdowns (Promoter/Supervisor) show the full name plus the employee
+// code (e.g. "Tharindu Perera — EMP-0004") so they stay distinguishable once
+// the staff list grows — a bare first name isn't enough to pick the right person.
+async function staffOptions() {
+  const res = await staffApi.search('', { pageSize: 1000 });
+  return (res?.data || []).map((r) => ({
+    value: r.id,
+    label: r.employeeId ? `${r.fullName || r.displayName} — ${r.employeeId}` : (r.fullName || r.displayName || r.id),
+  }));
 }
 
 function buildLookup(rows, labelKey = 'name') {
@@ -45,7 +61,19 @@ function buildLookup(rows, labelKey = 'name') {
 }
 
 async function hydrateActivations(rows) {
-  const [outletRes, staffRes] = await Promise.all([outletsApi.list().catch(() => null), staffApi.search('').catch(() => null)]);
+  // Deliberately NOT swallowing errors here (no .catch(() => null)) — if either
+  // lookup fails, every row would silently render outletId/staffId in place of
+  // a name, which looks like real (wrong) data rather than a failure. Letting
+  // this throw surfaces a proper "could not load" + retry in ResourcePage
+  // instead of a table quietly full of raw IDs until the user refreshes.
+  // Explicit large pageSize — an unqualified list()/search() defaults to the
+  // backend's 25-per-page cap, which would silently drop any outlet/staff
+  // past the first page from the lookup (same raw-ID symptom, but
+  // deterministic rather than transient).
+  const [outletRes, staffRes] = await Promise.all([
+    outletsApi.list({ pageSize: 1000 }),
+    staffApi.search('', { pageSize: 1000 }),
+  ]);
   const outletMap = buildLookup(outletRes?.data);
   const staffMap = buildLookup(staffRes?.data, 'displayName');
   return rows.map((r) => ({ ...r, outletName: outletMap[r.outletId], staffName: staffMap[r.staffId], supervisorName: staffMap[r.supervisorStaffId] }));
@@ -107,14 +135,7 @@ export const RESOURCES = {
     columns: [
       { key: 'name', label: 'Product', render: (r) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          {r.imageUrl ? (
-            <img
-              src={r.imageUrl}
-              alt={r.name}
-              style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#f1f2f6' }}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          ) : null}
+          <ProductThumb item={r} />
           <span>
             <span className="cell-strong">{r.name}</span>
             {r.sku ? <div className="cell-muted" style={{ marginTop: 2 }}>{r.sku}</div> : null}
@@ -133,14 +154,22 @@ export const RESOURCES = {
       const map = buildLookup(brandRes?.data);
       return rows.map((r) => ({ ...r, brandName: map[r.brandId] }));
     },
-    createItem: ({ values }) => itemsApi.create({
-      name: values.name, brandId: values.brandId, description: values.description,
-      unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
-    }),
-    updateItem: ({ id, values }) => itemsApi.update(id, {
-      name: values.name, brandId: values.brandId, description: values.description,
-      unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
-    }),
+    createItem: async ({ values }) => {
+      const created = await itemsApi.create({
+        name: values.name, brandId: values.brandId, description: values.description,
+        unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
+      });
+      if (values.image instanceof File) await itemsApi.uploadImage(created.data.id, values.image);
+      return created;
+    },
+    updateItem: async ({ id, values }) => {
+      const updated = await itemsApi.update(id, {
+        name: values.name, brandId: values.brandId, description: values.description,
+        unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
+      });
+      if (values.image instanceof File) await itemsApi.uploadImage(id, values.image);
+      return updated;
+    },
     deleteItem: ({ id }) => itemsApi.remove(id),
     formFields: [
       { key: 'name', label: 'Product Name', type: 'text', required: true },
@@ -149,7 +178,7 @@ export const RESOURCES = {
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'unitPrice', label: 'Price (LKR)', type: 'text', required: true },
       { key: 'reorderLevel', label: 'Re-order Level', type: 'text', required: true },
-      { key: 'image', label: 'Image', type: 'upload' },
+      { key: 'image', label: 'Image', type: 'upload', previewKey: 'imageUrl' },
     ],
   },
 
@@ -245,7 +274,7 @@ export const RESOURCES = {
       { key: 'endDate', label: 'To', render: (r) => fmtDate(r.endDate) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : r.status === 'ended' ? 'muted' : 'pending'}>{r.status}</Badge> },
     ],
-    actions: ['viewItems', 'items', 'edit', 'delete'],
+    actions: ['viewItems', 'items', 'admins', 'edit', 'delete'],
     viewItemsModal: 'campaignProducts',
     fetchList: ({ query }) => campaignsApi.list(query),
     hydrate: async (rows) => {
@@ -276,6 +305,7 @@ export const RESOURCES = {
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
     ],
     itemsRoute: (row) => `/campaigns/${row.id}/items`,
+    adminsRoute: (row) => `/campaigns/${row.id}/admins`,
   },
 
   activations: {
@@ -298,6 +328,11 @@ export const RESOURCES = {
       dateRange: [fmtISO(row.dateFrom), fmtISO(row.dateTo)],
       targetType: row.targetType, targetCategorization: row.targetCategorization, targetUnit: row.targetUnit,
     }),
+    // Prefills the new activation's date range from the parent campaign's
+    // dates — still freely editable, not constrained to that range.
+    addDefaults: (campaign) => ({
+      dateRange: campaign ? [fmtISO(campaign.startDate), fmtISO(campaign.endDate)] : undefined,
+    }),
     createItem: ({ campaignId, values }) => activationsApi.create(campaignId, {
       name: values.name, outletId: values.outletId, staffId: values.staffId,
       supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
@@ -314,10 +349,10 @@ export const RESOURCES = {
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
     formFields: [
       { key: 'name', label: 'Activation Name', type: 'text', required: true },
-      { key: 'outletId', label: 'Outlet', type: 'select', required: true, optionsLoader: () => optionsFrom(outletsApi.list) },
-      { key: 'staffId', label: 'Promoter', type: 'select', required: true, optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
-      { key: 'supervisorStaffId', label: 'Supervisor', type: 'select', required: true, optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
-      { key: 'distributorPointId', label: 'Distributor Point', type: 'select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'staffId', label: 'Promoter', type: 'searchable-select', required: true, optionsLoader: staffOptions },
+      { key: 'supervisorStaffId', label: 'Supervisor', type: 'searchable-select', required: true, optionsLoader: staffOptions },
+      { key: 'distributorPointId', label: 'Distributor Point', type: 'searchable-select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
       { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Product Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
       { key: 'targetCategorization', label: 'Target Categorization', type: 'radio', options: [{ value: 'daily', label: 'Daily' }, { value: 'monthly', label: 'Monthly' }] },
@@ -612,7 +647,7 @@ export const RESOURCES = {
     title: 'Promoter Tracking', subtitle: 'GPS breadcrumb trail while checked in.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
+      { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
@@ -628,7 +663,7 @@ export const RESOURCES = {
     title: 'Supervisor Tracking', subtitle: 'GPS breadcrumb trail for supervisors.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
+      { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [

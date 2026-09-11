@@ -4,4 +4,5 @@ dist/
 .env.test
 *.log
 coverage/
+uploads/
 

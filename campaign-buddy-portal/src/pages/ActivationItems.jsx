@@ -4,6 +4,7 @@ import { campaigns as campaignsApi, activations as activationsApi, items as item
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import ProductThumb from '../components/ProductThumb';
 
 export default function ActivationItems() {
   const { campaignId, activationId } = useParams();
@@ -84,7 +85,12 @@ export default function ActivationItems() {
                   const added = attachedCampaignItemIds.has(ci.id);
                   return (
                     <tr key={ci.id}>
-                      <td className="cell-strong">{item.name || ci.itemId}</td>
+                      <td className="cell-strong">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                          <ProductThumb item={item} />
+                          {item.name || ci.itemId}
+                        </span>
+                      </td>
                       <td>LKR {Number(item.unitPrice || 0).toLocaleString()}</td>
                       <td>{added ? <span className="badge success">Attached</span> : <span className="badge muted">Not attached</span>}</td>
                       <td>{added

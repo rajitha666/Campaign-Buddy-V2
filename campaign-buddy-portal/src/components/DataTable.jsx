@@ -3,6 +3,7 @@ import { ICONS } from './Icons';
 const ACTION_TITLES = {
   view: 'View', edit: 'Edit', delete: 'Delete', target: 'Targets',
   items: 'Edit products', viewItems: 'View products', approve: 'Approve', decline: 'Decline',
+  admins: 'Manage campaign admins',
 };
 
 // Presentational only — ResourcePage (or any custom page) owns data fetching,

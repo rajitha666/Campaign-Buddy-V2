@@ -30,6 +30,11 @@ export const items = {
   search: (search) => api.get('/items', { query: { search } }),
   update: (id, body) => api.patch(`/items/${id}`, body),
   remove: (id) => api.delete(`/items/${id}`),
+  uploadImage: (id, file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.postForm(`/items/${id}/image`, form);
+  },
 };
 export const outlets = {
   list: (query) => api.get('/outlets', { query }),
@@ -58,13 +63,19 @@ export const campaigns = {
   update: (id, body) => api.patch(`/campaigns/${id}`, body),
   remove: (id) => api.delete(`/campaigns/${id}`),
   items: (id) => api.get(`/campaigns/${id}/items`),
-  addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} or {newItem:{...}}
+  addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} | {itemIds:[...]} | {newItem:{...}}
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
+  // Campaign Admin (role "usr") accounts linked to this campaign — callable by
+  // Super Admin or any existing admin already granted access to the campaign.
+  admins: (id) => api.get(`/campaigns/${id}/access`),
+  adminCandidates: (id, search) => api.get(`/campaigns/${id}/admin-candidates`, { query: { search } }),
+  addAdmin: (id, body) => api.post(`/campaigns/${id}/admins`, body), // {userId} | {newUser:{username,password,displayName,email?}}
+  removeAdmin: (id, userId) => api.delete(`/campaigns/${id}/admins/${userId}`),
 };
 
 // ---------- Staff & Activations ----------
 export const staff = {
-  search: (search) => api.get('/staff', { query: { search } }),
+  search: (search, extraQuery) => api.get('/staff', { query: { search, ...extraQuery } }),
   create: (body) => api.post('/staff', body),
   update: (id, body) => api.patch(`/staff/${id}`, body),
   remove: (id) => api.delete(`/staff/${id}`),

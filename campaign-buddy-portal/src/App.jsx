@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import DashboardRouter from './pages/DashboardRouter';
 import ResourcePage from './pages/ResourcePage';
 import CampaignItems from './pages/CampaignItems';
+import CampaignAdmins from './pages/CampaignAdmins';
 import ActivationItems from './pages/ActivationItems';
 import ActivationTargets from './pages/ActivationTargets';
 import StaffProfiles from './pages/StaffProfiles';
@@ -40,6 +41,7 @@ export default function App() {
 
               <Route path="/campaigns" element={R('campaigns')()} />
               <Route path="/campaigns/:campaignId/items" element={<CampaignItems />} />
+              <Route path="/campaigns/:campaignId/admins" element={<CampaignAdmins />} />
               <Route path="/activations" element={R('activations')()} />
               <Route path="/my-campaigns" element={R('activationListClient')()} />
               <Route path="/activations/client" element={R('activationListClient')()} />
