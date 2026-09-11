@@ -247,6 +247,8 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .drawer-body { flex:1; overflow-y:auto; padding:20px 22px; }
 .drawer-foot { padding:16px 22px; border-top:1px solid var(--line); display:flex; gap:10px; }
 .drawer-foot .btn { flex:1; justify-content:center; }
+.section-divider { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; padding-top:18px; margin-bottom:12px; border-top:1px solid var(--line); }
+.section-divider:first-child { padding-top:0; border-top:none; }
 .form-row { margin-bottom:16px; }
 .form-row label { font-size:12px; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin-bottom:6px; }
 .form-row .req { color:var(--alert); }

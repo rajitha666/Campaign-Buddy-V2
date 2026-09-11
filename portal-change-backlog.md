@@ -60,6 +60,7 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 | # | Change | Status | Files |
 |---|--------|--------|-------|
 | 1 | Campaign Products: searchable (substring, name/SKU) product picker + bulk "Add Selected" (checkboxes) instead of one-at-a-time dropdown | ✅ | [`CampaignItems.jsx`](campaign-buddy-portal/src/pages/CampaignItems.jsx); backend `POST /campaigns/:id/items` now also accepts `itemIds:[...]` ([`campaigns.routes.ts`](campaign-buddy-backend/src/modules/admin/campaigns.routes.ts), [`schemas.ts`](campaign-buddy-backend/src/schemas.ts) `campaignItemAdd`) |
+| 2 | Add/Edit form drawer: section headings (e.g. "Login", "Emergency Contact", "Bank Account") rendered with no CSS at all → browser-default size, mismatched vs field labels | ✅ | [`app.css`](campaign-buddy-portal/src/styles/app.css) new `.section-divider` rule — matches `.form-row label` sizing (12px/700, uppercase), plus a top divider line. Shared `Drawer.jsx`, so fixes every resource's form, not just Staff. |
 
 ### Decisions taken
 - **Bulk-add UI is checkboxes + one "Add Selected" button**, not a multi-select combobox — matches the existing checkbox pattern already used in `SalesCorrectionGrid.jsx`.
