@@ -11,6 +11,7 @@ external request is the Poppins webfont, with a system-font fallback.
 | `landing-site/` | One-page website | Agencies and their sponsors | Responsive web page |
 | `capability-brief.html` | 12-page evaluation brief | Decision makers doing due diligence | Print-ready A4, screen-viewable |
 | `training/` | Step-by-step user guides, one per login | Admin, supervisor, sponsor, promoter | Responsive web guides with real screenshots |
+| `store/` | App Store / Play Store submission assets for CB Mobile | Apple / Google review, store visitors | Listing copy (`app-store-listing.md`) + icons + framed screenshots |
 
 ## capability-brief.html
 
@@ -38,6 +39,16 @@ The screenshots were captured against a locally running instance seeded with
 **`campaign-buddy-backend/prisma/demo-seed.ts`** — a re-runnable seeder that
 builds the "Radiance Q3 Push" sample campaign with roughly a week of activity.
 That seeder is also handy on its own for demos and sales walkthroughs.
+
+## store/
+
+App-store listing material for `campaign-buddy-app`. `app-store-listing.md` has
+the copy, per-field values, privacy declarations, reviewer notes and developer
+account setup for both stores. `store/mobile/` holds the app icon, Android
+adaptive-icon foreground, splash mark, and the framed marketing screenshots
+(Apple 6.7" and Play phone), rebuilt by `store/gen-icons.js` and
+`store/gen-screenshots.js`. See `store/README.md`. Unlike `training/`, these
+scripts are committed (they need only `sharp` + `opentype.js`, not a running app).
 
 ## Preview locally
 

@@ -6,26 +6,41 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F4F6F3",
+    "icon": "./assets/images/icon.png",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.dyuro.campaignbuddy",
+      "bundleIdentifier": "lk.campaignbuddy.app",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Campaign Buddy checks your location when you check in and while you're checked in for a shift, so the campaign owner can confirm attendance at the right outlet. Location is never tracked once you check out."
       }
     },
     "android": {
-      "package": "com.dyuro.campaignbuddy",
+      "package": "lk.campaignbuddy.app",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
-        "backgroundColor": "#12241F"
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FF7A33"
       }
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       [
         "expo-location",
         {
           "locationWhenInUsePermission": "Campaign Buddy checks your location when you check in and while you're checked in for a shift."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#12241F"
         }
       ]
     ]
