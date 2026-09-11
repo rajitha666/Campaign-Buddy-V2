@@ -75,7 +75,7 @@ export const campaigns = {
 
 // ---------- Staff & Activations ----------
 export const staff = {
-  search: (search) => api.get('/staff', { query: { search } }),
+  search: (search, extraQuery) => api.get('/staff', { query: { search, ...extraQuery } }),
   create: (body) => api.post('/staff', body),
   update: (id, body) => api.patch(`/staff/${id}`, body),
   remove: (id) => api.delete(`/staff/${id}`),

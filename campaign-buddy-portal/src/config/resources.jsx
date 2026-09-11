@@ -35,7 +35,11 @@ const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara 
   'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle'];
 
 async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
-  const res = await listFn();
+  // Explicit large pageSize — most list() endpoints default to a 25-per-page
+  // cap server-side; a bare call would silently truncate any dropdown (or a
+  // lookup map built from it) past the first page. Ignored by endpoints that
+  // don't paginate at all.
+  const res = await listFn({ pageSize: 1000 });
   return (res?.data || []).map((r) => ({ value: r[valueKey], label: r[labelKey] || r.fullName || r.displayName || r[valueKey] }));
 }
 
@@ -43,7 +47,7 @@ async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
 // code (e.g. "Tharindu Perera — EMP-0004") so they stay distinguishable once
 // the staff list grows — a bare first name isn't enough to pick the right person.
 async function staffOptions() {
-  const res = await staffApi.search('');
+  const res = await staffApi.search('', { pageSize: 1000 });
   return (res?.data || []).map((r) => ({
     value: r.id,
     label: r.employeeId ? `${r.fullName || r.displayName} — ${r.employeeId}` : (r.fullName || r.displayName || r.id),
@@ -57,7 +61,19 @@ function buildLookup(rows, labelKey = 'name') {
 }
 
 async function hydrateActivations(rows) {
-  const [outletRes, staffRes] = await Promise.all([outletsApi.list().catch(() => null), staffApi.search('').catch(() => null)]);
+  // Deliberately NOT swallowing errors here (no .catch(() => null)) — if either
+  // lookup fails, every row would silently render outletId/staffId in place of
+  // a name, which looks like real (wrong) data rather than a failure. Letting
+  // this throw surfaces a proper "could not load" + retry in ResourcePage
+  // instead of a table quietly full of raw IDs until the user refreshes.
+  // Explicit large pageSize — an unqualified list()/search() defaults to the
+  // backend's 25-per-page cap, which would silently drop any outlet/staff
+  // past the first page from the lookup (same raw-ID symptom, but
+  // deterministic rather than transient).
+  const [outletRes, staffRes] = await Promise.all([
+    outletsApi.list({ pageSize: 1000 }),
+    staffApi.search('', { pageSize: 1000 }),
+  ]);
   const outletMap = buildLookup(outletRes?.data);
   const staffMap = buildLookup(staffRes?.data, 'displayName');
   return rows.map((r) => ({ ...r, outletName: outletMap[r.outletId], staffName: staffMap[r.staffId], supervisorName: staffMap[r.supervisorStaffId] }));
@@ -631,7 +647,7 @@ export const RESOURCES = {
     title: 'Promoter Tracking', subtitle: 'GPS breadcrumb trail while checked in.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
+      { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
@@ -647,7 +663,7 @@ export const RESOURCES = {
     title: 'Supervisor Tracking', subtitle: 'GPS breadcrumb trail for supervisors.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
+      { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
