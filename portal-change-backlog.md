@@ -104,3 +104,12 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 - **Search is plain substring match** on name/SKU, not glob-style wildcards.
 - Bulk endpoint reuses the `activationItemsAdd` idempotent-upsert pattern from `activations.routes.ts` (re-adding an already-linked product is a no-op, not a 409).
 
+## Batch 4 — post-merge fix
+
+| # | Change | Status | Files |
+|---|--------|--------|-------|
+| 10 | "Report an issue" modal (and any modal/drawer/toast) opened over a page with a Leaflet map rendered **behind** the map instead of in front of it | ✅ | [`app.css`](campaign-buddy-portal/src/styles/app.css) — `.overlay`/`.modal-card`/`.drawer` bumped from z-index 80/90 to 1000/1010/1005, `.toast-stack` to 1100 |
+
+### Root cause
+Leaflet's own CSS gives its zoom/attribution controls `z-index:1000` and its internal panes up to `z-index:700`. Neither `.map-shell` nor `.leaflet-container` establishes its own CSS stacking context (no `transform`/`isolation`/non-auto `z-index`), so those values compared directly against the modal's old `z-index:80/90` in the page's root stacking context — and lost. Confirmed by walking the full ancestor chain from `.leaflet-top` to `<body>` in a live session: every ancestor was `position:static`, so nothing boxed Leaflet's z-index in. Fix: raise the overlay/modal/drawer/toast z-indices comfortably above Leaflet's ceiling (1000) rather than trying to cap Leaflet's own stacking, which fixes this for every current and future map+modal combination (Dashboard, Live Map, Sponsor Dashboard), not just the Report Issue modal specifically.
+

@@ -228,7 +228,7 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 
 /* ===== modal ===== */
 .modal-card {
-  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:90;
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1010;
   width:92vw; background:var(--surface-card); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.28);
   display:flex; flex-direction:column; max-height:86vh;
 }
@@ -239,8 +239,11 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .modal-foot { padding:14px 22px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
 
 /* ===== drawer ===== */
-.overlay { position:fixed; inset:0; background:rgba(10,18,15,0.45); z-index:80; }
-.drawer { position:fixed; top:0; right:0; height:100vh; width:460px; max-width:92vw; background:var(--surface-card); z-index:90; box-shadow:-8px 0 30px rgba(0,0,0,0.18); display:flex; flex-direction:column; }
+/* 1000 clears Leaflet's own z-index ceiling (its .leaflet-top/.leaflet-bottom
+   controls sit at z-index:1000, panes up to 700) — without this a map on the
+   page renders on top of any modal/drawer opened over it. */
+.overlay { position:fixed; inset:0; background:rgba(10,18,15,0.45); z-index:1005; }
+.drawer { position:fixed; top:0; right:0; height:100vh; width:460px; max-width:92vw; background:var(--surface-card); z-index:1010; box-shadow:-8px 0 30px rgba(0,0,0,0.18); display:flex; flex-direction:column; }
 .drawer-head { padding:20px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
 .drawer-title { font-size:16px; } .drawer-sub { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
 .close-btn { width:30px; height:30px; border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
@@ -292,7 +295,7 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .login-credit { margin-top:18px; text-align:center; font-size:11px; font-weight:600; letter-spacing:0.3px; color:var(--text-muted); }
 
 /* ===== toast ===== */
-.toast-stack { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:100; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.toast-stack { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:1100; display:flex; flex-direction:column; gap:8px; align-items:center; }
 .toast { background:var(--ink); color:#fff; font-size:12.5px; font-weight:600; padding:12px 20px; border-radius:24px; }
 .toast.error { background:var(--alert); }
 
