@@ -58,6 +58,32 @@ Pure-logic only — no RN/Expo runtime. `src/lib/date.test.ts` covers the
 hits the right path/verb and unwraps `{ data }`. Screen and navigation
 coverage is manual.
 
+## Release flow (publishing the APK)
+
+CB Mobile is distributed as a release APK served from the public downloads
+page (`marketing/downloads/`, live at `/downloads/`). To ship an update:
+
+1. Bump **`expo.version`** in `app.json` (single source of truth), then
+   `npx expo prebuild` so `android/app/build.gradle` picks it up.
+2. Build the APK:
+   ```bash
+   cd android && ./gradlew assembleRelease
+   ```
+3. Publish it — this copies the APK to
+   `marketing/downloads/apk/campaignbuddy-<versionCode>.apk` and adds a row
+   (version, code, date) above the `<!-- VERSIONS -->` marker in
+   `marketing/downloads/index.html`:
+   ```bash
+   node scripts/publish-apk.mjs
+   ```
+4. `git add marketing/downloads && git commit && git push` — the server's
+   nginx container serves the updated page + APK.
+
+The version code is computed as `major*100000 + minor*100 + patch`
+(`1.0.0 → 100000`, `2.8.7 → 208070`). The script refuses to run when
+`build.gradle` and `app.json` disagree, the APK hasn't been built, or the
+version is already listed — always bump `expo.version` for each release.
+
 ## Architecture
 
 ```

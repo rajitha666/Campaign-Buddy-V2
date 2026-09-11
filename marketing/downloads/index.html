@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campaign Buddy — Downloads</title>
+  <meta name="description" content="Download the latest CB Mobile Android app." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #12241F;
+      --ink-soft: #23413A;
+      --surface: #F4F6F3;
+      --card: #FFFFFF;
+      --line: #E3E7E1;
+      --text: #16211C;
+      --text-muted: #647169;
+      --text-on-ink: #F4F6F3;
+      --mango: #FF7A33;
+      --mango-dark: #E8641F;
+      --font-display: "Poppins", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --shadow-card: 0 1px 3px rgba(18, 36, 31, 0.06), 0 14px 34px -14px rgba(18, 36, 31, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2 { font-family: var(--font-display); font-weight: 600; line-height: 1.12; margin: 0; letter-spacing: -0.01em; }
+
+    .topbar {
+      background: var(--ink);
+      color: var(--text-on-ink);
+    }
+    .topbar-inner {
+      max-width: 880px; margin: 0 auto; padding: 0 24px;
+      height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-on-ink); font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--mango); color: var(--ink);
+      display: grid; place-items: center; font-size: 15px; font-weight: 700;
+    }
+    .topbar nav a { color: var(--text-on-ink); opacity: .75; text-decoration: none; font-size: 14px; }
+    .topbar nav a:hover { opacity: 1; }
+
+    main { max-width: 880px; margin: 0 auto; padding: 48px 24px 64px; }
+
+    .page-head { margin-bottom: 24px; }
+    .page-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); }
+    .page-head p { margin: 6px 0 0; color: var(--text-muted); }
+
+    .dl-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      box-shadow: var(--shadow-card); overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-muted); background: var(--surface);
+      border-bottom: 1px solid var(--line); padding: 12px 20px;
+    }
+    thead th:last-child { text-align: right; }
+
+    tbody td { padding: 14px 20px; border-bottom: 1px solid var(--line); font-size: 15px; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(255, 122, 51, .05); }
+
+    td .ver { font-weight: 600; color: var(--ink); font-family: var(--font-display); }
+    td .code, td .date { color: var(--text-muted); }
+
+    td.dl { text-align: right; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--mango-dark); text-decoration: none; font-weight: 600; font-size: 14px;
+    }
+    .dl-btn:hover { color: var(--mango); text-decoration: underline; }
+    .dl-btn svg { flex: none; }
+
+    .empty { padding: 28px 20px; color: var(--text-muted); text-align: center; }
+
+    .foot {
+      margin-top: 32px; color: var(--text-muted); font-size: 13px; text-align: center;
+    }
+    .foot a { color: var(--mango-dark); text-decoration: none; }
+    .foot a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      thead { display: none; }
+      tbody tr { display: block; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+      tbody td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: none; }
+      td.dl { flex-direction: row-reverse; }
+      td.dl::before { content: "Download"; color: var(--text-muted); font-size: 13px; }
+      td[data-label]::before { content: attr(data-label); color: var(--text-muted); font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/landing-site/"><span class="brand-mark">CB</span> Campaign Buddy</a>
+      <nav><a href="/landing-site/">campaignbuddy.lk</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-head">
+      <h1>Downloads</h1>
+      <p>Download CB Mobile, the Campaign Buddy Android app for field reps.</p>
+    </div>
+
+    <div class="dl-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Version Code</th>
+            <th>Date</th>
+            <th>Download</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ver">1.0.0</span></td>
+            <td><span class="code">100000</span></td>
+            <td><span class="date">2026-09-11</span></td>
+            <td class="dl"><a class="dl-btn" href="apk/campaignbuddy-100000.apk">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              Download
+            </a></td>
+          </tr>
+          <!-- VERSIONS -->
+        </tbody>
+      </table>
+    </div>
+
+    <p class="foot">
+      Managed by Dyro Technologies — <a href="/landing-site/">CampaignBuddy.lk</a>
+    </p>
+  </main>
+
+</body>
+</html>

@@ -12,3 +12,7 @@ services:
   portal:
     ports:
       - "5173:80"
+
+  marketing:
+    ports:
+      - "8083:80"
