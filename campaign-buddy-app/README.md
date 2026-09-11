@@ -10,7 +10,7 @@ Brought up and wired to the `campaign-buddy-backend` `/v1` API (2026-09-06):
 
 - **Expo SDK 57** (upgraded from 51 on 2026-09-07 so the App Store Expo Go — latest SDK only — can open it): RN 0.86 / React 19.2 / React Navigation 7. `.npmrc` pins `legacy-peer-deps=true`; `npx expo-doctor` is clean.
 - **npm install**: use `npm install --ignore-scripts` (npm 11 blocks lifecycle scripts); native builds aren't needed for the web preview or Expo Go.
-- **Fonts**: now loaded from `@expo-google-fonts/poppins` (JS-bundled TTFs) — no manual `assets/fonts/*.ttf` needed. `assets/fonts/README.md` is stale.
+- **Fonts**: loaded from `@expo-google-fonts/poppins` (JS-bundled TTFs) — no manual `assets/fonts/*.ttf` needed.
 - **Auth**: `AuthContext` fetches `/me` after login because the v3 `/auth/login` returns tokens only. Access-token refresh is wired into the axios response interceptor (`src/api/client.ts` — `registerAuthFailureHandler`, single in-flight refresh, retry-once); a failed refresh clears the session.
 - **Web**: `expo start --web` works. `expo-secure-store` has no web implementation, so token storage is split — `secureStore.ts` (native Keychain/Keystore) / `secureStore.web.ts` (localStorage). The `BottomSheetModal` (product details / time-off form / checkout confirm) renders but its layout on web is imperfect — it's fine on a device, or swap in `@gorhom/bottom-sheet` as noted below.
 - **Scaffold complete**: date rendering pinned to UTC via `src/lib/date.ts`; `otherInterestedCustomers` threaded through the products list → `ProductUpdateScreen`; real date pickers (`@react-native-community/datetimepicker`) in the time-off sheet; `ForgotPasswordScreen` wired into the auth stack. No `TODO`/`FIXME` markers remain.
@@ -55,8 +55,24 @@ npm run test:watch
 Pure-logic only — no RN/Expo runtime. `src/lib/date.test.ts` covers the
 `@db.Date` UTC pinning (`formatDay`, `dayOfMonth`, `ymd`);
 `src/api/adapters.test.ts` mocks `./client` and asserts each `/v1` adapter
-hits the right path/verb and unwraps `{ data }`. Screen and navigation
-coverage is manual.
+hits the right path/verb and unwraps `{ data }`.
+
+### e2e (Playwright, Expo web)
+
+```bash
+npx playwright install chromium     # once
+cd campaign-buddy-backend && npm run prisma:seed && npm run prisma:seed:demo
+cd campaign-buddy-app && EXPO_PUBLIC_API_BASE_URL=http://localhost:4000/v1 npm run start -- --web   # separate terminal
+npm run test:e2e
+```
+
+`e2e/login.spec.ts` is a single smoke test: sign in as the demo promoter and
+confirm Home renders. There's no simulator/emulator toolchain set up in this
+repo's dev environment (see "Known gaps" below), so this runs against the
+**Expo web** build — it covers the JS/React logic, not native-only behavior
+(GPS, push). Everything else — check-in, stock updates, sales, attendance —
+is still manual verification for now; expanding this suite is follow-up work,
+not a one-time deliverable. See `.github/workflows/ci.yml` (job `app-e2e`).
 
 ## Release flow (publishing the APK)
 
@@ -171,8 +187,6 @@ an endpoint's response shape.
 4. **Forgot-password delivery is a backend stub.** The screen and
    `authApi.forgotPassword()` work, but the backend sends no email/SMS
    (`docs/backend-spec.md` §8).
-5. `assets/fonts/README.md` is stale — fonts now come from
-   `@expo-google-fonts/poppins`, no manual TTF files needed.
 
 ## Design system discipline
 

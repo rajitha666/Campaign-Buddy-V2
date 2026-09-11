@@ -25,8 +25,12 @@ Server starts on `http://localhost:4000`. `GET /health` is a quick liveness chec
 For demos, sales walkthroughs and the marketing/training screenshots:
 
 ```bash
-npx ts-node prisma/demo-seed.ts
+npm run prisma:seed:demo
 ```
+
+CI runs this against every migration on every push/PR as a drift check — if a
+schema change breaks it, the build fails there instead of at the next re-shoot
+or demo.
 
 Builds the **"Radiance Q3 Push"** sample campaign — 4 Colombo outlets, 4 promoters,
 2 supervisors, 3 SKUs, 4 custom fields, ~7 days of attendance / sales / footfall /
@@ -40,7 +44,7 @@ Asia/Colombo wall-clock.
 ## Tests
 ```bash
 cp .env.test.example .env.test    # must point DATABASE_URL at a *_test database
-npm test                          # vitest run  (19 integration tests, supertest)
+npm test                          # vitest run  (73 integration tests, supertest)
 npm run test:watch
 ```
 `test/setup.ts` refuses to run unless `DATABASE_URL` ends in `_test` — the suite

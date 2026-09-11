@@ -1,17 +1,6 @@
-# Fonts go here
+# Fonts
 
-This sandbox has no network access, so the actual Poppins `.ttf` binary
-files couldn't be downloaded and included in this scaffold.
-
-Download these two weights from Google Fonts (free, OFL license) and drop
-them directly in this folder before running the app — `App.tsx` already
-points at these exact filenames:
-
-- `Poppins-SemiBold.ttf`
-- `Poppins-Bold.ttf`
-
-https://fonts.google.com/specimen/Poppins
-
-Until these files exist, `App.tsx`'s `Font.loadAsync()` call will throw on
-startup — that's intentional (fail loudly rather than silently fall back to
-a system font and drift from the design system).
+Not used. Poppins is loaded from the `@expo-google-fonts/poppins` package
+(JS-bundled TTFs, no manual files) — see `App.tsx` and
+`src/theme/typography.ts`. This folder is kept only so the `assets/` path
+exists; nothing here is read at build or runtime.
