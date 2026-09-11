@@ -105,6 +105,7 @@ export const s = {
       unitPrice: z.number().int(),
       reorderLevel: z.number().int(),
       description: z.string(),
+      imageUrl: z.string().nullable(),
     })
     .partial(),
   cityCreate: z.object({

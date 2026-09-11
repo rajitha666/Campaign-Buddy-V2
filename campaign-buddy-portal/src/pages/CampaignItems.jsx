@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import ProductThumb from '../components/ProductThumb';
 
 export default function CampaignItems() {
   const { campaignId } = useParams();
@@ -129,7 +130,12 @@ export default function CampaignItems() {
                       {filtered.map((i) => (
                         <tr key={i.id}>
                           <td><input type="checkbox" checked={selectedIds.has(i.id)} onChange={() => toggleSelected(i.id)} /></td>
-                          <td className="cell-strong">{i.name}</td>
+                          <td className="cell-strong">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                              <ProductThumb item={i} />
+                              {i.name}
+                            </span>
+                          </td>
                           <td className="cell-muted">{i.sku || '—'}</td>
                           <td>LKR {Number(i.unitPrice || 0).toLocaleString()}</td>
                         </tr>
@@ -152,7 +158,12 @@ export default function CampaignItems() {
                       const item = itemMap[ci.itemId] || {};
                       return (
                         <tr key={ci.id}>
-                          <td className="cell-strong">{item.name || ci.itemId}</td>
+                          <td className="cell-strong">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                              <ProductThumb item={item} />
+                              {item.name || ci.itemId}
+                            </span>
+                          </td>
                           <td>LKR {Number(item.unitPrice || 0).toLocaleString()}</td>
                           {isAdmin ? <td><div className="icon-btn delete" onClick={() => removeItem(ci.id)}>✕</div></td> : null}
                         </tr>

@@ -1,15 +1,32 @@
 /**
- * Placeholder product "photo": a simple bottle silhouette with a colored
- * label band, used until real product photography is wired up via
- * `product.imageUrl`. Swap the SVG for an <Image> once that's available —
- * this component's prop shape (`size`, `bandColor`) is intentionally the
- * only thing screens depend on, so that swap is a one-file change.
+ * Product "photo": renders the real product image when `imageUrl` is given
+ * (falling back to the placeholder if it fails to load), otherwise a bottle
+ * silhouette with a colored label band. Screens that don't yet have an
+ * imageUrl to pass through keep the placeholder unchanged.
  */
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Image, StyleSheet } from 'react-native';
 import { colors, radius } from '@/theme';
 
-export function ProductThumb({ size = 46, bandColor = colors.info }: { size?: number; bandColor?: string }) {
+interface ProductThumbProps {
+  size?: number;
+  bandColor?: string;
+  imageUrl?: string | null;
+}
+
+export function ProductThumb({ size = 46, bandColor = colors.info, imageUrl }: ProductThumbProps) {
+  const [failed, setFailed] = useState(false);
+
+  if (imageUrl && !failed) {
+    return (
+      <Image
+        source={{ uri: imageUrl }}
+        style={{ width: size, height: size, borderRadius: size * 0.24, backgroundColor: '#EEF1EC' }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
   return (
     <View style={[styles.wrap, { width: size, height: size, borderRadius: size * 0.24 }]}>
       <View style={[styles.bottle, { width: size * 0.36, height: size * 0.5 }]}>

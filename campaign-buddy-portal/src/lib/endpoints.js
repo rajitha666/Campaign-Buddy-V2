@@ -30,6 +30,11 @@ export const items = {
   search: (search) => api.get('/items', { query: { search } }),
   update: (id, body) => api.patch(`/items/${id}`, body),
   remove: (id) => api.delete(`/items/${id}`),
+  uploadImage: (id, file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.postForm(`/items/${id}/image`, form);
+  },
 };
 export const outlets = {
   list: (query) => api.get('/outlets', { query }),

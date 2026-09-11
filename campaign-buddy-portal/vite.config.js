@@ -24,6 +24,14 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:4000',
         changeOrigin: true,
       },
+      // Uploaded product photos (see catalog.routes.ts POST /items/:id/image)
+      // are served by the backend at this same path — proxy it too so
+      // <img src="/uploads/..."> resolves in dev the same way it will in
+      // production behind a shared reverse proxy.
+      '/uploads': {
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:4000',
+        changeOrigin: true,
+      },
     },
   },
 });

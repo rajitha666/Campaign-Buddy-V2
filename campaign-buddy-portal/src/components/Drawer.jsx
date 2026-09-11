@@ -89,6 +89,7 @@ export default function Drawer({
               error={fieldErrors[f.key]}
               builderRows={builderRows[f.key]}
               onBuilderChange={(rows) => setBuilderRows((b) => ({ ...b, [f.key]: rows }))}
+              preview={f.previewKey ? initialValues[f.previewKey] : undefined}
             />
           ))}
         </div>
@@ -103,7 +104,7 @@ export default function Drawer({
   );
 }
 
-function Field({ field: f, value, onChange, error, builderRows, onBuilderChange }) {
+function Field({ field: f, value, onChange, error, builderRows, onBuilderChange, preview }) {
   const reqMark = f.required ? <span className="req">*</span> : null;
 
   if (f.type === 'section') {
@@ -229,7 +230,15 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange 
     return (
       <div className="form-row">
         <label>{f.label} {reqMark}</label>
-        <input type="file" onChange={(e) => onChange(e.target.files?.[0] || null)} />
+        {preview ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <img src={preview} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', background: '#f1f2f6' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <span className="cell-muted" style={{ fontSize: 12 }}>Current image — choose a file to replace it</span>
+          </div>
+        ) : null}
+        <input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0] || null)} />
+        {value instanceof File ? <div className="cell-muted" style={{ fontSize: 12, marginTop: 6 }}>{value.name}</div> : null}
       </div>
     );
   }

@@ -9,6 +9,7 @@
 // onto a Campaign row) for endpoints that return bare foreign keys.
 import Badge from '../components/Badge';
 import Avatar from '../components/Avatar';
+import ProductThumb from '../components/ProductThumb';
 import {
   clients as clientsApi, brands as brandsApi, items as itemsApi, outlets as outletsApi,
   distributorPoints as distributorPointsApi, cities as citiesApi, campaigns as campaignsApi,
@@ -118,14 +119,7 @@ export const RESOURCES = {
     columns: [
       { key: 'name', label: 'Product', render: (r) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          {r.imageUrl ? (
-            <img
-              src={r.imageUrl}
-              alt={r.name}
-              style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#f1f2f6' }}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          ) : null}
+          <ProductThumb item={r} />
           <span>
             <span className="cell-strong">{r.name}</span>
             {r.sku ? <div className="cell-muted" style={{ marginTop: 2 }}>{r.sku}</div> : null}
@@ -144,14 +138,22 @@ export const RESOURCES = {
       const map = buildLookup(brandRes?.data);
       return rows.map((r) => ({ ...r, brandName: map[r.brandId] }));
     },
-    createItem: ({ values }) => itemsApi.create({
-      name: values.name, brandId: values.brandId, description: values.description,
-      unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
-    }),
-    updateItem: ({ id, values }) => itemsApi.update(id, {
-      name: values.name, brandId: values.brandId, description: values.description,
-      unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
-    }),
+    createItem: async ({ values }) => {
+      const created = await itemsApi.create({
+        name: values.name, brandId: values.brandId, description: values.description,
+        unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
+      });
+      if (values.image instanceof File) await itemsApi.uploadImage(created.data.id, values.image);
+      return created;
+    },
+    updateItem: async ({ id, values }) => {
+      const updated = await itemsApi.update(id, {
+        name: values.name, brandId: values.brandId, description: values.description,
+        unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
+      });
+      if (values.image instanceof File) await itemsApi.uploadImage(id, values.image);
+      return updated;
+    },
     deleteItem: ({ id }) => itemsApi.remove(id),
     formFields: [
       { key: 'name', label: 'Product Name', type: 'text', required: true },
@@ -160,7 +162,7 @@ export const RESOURCES = {
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'unitPrice', label: 'Price (LKR)', type: 'text', required: true },
       { key: 'reorderLevel', label: 'Re-order Level', type: 'text', required: true },
-      { key: 'image', label: 'Image', type: 'upload' },
+      { key: 'image', label: 'Image', type: 'upload', previewKey: 'imageUrl' },
     ],
   },
 
