@@ -86,6 +86,14 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 - Two separate, real bugs, both matching the reported symptom (**every** name column showing IDs, not just one row) — not something a mutation-timing/caching bug would explain (no caching layer exists; confirmed via code read). Fixed both rather than picking one theory.
 - Deliberately did **not** sweep every other `list()` call in the codebase for the same 25-cap issue — fixed it at its one shared choke point (`optionsFrom`) plus the two direct calls in `hydrateActivations`, which covers every dropdown/lookup that goes through that helper.
 
+### Training guide updated (per AGENTS.md — same-PR rule)
+`marketing/training/admin.html` updated for the changes that alter what the admin sees/does:
+- Task 4 (Create the campaign): Campaign Items step now describes the search + bulk "Add Selected".
+- Task 6 (Create activations): notes the four pickers (Outlet/Promoter/Supervisor/Distributor Point) are now searchable and show name + employee ID, and that the date range pre-fills from the campaign's dates.
+- Task 8 (renamed "Give supervisors, sponsors **and admins** access"): new third step documenting the Campaign Admins linking flow (who can use it, search-existing vs. create-new, multi-admin support).
+- No re-shoot done for #2 (font-size fix), #7 (favicon), #8 (product photos — no real demo images exist yet so a re-shoot would show nothing different), or #9 (invisible bug fix) — all cosmetic/invisible per `MAINTENANCE.md`'s own rule.
+- **Follow-up still open:** no screenshot exists yet for the new Campaign Admins screen — the repo's Puppeteer capture harness "is not in the repo" (`MAINTENANCE.md`), and this session's Browser-pane tooling has no way to persist a capture to `assets/portal-admin/` as a file. Someone with local screenshot tooling should shoot `assets/portal-admin/34-campaign-admins.webp` (1600×1000, matching the existing set) and wire it into task 8's new step.
+
 ### Decisions taken (this batch, cont'd)
 - **No new dependency** for the searchable dropdown — `SearchableSelect` is a small hand-rolled combobox (text input + filtered menu), consistent with the "no library" calls made for the map/chart in earlier batches. Filters client-side by substring on the already-loaded option list, same approach as the Campaign Products search (#1).
 - **Promoter/Supervisor label** is `fullName — employeeId` (falls back to `displayName` if `fullName` missing). Deliberately did **not** filter the Promoter list to `userType: 'promoter'` or Supervisor to `'supervisor'` — both dropdowns already drew from the full unfiltered staff list before this change; narrowing that is a separate, unrequested behavior change.

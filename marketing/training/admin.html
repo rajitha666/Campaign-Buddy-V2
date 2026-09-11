@@ -47,7 +47,7 @@
       <li><a href="#t5">Add your staff <span class="n">2 steps</span></a></li>
       <li><a href="#t6">Create activations <span class="n">4 steps</span></a></li>
       <li><a href="#t7">Custom sales fields <span class="n">2 steps</span></a></li>
-      <li><a href="#t8">Give supervisors and sponsors access <span class="n">2 steps</span></a></li>
+      <li><a href="#t8">Give supervisors, sponsors and admins access <span class="n">3 steps</span></a></li>
       <li><a href="#t9">Supervisor routes and QA <span class="n">2 steps</span></a></li>
       <li><a href="#t10">Your daily view <span class="n">4 steps</span></a></li>
       <li><a href="#t11">Correct a promoter's sales <span class="n">3 steps</span></a></li>
@@ -137,7 +137,7 @@
             <div class="step-text"><p>The <b>status</b> follows the dates on its own (upcoming &rarr; active &rarr; ended). You can override it, for example to end a campaign early, and the override sticks until you change the dates.</p></div>
           </li>
           <li>
-            <div class="step-text"><p>Open the campaign's <b>Campaign Items</b> and pick the SKUs that are sellable anywhere in this campaign. You can add an existing product or create-and-link a new one in one step.</p></div>
+            <div class="step-text"><p>Open the campaign's <b>Campaign Items</b> and pick the SKUs that are sellable anywhere in this campaign. Search by name or SKU, tick as many as you need, and <b>Add Selected</b> links them all in one batch (or create-and-link a brand new product in the same step).</p></div>
           </li>
         </ol>
       </div>
@@ -172,7 +172,7 @@
           </li>
           <li>
             <div class="step-text">
-              <p>Set the outlet, promoter, an optional <b>named supervisor</b>, the distributor point if any, the date range, the <b>shift window</b> (for on-time / late), and the three target settings (item- or brand-wise, daily or monthly, by units or by value).</p>
+              <p>Set the outlet, promoter, an optional <b>named supervisor</b>, the distributor point if any, the date range, the <b>shift window</b> (for on-time / late), and the three target settings (item- or brand-wise, daily or monthly, by units or by value). Outlet, promoter, supervisor and distributor point all show the person's name (and employee ID, for staff) and are searchable, so a long roster stays easy to pick from. The date range starts pre-filled with the campaign's own dates &mdash; adjust it if this activation runs shorter.</p>
               <div class="tip"><b>The auto-grant:</b> naming a supervisor here gives their portal login access to <b>that outlet on this campaign</b>, automatically. It only ever widens their access, and the portal confirms it.</div>
             </div>
           </li>
@@ -207,7 +207,7 @@
     </details>
 
     <details class="task" id="t8" open>
-      <summary><span class="num">08</span><div><h2>Give supervisors and sponsors access</h2><div class="sub">Per campaign, for the people who watch it</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <summary><span class="num">08</span><div><h2>Give supervisors, sponsors and admins access</h2><div class="sub">Per campaign, for the people who watch it or help run it</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>
@@ -217,6 +217,12 @@
             <div class="step-text">
               <p>Supervisors usually get their access from the activation auto-grant (task 6), but you can also grant or widen it here. To revoke, remove the grant.</p>
               <div class="tip"><b>Reminder:</b> supervisor and sponsor logins are read-only on the server; they cannot change anything regardless of what any screen shows.</div>
+            </div>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>A new Campaign Admin joining partway through a campaign doesn't need Super Admin to step in: from <b>Campaigns &rarr; List</b>, open the campaign's <b>Admins</b> action (the people icon). Search for their existing account by name, username or email and <b>Link Admin</b> &mdash; or, if they don't have one yet, fill in <b>+ New Admin Account</b> to create and link it in the same step.</p>
+              <div class="tip"><b>Who can do this:</b> Super Admin, or any Campaign Admin already linked to that campaign. A campaign can have any number of admins &mdash; linking a new one never removes another, and the same account can be linked to several campaigns at once.</div>
             </div>
           </li>
         </ol>
