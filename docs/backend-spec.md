@@ -285,6 +285,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | POST | `/location/ping` | rejects with `422 NOT_CHECKED_IN` if no open `AttendanceRecord` exists for the staff |
 | GET | `/stats/today` | `totalSales` computed live, not stored |
 | PATCH | `/stats/today` | partial update, absolute values not deltas |
+| GET | `/stats/range?dateFrom=&dateTo=` | day-level rollups for the rep's own activations over the range (defaults to last 7 days, max 90); backs the Sales tab's "Last 7 days" section; both `days[]` (zero-seeded, ascending) and range `total` |
 | GET | `/campaigns/:campaignId/outlets/:outletId/products?reorderOnly=` | resolves the staff's own `Activation` for that campaign+outlet |
 | GET | `/products/:productId` | `soldAcrossAllOutletsToday` and `addedToCampaignAt` computed across all `CampaignItem`/`ActivationItem` rows for that Item |
 | PATCH | `/products/:campaignProductAssignmentId/stock` | `:campaignProductAssignmentId` = `ActivationItem.id`; enforces `soldToday ≤ openingStock`; accepts `customFields` (product-scope, #13), `422 MISSING_REQUIRED_FIELD` on an empty required one |

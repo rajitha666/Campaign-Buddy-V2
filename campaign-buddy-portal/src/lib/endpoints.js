@@ -95,7 +95,6 @@ export const salesRecords = {
 };
 export const dailyStats = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/stats`, { query }),
-  updateToday: (campaignId, body) => api.patch(`/campaigns/${campaignId}/stats/today`, body),
 };
 export const tracking = {
   live: (campaignId) => api.get(`/campaigns/${campaignId}/tracking/live`),

@@ -54,13 +54,19 @@ describe('api adapters — path + verb', () => {
     await profile.getTodayAssignment();
     await stats.getTodayStats();
     await stats.updateTodayStats({ footFall: 13 });
+    await stats.getStatsRange('2026-09-05', '2026-09-11');
+    await stats.getLast7Days();
     expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
       'get /me',
       'get /me/assignments/today',
       'get /stats/today',
       'patch /stats/today',
+      'get /stats/range',
+      'get /stats/range',
     ]);
     expect(calls[3].body).toEqual({ footFall: 13 });
+    expect(calls[4].params).toEqual({ dateFrom: '2026-09-05', dateTo: '2026-09-11' });
+    expect((calls[5].params as { dateTo: string }).dateTo).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('attendance check-in posts the geo payload', async () => {

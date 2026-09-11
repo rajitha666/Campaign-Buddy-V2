@@ -105,7 +105,22 @@ export const RESOURCES = {
   items: {
     title: 'Products', subtitle: 'Catalog-level products, shared across campaigns.', addLabel: 'Add New Product',
     columns: [
-      { key: 'name', label: 'Product', render: (r) => <Avatar name={r.name} sub={r.sku} /> },
+      { key: 'name', label: 'Product', render: (r) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          {r.imageUrl ? (
+            <img
+              src={r.imageUrl}
+              alt={r.name}
+              style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#f1f2f6' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          ) : null}
+          <span>
+            <span className="cell-strong">{r.name}</span>
+            {r.sku ? <div className="cell-muted" style={{ marginTop: 2 }}>{r.sku}</div> : null}
+          </span>
+        </span>
+      ) },
       { key: 'brandName', label: 'Brand', render: (r) => r.brandName || r.brandId },
       { key: 'description', label: 'Description', className: 'cell-wrap' },
       { key: 'unitPrice', label: 'Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}` },

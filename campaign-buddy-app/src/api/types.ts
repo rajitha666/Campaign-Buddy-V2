@@ -130,6 +130,24 @@ export interface DailyStats {
   totalSales: number; // LKR, read-only — never sent by the client
 }
 
+/** GET /stats/range entry (api-spec §6.10) — one day of the rep's own rollups */
+export interface StatsRangeDay {
+  date: ISODate;
+  itemsReceived: number;
+  itemsSold: number;
+  totalSales: number; // LKR, computed server-side
+  footFall: number;
+  approached: number;
+  converted: number;
+  conversionRate: number; // 0..1, derived server-side
+}
+
+/** GET /stats/range response */
+export interface StatsRangeResult {
+  days: StatsRangeDay[]; // ascending, zero-seeded for every day in the range
+  total: Omit<StatsRangeDay, 'date'>;
+}
+
 export interface Product {
   id: UUID;
   sku: string;

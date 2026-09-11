@@ -558,6 +558,23 @@ Marks today confirmed — this is the action the "No, confirm sales summary" pat
 ### 6.9 `GET /sales-fields`
 The custom fields configured for the promoter's current campaign (§2.14). Returns `{ "data": { "day": [...], "product": [...] } }`; `day` entries carry today's `value`, `product` entries are definitions only (values come with each product in §6.3). Empty lists when there's no assignment today.
 
+### 6.10 `GET /stats/range?dateFrom={YYYY-MM-DD}&dateTo={YYYY-MM-DD}`
+**New** — backs the Sales tab's "Last 7 days" section. Day-level rollups for the signed-in rep's own activations overlapping the range; both params optional (`dateFrom` defaults to `dateTo − 6`, `dateTo` defaults to today; max span 90 days). `totalSales`/`itemsSold` are computed live from `SalesRecord` + `Item.unitPrice` (§2.7 rules), never stored.
+
+**Response `200`**
+```json
+{
+  "data": {
+    "days": [
+      { "date": "2026-09-05", "itemsReceived": 120, "itemsSold": 34, "totalSales": 34200, "footFall": 0, "approached": 0, "converted": 0, "conversionRate": 0 },
+      { "date": "2026-09-11", "itemsReceived": 96, "itemsSold": 40, "totalSales": 40800, "footFall": 30, "approached": 10, "converted": 4, "conversionRate": 0.4 }
+    ],
+    "total": { "itemsReceived": 216, "itemsSold": 74, "totalSales": 75000, "footFall": 30, "approached": 10, "converted": 4, "conversionRate": 0.4 }
+  }
+}
+```
+`days` is ascending and zero-seeded for every calendar day in the range (including days with no assignment); `total` aggregates across the range.
+
 ---
 
 ## 7. Time Off
@@ -650,6 +667,7 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
 | GET | `/products/{id}` | Product details popup |
 | PATCH | `/products/{cpaId}/stock` | Update Stock (steppers + reorder toggle) |
 | GET | `/sales-summary/today` | Sales page |
+| GET | `/stats/range` | Sales page (Last 7 days section) |
 | PATCH | `/sales-summary/today` | Sales page (remarks) |
 | POST | `/sales-summary/today/confirm` | Sales page (Confirm & submit), Checkout popup |
 | GET | `/time-off/balance` | Time off |

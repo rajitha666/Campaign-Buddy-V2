@@ -33,33 +33,6 @@ function saleValue(r) {
   return (r.soldToday || 0) * price;
 }
 
-function Stepper({ value, onChange, max }) {
-  const canDec = value > 0;
-  const canInc = max === undefined || value < max;
-  return (
-    <div className="stepper">
-      <button className="stepper-btn" disabled={!canDec} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
-      <span className="stepper-val">{value}</span>
-      <button className="stepper-btn" disabled={!canInc} onClick={() => onChange(value + 1)}>+</button>
-    </div>
-  );
-}
-
-function MetricCard({ icon, iconBg, title, subtitle, children }) {
-  return (
-    <div className="metric-card">
-      <div className="metric-top">
-        <div className="metric-icon" style={{ backgroundColor: iconBg }}>{icon}</div>
-        <div>
-          <div className="metric-title">{title}</div>
-          <div className="metric-sub">{subtitle}</div>
-        </div>
-      </div>
-      <div className="metric-stepper">{children}</div>
-    </div>
-  );
-}
-
 export default function SalesPage() {
   const { currentCampaignId } = useAuth();
   const { push } = useToast();
@@ -71,14 +44,9 @@ export default function SalesPage() {
 
   const [recentSales, setRecentSales] = useState(null);
   const [recentLoading, setRecentLoading] = useState(false);
-  const [today, setToday] = useState({ totalSales: 0, outletCount: 0, footFall: 0, approached: 0, converted: 0 });
+  const [today, setToday] = useState({ totalSales: 0, outletCount: 0, footFall: 0, approached: 0 });
   const [week, setWeek] = useState([]);
   const [dayFieldValues, setDayFieldValues] = useState([]);
-
-  const [statsFootFall, setStatsFootFall] = useState(null);
-  const [statsApproached, setStatsApproached] = useState(null);
-  const [statsConverted, setStatsConverted] = useState(null);
-  const [statsSaving, setStatsSaving] = useState(false);
 
   useEffect(() => {
     if (!currentCampaignId) return;
@@ -86,22 +54,6 @@ export default function SalesPage() {
       .then(([o, s, a]) => { setOutlets(o?.data || []); setStaffList(s?.data || []); setActivationsList(a?.data || []); })
       .catch(() => {});
   }, [currentCampaignId]);
-
-  function loadTodayStats() {
-    if (!currentCampaignId) return;
-    dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() })
-      .then((res) => {
-        const days = res?.data?.byDay || [];
-        const todayStat = days.filter((r) => String(r.date).slice(0, 10) === todayISO()).reduce(
-          (acc, r) => ({ footFall: acc.footFall + (r.footFall || 0), approached: acc.approached + (r.approached || 0), converted: acc.converted + (r.converted || 0) }),
-          { footFall: 0, approached: 0, converted: 0 }
-        );
-        setStatsFootFall(todayStat.footFall);
-        setStatsApproached(todayStat.approached);
-        setStatsConverted(todayStat.converted);
-      })
-      .catch(() => { setStatsFootFall(0); setStatsApproached(0); setStatsConverted(0); });
-  }
 
   function loadRecent() {
     if (!currentCampaignId) return;
@@ -126,13 +78,10 @@ export default function SalesPage() {
         );
         const days = statsRes?.data?.byDay || [];
         const todayStat = days.filter((r) => String(r.date).slice(0, 10) === todayISO()).reduce(
-          (acc, r) => ({ footFall: acc.footFall + (r.footFall || 0), approached: acc.approached + (r.approached || 0), converted: acc.converted + (r.converted || 0) }),
-          { footFall: 0, approached: 0, converted: 0 }
+          (acc, r) => ({ footFall: acc.footFall + (r.footFall || 0), approached: acc.approached + (r.approached || 0) }),
+          { footFall: 0, approached: 0 }
         );
         setToday({ totalSales, outletCount: outletIds.size, ...todayStat });
-        setStatsFootFall(todayStat.footFall);
-        setStatsApproached(todayStat.approached);
-        setStatsConverted(todayStat.converted);
 
         const weekMap = {};
         for (let i = 6; i >= 0; i--) weekMap[todayISO(-i)] = 0;
@@ -146,33 +95,6 @@ export default function SalesPage() {
       .finally(() => setRecentLoading(false));
   }
   useEffect(loadRecent, [currentCampaignId]);
-
-  async function saveTodayStats() {
-    setStatsSaving(true);
-    try {
-      await dailyStatsApi.updateToday(currentCampaignId, {
-        footFall: statsFootFall ?? 0,
-        approached: statsApproached ?? 0,
-        converted: statsConverted ?? 0,
-      });
-      push("Today's stats updated");
-      loadTodayStats();
-      dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() })
-        .then((statsRes) => {
-          const days = statsRes?.data?.byDay || [];
-          const todayStat = days.filter((r) => String(r.date).slice(0, 10) === todayISO()).reduce(
-            (acc, r) => ({ footFall: acc.footFall + (r.footFall || 0), approached: acc.approached + (r.approached || 0), converted: acc.converted + (r.converted || 0) }),
-            { footFall: 0, approached: 0, converted: 0 }
-          );
-          setToday((t) => ({ ...t, ...todayStat }));
-        })
-        .catch(() => {});
-    } catch (e) {
-      push(e.message || 'Could not save stats', 'error');
-    } finally {
-      setStatsSaving(false);
-    }
-  }
 
   const last7Days = useMemo(() => {
     if (!recentSales) return [];
@@ -197,7 +119,6 @@ export default function SalesPage() {
     return Object.values(map).sort((a, b) => b.date.localeCompare(a.date));
   }, [recentSales, dayFieldValues]);
 
-  const conversionRate = statsApproached && statsApproached > 0 ? Math.round(((statsConverted ?? 0) / statsApproached) * 100) : 0;
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
 
@@ -235,48 +156,6 @@ export default function SalesPage() {
         <StatCard label="Customers Approached Today" value={today.approached || 0} />
       </div>
 
-      <div className="panel" style={{ marginBottom: 16 }}>
-        <div className="panel-title">Today's Sales</div>
-        <div className="panel-sub">{new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-
-        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
-          <MetricCard
-            iconBg="#E8F0FE"
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 21c1.5-4 4.2-6 8-6s6.5 2 8 6" stroke="#4285F4" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="8" r="3.4" stroke="#4285F4" strokeWidth="1.8"/></svg>}
-            title="Foot fall"
-            subtitle="Shoppers who entered the outlet"
-          >
-            <Stepper value={statsFootFall ?? 0} onChange={setStatsFootFall} />
-          </MetricCard>
-
-          <MetricCard
-            iconBg="#FEF3E2"
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 12h8M8 8h8M8 16h5" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round"/></svg>}
-            title="Approached"
-            subtitle="Shoppers engaged by the team"
-          >
-            <Stepper value={statsApproached ?? 0} onChange={setStatsApproached} />
-          </MetricCard>
-
-          <MetricCard
-            iconBg="#E6F7EF"
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22C55E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            title="Conversion"
-            subtitle="Approached shoppers who purchased"
-          >
-            <Stepper value={statsConverted ?? 0} onChange={setStatsConverted} max={statsApproached ?? 0} />
-          </MetricCard>
-        </div>
-
-        <div className="conv-summary">
-          <span className="conv-label">Conversion rate</span>
-          <span className="conv-value">{conversionRate}% of approached</span>
-        </div>
-
-        <button className="btn btn-primary" onClick={saveTodayStats} disabled={statsSaving} style={{ marginTop: 16 }}>
-          {statsSaving ? 'Saving...' : 'Update'}
-        </button>
-      </div>
 
       <div className="panel" style={{ marginBottom: 16 }}>
         <div className="panel-title">This Week</div>

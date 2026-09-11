@@ -5,6 +5,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as salesSummaryApi from '@/api/salesSummary';
+import * as statsApi from '@/api/stats';
 import { Button } from '@/components/Button';
 import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
@@ -14,6 +15,7 @@ export function SalesSummaryScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const summaryQuery = useQuery({ queryKey: ['sales-summary', 'today'], queryFn: salesSummaryApi.getTodaySalesSummary });
+  const last7Query = useQuery({ queryKey: ['stats', 'range-7d'], queryFn: () => statsApi.getLast7Days() });
   const [remarks, setRemarks] = useState<string | null>(null);
   const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>({});
 
@@ -41,6 +43,7 @@ export function SalesSummaryScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['stats', 'range-7d'] });
       // Land back on Home after confirming — matches the prototype's
       // "Confirm & submit" behavior.
       navigation.getParent()?.navigate('HomeTab' as never);
@@ -144,6 +147,49 @@ export function SalesSummaryScreen() {
           disabled={s?.confirmed}
           style={{ marginTop: spacing.xl }}
         />
+
+        <View style={styles.last7Block}>
+          <Text style={styles.sectionLabel}>Last 7 days</Text>
+          {last7Query.isLoading ? (
+            <Text style={styles.last7Empty}>Loading…</Text>
+          ) : !last7Query.data || last7Query.data.total.itemsSold === 0 && last7Query.data.total.totalSales === 0 ? (
+            <Text style={styles.last7Empty}>No sales recorded in the last 7 days.</Text>
+          ) : (
+            <>
+              {last7Query.data.days.map((day) => {
+                // Skip fully-empty days at the tail — zero-seeded rows are filler.
+                const hasData = day.itemsSold > 0 || day.footFall > 0 || day.approached > 0;
+                if (!hasData) return null;
+                return (
+                  <View key={day.date} style={styles.dayRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.dayDate}>
+                        {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </Text>
+                      <Text style={styles.dayMeta}>
+                        {day.itemsSold} units{day.approached > 0 ? ` · ${day.footFall} foot fall` : ''}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.dayTotal}>LKR {day.totalSales.toLocaleString()}</Text>
+                      {day.approached > 0 && (
+                        <Text style={styles.dayMeta}>
+                          {day.approached} approached · {day.converted} converted
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+              <View style={styles.dayRowLast}>
+                <Text style={styles.dayTotalLabel}>7-day total</Text>
+                <Text style={styles.dayTotalValue}>
+                  {last7Query.data.total.itemsSold} units · LKR {last7Query.data.total.totalSales.toLocaleString()}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -210,4 +256,31 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     backgroundColor: colors.surfaceCard,
   },
+  last7Block: { marginTop: spacing.xl },
+  sectionLabel: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm },
+  last7Empty: { fontSize: fontSize.sm, color: colors.textMuted },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceCard,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    padding: spacing.md + 1,
+    marginTop: spacing.sm,
+  },
+  dayDate: { fontSize: fontSize.base, fontWeight: '600', color: colors.textPrimary },
+  dayMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  dayTotal: { fontFamily: fontFamily.display, fontSize: fontSize.base, color: colors.ink },
+  dayRowLast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.successTint,
+    borderRadius: radius.lg,
+    padding: spacing.md + 1,
+    marginTop: spacing.md,
+  },
+  dayTotalLabel: { fontSize: fontSize.sm, fontWeight: '700', color: colors.success },
+  dayTotalValue: { fontFamily: fontFamily.display, fontSize: fontSize.sm, color: colors.success },
 });
