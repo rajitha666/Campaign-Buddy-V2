@@ -72,6 +72,8 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 - **This endpoint only ever creates/links `roleId:"usr"` accounts** — both the inline "new account" path and linking an existing user (rejected with 400 if the target user isn't already a `usr`) — so it can't be used to grant Super Admin access or read/write other roles.
 - **Unlinking removes the grant, not the user account** — matches the existing `campaignItem`/`activationItem` unlink pattern; the account can be re-linked (here or to another campaign) later.
 
+| 7 | Portal browser tab showed the generic globe favicon — no icon was ever wired up | ✅ | new [`public/favicon.png`](campaign-buddy-portal/public/favicon.png) (same brand mark already used for CB Mobile's web favicon, `campaign-buddy-app/assets/images/favicon.png`), `<link rel="icon">` added to [`index.html`](campaign-buddy-portal/index.html) |
+
 ### Decisions taken (this batch, cont'd)
 - **No new dependency** for the searchable dropdown — `SearchableSelect` is a small hand-rolled combobox (text input + filtered menu), consistent with the "no library" calls made for the map/chart in earlier batches. Filters client-side by substring on the already-loaded option list, same approach as the Campaign Products search (#1).
 - **Promoter/Supervisor label** is `fullName — employeeId` (falls back to `displayName` if `fullName` missing). Deliberately did **not** filter the Promoter list to `userType: 'promoter'` or Supervisor to `'supervisor'` — both dropdowns already drew from the full unfiltered staff list before this change; narrowing that is a separate, unrequested behavior change.
