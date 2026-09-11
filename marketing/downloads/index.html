@@ -20,6 +20,7 @@
       --text: #16211C;
       --text-muted: #647169;
       --text-on-ink: #F4F6F3;
+      --muted-on-ink: #9FB2AA;
       --mango: #FF7A33;
       --mango-dark: #E8641F;
       --font-display: "Poppins", "Segoe UI", system-ui, sans-serif;
@@ -42,21 +43,16 @@
     h1, h2 { font-family: var(--font-display); font-weight: 600; line-height: 1.12; margin: 0; letter-spacing: -0.01em; }
 
     .topbar {
-      background: var(--ink);
-      color: var(--text-on-ink);
+      position: sticky; top: 0; z-index: 40; height: 58px;
+      background: var(--ink); color: #fff;
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 20px;
     }
-    .topbar-inner {
-      max-width: 880px; margin: 0 auto; padding: 0 24px;
-      height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-on-ink); font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
-    .brand-mark {
-      width: 28px; height: 28px; border-radius: 8px;
-      background: var(--mango); color: var(--ink);
-      display: grid; place-items: center; font-size: 15px; font-weight: 700;
-    }
-    .topbar nav a { color: var(--text-on-ink); opacity: .75; text-decoration: none; font-size: 14px; }
-    .topbar nav a:hover { opacity: 1; }
+    .tb-brand { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; white-space: nowrap; text-decoration: none; color: #fff; }
+    .tb-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--mango); display: grid; place-items: center; flex: none; }
+    .tb-mark svg { width: 15px; height: 15px; }
+    .tb-sep { color: var(--muted-on-ink); font-size: 0.8rem; }
+    @media (max-width: 560px) { .tb-sep { display: none; } }
 
     main { max-width: 880px; margin: 0 auto; padding: 48px 24px 64px; }
 
@@ -114,10 +110,11 @@
 <body>
 
   <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/landing-site/"><span class="brand-mark">CB</span> Campaign Buddy</a>
-      <nav><a href="/landing-site/">campaignbuddy.lk</a></nav>
-    </div>
+    <a class="tb-brand" href="/landing-site/">
+      <span class="tb-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Campaign Buddy
+    </a>
+    <span class="tb-sep">Downloads</span>
   </header>
 
   <main>
