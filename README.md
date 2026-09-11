@@ -47,7 +47,7 @@ npm run prisma:seed             # demo client, campaign, outlet, one promoter
 npm run dev
 ```
 
-For a fuller dataset, run `npx ts-node prisma/demo-seed.ts` as well — it builds
+For a fuller dataset, run `npm run prisma:seed:demo` as well — it builds
 the "Radiance Q3 Push" sample campaign (4 outlets, 4 promoters, 2 supervisors, a
 week of activity) used by the demos and the training screenshots. Re-runnable.
 
@@ -82,6 +82,28 @@ cd campaign-buddy-portal  && npm test    # vitest unit
 cd campaign-buddy-app     && npm test    # vitest unit
 ```
 
+## CI
+
+`.github/workflows/ci.yml` (GitHub Actions) runs on every push to `main` and
+every pull request:
+
+- **backend** — spins up Postgres 16, runs migrations, the base seed, the demo
+  seed (`prisma:seed:demo`) as a drift check — this fails the build the moment
+  a schema change breaks the demo data, instead of that surfacing later — then
+  the integration suite.
+- **portal** / **app** — install + unit tests (**app** also runs `typecheck`;
+  `lint` is skipped there until eslint is actually wired up, see its README).
+- **portal-e2e** / **app-e2e** — Playwright, run against a demo-seeded
+  backend + a live `npm run dev` (portal) / Expo web build (app). Portal
+  covers a broad per-persona nav smoke test plus two pinned bug regressions;
+  app is a single login smoke test — see each package's README for scope and
+  how to run it locally.
+- **training-docs-reminder** (pull requests only) — comments on a PR that
+  touches portal/app UI source but not `marketing/training/`, as an automated
+  nudge for the rule in
+  [`marketing/training/MAINTENANCE.md`](marketing/training/MAINTENANCE.md).
+  Non-blocking — cosmetic-only changes can ignore it.
+
 ## Documentation
 
 | File | What it is |
@@ -104,7 +126,7 @@ Base seed (`npm run prisma:seed`):
 | CB Office | `admin` | `ChangeMe123!` |
 | CB Mobile | `sktest` | `Field123!` |
 
-Demo seed (`npx ts-node prisma/demo-seed.ts`, adds "Radiance Q3 Push"):
+Demo seed (`npm run prisma:seed:demo`, adds "Radiance Q3 Push"):
 
 | Surface | Username | Password |
 |---|---|---|

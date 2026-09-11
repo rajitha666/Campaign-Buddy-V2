@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 *.log
+playwright-report/
+test-results/
 
 # Synced from marketing/training/ by scripts/sync-training.mjs (predev/prebuild)
 public/training/

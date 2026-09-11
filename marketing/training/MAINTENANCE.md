@@ -29,6 +29,11 @@ don't need a re-shoot, but do fix step text if it now reads wrong.
 If you can't do the re-shoot in the same PR, open a follow-up issue titled
 `[docs] Re-shoot <screen> in <role> guide` and link it from the PR.
 
+A CI job (`training-docs-reminder` in `.github/workflows/ci.yml`) comments on
+a PR that touches portal/app UI source without a matching change under
+`marketing/training/`, as a non-blocking nudge — it doesn't know "cosmetic
+only" from "needs a re-shoot," so use judgment same as always.
+
 ## Which guide covers what
 
 | Guide | Role(s) | Shown in | Screens covered |

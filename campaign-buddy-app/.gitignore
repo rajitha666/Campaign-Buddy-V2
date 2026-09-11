@@ -3,6 +3,8 @@ node_modules/
 dist/
 web-build/
 *.log
+playwright-report/
+test-results/
 npm-debug.*
 *.jks
 *.p8

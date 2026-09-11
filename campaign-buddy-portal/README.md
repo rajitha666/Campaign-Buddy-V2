@@ -57,6 +57,24 @@ npm run test:watch
 (list / edit / delete handlers present, form-field shapes valid). No network —
 `apiClient` is mocked.
 
+### e2e (Playwright)
+
+```bash
+npx playwright install chromium     # once
+cd campaign-buddy-backend && npm run prisma:seed && npm run prisma:seed:demo
+cd campaign-buddy-portal  && npm run dev          # separate terminal
+npm run test:e2e
+```
+
+`e2e/smoke.spec.ts` logs in as each persona (admin/supervisor/sponsor) and
+visits every route that persona's nav (`src/config/nav.js`) exposes, checking
+the page renders and throws no uncaught error — broad, shallow regression
+coverage that tracks nav.js automatically. `e2e/regressions.spec.ts` pins two
+specific bugs that shipped and got fixed (blank leave-request action buttons,
+raw ids in the activations table) so they can't silently come back. Runs
+against `npm run dev` + the demo-seed dataset; see `.github/workflows/ci.yml`
+(job `portal-e2e`) for how CI wires this up.
+
 ## How roles map to the UI
 
 `AuthContext.roleToPersona()` collapses `roleId` into the three personas the UI

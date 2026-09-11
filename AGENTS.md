@@ -31,10 +31,22 @@ cd campaign-buddy-app && npm install --ignore-scripts && cp .env.example .env &&
 ```
 
 For a populated dataset (demos, marketing screenshots): after `npm run prisma:seed`,
-`cd campaign-buddy-backend && npx ts-node prisma/demo-seed.ts` builds the
+`cd campaign-buddy-backend && npm run prisma:seed:demo` builds the
 "Radiance Q3 Push" sample campaign — 4 outlets, 4 promoters, 2 supervisors, a
 week of attendance / sales / footfall / tracking data. Re-runnable; leaves the
 base seed's data alone.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every PR: backend
+tests (against a real Postgres, including running `prisma:seed:demo` as a
+drift check against the latest migrations), portal tests, and app
+typecheck + tests, plus Playwright e2e for portal and app (against the
+demo-seeded backend — portal: per-persona nav smoke + two pinned bug
+regressions; app: a login smoke test against the Expo web build, since no
+simulator/emulator is set up here). A separate job comments on PRs that touch
+portal/app UI source without a matching `marketing/training/` change — see
+"Keep the user guides in sync" below.
 
 ## Tests
 

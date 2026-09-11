@@ -10,7 +10,8 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.mts",
-    "test:watch": "vitest --config vitest.config.mts"
+    "test:watch": "vitest --config vitest.config.mts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@playwright/test": "^1.49.1",
     "@types/react": "~19.2.0",
     "typescript": "~6.0.3",
     "vitest": "^2.1.9"

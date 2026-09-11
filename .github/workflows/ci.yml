@@ -1,0 +1,314 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (tests + demo-data drift check)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campaign_buddy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: campaign-buddy-backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/campaign_buddy_test?schema=public
+      STAFF_JWT_SECRET: test-staff-secret
+      USER_JWT_SECRET: test-user-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: campaign-buddy-backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run prisma:seed
+      # Demo-data drift check: fails the build the moment demo-seed.ts falls
+      # out of sync with a schema migration, instead of failing silently.
+      - name: Demo-data drift check (prisma:seed:demo)
+        run: npm run prisma:seed:demo
+      - run: npm test
+
+  portal:
+    name: Portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: campaign-buddy-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: campaign-buddy-portal/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  app:
+    name: Mobile app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: campaign-buddy-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: campaign-buddy-app/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      # `npm run lint` is intentionally not run here: eslint isn't installed
+      # as a dependency in this package yet, so the script currently fails
+      # outright. Tracked as a follow-up rather than fixed inline here.
+      - run: npm test
+
+  portal-e2e:
+    name: Portal e2e (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campaign_buddy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/campaign_buddy_test?schema=public
+      STAFF_JWT_SECRET: test-staff-secret
+      USER_JWT_SECRET: test-user-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            campaign-buddy-backend/package-lock.json
+            campaign-buddy-portal/package-lock.json
+
+      - name: Seed backend (base + demo data)
+        working-directory: campaign-buddy-backend
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run prisma:seed
+          npm run prisma:seed:demo
+
+      - name: Start backend
+        working-directory: campaign-buddy-backend
+        run: nohup npm run dev > backend.log 2>&1 &
+
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4000/health && exit 0
+            sleep 2
+          done
+          echo "backend never became healthy"; cat campaign-buddy-backend/backend.log; exit 1
+
+      - name: Install portal deps + Playwright browsers
+        working-directory: campaign-buddy-portal
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start portal
+        working-directory: campaign-buddy-portal
+        run: nohup npm run dev > portal.log 2>&1 &
+
+      - name: Wait for portal
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:5173 && exit 0
+            sleep 2
+          done
+          echo "portal never came up"; cat campaign-buddy-portal/portal.log; exit 1
+
+      - name: Run portal e2e
+        working-directory: campaign-buddy-portal
+        run: npm run test:e2e
+
+      - name: Upload playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-playwright-report
+          path: campaign-buddy-portal/playwright-report/
+          retention-days: 7
+
+  app-e2e:
+    name: Mobile app e2e (Playwright, Expo web)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campaign_buddy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/campaign_buddy_test?schema=public
+      STAFF_JWT_SECRET: test-staff-secret
+      USER_JWT_SECRET: test-user-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            campaign-buddy-backend/package-lock.json
+            campaign-buddy-app/package-lock.json
+
+      - name: Seed backend (base + demo data)
+        working-directory: campaign-buddy-backend
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run prisma:seed
+          npm run prisma:seed:demo
+
+      - name: Start backend
+        working-directory: campaign-buddy-backend
+        run: nohup npm run dev > backend.log 2>&1 &
+
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4000/health && exit 0
+            sleep 2
+          done
+          echo "backend never became healthy"; cat campaign-buddy-backend/backend.log; exit 1
+
+      - name: Install app deps + Playwright browsers
+        working-directory: campaign-buddy-app
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+
+      - name: Start Expo web
+        working-directory: campaign-buddy-app
+        env:
+          EXPO_PUBLIC_API_BASE_URL: http://localhost:4000/v1
+          CI: "1"
+        # --web starts the dev server for the web target; `CI=1` stops Expo
+        # CLI from trying to open a system browser / prompting interactively.
+        # There's no --non-interactive flag on this Expo CLI version.
+        run: nohup npx expo start --web > app.log 2>&1 &
+
+      - name: Wait for Expo web
+        run: |
+          for i in $(seq 1 45); do
+            curl -sf http://localhost:8081 && exit 0
+            sleep 2
+          done
+          echo "expo web never came up"; cat campaign-buddy-app/app.log; exit 1
+
+      - name: Run app e2e
+        working-directory: campaign-buddy-app
+        run: npm run test:e2e
+
+      - name: Upload playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-playwright-report
+          path: campaign-buddy-app/playwright-report/
+          retention-days: 7
+
+  training-docs-reminder:
+    name: Training docs reminder
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = "<!-- training-docs-reminder-bot -->";
+            const uiPatterns = [
+              /^campaign-buddy-portal\/src\/pages\//,
+              /^campaign-buddy-portal\/src\/components\//,
+              /^campaign-buddy-portal\/src\/config\/nav\.js$/,
+              /^campaign-buddy-app\/src\/screens\//,
+              /^campaign-buddy-app\/src\/navigation\//,
+            ];
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            });
+            const paths = files.map((f) => f.filename);
+
+            const touchesUi = paths.some((p) => uiPatterns.some((re) => re.test(p)));
+            const touchesTrainingDocs = paths.some((p) => p.startsWith("marketing/training/"));
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body.includes(marker));
+
+            const maintenanceUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/marketing/training/MAINTENANCE.md`;
+
+            if (touchesUi && !touchesTrainingDocs) {
+              const body = `${marker}\n⚠️ **Training guide reminder** — this PR touches portal/app UI files but not \`marketing/training/\`.\n\nIf this changes what a user sees or does on a screen (nav, buttons, columns, fields, flow, a new feature), update the matching guide (\`admin.html\` / \`supervisor.html\` / \`sponsor.html\` / \`promoter.html\`) in this PR — see [MAINTENANCE.md](${maintenanceUrl}). Cosmetic-only changes can skip this.`;
+              if (!existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            } else if (existing && touchesTrainingDocs) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: `${marker}\n✅ Training guide reminder resolved — this PR now touches \`marketing/training/\`.`,
+              });
+            }
