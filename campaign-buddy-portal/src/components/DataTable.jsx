@@ -47,14 +47,14 @@ export default function DataTable({
           <table className="data-table">
             <thead>
               <tr>
-                {columns.map((c) => <th key={c.key}>{c.label}</th>)}
+                {columns.map((c) => <th key={c.key} className={c.className}>{c.label}</th>)}
                 {actions.length > 0 ? <th>Action</th> : null}
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row[rowKey] ?? JSON.stringify(row)}>
-                  {columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : row[c.key]}</td>)}
+                  {columns.map((c) => <td key={c.key} className={c.className}>{c.render ? c.render(row) : row[c.key]}</td>)}
                   {actions.length > 0 ? (
                     <td>
                       <div className="row-actions">

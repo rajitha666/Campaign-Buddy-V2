@@ -126,6 +126,7 @@ table.data-table td { padding:12px 18px; border-bottom:1px solid var(--line); ve
 table.data-table tbody tr:last-child td { border-bottom:none; }
 table.data-table tbody tr:hover { background:#FBFCFA; }
 .cell-strong { font-weight:600; }
+table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:normal; word-break:break-word; max-width:420px; }
 .cell-muted { color:var(--text-muted); }
 .avatar-mini { width:28px; height:28px; border-radius:8px; background:var(--mango-tint); color:var(--mango-dark); display:inline-flex; align-items:center; justify-content:center; font-weight:600; font-size:11px; margin-right:8px; vertical-align:middle; }
 .badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }

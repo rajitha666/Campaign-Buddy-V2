@@ -107,7 +107,7 @@ export const RESOURCES = {
     columns: [
       { key: 'name', label: 'Product', render: (r) => <Avatar name={r.name} sub={r.sku} /> },
       { key: 'brandName', label: 'Brand', render: (r) => r.brandName || r.brandId },
-      { key: 'description', label: 'Description' },
+      { key: 'description', label: 'Description', className: 'cell-wrap' },
       { key: 'unitPrice', label: 'Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}` },
       { key: 'reorderLevel', label: 'Reorder Level' },
     ],
