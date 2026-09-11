@@ -189,8 +189,12 @@ export const s = {
     })
     .partial(),
   campaignItemAdd: z
-    .object({ itemId: id.optional(), newItem: z.record(z.string(), z.unknown()).optional() })
-    .refine((v) => v.itemId || v.newItem, { message: "itemId or newItem required" }),
+    .object({
+      itemId: id.optional(),
+      itemIds: z.array(id).optional(),
+      newItem: z.record(z.string(), z.unknown()).optional(),
+    })
+    .refine((v) => v.itemId || v.itemIds || v.newItem, { message: "itemId, itemIds or newItem required" }),
   // License usage tracking — seat caps + warn threshold. All optional (PATCH
   // semantics); `warnThresholdPct` accepts null to clear the per-campaign
   // override and fall back to the global default.

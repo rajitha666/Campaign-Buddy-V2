@@ -13,7 +13,9 @@ export default function CampaignItems() {
   const { push } = useToast();
   const [campaignItems, setCampaignItems] = useState([]);
   const [allItems, setAllItems] = useState([]);
-  const [pickItemId, setPickItemId] = useState('');
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,15 +36,38 @@ export default function CampaignItems() {
   const itemMap = Object.fromEntries(allItems.map((i) => [i.id, i]));
   const linkedIds = new Set(campaignItems.map((ci) => ci.itemId));
   const available = allItems.filter((i) => !linkedIds.has(i.id));
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? available.filter((i) => i.name?.toLowerCase().includes(q) || i.sku?.toLowerCase().includes(q))
+    : available;
 
-  async function addItem() {
-    if (!pickItemId) return;
+  function toggleSelected(itemId) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      return next;
+    });
+  }
+  function toggleSelectAllFiltered() {
+    setSelectedIds((prev) => {
+      const allFilteredSelected = filtered.length > 0 && filtered.every((i) => prev.has(i.id));
+      const next = new Set(prev);
+      filtered.forEach((i) => { if (allFilteredSelected) next.delete(i.id); else next.add(i.id); });
+      return next;
+    });
+  }
+
+  async function addSelected() {
+    if (selectedIds.size === 0) return;
+    setAdding(true);
     try {
-      await campaignsApi.addItem(campaignId, { itemId: pickItemId });
-      push('Product added to campaign');
-      setPickItemId('');
+      await campaignsApi.addItem(campaignId, { itemIds: Array.from(selectedIds) });
+      push(`${selectedIds.size} product${selectedIds.size === 1 ? '' : 's'} added to campaign`);
+      setSelectedIds(new Set());
+      setSearch('');
       load();
-    } catch (e) { push(e.message || 'Could not add product', 'error'); }
+    } catch (e) { push(e.message || 'Could not add products', 'error'); }
+    finally { setAdding(false); }
   }
   async function removeItem(campaignItemId) {
     try {
@@ -64,15 +89,55 @@ export default function CampaignItems() {
       {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (
         <>
           {isAdmin ? (
-            <div className="filter-bar">
-              <div className="filter-field" style={{ minWidth: 260 }}>
-                <label>Add product</label>
-                <select value={pickItemId} onChange={(e) => setPickItemId(e.target.value)}>
-                  <option value="">Select a product…</option>
-                  {available.map((i) => <option key={i.id} value={i.id}>{i.name} — LKR {Number(i.unitPrice || 0).toLocaleString()}</option>)}
-                </select>
+            <div className="table-card" style={{ marginBottom: 16 }}>
+              <div className="filter-bar">
+                <div className="filter-field" style={{ minWidth: 260 }}>
+                  <label>Search products</label>
+                  <input
+                    type="text"
+                    placeholder="Search by name or SKU…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={addSelected} disabled={selectedIds.size === 0 || adding}>
+                  {adding ? 'Adding…' : `Add Selected${selectedIds.size ? ` (${selectedIds.size})` : ''}`}
+                </button>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={addItem} disabled={!pickItemId}>Add</button>
+              {available.length === 0 ? (
+                <div className="empty-state"><div className="big">All products linked</div>Every product in the catalog is already part of this campaign.</div>
+              ) : filtered.length === 0 ? (
+                <div className="empty-state">No products match "{search}".</div>
+              ) : (
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 32 }}>
+                          <input
+                            type="checkbox"
+                            checked={filtered.length > 0 && filtered.every((i) => selectedIds.has(i.id))}
+                            onChange={toggleSelectAllFiltered}
+                          />
+                        </th>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((i) => (
+                        <tr key={i.id}>
+                          <td><input type="checkbox" checked={selectedIds.has(i.id)} onChange={() => toggleSelected(i.id)} /></td>
+                          <td className="cell-strong">{i.name}</td>
+                          <td className="cell-muted">{i.sku || '—'}</td>
+                          <td>LKR {Number(i.unitPrice || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           ) : null}
           <div className="table-card">

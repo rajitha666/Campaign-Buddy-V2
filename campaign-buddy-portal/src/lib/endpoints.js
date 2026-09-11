@@ -58,7 +58,7 @@ export const campaigns = {
   update: (id, body) => api.patch(`/campaigns/${id}`, body),
   remove: (id) => api.delete(`/campaigns/${id}`),
   items: (id) => api.get(`/campaigns/${id}/items`),
-  addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} or {newItem:{...}}
+  addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} | {itemIds:[...]} | {newItem:{...}}
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
 };
 

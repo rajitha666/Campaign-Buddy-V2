@@ -116,10 +116,27 @@ router.post(
   requireRole("adm", "usr"),
   validate({ body: s.campaignItemAdd }),
   asyncHandler(async (req, res) => {
-    const { itemId, newItem } = req.body as { itemId?: string; newItem?: any };
+    const { itemId, itemIds, newItem } = req.body as { itemId?: string; itemIds?: string[]; newItem?: any };
+    const campaignId = req.params.campaignId;
+
+    if (itemIds) {
+      // Idempotent — re-adding an already-linked product is a no-op, not a 409.
+      const created = await prisma.$transaction(
+        itemIds.map((id) =>
+          prisma.campaignItem.upsert({
+            where: { campaignId_itemId: { campaignId, itemId: id } },
+            create: { campaignId, itemId: id },
+            update: {},
+          })
+        )
+      );
+      res.status(201).json(okList(created, created.length));
+      return;
+    }
+
     const resolvedItemId = itemId ?? (await prisma.item.create({ data: newItem })).id;
     const created = await prisma.campaignItem.create({
-      data: { campaignId: req.params.campaignId, itemId: resolvedItemId },
+      data: { campaignId, itemId: resolvedItemId },
     });
     res.status(201).json(ok(created));
   })

@@ -55,4 +55,14 @@ Frontend-only, no new dependencies, no backend changes. Build + tests green.
 - Sponsor dashboard + `/tracking/live` now use the Leaflet map too, but their surrounding layouts weren't otherwise revisited.
 - `CampaignProductsModal` footer scrolls with the list on very long catalogs (header X always works).
 
-## Batch 3 — (add new requests below)
+## Batch 3 — IN PROGRESS (branch `feature/portal-ux-enhancements`)
+
+| # | Change | Status | Files |
+|---|--------|--------|-------|
+| 1 | Campaign Products: searchable (substring, name/SKU) product picker + bulk "Add Selected" (checkboxes) instead of one-at-a-time dropdown | ✅ | [`CampaignItems.jsx`](campaign-buddy-portal/src/pages/CampaignItems.jsx); backend `POST /campaigns/:id/items` now also accepts `itemIds:[...]` ([`campaigns.routes.ts`](campaign-buddy-backend/src/modules/admin/campaigns.routes.ts), [`schemas.ts`](campaign-buddy-backend/src/schemas.ts) `campaignItemAdd`) |
+
+### Decisions taken
+- **Bulk-add UI is checkboxes + one "Add Selected" button**, not a multi-select combobox — matches the existing checkbox pattern already used in `SalesCorrectionGrid.jsx`.
+- **Search is plain substring match** on name/SKU, not glob-style wildcards.
+- Bulk endpoint reuses the `activationItemsAdd` idempotent-upsert pattern from `activations.routes.ts` (re-adding an already-linked product is a no-op, not a 409).
+
