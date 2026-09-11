@@ -74,7 +74,9 @@ export default function ResourcePage({ resourceKey }) {
     setDrawerMode(mode);
     // `editValues` lets a resource re-shape a row into form values (e.g. split a
     // startDate/endDate pair back into a dateRange) when opening the edit drawer.
-    const initial = mode === 'edit' && row && config.editValues ? { id: row.id, ...config.editValues(row) } : row;
+    const initial = mode === 'edit' && row && config.editValues
+      ? { id: row.id, ...config.editValues(row) }
+      : (mode === 'add' && config.addDefaults ? config.addDefaults(currentCampaign) : row);
     setDrawerRow(initial || null);
     const fields = await Promise.all((config.formFields || []).map(async (f) => {
       if (f.optionsLoader) {

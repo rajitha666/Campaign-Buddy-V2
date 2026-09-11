@@ -254,6 +254,13 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .form-row .req { color:var(--alert); }
 .form-row input, .form-row select, .form-row textarea { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; background:var(--surface); }
 .form-row textarea { min-height:70px; resize:vertical; }
+.searchable-select { position:relative; }
+.searchable-select input { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; background:var(--surface); }
+.searchable-select-menu { position:absolute; z-index:20; top:calc(100% + 4px); left:0; right:0; max-height:220px; overflow-y:auto; background:var(--surface-card); border:1.5px solid var(--line); border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,0.14); padding:4px; }
+.searchable-select-option { padding:8px 10px; border-radius:7px; font-size:13px; cursor:pointer; }
+.searchable-select-option:hover { background:var(--surface); }
+.searchable-select-option.is-selected { background:var(--mango-tint); font-weight:700; }
+.searchable-select-empty { padding:10px; font-size:12.5px; color:var(--text-muted); }
 .form-two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .radio-row, .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
 .chip-opt { font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; border:1.5px solid var(--line); color:var(--text-muted); background:var(--surface); cursor:pointer; }

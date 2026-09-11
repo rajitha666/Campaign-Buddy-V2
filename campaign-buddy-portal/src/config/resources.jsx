@@ -38,6 +38,17 @@ async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
   return (res?.data || []).map((r) => ({ value: r[valueKey], label: r[labelKey] || r.fullName || r.displayName || r[valueKey] }));
 }
 
+// Staff dropdowns (Promoter/Supervisor) show the full name plus the employee
+// code (e.g. "Tharindu Perera — EMP-0004") so they stay distinguishable once
+// the staff list grows — a bare first name isn't enough to pick the right person.
+async function staffOptions() {
+  const res = await staffApi.search('');
+  return (res?.data || []).map((r) => ({
+    value: r.id,
+    label: r.employeeId ? `${r.fullName || r.displayName} — ${r.employeeId}` : (r.fullName || r.displayName || r.id),
+  }));
+}
+
 function buildLookup(rows, labelKey = 'name') {
   const map = {};
   (rows || []).forEach((r) => { map[r.id] = r[labelKey] || r.fullName || r.displayName; });
@@ -298,6 +309,11 @@ export const RESOURCES = {
       dateRange: [fmtISO(row.dateFrom), fmtISO(row.dateTo)],
       targetType: row.targetType, targetCategorization: row.targetCategorization, targetUnit: row.targetUnit,
     }),
+    // Prefills the new activation's date range from the parent campaign's
+    // dates — still freely editable, not constrained to that range.
+    addDefaults: (campaign) => ({
+      dateRange: campaign ? [fmtISO(campaign.startDate), fmtISO(campaign.endDate)] : undefined,
+    }),
     createItem: ({ campaignId, values }) => activationsApi.create(campaignId, {
       name: values.name, outletId: values.outletId, staffId: values.staffId,
       supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
@@ -314,10 +330,10 @@ export const RESOURCES = {
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
     formFields: [
       { key: 'name', label: 'Activation Name', type: 'text', required: true },
-      { key: 'outletId', label: 'Outlet', type: 'select', required: true, optionsLoader: () => optionsFrom(outletsApi.list) },
-      { key: 'staffId', label: 'Promoter', type: 'select', required: true, optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
-      { key: 'supervisorStaffId', label: 'Supervisor', type: 'select', required: true, optionsLoader: () => optionsFrom(() => staffApi.search(''), 'displayName') },
-      { key: 'distributorPointId', label: 'Distributor Point', type: 'select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'staffId', label: 'Promoter', type: 'searchable-select', required: true, optionsLoader: staffOptions },
+      { key: 'supervisorStaffId', label: 'Supervisor', type: 'searchable-select', required: true, optionsLoader: staffOptions },
+      { key: 'distributorPointId', label: 'Distributor Point', type: 'searchable-select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
       { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Product Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
       { key: 'targetCategorization', label: 'Target Categorization', type: 'radio', options: [{ value: 'daily', label: 'Daily' }, { value: 'monthly', label: 'Monthly' }] },

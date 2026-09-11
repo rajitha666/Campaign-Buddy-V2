@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ICONS } from './Icons';
+import SearchableSelect from './SearchableSelect';
 
 // Generic Add/Edit form drawer. `fields` config (see config/resources.js) drives
 // what renders; `initialValues` pre-fills for edit mode. onSubmit receives the
@@ -182,6 +183,15 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange 
             <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
           ))}
         </select>
+        {error ? <div className="form-error">{error}</div> : null}
+      </div>
+    );
+  }
+  if (f.type === 'searchable-select') {
+    return (
+      <div className="form-row">
+        <label>{f.label} {reqMark}</label>
+        <SearchableSelect options={f.options || []} value={value} onChange={onChange} placeholder={f.placeholder || 'Select…'} />
         {error ? <div className="form-error">{error}</div> : null}
       </div>
     );
