@@ -41,10 +41,20 @@ and `sponsor` / `Portal123!` (with campaign grants), and mobile logins for the
 new promoters (`0762223344` … / `Field123!`). Timestamps are written to
 Asia/Colombo wall-clock.
 
+## System Status (portal page, `GET /admin/v1/system/status`)
+
+Super Admin only (platform build/ops info, not customer-facing — same gate as
+`/users` and `/roles`). Returns this backend's `package.json`
+version plus the latest `.github/workflows/ci.yml` run on `main` — per-job
+pass/fail, when it ran, the commit it ran against. Reuses `GITHUB_TOKEN` +
+`GITHUB_ISSUES_REPO` from the issue-reporting integration (`src/utils/githubActions.ts`);
+the PAT needs "Actions: Read" added alongside "Issues: Read and write". Shows
+"not connected" in the portal until both are set — never a 500.
+
 ## Tests
 ```bash
 cp .env.test.example .env.test    # must point DATABASE_URL at a *_test database
-npm test                          # vitest run  (73 integration tests, supertest)
+npm test                          # vitest run  (78 integration tests, supertest)
 npm run test:watch
 ```
 `test/setup.ts` refuses to run unless `DATABASE_URL` ends in `_test` — the suite
@@ -134,9 +144,10 @@ src/
     campaignStatus.ts           Campaign.status auto-sync computation
     coerce.ts                   YYYY-MM-DD -> Date coercion for the portal's date inputs
     dates.ts                    UTC-midnight helpers for @db.Date column filters
+    githubActions.ts             latest CI run + per-job status, for System Status
   modules/
     mobile/          one file per endpoint group — auth, attendance, location, stats, products, sales-summary, time-off, performance
-    admin/           one file per endpoint group — auth, catalog, staff, campaigns, activations, operations, reports, rbac
+    admin/           one file per endpoint group — auth, catalog, staff, campaigns, activations, operations, reports, rbac, system
 test/              vitest + supertest integration suite (setup.ts, helpers.ts, *.test.ts)
 ```
 

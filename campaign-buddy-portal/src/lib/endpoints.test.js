@@ -72,6 +72,11 @@ describe('endpoints — path construction', () => {
     ]);
   });
 
+  it('system-status endpoint hits /system/status', async () => {
+    await api.systemStatus.get();
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(['get /system/status']);
+  });
+
   it('client-scoped report shims point at the plain /reports/* routes (v3 §5.10)', async () => {
     await api.assumed.clientScopedReports.skuWise('camp1', {});
     await api.assumed.clientScopedReports.brandWise('camp1', {});

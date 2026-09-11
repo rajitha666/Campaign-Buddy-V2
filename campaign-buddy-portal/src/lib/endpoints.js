@@ -177,6 +177,11 @@ export const issueReports = {
   retry: (id) => api.post(`/issue-reports/${id}/retry`, {}),
 };
 
+// "System Status" page — build version + latest CI run (GitHub Actions)
+export const systemStatus = {
+  get: () => api.get('/system/status'),
+};
+
 export const supervisorTasks = {
   list: (campaignId) => api.get(`/campaigns/${campaignId}/supervisor-tasks`),
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
