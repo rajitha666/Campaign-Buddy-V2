@@ -103,18 +103,25 @@ router.get(
     const from = dateFrom ? new Date(dateFrom) : new Date(0);
     const to = dateTo ? new Date(dateTo) : new Date();
 
-    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    const staff = await prisma.staff.findUnique({ where: { id: staffId }, include: { city: true, reportsTo: true } });
     if (!staff) throw notFound("Staff member");
 
-    const activations = await prisma.activation.findMany({ where: { staffId } });
+    // Not date-filtered — this is the staff member's full activation history,
+    // independent of the evaluation window used for the stats below.
+    const activations = await prisma.activation.findMany({
+      where: { staffId },
+      include: { campaign: true, outlet: true },
+      orderBy: { dateFrom: "desc" },
+    });
     const activationIds = activations.map((a) => a.id);
 
-    const [attendanceRecords, salesRecords] = await Promise.all([
+    const [attendanceRecords, salesRecords, dailyStats] = await Promise.all([
       prisma.attendanceRecord.findMany({ where: { activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
       prisma.salesRecord.findMany({
         where: { activationItem: { activationId: { in: activationIds } }, date: { gte: from, lte: to } },
         include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
       }),
+      prisma.dailyStats.findMany({ where: { activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
     ]);
 
     const daysPresent = attendanceRecords.filter((r) => r.status === "on_time" || r.status === "late").length;
@@ -123,14 +130,29 @@ router.get(
     const totalItems = salesRecords.reduce((s, r) => s + r.soldToday, 0);
     const salesByDay: Record<string, number> = {};
     const salesByBrand: Record<string, number> = {};
+    const salesByProduct: Record<string, { name: string; qty: number; value: number }> = {};
+    const salesByActivation: Record<string, number> = {};
     let totalSales = 0;
     for (const r of salesRecords) {
-      const value = r.soldToday * r.activationItem.campaignItem.item.unitPrice;
+      const item = r.activationItem.campaignItem.item;
+      const value = r.soldToday * item.unitPrice;
       totalSales += value;
       const dayKey = r.date.toISOString().slice(0, 10);
       salesByDay[dayKey] = (salesByDay[dayKey] ?? 0) + value;
-      const brandName = r.activationItem.campaignItem.item.brand.name;
-      salesByBrand[brandName] = (salesByBrand[brandName] ?? 0) + value;
+      salesByBrand[item.brand.name] = (salesByBrand[item.brand.name] ?? 0) + value;
+      const product = salesByProduct[item.id] ?? { name: item.name, qty: 0, value: 0 };
+      product.qty += r.soldToday;
+      product.value += value;
+      salesByProduct[item.id] = product;
+      const activationId = r.activationItem.activationId;
+      salesByActivation[activationId] = (salesByActivation[activationId] ?? 0) + value;
+    }
+
+    const approachedByActivation: Record<string, number> = {};
+    let customersApproached = 0;
+    for (const d of dailyStats) {
+      customersApproached += d.approached;
+      approachedByActivation[d.activationId] = (approachedByActivation[d.activationId] ?? 0) + d.approached;
     }
 
     const daySorted = Object.entries(salesByDay).sort((a, b) => b[1] - a[1]);
@@ -145,14 +167,53 @@ router.get(
       percent: totalSales ? Math.round((value / totalSales) * 100) : 0,
     }));
 
+    const topProducts = Object.values(salesByProduct)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5);
+
     // Overall performance is a simple blended score — attendance + a sales-target-free
     // sales-activity signal. Documented as a placeholder heuristic; refine once a
     // target/quota concept exists to compare totalSales against.
     const overallPerformancePct = Math.round((attendancePct + Math.min(100, totalItems)) / 2);
 
+    const today = new Date();
+    const activationsOut = activations.map((a) => ({
+      id: a.id,
+      campaignId: a.campaignId,
+      campaignName: a.campaign.name,
+      outletId: a.outletId,
+      outletName: a.outlet.name,
+      dateFrom: a.dateFrom,
+      dateTo: a.dateTo,
+      isCurrent: a.dateFrom <= today && today <= a.dateTo,
+      sales: salesByActivation[a.id] ?? 0,
+      customersApproached: approachedByActivation[a.id] ?? 0,
+    }));
+    // "Current" = active today; if none is, fall back to the most recently
+    // ended activation so the card never sits empty for an idle staff member.
+    let currentActivationId = activationsOut.find((a) => a.isCurrent)?.id ?? null;
+    if (!currentActivationId) {
+      const past = activationsOut
+        .filter((a) => a.dateTo < today)
+        .sort((a, b) => b.dateTo.getTime() - a.dateTo.getTime());
+      currentActivationId = past[0]?.id ?? null;
+    }
+
     res.json(ok({
+      profile: {
+        id: staff.id, employeeId: staff.employeeId, fullName: staff.fullName, displayName: staff.displayName,
+        userType: staff.userType, mobileUsername: staff.mobileUsername, phone: staff.phone,
+        cityId: staff.cityId, cityName: staff.city?.name ?? null, status: staff.status,
+        reportsToStaffId: staff.reportsToStaffId, reportsToName: staff.reportsTo?.fullName ?? null,
+        nic: staff.nic, dateOfBirth: staff.dateOfBirth, gender: staff.gender,
+        permanentAddress: staff.permanentAddress, currentAddress: staff.currentAddress,
+        emergencyContactName: staff.emergencyContactName, emergencyContactPhone: staff.emergencyContactPhone,
+        bankAccountName: staff.bankAccountName, bankName: staff.bankName,
+        bankAccountNumber: staff.bankAccountNumber, bankBranch: staff.bankBranch,
+      },
       overallPerformancePct, attendancePct, totalSales, totalItems,
       avgSalesPerMonth, highestDailySales, highestPerformingDate, brandContribution,
+      topProducts, customersApproached, activations: activationsOut, currentActivationId,
     }));
   })
 );

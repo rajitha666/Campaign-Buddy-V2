@@ -160,6 +160,9 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .stat-card .delta { font-size:11.5px; margin-top:6px; font-weight:600; }
 .stat-card .delta.up { color:var(--success); } .stat-card .delta.down { color:var(--alert); }
 .dash-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; margin-top:18px; }
+.detail-field .l { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
+.detail-field .v { font-size:13.5px; color:var(--text-primary); word-break:break-word; }
 .panel { background:var(--surface-card); border:1px solid var(--line); border-radius:16px; padding:18px 20px; }
 .panel-title { font-size:13.5px; font-weight:700; } .panel-sub { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
 .bars-row { display:flex; align-items:flex-end; gap:14px; height:150px; margin-top:20px; padding:0 4px; }
