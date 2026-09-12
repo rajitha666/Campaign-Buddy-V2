@@ -39,7 +39,7 @@ only" from "needs a re-shoot," so use judgment same as always.
 | Guide | Role(s) | Shown in | Screens covered |
 |---|---|---|---|
 | `admin.html` | `adm`, `usr`, `super` (persona `admin`) | CB Office | catalog, outlets, campaigns, activations, staff, attendance, leave, sales + corrections, custom fields, tracking, reports, users, roles, licence usage |
-| `supervisor.html` | `supervisor` | CB Office | supervisor dashboard, my campaigns, staff attendance/absence, my outlet attendance, my leave requests, promoter list, SKU-wise sales, reports |
+| `supervisor.html` | `supervisor` | CB Office **and** CB Mobile | supervisor dashboard, my campaigns, staff attendance/absence, my outlet attendance, my leave requests, promoter list, SKU-wise sales, reports — **plus** the app's My Route (today's visits + planned route) and Profile tabs |
 | `sponsor.html` | `sponsor`, `client` | CB Office | sponsor dashboard, activation list, sales & footfall, live locations, client reports (SKU / brand) |
 | `promoter.html` | Staff logins | CB Mobile, **and** the `admin` + `supervisor` menus in CB Office | login, shift check-in/out, products, sales & stats entry, performance, time-off, profile |
 
@@ -65,7 +65,12 @@ needed unless the step text changed.
 - `assets/portal-sponsor/` → the `sponsor` persona's routes (`/dashboard`,
   `/activations/client`, `/sponsor/sales`, `/tracking/live`,
   `/reports/client-sku-wise`, `/reports/client-brand-wise`)
-- `assets/mobile-promoter/` → CB Mobile screens
+- `assets/mobile-promoter/` → CB Mobile screens for a promoter (`role: field_rep`) login
+- `assets/mobile-supervisor/` → CB Mobile screens for a supervisor (`role: campaign_owner`)
+  login — My Route, Profile. Log in as `dinesh` / `Field123!` after the demo seed
+  (Staff `userType: "supervisor"` — see `prisma/demo-seed.ts`), not a promoter login;
+  the app renders a completely different 2-tab layout for this role
+  (`campaign-buddy-app/src/navigation/SupervisorTabs.tsx`).
 
 ## Re-shooting a screen
 
