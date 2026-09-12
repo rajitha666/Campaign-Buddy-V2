@@ -349,12 +349,39 @@ Drives the Home campaign card. **Response `200`**
 }
 ```
 
+### `GET /me/assignments` — supervisor mode (`role: "campaign_owner"`)
+Same shape as a single `/me/assignments/today` entry, but returns **every** Activation open for a given date, not just one — a supervisor can have several concurrent outlet assignments on a route where a promoter has one. Optional `?date=YYYY-MM-DD` (defaults to today). Each entry's `assignmentId` is passed to `POST /attendance/check-in`/`check-out` exactly as today — the global one-open-shift lock (§5) still applies, so a supervisor checks into one outlet, checks out, then checks into the next. **Response `200`**
+```json
+{
+  "data": [
+    { "assignmentId": "a_55", "campaign": { "id": "c_9", "name": "Sktest Activation", "startDate": "2026-09-01" },
+      "outlet": { "id": "o_2", "name": "Nawala Retail Outlet", "latitude": 6.8845, "longitude": 79.8887, "geofenceRadiusMeters": 150 },
+      "shiftStart": "2026-09-05T03:30:00Z", "shiftEnd": "2026-09-05T12:30:00Z" },
+    { "assignmentId": "a_56", "campaign": { "id": "c_9", "name": "Sktest Activation", "startDate": "2026-09-01" },
+      "outlet": { "id": "o_7", "name": "Kandy Retail Outlet", "latitude": 7.2906, "longitude": 80.6337, "geofenceRadiusMeters": 150 },
+      "shiftStart": null, "shiftEnd": null }
+  ]
+}
+```
+
+### `GET /me/supervisor-routes` — supervisor mode
+Read-only itinerary from the CB Office "Assign Routes" screen (Backend Spec v3 §5.9). **Planning data only — it never drives check-in eligibility**; a supervisor still needs a real Activation (surfaced via `/me/assignments`) to check in at an outlet. **Response `200`**
+```json
+{
+  "data": [
+    { "id": "r_1", "campaign": { "id": "c_9", "name": "Sktest Activation" },
+      "outlets": [{ "id": "o_2", "name": "Nawala Retail Outlet", "address": "" }, { "id": "o_7", "name": "Kandy Retail Outlet", "address": "" }],
+      "dateFrom": "2026-09-08", "dateTo": "2026-09-12" }
+  ]
+}
+```
+
 ---
 
 ## 5. Attendance & Location
 
 ### `GET /attendance/today`
-**Response `200`**
+Optional `?assignmentId=` — for supervisor mode, where several Activations can be open on the same day; asks about that specific one instead of the server's single-activation default. Promoters never send this. **Response `200`**
 ```json
 {
   "data": {
@@ -656,6 +683,8 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
 | POST | `/auth/logout` | Profile |
 | GET | `/me` | Profile |
 | GET | `/me/assignments/today` | Home |
+| GET | `/me/assignments` | Supervisor mode — My Route (today's visits) |
+| GET | `/me/supervisor-routes` | Supervisor mode — My Route (planned itinerary) |
 | GET | `/attendance/today` | Home, Attendance |
 | POST | `/attendance/check-in` | Attendance (pre-shift) |
 | POST | `/attendance/check-out` | Attendance (checkout popup) |

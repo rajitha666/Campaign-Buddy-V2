@@ -161,10 +161,13 @@ one.
 
 ### Mobile roles (CB Mobile)
 
-Staff log in as either a **promoter** or a **supervisor**. The app experience is
-the same; the label on the profile screen and the reporting bucket differ. A field
-supervisor uses CB Mobile to check in at outlets they physically visit (the same
-check-in flow as a promoter).
+Staff log in as either a **promoter** or a **supervisor**. A supervisor gets a
+distinct 2-tab nav — **My Route** (today's outlet visits with check-in/check-out,
+plus the planned route ahead from the portal's Assign Routes screen) and
+**Profile** — instead of a promoter's Home/Sales/Attendance/Performance tabs.
+Check-in/check-out itself reuses the same Activation-backed flow and global
+one-open-shift lock as a promoter; a supervisor can simply have several
+concurrent outlet Activations in a day where a promoter has one.
 
 ---
 
@@ -668,6 +671,13 @@ This document was the source for the customer-facing collateral now in
 The training screenshots were captured against
 `campaign-buddy-backend/prisma/demo-seed.ts`, a re-runnable seeder that builds a
 populated sample campaign ("Radiance Q3 Push").
+
+### CI + System Status — 2026-09-11
+
+| Ref | Change |
+|---|---|
+| Platform | **Automated CI** (`.github/workflows/ci.yml`) now runs backend/portal/app tests, a demo-data drift check, and Playwright e2e for the portal and app on every push to `main` and every PR. |
+| Admin | **System Status page** (CB Office, Admin section) — shows the backend's build version and the latest CI run's per-job pass/fail, so an admin can check the last batch of changes is healthy without leaving the portal. |
 
 ---
 

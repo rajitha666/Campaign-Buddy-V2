@@ -84,6 +84,18 @@ export interface TodayAssignment {
   shiftEnd: ISODateTime | null;
 }
 
+/** GET /me/assignments entry (supervisor mode) — same shape as TodayAssignment, but there can be several. */
+export type SupervisorAssignment = TodayAssignment;
+
+/** GET /me/supervisor-routes entry — read-only planning itinerary, never drives check-in. */
+export interface SupervisorRoute {
+  id: UUID;
+  campaign: Pick<Campaign, 'id' | 'name'>;
+  outlets: Array<Pick<Outlet, 'id' | 'name'> & { address: string }>;
+  dateFrom: ISODate;
+  dateTo: ISODate;
+}
+
 export type AttendanceStatus = 'on_time' | 'late' | 'leave' | 'absent' | 'pending';
 
 export interface AttendanceRecord {

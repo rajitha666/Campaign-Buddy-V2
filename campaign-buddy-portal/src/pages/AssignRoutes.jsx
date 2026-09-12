@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { staff as staffApi, outlets as outletsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
+import { staff as staffApi, outlets as outletsApi, activations as activationsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import Drawer from '../components/Drawer';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -15,19 +16,39 @@ export default function AssignRoutes() {
   const [supervisorId, setSupervisorId] = useState('');
   const [routes, setRoutes] = useState([]);
   const [outletNames, setOutletNames] = useState({});
+  const [campaignOutlets, setCampaignOutlets] = useState([]); // outlets with an Activation on this campaign
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
 
   useEffect(() => {
-    staffApi.search('').then((res) => {
+    staffApi.search('', { pageSize: 1000 }).then((res) => {
       const sup = (res?.data || []).filter((s) => s.userType === 'supervisor');
       setSupervisors(sup);
       if (sup[0]) setSupervisorId(sup[0].id);
     }).catch(() => {});
-    outletsApi.list().then((res) => {
+    outletsApi.list({ pageSize: 1000 }).then((res) => {
       setOutletNames(Object.fromEntries((res?.data || []).map((o) => [o.id, o.name])));
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!currentCampaignId) return;
+    activationsApi.list(currentCampaignId, { pageSize: 1000 }).then((res) => {
+      const ids = Array.from(new Set((res?.data || []).map((a) => a.outletId).filter(Boolean)));
+      setCampaignOutlets(ids);
+    }).catch(() => {});
+  }, [currentCampaignId]);
+
+  const supervisorOptions = useMemo(
+    () => supervisors.map((s) => ({ value: s.id, label: s.displayName || s.fullName })),
+    [supervisors]
+  );
+  const outletOptions = useMemo(
+    () => campaignOutlets.map((id) => ({ value: id, label: outletNames[id] || id })),
+    [campaignOutlets, outletNames]
+  );
 
   const monthLabel = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
@@ -79,11 +100,51 @@ export default function AssignRoutes() {
     );
   }
 
+  const fields = [
+    { key: 'supervisorStaffId', label: 'Supervisor', type: 'searchable-select', required: true, options: supervisorOptions, placeholder: 'Select supervisor…' },
+    { key: 'outletIds', label: 'Outlets', type: 'multi-checkbox', required: true, options: outletOptions, filterPlaceholder: 'Search outlets…' },
+    { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
+  ];
+  const initialValues = editingRoute ? {
+    supervisorStaffId: editingRoute.supervisorStaffId,
+    outletIds: editingRoute.outletIds || [],
+    dateRange: [String(editingRoute.dateFrom).slice(0, 10), String(editingRoute.dateTo).slice(0, 10)],
+  } : { supervisorStaffId: supervisorId };
+
+  function openCreate() { setEditingRoute(null); setDrawerOpen(true); }
+  function openEdit(route) { setEditingRoute(route); setDrawerOpen(true); }
+  function closeDrawer() { setDrawerOpen(false); setEditingRoute(null); }
+
+  async function handleSave(values) {
+    const [dateFrom, dateTo] = values.dateRange || [];
+    const body = { supervisorStaffId: values.supervisorStaffId, outletIds: values.outletIds || [], dateFrom, dateTo };
+    if (editingRoute) await routesApi.update(currentCampaignId, editingRoute.id, body);
+    else await routesApi.create(currentCampaignId, body);
+    push(editingRoute ? 'Route updated.' : 'Route assigned.');
+    load();
+  }
+
+  async function handleDelete(route) {
+    if (!window.confirm('Delete this route assignment?')) return;
+    try {
+      await routesApi.remove(currentCampaignId, route.id);
+      push('Route deleted.');
+      load();
+    } catch (e) {
+      push(e.message || 'Could not delete route.');
+    }
+  }
+
+  function supervisorLabel(id) {
+    const s = supervisors.find((x) => x.id === id);
+    return s ? (s.displayName || s.fullName) : id;
+  }
+
   return (
     <div>
       <div className="page-head">
         <div><h1>Assign Routes</h1><p className="page-sub">Plan which outlets a supervisor visits, by date.</p></div>
-        <button className="btn btn-primary" onClick={() => setAssignOpen(true)}>+ Assign Routes</button>
+        <button className="btn btn-primary" onClick={openCreate}>+ Assign Routes</button>
       </div>
       <div className="filter-bar">
         <div className="filter-field"><label>Supervisor</label>
@@ -108,11 +169,37 @@ export default function AssignRoutes() {
           </div>
         </div>
       )}
-      <div className="hint-note" style={{ marginTop: 12 }}>
-        Reads GET /admin/v1/campaigns/{'{id}'}/supervisor-routes (Backend Spec v3 §4.2).
+      <div className="panel" style={{ marginTop: 16 }}>
+        <div className="panel-title">Routes this month</div>
+        <table className="data-table">
+          <thead><tr><th>Supervisor</th><th>Outlets</th><th>Date range</th><th></th></tr></thead>
+          <tbody>
+            {routes.length === 0 ? (
+              <tr><td colSpan={4} className="cell-muted">No routes assigned for this supervisor this month.</td></tr>
+            ) : routes.map((r) => (
+              <tr key={r.id}>
+                <td className="cell-strong">{supervisorLabel(r.supervisorStaffId)}</td>
+                <td>{(r.outletIds || []).length} outlet{(r.outletIds || []).length === 1 ? '' : 's'}</td>
+                <td>{String(r.dateFrom).slice(0, 10)} – {String(r.dateTo).slice(0, 10)}</td>
+                <td>
+                  <span className="icon-btn" onClick={() => openEdit(r)} title="Edit">✎</span>
+                  <span className="icon-btn delete" onClick={() => handleDelete(r)} title="Delete">✕</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      <Drawer
+        open={drawerOpen}
+        title={editingRoute ? 'Edit route' : 'Assign route'}
+        subtitle="Plan a supervisor's outlet visits over a date range."
+        fields={fields}
+        initialValues={initialValues}
+        saveLabel={editingRoute ? 'Save changes' : 'Assign'}
+        onClose={closeDrawer}
+        onSubmit={handleSave}
+      />
     </div>
   );
-
-  function setAssignOpen() { push('Route assignment form is next on the build list — wire to POST /admin/v1/campaigns/:id/supervisor-routes.'); }
 }

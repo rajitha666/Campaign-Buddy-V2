@@ -2,8 +2,15 @@
 import { apiClient } from './client';
 import type { AttendanceRecord, AttendanceToday, AttendanceHistoryEntry } from './types';
 
-export async function getAttendanceToday(): Promise<AttendanceToday> {
-  const { data } = await apiClient.get<{ data: AttendanceToday }>('/attendance/today');
+/**
+ * `assignmentId` lets a supervisor ask about one specific outlet Activation
+ * among several concurrent ones today — omit it (as the promoter flow does)
+ * to get the server's single-activation default.
+ */
+export async function getAttendanceToday(assignmentId?: string): Promise<AttendanceToday> {
+  const { data } = await apiClient.get<{ data: AttendanceToday }>('/attendance/today', {
+    params: assignmentId ? { assignmentId } : undefined,
+  });
   return data.data;
 }
 

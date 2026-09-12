@@ -7,8 +7,10 @@
  */
 import React from 'react';
 import { AttendanceProvider } from '@/context/AttendanceContext';
+import { useAuth } from '@/context/AuthContext';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { MainTabs } from './MainTabs';
+import { SupervisorTabs } from './SupervisorTabs';
 
 function LocationTrackerMount() {
   useLocationTracking();
@@ -16,10 +18,12 @@ function LocationTrackerMount() {
 }
 
 export function AuthenticatedApp() {
+  const { user } = useAuth();
+  const isSupervisor = user?.role === 'campaign_owner';
   return (
     <AttendanceProvider>
       <LocationTrackerMount />
-      <MainTabs />
+      {isSupervisor ? <SupervisorTabs /> : <MainTabs />}
     </AttendanceProvider>
   );
 }

@@ -41,9 +41,17 @@ router.get(
   "/attendance/today",
   asyncHandler(async (req, res) => {
     const today = startOfDay(new Date());
-    const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
-    });
+    // A supervisor can have several concurrent Activations today (one per
+    // route outlet); `?assignmentId=` lets the caller ask about a specific
+    // one instead of relying on an arbitrary findFirst pick. Promoters never
+    // pass this — they only ever have one Activation, so behavior for them
+    // is unchanged.
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = assignmentId
+      ? await prisma.activation.findFirst({ where: { id: assignmentId, staffId: req.staff!.sub } })
+      : await prisma.activation.findFirst({
+          where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+        });
     const empty = {
       checkedIn: false, checkInAt: null, checkOutAt: null,
       shiftDurationSeconds: 0, locationVerified: false, status: "pending" as const,

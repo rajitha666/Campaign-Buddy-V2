@@ -49,6 +49,11 @@ export type MainTabParamList = {
   PerformanceTab: undefined;
 };
 
+export type SupervisorTabParamList = {
+  MyRouteTab: undefined;
+  ProfileTab: undefined;
+};
+
 export type AuthStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;

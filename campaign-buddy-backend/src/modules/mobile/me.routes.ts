@@ -71,4 +71,73 @@ router.get(
   })
 );
 
+// A supervisor can have several concurrent outlet Activations (one per outlet
+// on their route) unlike a promoter's single daily assignment, so this returns
+// a list rather than `/me/assignments/today`'s single object. That endpoint is
+// left untouched so the promoter flow doesn't change.
+router.get(
+  "/me/assignments",
+  asyncHandler(async (req, res) => {
+    const dateParam = typeof req.query.date === "string" ? new Date(req.query.date) : new Date();
+    const date = Number.isNaN(dateParam.getTime()) ? new Date() : dateParam;
+    const activations = await prisma.activation.findMany({
+      where: { staffId: req.staff!.sub, dateFrom: { lte: date }, dateTo: { gte: date } },
+      include: { campaign: true, outlet: true },
+    });
+    activations.sort((a, b) => a.outlet.name.localeCompare(b.outlet.name));
+    res.json(
+      ok(
+        activations.map((activation) => ({
+          assignmentId: activation.id,
+          campaign: {
+            id: activation.campaign.id,
+            name: activation.campaign.name,
+            startDate: activation.campaign.startDate,
+          },
+          outlet: {
+            id: activation.outlet.id,
+            name: activation.outlet.name,
+            address: activation.outlet.address ?? "",
+            latitude: activation.outlet.latitude,
+            longitude: activation.outlet.longitude,
+            geofenceRadiusMeters: activation.outlet.geofenceRadiusMeters,
+          },
+          shiftStart: activation.shiftStart,
+          shiftEnd: activation.shiftEnd,
+        }))
+      )
+    );
+  })
+);
+
+// Planning data only (Backend Spec v3 §5.9) — this never drives attendance or
+// check-in eligibility, it's just the itinerary a supervisor sees on mobile.
+router.get(
+  "/me/supervisor-routes",
+  asyncHandler(async (req, res) => {
+    const routes = await prisma.supervisorRoute.findMany({
+      where: { supervisorStaffId: req.staff!.sub },
+      include: { campaign: true },
+      orderBy: { dateFrom: "asc" },
+    });
+    const outletIds = Array.from(new Set(routes.flatMap((r) => r.outletIds)));
+    const outlets = await prisma.outlet.findMany({ where: { id: { in: outletIds } } });
+    const outletById = new Map(outlets.map((o) => [o.id, o]));
+    res.json(
+      ok(
+        routes.map((r) => ({
+          id: r.id,
+          campaign: { id: r.campaign.id, name: r.campaign.name },
+          outlets: r.outletIds.map((id) => {
+            const o = outletById.get(id);
+            return { id, name: o?.name ?? id, address: o?.address ?? "" };
+          }),
+          dateFrom: r.dateFrom,
+          dateTo: r.dateTo,
+        }))
+      )
+    );
+  })
+);
+
 export default router;

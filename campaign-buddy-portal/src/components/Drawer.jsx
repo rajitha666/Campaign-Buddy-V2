@@ -42,6 +42,10 @@ export default function Drawer({
     const errs = {};
     fields.forEach((f) => {
       if (f.type === 'section') return;
+      if (f.type === 'multi-checkbox') {
+        if (f.required && (values[f.key] || []).length === 0) errs[f.key] = 'Required';
+        return;
+      }
       if (f.required && !values[f.key] && f.type !== 'builder') errs[f.key] = 'Required';
       else if (f.validate && values[f.key]) {
         const msg = f.validate(values[f.key]);
@@ -221,6 +225,35 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange,
         <div className="form-two">
           <input type="date" value={from} onChange={(e) => onChange([e.target.value, to])} />
           <input type="date" value={to} onChange={(e) => onChange([from, e.target.value])} />
+        </div>
+        {error ? <div className="form-error">{error}</div> : null}
+      </div>
+    );
+  }
+  if (f.type === 'multi-checkbox') {
+    const selected = Array.isArray(value) ? value : [];
+    const [filter, setFilter] = useState('');
+    const options = f.options || [];
+    const visible = filter
+      ? options.filter((o) => (o.label ?? o).toLowerCase().includes(filter.toLowerCase()))
+      : options;
+    function toggle(v) {
+      onChange(selected.includes(v) ? selected.filter((id) => id !== v) : [...selected, v]);
+    }
+    return (
+      <div className="form-row">
+        <label>{f.label} {reqMark} <span className="cell-muted" style={{ fontWeight: 400 }}>({selected.length} selected)</span></label>
+        <input type="text" placeholder={f.filterPlaceholder || 'Search…'} value={filter} onChange={(e) => setFilter(e.target.value)} style={{ marginBottom: 8 }} />
+        <div className="multi-checkbox-list" style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border, #e4e6ec)', borderRadius: 8, padding: 8 }}>
+          {visible.length === 0 ? <div className="cell-muted" style={{ padding: 4 }}>No options.</div> : visible.map((o) => {
+            const v = o.value ?? o; const l = o.label ?? o;
+            return (
+              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={selected.includes(v)} onChange={() => toggle(v)} />
+                <span>{l}</span>
+              </label>
+            );
+          })}
         </div>
         {error ? <div className="form-error">{error}</div> : null}
       </div>
