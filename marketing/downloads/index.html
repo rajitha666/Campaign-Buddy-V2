@@ -85,6 +85,7 @@
     .dl-btn {
       display: inline-flex; align-items: center; gap: 6px;
       color: var(--mango-dark); text-decoration: none; font-weight: 600; font-size: 14px;
+      padding: 10px 12px; margin: -4px -4px;
     }
     .dl-btn:hover { color: var(--mango); text-decoration: underline; }
     .dl-btn svg { flex: none; }
@@ -102,7 +103,7 @@
       tbody tr { display: block; padding: 14px 20px; border-bottom: 1px solid var(--line); }
       tbody td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: none; }
       td.dl { flex-direction: row-reverse; }
-      td.dl::before { content: "Download"; color: var(--text-muted); font-size: 13px; }
+      td.dl .dl-btn { font-size: 15px; padding: 14px 0 14px 24px; margin: -8px 0; }
       td[data-label]::before { content: attr(data-label); color: var(--text-muted); font-size: 13px; }
     }
   </style>
