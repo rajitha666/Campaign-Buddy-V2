@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # No fallback: stack fails fast if POSTGRES_PASSWORD is not set in .env
+      # (a silent default caused a credentials-drift outage; see deploy/README.md)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-campaign_buddy}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,7 +24,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000
       STAFF_JWT_SECRET: ${STAFF_JWT_SECRET:-change-me-staff-secret}
       STAFF_JWT_EXPIRES_IN: ${STAFF_JWT_EXPIRES_IN:-86400}
