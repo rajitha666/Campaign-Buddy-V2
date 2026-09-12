@@ -178,7 +178,11 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .rank-val { margin-left:auto; font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; }
 
 /* ===== maps (Leaflet + OpenStreetMap) ===== */
-.map-shell { border-radius:16px; overflow:hidden; border:1px solid var(--line); position:relative; height:340px; background:#EEF3EF; }
+/* isolation:isolate boxes in Leaflet's own z-index values (its zoom/attribution
+   controls sit at z-index:1000, panes up to 700) into this element's own local
+   stacking context, so they can never bleed above the sticky topbar (z-index:20)
+   once the page scrolls, or above anything else outside the map. */
+.map-shell { border-radius:16px; overflow:hidden; border:1px solid var(--line); position:relative; height:340px; background:#EEF3EF; isolation:isolate; }
 .leaflet-host { width:100%; }
 .leaflet-container { background:#DCE6E0; font:inherit; }
 .leaflet-container a { color:var(--info); }
