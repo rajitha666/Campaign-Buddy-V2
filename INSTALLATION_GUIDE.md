@@ -383,7 +383,7 @@ npx eas build --platform ios     # needs an Apple Developer account
 ```
 
 Bundle identifiers are already set in `app.json`
-(`com.dyuro.campaignbuddy`).
+(`lk.campaignbuddy.app`).
 
 ---
 

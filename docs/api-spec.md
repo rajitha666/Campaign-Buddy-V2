@@ -11,7 +11,7 @@ This spec does not cover the browser-based manager/admin console — that is a s
 
 | Aspect | Convention |
 |---|---|
-| Base URL | `https://api.campaignbuddy.app/v1` |
+| Base URL | `https://api.campaignbuddy.lk/v1` |
 | Format | JSON request/response bodies, `Content-Type: application/json` |
 | Auth | Bearer JWT in `Authorization: Bearer <token>` header on every endpoint except `POST /auth/login`, `POST /auth/forgot-password`, `POST /auth/refresh` |
 | IDs | UUID v4 strings (`"3f2a1c9e-..."`) unless noted otherwise |

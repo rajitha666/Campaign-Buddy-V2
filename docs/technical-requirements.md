@@ -26,6 +26,8 @@ committed `package.json` / lockfiles / `.env.example` / `app.json`
 
 - **prisma / @prisma/client 5.22.0**, express 4.22, typescript 5.9
 - bcrypt 5.1 (native addon), jsonwebtoken 9, zod 4.5, cors, dotenv
+- multer 2 (file upload handling), node-cron 4 (license-usage snapshot +
+  GitHub issue-sync jobs)
 - dev / test only: ts-node, ts-node-dev, vitest 5 + vite 8, supertest 7
 
 ### Environment variables (`.env`)
@@ -40,8 +42,18 @@ committed `package.json` / lockfiles / `.env.example` / `app.json`
 | `USER_JWT_SECRET` | yes | — | portal access-token signing key |
 | `USER_JWT_EXPIRES_IN` | no | `"8h"` | duration string |
 | `BCRYPT_SALT_ROUNDS` | no | `10` | |
+| `LICENSE_WARN_THRESHOLD_PCT` | no | `80` | license-usage "near limit" warn threshold, percent of cap |
+| `LICENSE_SNAPSHOT_DISABLED` | no | `0` | set `1` to disable the daily usage-snapshot cron job |
+| `GITHUB_ISSUES_ENABLED` | no | `0` | mirror portal "Report an issue" submissions to GitHub Issues |
+| `GITHUB_ISSUES_REPO` | no | — | e.g. `rajitha666/Campaign-Buddy-V2`; required if `GITHUB_ISSUES_ENABLED=1` |
+| `GITHUB_TOKEN` | no | — | fine-grained PAT (Issues: Read/write, Actions: Read) |
+| `GITHUB_ISSUES_DEFAULT_LABELS` | no | `"portal,from-portal"` | comma-separated |
+| `ISSUE_SYNC_DISABLED` | no | `0` | set `1` to disable the hourly GitHub retry job |
+| `TZ` | no | `Asia/Colombo` | timezone the license-usage snapshot job buckets periods in |
 
 The two JWT secrets **must be different** and set to strong random values.
+See `docs/license-usage-spec.md` and `docs/issue-reporting-spec.md` for the
+features these variables configure.
 
 ### Setup & run
 
@@ -61,7 +73,9 @@ npm run build && npm start     # compiles to dist/, runs node dist/src/server.js
 ### Network / infrastructure
 
 - **Inbound:** TCP `4000` (HTTP). Terminate TLS at a reverse proxy for production.
-- **Outbound:** PostgreSQL (`5432` default). **Nothing else** — no email / SMS /
+- **Outbound:** PostgreSQL (`5432` default). Optionally the GitHub REST API
+  (`api.github.com`, HTTPS) if `GITHUB_ISSUES_ENABLED=1` (portal issue mirroring
+  + the hourly retry job) — otherwise no outbound calls. No email / SMS /
   object storage / message queue.
 - CORS is currently wide open (`cors()` defaults) — restrict for production.
 - The process is **stateless** — all state is in Postgres, so it scales
@@ -117,7 +131,7 @@ Needs a modern evergreen browser; grant **geolocation** permission for check-in.
 | **iOS / Android native build** | as above; `npx expo prebuild` then the platform toolchain |
 | **Standalone binaries** (`.ipa` / `.aab`) | **EAS Build** + a free Expo account — not configured in this repo yet |
 
-Bundle identifiers are set: iOS & Android `com.dyuro.campaignbuddy`.
+Bundle identifiers are set: iOS & Android `lk.campaignbuddy.app`.
 
 ### Device runtime requirements
 
