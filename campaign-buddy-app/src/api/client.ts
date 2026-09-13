@@ -13,7 +13,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { getItem, setItem, deleteItem } from './secureStore';
 import type { ApiErrorBody } from './types';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.campaignbuddy.app/v1';
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.campaignbuddy.lk/v1';
 
 export const ACCESS_TOKEN_KEY = 'cb_access_token';
 export const REFRESH_TOKEN_KEY = 'cb_refresh_token';
