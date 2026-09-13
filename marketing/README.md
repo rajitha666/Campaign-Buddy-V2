@@ -12,6 +12,7 @@ external request is the Poppins webfont, with a system-font fallback.
 | `capability-brief.html` | 12-page evaluation brief | Decision makers doing due diligence | Print-ready A4, screen-viewable |
 | `training/` | Step-by-step user guides, one per login | Admin, supervisor, sponsor, promoter | Responsive web guides with real screenshots |
 | `store/` | App Store / Play Store submission assets for CB Mobile | Apple / Google review, store visitors | Listing copy (`app-store-listing.md`) + icons + framed screenshots |
+| `campaign-setup-kit/` | New-campaign data collection kit | A new client's team, before their first campaign is created | Guide: print-ready HTML explainer. Workbook: fillable `.xlsx` |
 
 ## capability-brief.html
 
@@ -50,6 +51,23 @@ adaptive-icon foreground, splash mark, and the framed marketing screenshots
 `store/gen-screenshots.js`. See `store/README.md`. Unlike `training/`, these
 scripts are committed (they need only `sharp` + `opentype.js`, not a running app).
 
+## campaign-setup-kit/
+
+Handed to a new client so their team can supply everything needed to create
+their first campaign, before they have a portal login. `campaign-setup-workbook.xlsx`
+is the thing they actually fill in — 12 tabs (Client, Brands, Products, Campaign,
+Outlets, Distributor Points, Field Staff, Activations, Targets, Custom
+Fields, Portal Logins, Notes) plus a "Start Here" cover tab, with dropdown
+validation on enum-like columns (role, target type, field type, etc.), rebuilt
+by `campaign-setup-kit/gen-workbook.js` (needs only `exceljs`, not a running
+app — like `store/`'s scripts, this one is committed). `campaign-setup-guide.html`
+is a companion explainer, in the same section order as the workbook's tabs,
+saying what each field means, why it's asked for, and what's genuinely
+optional vs required to get started (most things are editable later from the
+portal once the Campaign Admin login exists, so the bar for "required now" is
+deliberately low). See `campaign-setup-kit/README.md`. There's no shared
+source between the guide and the workbook — keep them in sync by hand.
+
 ## Preview locally
 
 ```bash
@@ -57,4 +75,5 @@ cd marketing && python -m http.server 8080
 ```
 
 Then open <http://localhost:8080/capability-brief.html>,
-<http://localhost:8080/landing-site/> or <http://localhost:8080/training/>.
+<http://localhost:8080/landing-site/>, <http://localhost:8080/training/> or
+<http://localhost:8080/campaign-setup-kit/campaign-setup-guide.html>.

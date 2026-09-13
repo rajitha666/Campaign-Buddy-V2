@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel='icon' href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23FF7A33'/%3E%3Cpath d='M4 17L9 12L13 16L20 8' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 8H20V14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<title>Campaign Buddy — Campaign Setup Guide</title>
+<meta name="description" content="Explains what each field in the Campaign Setup Workbook means and why we ask for it, so you can fill the spreadsheet in confidently." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" />
+
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #12241F;
+    --paper: #FFFFFF;
+    --surface: #F4F6F3;
+    --line: #E3E7E1;
+    --line-strong: #CFD6CE;
+    --text: #16211C;
+    --text-muted: #5C6862;
+    --text-faint: #8A948D;
+    --mango: #FF7A33;
+    --mango-dark: #E8641F;
+    --mango-tint: #FFEEE2;
+    --info: #2673B0;
+    --info-tint: #EAF1F7;
+    --font-display: "Poppins", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #E7E9E5;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  strong { font-weight: 600; }
+
+  .doc { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+  .sheet { background: var(--paper); box-shadow: 0 4px 26px rgba(18, 36, 31, 0.16); border-radius: 14px; overflow: hidden; }
+
+  /* ---------- header ---------- */
+  .hero { background: var(--ink); color: #fff; padding: 34px 44px 30px; }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--mango); display: grid; place-items: center; flex: none; }
+  .brand-mark svg { width: 16px; height: 16px; }
+  .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
+  .brand-name small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 10px; letter-spacing: 0.06em; color: #9FB2AA; margin-top: 1px; }
+  .print-btn { border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff; font-family: var(--font-body); font-size: 12px; font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer; }
+  .print-btn:hover { background: rgba(255,255,255,0.08); }
+  .hero h1 { font-size: 26px; margin-top: 22px; max-width: 26ch; }
+  .hero p.lead { margin-top: 10px; color: #D7E0DB; font-size: 13px; max-width: 64ch; line-height: 1.7; }
+
+  .xlbanner {
+    margin-top: 22px; background: rgba(255,122,51,0.14); border: 1px solid rgba(255,122,51,0.4);
+    border-radius: 10px; padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .xlbanner .ico { flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--mango); display: grid; place-items: center; font-size: 15px; }
+  .xlbanner .txt { font-size: 12.5px; color: #F3E8DE; line-height: 1.6; }
+  .xlbanner .txt strong { color: #fff; }
+
+  /* ---------- body ---------- */
+  .pbody { padding: 6px 44px 10px; }
+  section.block { padding: 26px 0; border-bottom: 1px solid var(--line); }
+  section.block:last-child { border-bottom: none; }
+
+  .block-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mango-dark); display: inline-flex; align-items: center; gap: 8px; }
+  .eyebrow::before { content: ""; width: 16px; height: 2px; background: var(--mango); border-radius: 2px; }
+  .block-head .tabtag {
+    font-family: var(--font-body); font-size: 10.5px; font-weight: 700; color: var(--mango-dark);
+    background: var(--mango-tint); padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  h2.title { font-size: 18px; margin-top: 6px; }
+  p.note { margin-top: 6px; font-size: 12px; color: var(--text-muted); max-width: 68ch; }
+  p.hint { margin-top: 10px; font-size: 11px; color: var(--text-faint); }
+  .req { color: var(--mango-dark); }
+
+  /* ---------- field explainer list ---------- */
+  .flist { margin-top: 16px; border-top: 1px solid var(--line); }
+  .frow { display: grid; grid-template-columns: 220px 1fr; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .frow .fname { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .frow .fname .opt { display: block; font-weight: 400; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+  .frow .fdesc { font-size: 12.5px; color: var(--text-muted); }
+  .frow .fdesc .eg { display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-faint); font-style: italic; }
+
+  /* ---------- example tables (illustrative only, not fillable) ---------- */
+  .twrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; }
+  table.example { width: 100%; border-collapse: collapse; font-size: 11.5px; min-width: 560px; }
+  table.example caption {
+    caption-side: top; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #fff; background: var(--ink); padding: 8px 12px;
+  }
+  table.example th { text-align: left; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); padding: 8px 10px; border-bottom: 2px solid var(--mango); background: var(--surface); white-space: nowrap; }
+  table.example td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--text-muted); font-style: italic; white-space: nowrap; }
+  table.example tr:last-child td { border-bottom: none; }
+  .tbl-note { font-size: 10.5px; color: var(--text-faint); padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface); font-style: normal; }
+
+  /* ---------- footer ---------- */
+  .footblock { background: var(--surface); padding: 26px 44px 34px; }
+  .footblock h3 { font-size: 13px; }
+  .footblock ol { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); }
+  .footblock ol li + li { margin-top: 5px; }
+  .contact { margin-top: 22px; font-size: 11.5px; color: var(--text-faint); border-top: 1px solid var(--line-strong); padding-top: 16px; }
+  .contact strong { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .hero, .pbody, .footblock { padding-left: 20px; padding-right: 20px; }
+    .frow { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .doc { max-width: none; padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; }
+    .print-btn { display: none; }
+    section.block { break-inside: avoid; }
+    table.example { break-inside: avoid; }
+  }
+</style>
+</head>
+
+<div class="doc">
+  <div class="sheet">
+
+    <div class="hero">
+      <div class="hero-top">
+        <div class="brand">
+          <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M4 17L9 12L13 16L20 8" stroke="white" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="white" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="brand-name">Campaign Buddy<small>CampaignBuddy.lk · by Dyro Technologies</small></span>
+        </div>
+        <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+      </div>
+      <h1>Campaign Setup Guide</h1>
+      <p class="lead">This guide walks through everything we need to set up your first campaign — what each field means, why we ask for it, and what a good answer looks like. The actual data goes into the companion spreadsheet, not this document.</p>
+
+      <div class="xlbanner">
+        <span class="ico">📊</span>
+        <span class="txt">
+          <strong>Fill in "Campaign Setup Workbook.xlsx"</strong> — it has one tab per section below, in the same order, ready for you to type straight into. Use this guide alongside it if a field isn't obvious. When you're done, send the workbook back to your Campaign Buddy contact.
+        </span>
+      </div>
+    </div>
+
+    <div class="pbody">
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">1 · About your organisation</span><span class="tabtag">Workbook tab: "1. Client"</span></div>
+        <h2 class="title">Company details</h2>
+        <p class="note">One record per client. If Campaign Buddy already manages another campaign for you, just give us the company name — we'll attach this new campaign to your existing record instead of creating a duplicate.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Company name <span class="req">*</span></div><div class="fdesc">The legal or trading name we'll show on your campaign records.<span class="eg">e.g. Radiance Cosmetics (Pvt) Ltd</span></div></div>
+          <div class="frow"><div class="fname">Primary contact person <span class="req">*</span></div><div class="fdesc">Who we go to with questions about this campaign.</div></div>
+          <div class="frow"><div class="fname">Contact number<span class="opt">optional</span></div><div class="fdesc">A phone number for that contact.</div></div>
+          <div class="frow"><div class="fname">Email<span class="opt">optional</span></div><div class="fdesc">Used for setup correspondence — not a login.</div></div>
+          <div class="frow"><div class="fname">Business address<span class="opt">optional</span></div><div class="fdesc">Registered or head-office address.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">2 · Brands</span><span class="tabtag">Workbook tab: "2. Brands"</span></div>
+        <h2 class="title">Which brand(s) does this cover?</h2>
+        <p class="note">A campaign can promote items from one or more brands under the same company — add one row per brand.</p>
+        <div class="twrap">
+          <table class="example">
+            <caption>Example</caption>
+            <thead><tr><th>#</th><th>Brand name</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Radiance</td><td>Flagship skincare line</td></tr>
+              <tr><td>2</td><td>Radiance Men</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">3 · Products</span><span class="tabtag">Workbook tab: "3. Products"</span></div>
+        <h2 class="title">Products to track</h2>
+        <p class="note">Every item promoters will sell or stock-check, grouped under the brands from Section 2.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">SKU / code<span class="opt">optional</span></div><div class="fdesc">Your own product code. Leave blank and we'll generate one.</div></div>
+          <div class="frow"><div class="fname">Product name <span class="req">*</span></div><div class="fdesc">What promoters and reports will show.</div></div>
+          <div class="frow"><div class="fname">Unit price (LKR)<span class="opt">optional</span></div><div class="fdesc">Used to calculate sales value against targets.</div></div>
+          <div class="frow"><div class="fname">Reorder level<span class="opt">optional</span></div><div class="fdesc">Stock count that should trigger a low-stock flag. Defaults to 0 (off) if left blank.</div></div>
+          <div class="frow"><div class="fname">Supplier / description<span class="opt">optional</span></div><div class="fdesc">Free text — photos can be added later in the portal.</div></div>
+        </div>
+        <div class="twrap">
+          <table class="example">
+            <caption>Example</caption>
+            <thead><tr><th>#</th><th>Brand</th><th>SKU</th><th>Product name</th><th>Unit price</th><th>Reorder level</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Radiance</td><td>RAD-001</td><td>Radiance Brightening Serum 30ml</td><td>2,450</td><td>10</td></tr>
+              <tr><td>2</td><td>Radiance</td><td>RAD-002</td><td>Radiance Daily Moisturiser 50ml</td><td>1,890</td><td>15</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">4 · Campaign</span><span class="tabtag">Workbook tab: "4. Campaign"</span></div>
+        <h2 class="title">Campaign details</h2>
+        <p class="note">One workbook covers one campaign. If you're setting up more than one at the same time, use a separate copy of the workbook for each.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Campaign name <span class="req">*</span></div><div class="fdesc">Shows across the portal and mobile app.<span class="eg">e.g. Radiance Q3 Push</span></div></div>
+          <div class="frow"><div class="fname">Description<span class="opt">optional</span></div><div class="fdesc">A short line on what the campaign is for.</div></div>
+          <div class="frow"><div class="fname">Start / end date <span class="req">*</span></div><div class="fdesc">Sets the campaign's active window; status (upcoming / active / ended) updates automatically from these dates.</div></div>
+          <div class="frow"><div class="fname">Timezone<span class="opt">optional</span></div><div class="fdesc">Defaults to Asia/Colombo — only change if the campaign runs elsewhere.</div></div>
+          <div class="frow"><div class="fname">Seat limits<span class="opt">optional</span></div><div class="fdesc">How many promoter / supervisor / admin / sponsor logins the campaign allows. Defaults are 20 / 5 / 2 / 2 — only fill in if you need higher limits; going over a limit never blocks you, it just raises a warning.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">5 · Outlets</span><span class="tabtag">Workbook tab: "5. Outlets"</span></div>
+        <h2 class="title">Outlets / stores</h2>
+        <p class="note">Every location a promoter or supervisor will be stationed at.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Outlet name / address / city <span class="req">*</span></div><div class="fdesc">Enough for us to identify and geotag the location.</div></div>
+          <div class="frow"><div class="fname">Contact person, phone, mobile<span class="opt">optional</span></div><div class="fdesc">In-store contact for the promoter or supervisor.</div></div>
+          <div class="frow"><div class="fname">Geofence radius (m)<span class="opt">optional</span></div><div class="fdesc">How far from the pinned location a check-in is still accepted. Defaults to 150m. This is a soft flag only — check-in is never blocked, just marked unverified if outside range.</div></div>
+        </div>
+        <p class="hint">The exact map pin is dropped later by your Campaign Admin from the portal — an address and city is enough to get started.</p>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">6 · Distributor points</span><span class="tabtag">Workbook tab: "6. Distributor Points"</span></div>
+        <h2 class="title">Distributor / warehouse points</h2>
+        <p class="note">Optional — only needed if activations restock from a distributor rather than the outlet's own store room. Skip this tab if not applicable.</p>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">7 · Field staff</span><span class="tabtag">Workbook tab: "7. Field Staff"</span></div>
+        <h2 class="title">Promoters &amp; supervisors</h2>
+        <p class="note">Anyone who will use the CB Mobile app on the ground.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Full name, role <span class="req">*</span></div><div class="fdesc">Role is either Promoter or Supervisor.</div></div>
+          <div class="frow"><div class="fname">Mobile number, based in (city)<span class="opt">optional</span></div><div class="fdesc">Helps us route routes and shifts sensibly.</div></div>
+          <div class="frow"><div class="fname">Reports to<span class="opt">optional</span></div><div class="fdesc">For promoters, the supervisor who oversees them.</div></div>
+        </div>
+        <p class="hint">Employee ID and mobile login password are generated automatically when the account is created. Extra HR details — NIC, date of birth, address, emergency contact, bank account — are not needed now; they can be filled in later, person by person, from each Staff Profile in the portal.</p>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">8 · Activations</span><span class="tabtag">Workbook tab: "8. Activations"</span></div>
+        <h2 class="title">Activations</h2>
+        <p class="note">An activation is one promoter assigned to one outlet for a date range — it's what actually appears on the mobile app and the field calendar.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Outlet, promoter, start / end date <span class="req">*</span></div><div class="fdesc">The minimum needed to create the assignment.</div></div>
+          <div class="frow"><div class="fname">Supervisor, distributor point, shift times<span class="opt">optional</span></div><div class="fdesc">Fill in where they apply.</div></div>
+          <div class="frow"><div class="fname">Target type / period<span class="opt">optional</span></div><div class="fdesc">Whether targets are tracked per item or per brand overall, and whether they reset daily or monthly. Leave blank to use the campaign default (per item, daily) — only fill in for an activation that should work differently.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">9 · Targets</span><span class="tabtag">Workbook tab: "9. Targets"</span></div>
+        <h2 class="title">Sales targets</h2>
+        <p class="note">Optional at setup — targets can be added or adjusted from the portal at any time once activations are running, so it's fine to leave this tab blank and set targets later.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Target value, measured in</div><div class="fdesc">Either a unit count ("units sold") or a sales value in LKR.</div></div>
+          <div class="frow"><div class="fname">Repeats each period?</div><div class="fdesc">"Yes" re-applies the same target every day/month for the length of the activation; "No" applies it once, over the date range given.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">10 · Daily reports</span><span class="tabtag">Workbook tab: "10. Custom Fields"</span></div>
+        <h2 class="title">Extra fields for daily reports</h2>
+        <p class="note">Beyond the standard sales and stock numbers, tell us if promoters should record anything else each day — e.g. "competitor price seen", "display compliant Y/N", "customer feedback". Leave the tab blank if the standard report is enough; this can also be set up later.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Type</div><div class="fdesc">Number, Text, Yes/No, or Dropdown (with your own list of options).</div></div>
+          <div class="frow"><div class="fname">Captured per</div><div class="fdesc">"Day overall" asks once per activation per day; "Per product" asks once for every product being tracked, each day.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">11 · Office logins</span><span class="tabtag">Workbook tab: "11. Portal Logins"</span></div>
+        <h2 class="title">Admin &amp; sponsor logins</h2>
+        <p class="note">People who need to log into CB Office (the web portal) rather than the mobile app — your Campaign Admin, and any client-side sponsors who should see reporting. Field staff from Section 7 don't need an entry here; they log in on the mobile app instead.</p>
+        <div class="flist">
+          <div class="frow"><div class="fname">Role</div><div class="fdesc"><strong>Campaign Admin</strong> can edit everything in the campaign. <strong>Sponsor</strong> is read-only reporting access.</div></div>
+          <div class="frow"><div class="fname">Outlet access</div><div class="fdesc">"All outlets" sees the whole campaign; "Specific outlets" restricts a sponsor to just the outlets you list — handy for a client who should only see their own region.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><span class="eyebrow">12 · Anything else</span><span class="tabtag">Workbook tab: "12. Notes"</span></div>
+        <h2 class="title">Notes for your Campaign Buddy contact</h2>
+        <p class="note">Special requirements, go-live date pressure, existing data to migrate, or anything not covered above — free text, in the workbook.</p>
+      </section>
+
+    </div>
+
+    <div class="footblock">
+      <h3>What happens after you send the workbook back</h3>
+      <ol>
+        <li>Dyro Technologies creates your client, brand and product records, and your outlets, from tabs 1–6.</li>
+        <li>We create the campaign and its first activations (tabs 4, 8–10), and the staff and portal logins (tabs 7 &amp; 11).</li>
+        <li>Your Campaign Admin receives their CB Office login and can immediately edit, add to, or correct anything above — outlets, staff, targets, custom fields and sponsor access all stay fully editable after go-live.</li>
+      </ol>
+
+      <div class="contact">
+        <strong>Campaign Buddy</strong> — a product by Dyro Technologies · CampaignBuddy.lk · +94&nbsp;71&nbsp;218&nbsp;4846 · hello@campaignbuddy.lk
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</html>
