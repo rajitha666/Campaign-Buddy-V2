@@ -3,7 +3,7 @@
 Thumbs.db
 
 # Local editor / tooling config
-.claude/settings.local.json
+.claude/
 .vscode/
 .idea/
 

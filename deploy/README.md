@@ -72,3 +72,28 @@ docker compose --profile production up -d
    ```
 4. Always start the stack with `--profile production` on the VPS (brings up
    `cloudflared` for the tunnel).
+
+## Portal losing its connection to the backend (502 / API calls fail)
+
+**Cause**: `campaign-buddy-portal/nginx.conf` proxies `/admin/v1`, `/v1`, and
+`/health` to the `backend` container by Docker Compose service name. Plain
+nginx resolves that hostname to an IP **once, at startup**, and caches it for
+the container's lifetime. Any time the `backend` container is recreated on
+its own — a crash + `restart: unless-stopped`, or a routine
+`docker compose up -d --build backend` — it gets a new internal IP, but the
+already-running `portal` container keeps sending traffic to the old, dead
+one. The portal then errors out until someone manually restarts it too.
+
+**Fix (already applied)**: `nginx.conf` uses Docker's embedded DNS resolver
+(`127.0.0.11`) with a short TTL and a `set $backend_upstream ...` variable in
+front of each `proxy_pass`, so nginx re-resolves `backend`/`marketing`
+periodically instead of caching the IP forever. With this in place, `portal`
+self-heals within ~10s of a backend restart — no manual restart needed.
+
+If you ever see the disconnect again:
+- Confirm `portal`'s `nginx.conf` still has the `resolver 127.0.0.11 valid=10s;`
+  + `set $backend_upstream ...` pattern (not a bare `proxy_pass http://backend:4000/...`).
+- As an immediate workaround, `docker compose restart portal` picks up the
+  backend's current IP right away.
+- Rebuild the `portal` image after any `nginx.conf` change — it's baked into
+  the image at build time, not mounted live.
