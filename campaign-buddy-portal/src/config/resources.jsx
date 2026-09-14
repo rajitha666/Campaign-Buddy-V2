@@ -143,7 +143,6 @@ export const RESOURCES = {
         </span>
       ) },
       { key: 'brandName', label: 'Brand', render: (r) => r.brandName || r.brandId },
-      { key: 'description', label: 'Description', className: 'cell-wrap' },
       { key: 'unitPrice', label: 'Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}` },
       { key: 'reorderLevel', label: 'Reorder Level' },
     ],
