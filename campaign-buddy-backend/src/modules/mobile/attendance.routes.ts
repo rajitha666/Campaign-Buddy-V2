@@ -106,6 +106,26 @@ router.post(
     }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
+    // A shift left open from a PREVIOUS day (crash, dead battery, forgot to
+    // check out) is not a real concurrent check-in — it's abandoned. Without
+    // this, the lock below matches it forever and staff get a false
+    // "already checked in" on a day where /attendance/today correctly shows
+    // them as not checked in. Close these out before evaluating the lock.
+    const staleOpenShifts = await prisma.attendanceRecord.findMany({
+      where: {
+        checkInAt: { not: null },
+        checkOutAt: null,
+        date: { lt: today },
+        activation: { staffId: req.staff!.sub },
+      },
+    });
+    for (const stale of staleOpenShifts) {
+      await prisma.attendanceRecord.update({
+        where: { id: stale.id },
+        data: { checkOutAt: new Date(stale.date.getTime() + 24 * 60 * 60 * 1000 - 1) },
+      });
+    }
+
     // Global one-open-shift lock (Spec v3 §5.1) — across EVERY Activation this staff
     // member has, not just this one. Confirmed: concurrent Activation assignment is
     // fine, concurrent open check-ins are not.

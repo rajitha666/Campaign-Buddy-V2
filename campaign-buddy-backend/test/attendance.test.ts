@@ -54,6 +54,38 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     const again = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
     expect(again.status).toBe(409);
   });
+
+  it("a shift left open from a PRIOR day does not block today's check-in", async () => {
+    // Regression: /attendance/today correctly shows "not checked in" for
+    // today, but the old lock query matched any open record ever, so a
+    // forgotten check-out from yesterday would 409 today's check-in with
+    // "already checked in for this activation".
+    const { staff, activation, outlet } = await makeCampaignWithActivation();
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const auth = { Authorization: `Bearer ${token}` };
+    const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    await prisma.attendanceRecord.create({
+      data: {
+        activationId: activation.id,
+        date: yesterday,
+        checkInAt: new Date(yesterday.getTime() + 9 * 3600000),
+        status: "on_time",
+      },
+    });
+
+    const today = await request(app).get("/v1/attendance/today").set(auth);
+    expect(today.body.data.checkedIn).toBe(false);
+
+    const checkIn = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
+    expect(checkIn.status).toBe(201);
+
+    const stale = await prisma.attendanceRecord.findFirst({ where: { activationId: activation.id, date: yesterday } });
+    expect(stale?.checkOutAt).not.toBeNull();
+  });
 });
 
 describe("attendance — mobile response shapes", () => {
