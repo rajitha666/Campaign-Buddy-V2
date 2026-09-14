@@ -137,7 +137,9 @@ docker compose down
 docker compose -f docker-compose.yml --profile production up -d
 ```
 
-> **Note:** `docker-compose.override.yml` exposes ports for local dev. Using `-f docker-compose.yml` skips it.
+> **Note:** `docker-compose.dev.yml` is a dev-only file (exposes ports, runs the
+> portal's Vite dev server). It is only loaded when explicitly passed with
+> `-f docker-compose.dev.yml`, so production runs never pick it up.
 
 ### 5. Verify
 
@@ -149,11 +151,11 @@ docker compose ps
 curl https://cb.yourdomain.com/health
 ```
 
-### Local Dev (ports exposed)
+### Local Dev (ports exposed + hot reload)
 
 ```bash
-# Uses docker-compose.override.yml to expose ports
-docker compose up -d
+# Uses docker-compose.dev.yml to expose ports and run the portal Vite dev server
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 ## Firewall (Recommended)
@@ -243,7 +245,7 @@ docker exec campaign-buddy-v2-backend-1 node dist/prisma/seed.js
 # Check what's using the port
 ss -tlnp | grep -E '4000|5173|5432'
 
-# Or change ports in docker-compose.override.yml
+# Or change ports in docker-compose.dev.yml (dev only)
 ```
 
 ## Production Checklist

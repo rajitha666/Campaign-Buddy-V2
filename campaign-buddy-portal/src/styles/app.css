@@ -296,6 +296,10 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .cal-chip.mango { background:var(--mango-tint); color:var(--mango-dark); }
 
 /* ===== login ===== */
+.password-wrap { position:relative; }
+.password-wrap input { width:100%; padding-right:42px; }
+.password-toggle { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; padding:4px; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; }
+.password-toggle:hover { color:var(--ink); }
 .login-shell { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--ink); }
 .login-card { width:380px; max-width:92vw; background:var(--surface-card); border-radius:22px; padding:36px 32px; }
 .login-badge { width:52px; height:52px; border-radius:15px; background:var(--mango); display:flex; align-items:center; justify-content:center; margin-bottom:18px; }

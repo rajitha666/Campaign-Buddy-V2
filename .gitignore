@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # OS cruft
 .DS_Store
 Thumbs.db
@@ -11,5 +14,3 @@ Thumbs.db
 *.zip
 /Archive/
 
-# local dev port overrides (see docker-compose.override.example.yml)
-docker-compose.override.yml

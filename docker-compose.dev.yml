@@ -1,0 +1,59 @@
+# Localhost-only development overrides. Docker Compose does NOT load this file
+# automatically — start the stack with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Differences from production:
+#   - All service ports are published to localhost, including Prisma Studio
+#     (DB GUI) at http://localhost:5555.
+#   - The portal runs the Vite dev server (hot-reload on file changes) with
+#     source bind-mounts, instead of the built nginx image.
+#
+# NEVER use this file on the VPS/production: it would publicly expose Postgres,
+# the backend and the portal.
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    ports:
+      - "4000:4000"
+
+  portal:
+    build:
+      context: ./campaign-buddy-portal
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./campaign-buddy-portal/src:/app/src:ro
+      - ./campaign-buddy-portal/public:/app/public:ro
+      - ./campaign-buddy-portal/index.html:/app/index.html:ro
+      - ./campaign-buddy-portal/vite.config.js:/app/vite.config.js:ro
+      - ./campaign-buddy-portal/scripts:/app/scripts:ro
+    environment:
+      # Vite proxy target: the backend container on the compose network.
+      VITE_API_PROXY_TARGET: http://backend:4000
+    command: npm run dev -- --host 0.0.0.0
+
+  marketing:
+    ports:
+      - "8083:80"
+
+  # Prisma Studio DB GUI, auto-started with the dev stack: http://localhost:5555
+  # Reuses the already-built backend image (it ships the prisma CLI + schema).
+  db-studio:
+    build:
+      context: ./campaign-buddy-backend
+      dockerfile: Dockerfile
+    image: campaign-buddy-backend:local
+    ports:
+      - "5555:5555"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
+    # --hostname: container must bind 0.0.0.0 to be reachable from the host;
+    # --browser none: there is no browser inside the container.
+    command: npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
+    depends_on:
+      postgres:
+        condition: service_healthy

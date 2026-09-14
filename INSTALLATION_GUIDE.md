@@ -163,8 +163,9 @@ nano .env
 # 5. Build + start
 #    production (tunnel, no public ports):
 docker compose -f docker-compose.yml --profile production up -d --build
-#    OR local/no-tunnel (exposes :4000 / :5173 / :5432 via the override file):
-docker compose up -d --build
+#    OR local dev (exposes :4000 / :5173 / :5432 / :8083 via the dev file,
+#    portal runs the Vite dev server with hot reload):
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 On start the backend container automatically:
@@ -198,8 +199,8 @@ Then open the portal, sign in, and check **Admin → License Usage** loads.
    | `cb.yourdomain.com` | `http://portal:80` |
 
 4. Start with the `production` profile (as in §3.2 step 5). `cloudflared` only
-   runs under that profile; `docker-compose.override.yml` (public ports) is
-   skipped when you pass `-f docker-compose.yml`.
+   runs under that profile; `docker-compose.dev.yml` (public ports + Vite dev
+   server) is never loaded unless you explicitly pass it with `-f`.
 
 ### 3.5 Firewall (if not using the tunnel)
 
@@ -416,4 +417,4 @@ Bundle identifiers are already set in `app.json`
 | **License Usage** page empty / 500 | Confirm `20260908171132_add_license_usage_tracking` applied (`prisma migrate status`). Rebuild the backend image if `node-cron` is missing (`Cannot find module 'node-cron'`). |
 | License snapshot history stays empty | The job writes at 00:15 `TZ` and once on boot. Check `docker compose logs backend | grep license-snapshot`; verify `LICENSE_SNAPSHOT_DISABLED` is not `1`. |
 | Snapshot job logs a timezone error | Ensure `TZ=Asia/Colombo` is set on the backend service (it is in `docker-compose.yml`); `node:20-alpine` ships full ICU so `Asia/Colombo` resolves. |
-| Port already in use (local) | `ss -tlnp | grep -E '4000|5173|5432'`, or edit `docker-compose.override.yml`. |
+| Port already in use (local) | `ss -tlnp | grep -E '4000|5173|5432'`, or edit `docker-compose.dev.yml`. |

@@ -36,6 +36,12 @@ For a populated dataset (demos, marketing screenshots): after `npm run prisma:se
 week of attendance / sales / footfall / tracking data. Re-runnable; leaves the
 base seed's data alone.
 
+Local dev DB GUI: `cd campaign-buddy-backend && npm run db:studio` opens
+Prisma Studio at http://localhost:5555 (uses the `.env` `DATABASE_URL`).
+When running the local docker dev stack
+(`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`),
+Studio starts automatically as the `db-studio` service at http://localhost:5555.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on every push to `main` and every PR: backend

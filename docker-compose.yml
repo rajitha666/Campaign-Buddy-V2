@@ -22,6 +22,8 @@ services:
     build:
       context: ./campaign-buddy-backend
       dockerfile: Dockerfile
+    # Named so docker-compose.dev.yml can reuse it for the Prisma Studio service.
+    image: campaign-buddy-backend:local
     restart: unless-stopped
     volumes:
       # Imported item images, served by the backend at /uploads/items/<file>.

@@ -1,0 +1,14 @@
+# Dev-only Vite server image, used only by docker-compose.dev.yml so source
+# changes hot-reload on localhost without rebuilding the production nginx
+# image. NOT used in production.
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
