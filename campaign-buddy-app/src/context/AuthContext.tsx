@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const result = await authApi.login(username, password);
+    const result = await authApi.login(username, password.trim());
     await setItem(ACCESS_TOKEN_KEY, result.accessToken);
     await setItem(REFRESH_TOKEN_KEY, result.refreshToken);
     // The v3 backend's /auth/login returns only tokens, so pull the profile

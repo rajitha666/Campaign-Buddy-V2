@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,6 +17,7 @@ export function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -82,14 +83,45 @@ export function LoginScreen() {
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={(t) => { setPassword(t); setError(''); }}
-              secureTextEntry
-              placeholder="Password"
-              placeholderTextColor={colors.textMuted}
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={(t) => { setPassword(t); setError(''); }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                textContentType={showPassword ? 'none' : 'password'}
+                placeholder="Password"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Pressable
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityRole="button"
+                onPress={() => setShowPassword((s) => !s)}
+                style={styles.eyeButton}
+                hitSlop={8}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M2 12C4.5 7 8 5 12 5s7.5 2 10 7c-2.5 5-6 7-10 7s-7.5-2-10-7z"
+                    stroke={colors.textMuted}
+                    strokeWidth={1.8}
+                    strokeLinejoin="round"
+                  />
+                  <Circle cx={12} cy={12} r={3} stroke={colors.textMuted} strokeWidth={1.8} />
+                  {!showPassword ? (
+                    <Path
+                      d="M4 20L20 4"
+                      stroke={colors.textMuted}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                    />
+                  ) : null}
+                </Svg>
+              </Pressable>
+            </View>
           </View>
           {error ? (
             <View style={styles.errorBox}>
@@ -137,6 +169,22 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm + 3,
     fontSize: fontSize.lg,
     color: colors.textPrimary,
+  },
+  passwordInput: {
+    flex: 1,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.line,
+    paddingBottom: spacing.sm + 3,
+    fontSize: fontSize.lg,
+    color: colors.textPrimary,
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  eyeButton: {
+    paddingLeft: spacing.md,
+    paddingBottom: spacing.sm + 3,
   },
   errorBox: {
     backgroundColor: colors.alertTint,
