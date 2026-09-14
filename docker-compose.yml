@@ -23,6 +23,9 @@ services:
       context: ./campaign-buddy-backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    volumes:
+      # Imported item images, served by the backend at /uploads/items/<file>.
+      - ./campaign-buddy-backend/uploads/items:/apu/uploads/items:ro
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000

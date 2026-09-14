@@ -21,6 +21,13 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "campaign-buddy-backend", spec: "v3" }));
 
+// Item images (imported from the old system; see docs). Served as
+// /uploads/items/<file> from ./uploads/items, bind-mounted in docker-compose.
+app.use(
+  "/uploads/items",
+  express.static(path.resolve(process.cwd(), "uploads", "items"), { fallthrough: false })
+);
+
 app.use("/v1", mobileRoutes);
 app.use("/admin/v1", adminRoutes);
 

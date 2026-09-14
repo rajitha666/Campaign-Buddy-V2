@@ -10,3 +10,6 @@ Thumbs.db
 # Archived source snapshots — git history is the archive; don't commit zips
 *.zip
 /Archive/
+
+# local dev port overrides (see docker-compose.override.example.yml)
+docker-compose.override.yml

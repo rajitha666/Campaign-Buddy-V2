@@ -1,0 +1,22 @@
+# Localhost-dev-only port overrides. Copy it to docker-compose.override.yml —
+# Docker Compose merges that filename automatically, and .gitignore keeps it
+# untracked. NEVER create it on the VPS/production: it would publicly expose
+# the Postgres, backend and portal ports.
+version: '3.8'
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    ports:
+      - "4000:4000"
+
+  portal:
+    ports:
+      - "5173:80"
+
+  marketing:
+    ports:
+      - "8083:80"
