@@ -173,8 +173,8 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange,
         <input
           type={f.type}
           pattern={f.pattern}
-          inputMode={f.type === 'tel' ? 'tel' : undefined}
-          step={f.type === 'number' ? 'any' : undefined}
+          inputMode={f.type === 'tel' ? 'tel' : 'numeric'}
+          step={f.step || 'any'}
           placeholder={f.placeholder || ''}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}

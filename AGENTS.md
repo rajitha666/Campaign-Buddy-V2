@@ -62,6 +62,11 @@ cd campaign-buddy-portal  && npm test   # vitest unit
 cd campaign-buddy-app     && npm test   # vitest unit
 ```
 
+## Follow minimal TDD for all changes
+
+- For every bug fix or feature change, write or adjust a test first (red), then make the change (green). Keep it minimal — one or two focused tests covering the new behavior, in the existing test style and file.
+- Run the affected package's test suite (see above) before finishing; the change isn't done until the tests pass.
+
 ## Issue naming convention
 
 Prefix all issue titles with the component they affect:

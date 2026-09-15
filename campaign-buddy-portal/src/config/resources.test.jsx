@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi } from '../lib/endpoints';
 
 describe('resources config', () => {
   it('every resource has a title, subtitle and fetchList', () => {
@@ -64,5 +64,43 @@ describe('resources config', () => {
 
   it('outlets geo lat/lng inputs are native number fields', () => {
     expect(RESOURCES.outlets.formFields.find((f) => f.type === 'geo')?.latLngType || 'number').toBe('number');
+  });
+
+  it('items create payload includes the required sku (backend-side validation)', async () => {
+    const spy = vi.spyOn(itemsApi, 'create').mockResolvedValue({ data: { id: 'i_1' } });
+    try {
+      await RESOURCES.items.createItem({ values: { name: 'X', brandId: 'b_1', sku: 'TF-320-TT', unitPrice: '3200', reorderLevel: '5' } });
+      expect(spy).toHaveBeenCalledOnce();
+      const body = spy.mock.calls[0][0];
+      expect(body.sku).toBe('TF-320-TT');
+      expect(body.name).toBe('X');
+      expect(body.brandId).toBe('b_1');
+      expect(body.unitPrice).toBe(3200);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('items form has a required sku field', () => {
+    const sku = RESOURCES.items.formFields.find((f) => f.key === 'sku');
+    expect(sku).toBeDefined();
+    expect(sku.required).toBe(true);
+    expect(sku.validate('')).toBeTypeOf('string');
+    expect(sku.validate('TF-320-TT')).toBeNull();
+  });
+
+  it('items unitPrice and reorderLevel are native integer number fields (ACH)', async () => {
+    const unitPrice = RESOURCES.items.formFields.find((f) => f.key === 'unitPrice');
+    const reorder = RESOURCES.items.formFields.find((f) => f.key === 'reorderLevel');
+    expect(unitPrice.type).toBe('number');
+    expect(unitPrice.step).toBe(1);
+    expect(reorder.type).toBe('number');
+    expect(reorder.step).toBe(1);
+
+    // decimal input is rejected by field validators, not left to the backend
+    expect(unitPrice.validate('12.5')).toBeTypeOf('string');
+    expect(unitPrice.validate('1200')).toBeNull();
+    expect(reorder.validate('5')).toBeNull();
+    expect(reorder.validate('1.5')).toBeTypeOf('string');
   });
 });

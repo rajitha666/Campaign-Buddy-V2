@@ -155,7 +155,7 @@ export const RESOURCES = {
     },
     createItem: async ({ values }) => {
       const created = await itemsApi.create({
-        name: values.name, brandId: values.brandId, description: values.description,
+        name: values.name, brandId: values.brandId, sku: values.sku, description: values.description,
         unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
       });
       if (values.image instanceof File) await itemsApi.uploadImage(created.data.id, values.image);
@@ -163,7 +163,7 @@ export const RESOURCES = {
     },
     updateItem: async ({ id, values }) => {
       const updated = await itemsApi.update(id, {
-        name: values.name, brandId: values.brandId, description: values.description,
+        name: values.name, brandId: values.brandId, sku: values.sku, description: values.description,
         unitPrice: Number(values.unitPrice) || 0, reorderLevel: Number(values.reorderLevel) || 0,
       });
       if (values.image instanceof File) await itemsApi.uploadImage(id, values.image);
@@ -172,11 +172,12 @@ export const RESOURCES = {
     deleteItem: ({ id }) => itemsApi.remove(id),
     formFields: [
       { key: 'name', label: 'Product Name', type: 'text', required: true },
+      { key: 'sku', label: 'SKU', type: 'text', required: true, validate: validators.required() },
       { key: 'brandId', label: 'Brand', type: 'select', required: true, optionsLoader: () => optionsFrom(brandsApi.list) },
       { key: 'shortDescription', label: 'Short Description', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'unitPrice', label: 'Price (LKR)', type: 'text', required: true },
-      { key: 'reorderLevel', label: 'Re-order Level', type: 'text', required: true },
+      { key: 'unitPrice', label: 'Price (LKR)', type: 'number', step: 1, required: true, validate: (v) => validators.integer()(v) || validators.required()(v) },
+      { key: 'reorderLevel', label: 'Re-order Level', type: 'number', step: 1, required: true, validate: validators.integer() },
       { key: 'image', label: 'Image', type: 'upload', previewKey: 'imageUrl' },
     ],
   },

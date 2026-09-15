@@ -39,6 +39,11 @@ export const validators = {
     return null;
   },
 
+  integer: (msg = 'Enter a whole number') => (v) => {
+    if (v === '' || v === null || v === undefined) return null;
+    return /^\d+$/.test(String(v).trim()) ? null : msg;
+  },
+
   pattern: (regex, msg) => (v) => {
     if (!v || !v.trim()) return null;
     if (!regex.test(v.trim())) return msg;
