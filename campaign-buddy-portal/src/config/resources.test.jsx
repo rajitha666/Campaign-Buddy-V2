@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi } from '../lib/endpoints';
 
 describe('resources config', () => {
   it('every resource has a title, subtitle and fetchList', () => {
@@ -59,6 +59,34 @@ describe('resources config', () => {
         expect(new RegExp(`^${f.pattern}$`).test(sample), `${k}: ${sample}`).toBe(true);
       }
       if (k !== 'fax') expect(new RegExp(`^${f.pattern}$`).test('abc')).toBe(false);
+    }
+  });
+
+  it('staff mobile/contact-phone fields are native tel inputs accepting valid formats', () => {
+    const phoneFields = RESOURCES.staff.formFields.filter((f) => f.key === 'phone' || f.key === 'emergencyContactPhone');
+    expect(phoneFields.length).toBeGreaterThanOrEqual(2);
+    for (const f of phoneFields) {
+      expect(f.type, `staff.${f.key}.type`).toBe('tel');
+      expect(f.pattern, `staff.${f.key}.pattern`).toBeTypeOf('string');
+      for (const sample of ['+94771234567', '+94 71 222 2222', '+94-71-2222222', '0771234567']) {
+        expect(new RegExp(`^${f.pattern}$`).test(sample), `staff.${f.key}: ${sample}`).toBe(true);
+      }
+      expect(new RegExp(`^${f.pattern}$`).test('abc')).toBe(false);
+      // typed/local formats normalise to E.164 before hitting the backend
+      expect(f.validate('0771234567')).toBeNull();
+      expect(f.validate('+94 71 222 2222')).toBeNull();
+      expect(f.validate('abc')).toBeTypeOf('string');
+    }
+  });
+
+  it('staff create/update payload normalises phone numbers', async () => {
+    const spy = vi.spyOn(staffApi, 'create').mockResolvedValue({ data: {} });
+    try {
+      await RESOURCES.staff.createItem({ values: { employeeId: 'E1', phone: '0771234567', emergencyContactPhone: '94771234567' } });
+      expect(spy.mock.calls[0][0].phone).toBe('+94771234567');
+      expect(spy.mock.calls[0][0].emergencyContactPhone).toBe('+94771234567');
+    } finally {
+      spy.mockRestore();
     }
   });
 

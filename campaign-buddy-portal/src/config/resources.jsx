@@ -384,8 +384,8 @@ export const RESOURCES = {
       ...row,
       dateOfBirth: row.dateOfBirth ? fmtISO(row.dateOfBirth) : '',
     }),
-    createItem: ({ values }) => staffApi.create(values),
-    updateItem: ({ id, values }) => staffApi.update(id, values),
+    createItem: ({ values }) => staffApi.create({ ...values, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) }),
+    updateItem: ({ id, values }) => staffApi.update(id, { ...values, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) }),
     deleteItem: ({ id }) => staffApi.remove(id),
     // Fixed HR field set for v3 (schema / Changelog v3 "Staff HR fields"). The
     // backend whitelists these columns; extras are ignored.
@@ -399,7 +399,7 @@ export const RESOURCES = {
       { key: 'gender', label: 'Gender', type: 'radio', options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
       { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
       { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number', validate: validators.nic() },
-      { key: 'phone', label: 'Mobile', type: 'text', defaultValue: '+94', validate: validators.mobile() },
+      { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
       // Promoter's city of residence — HR profile data, independent of any outlet
       // or activation. See issue #5: it is NOT derived from the assigned outlet.
       { key: 'cityId', label: 'Home City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
@@ -412,7 +412,7 @@ export const RESOURCES = {
 
       { type: 'section', label: 'Emergency Contact' },
       { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
-      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'text', defaultValue: '+94', validate: validators.mobile() },
+      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
 
       { type: 'section', label: 'Bank Account' },
       { key: 'bankAccountName', label: 'Account Name', type: 'text' },
