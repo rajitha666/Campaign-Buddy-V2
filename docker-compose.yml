@@ -26,8 +26,10 @@ services:
     image: campaign-buddy-backend:local
     restart: unless-stopped
     volumes:
-      # Imported item images, served by the backend at /uploads/items/<file>.
-      - ./campaign-buddy-backend/uploads/items:/apu/uploads/items:ro
+      # Item images on the host dir the backend reads AND writes: imported
+      # images, plus photos uploaded via POST /items/:id/image (multer writes
+      # to process.cwd()/uploads/items, i.e. <workdir>/uploads/items).
+      - ./campaign-buddy-backend/uploads/items:/app/uploads/items
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000

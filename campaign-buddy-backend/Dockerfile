@@ -18,7 +18,7 @@ FROM node:20-alpine
 
 RUN apk add --no-cache openssl
 
-WORKDIR /apu
+WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
