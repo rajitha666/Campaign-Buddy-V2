@@ -19,7 +19,7 @@ import {
   supervisorTasks as supervisorTasksApi, staffAbsence as staffAbsenceApi,
   outletAttendance as outletAttendanceApi, tracking as trackingApi,
 } from '../lib/endpoints';
-import { validators } from '../lib/validators';
+import { validators, normalizePhone } from '../lib/validators';
 
 // @db.Date columns come back as "…T00:00:00.000Z"; render them in UTC so a
 // negative-offset browser doesn't show the previous day. Timestamps (checkInAt,
@@ -198,24 +198,25 @@ export const RESOURCES = {
       return rows.map((r) => ({ ...r, cityName: map[r.cityId] }));
     },
     createItem: ({ values }) => outletsApi.create({
-      name: values.name, contactPerson: values.contactPerson, address: values.address, cityId: values.cityId,
-      phone: values.phone, mobile: values.mobile, fax: values.fax,
+      outletNo: values.outletNo,       name: values.name, contactPerson: values.contactPerson, address: values.address, cityId: values.cityId,
+      phone: normalizePhone(values.phone), mobile: normalizePhone(values.mobile), fax: values.fax,
       latitude: Number(values.geo?.lat), longitude: Number(values.geo?.lng),
     }),
     updateItem: ({ id, values }) => outletsApi.update(id, {
-      name: values.name, contactPerson: values.contactPerson, address: values.address, cityId: values.cityId,
-      phone: values.phone, mobile: values.mobile, fax: values.fax,
+      outletNo: values.outletNo,       name: values.name, contactPerson: values.contactPerson, address: values.address, cityId: values.cityId,
+      phone: normalizePhone(values.phone), mobile: normalizePhone(values.mobile), fax: values.fax,
       latitude: Number(values.geo?.lat), longitude: Number(values.geo?.lng),
     }),
     deleteItem: ({ id }) => outletsApi.remove(id),
     formFields: [
+      { key: 'outletNo', label: 'Outlet No', type: 'text', required: true },
       { key: 'name', label: 'Outlet Name', type: 'text', required: true },
       { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'address', label: 'Address', type: 'textarea', required: true },
       { key: 'cityId', label: 'City', type: 'select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
-      { key: 'phone', label: 'Phone', type: 'text', defaultValue: '+94', validate: validators.mobile() },
-      { key: 'mobile', label: 'Mobile', type: 'text', defaultValue: '+94', validate: validators.mobile() },
-      { key: 'fax', label: 'Fax', type: 'text' },
+      { key: 'phone', label: 'Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'mobile', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'fax', label: 'Fax', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d' },
       { key: 'geo', label: 'Coordinates', type: 'geocode' },
     ],
   },

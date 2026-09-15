@@ -273,6 +273,10 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .searchable-select-option.is-selected { background:var(--mango-tint); font-weight:700; }
 .searchable-select-empty { padding:10px; font-size:12.5px; color:var(--text-muted); }
 .form-two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+/* lat/lng number inputs: no spinners — values are pasted/geocoded, never nudged */
+.drawer input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.drawer input[type="number"]::-webkit-outer-spin-button,
+.drawer input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .radio-row, .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
 .chip-opt { font-size:12px; font-weight:600; padding:8px 13px; border-radius:20px; border:1.5px solid var(--line); color:var(--text-muted); background:var(--surface); cursor:pointer; }
 .chip-opt.selected { background:var(--ink); color:#fff; border-color:var(--ink); }

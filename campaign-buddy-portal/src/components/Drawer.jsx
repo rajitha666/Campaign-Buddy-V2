@@ -166,11 +166,19 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange,
     );
   }
 
-  if (f.type === 'text') {
+  if (f.type === 'text' || f.type === 'tel' || f.type === 'number') {
     return (
       <div className="form-row">
         <label>{f.label} {reqMark}</label>
-        <input type="text" placeholder={f.placeholder || ''} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        <input
+          type={f.type}
+          pattern={f.pattern}
+          inputMode={f.type === 'tel' ? 'tel' : undefined}
+          step={f.type === 'number' ? 'any' : undefined}
+          placeholder={f.placeholder || ''}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+        />
         {error ? <div className="form-error">{error}</div> : null}
       </div>
     );
@@ -294,8 +302,8 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange,
           📍 Get Latitude and Longitude values
         </button>
         <div className="form-two">
-          <div><label>Latitude <span className="req">*</span></label><input type="text" value={lat} onChange={(e) => onChange({ lat: e.target.value, lng })} /></div>
-          <div><label>Longitude <span className="req">*</span></label><input type="text" value={lng} onChange={(e) => onChange({ lat, lng: e.target.value })} /></div>
+          <div><label>Latitude <span className="req">*</span></label><input type="number" step="any" value={lat} onChange={(e) => onChange({ lat: e.target.value, lng })} /></div>
+          <div><label>Longitude <span className="req">*</span></label><input type="number" step="any" value={lng} onChange={(e) => onChange({ lat, lng: e.target.value })} /></div>
         </div>
       </div>
     );
