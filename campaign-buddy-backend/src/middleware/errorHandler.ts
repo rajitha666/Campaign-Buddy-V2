@@ -4,7 +4,7 @@ import { ApiError } from "../utils/apiResponse";
 
 // Central error formatter — every route is wrapped in asyncHandler, so any thrown
 // ApiError (or unexpected error) lands here and is formatted per Backend Spec v3 §1.1.
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({
       error: { code: err.code, message: err.message, ...(err.field ? { field: err.field } : {}) },
@@ -27,9 +27,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       return;
     }
     if (err.code === "P2003") {
-      res.status(409).json({
-        error: { code: "IN_USE", message: "This record is referenced by other data and cannot be deleted" },
-      });
+      // Same Postgres error code covers two different situations: deleting a
+      // row something else still points at, and creating/updating a row that
+      // points at something that doesn't exist (#21) — word it accordingly.
+      const message = req.method === "DELETE"
+        ? "This record is referenced by other data and cannot be deleted"
+        : "This record references data that doesn't exist";
+      res.status(409).json({ error: { code: "IN_USE", message } });
       return;
     }
   }

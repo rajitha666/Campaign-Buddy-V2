@@ -22,6 +22,14 @@ const STAFF_WRITABLE = [
   "bankAccountName", "bankName", "bankAccountNumber", "bankBranch",
 ] as const;
 
+// The portal submits "" for any blank optional field (#21) — never send that
+// through raw. A DateTime? column (dateOfBirth) throws on "" rather than
+// accepting it, and it's not meaningfully different from "not set" for any
+// other optional field either, so treat it as null everywhere.
+const STAFF_REQUIRED = new Set<(typeof STAFF_WRITABLE)[number]>([
+  "employeeId", "fullName", "displayName", "userType", "mobileUsername",
+]);
+
 // staff.phone is only unique among *active* staff (a partial index — see
 // migration 20260915... phone_local_format_and_uniqueness). A plain P2002 from
 // the global error handler would report the raw index name; give a readable
@@ -41,9 +49,11 @@ function pickStaff(body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
   for (const key of STAFF_WRITABLE) {
     if (body[key] === undefined) continue;
-    if (key === "dateOfBirth" && body[key]) {
+    if (body[key] === "" && !STAFF_REQUIRED.has(key)) {
+      data[key] = null;
+    } else if (key === "dateOfBirth") {
       data[key] = new Date(body[key] as string);
-    } else if ((key === "phone" || key === "emergencyContactPhone") && typeof body[key] === "string" && body[key]) {
+    } else if (key === "phone" || key === "emergencyContactPhone") {
       // Store in the canonical local SL format so login-by-number matches
       // regardless of how the admin typed it (issue #3, #22).
       data[key] = normalizeLkPhone(body[key] as string) ?? body[key];
