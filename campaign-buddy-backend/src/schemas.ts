@@ -264,13 +264,18 @@ export const s = {
     .refine((v) => v.campaignItemId || v.campaignItemIds || v.addAll, {
       message: "campaignItemId, campaignItemIds or addAll required",
     }),
-  targetCreate: z.object({
-    dateFrom: dateish,
-    dateTo: dateish,
-    targetItemId: id,
-    targetValue: z.number().int(),
-    repeat: z.boolean().optional(),
-  }),
+  targetCreate: z
+    .object({
+      dateFrom: dateish,
+      dateTo: dateish,
+      targetItemId: id.optional(),
+      targetBrandId: id.optional(),
+      targetValue: z.number().int(),
+      repeat: z.boolean().optional(),
+    })
+    .refine((v) => !!v.targetItemId !== !!v.targetBrandId, {
+      message: "Exactly one of targetItemId or targetBrandId is required",
+    }),
 
   // ---- Admin: operations ----
   salesCorrect: z

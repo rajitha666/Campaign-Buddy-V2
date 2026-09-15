@@ -466,14 +466,15 @@ model ActivationItem {
 }
 
 model ActivationTarget {
-  id           String   @id @default(uuid())
-  activationId String
-  dateFrom     DateTime
-  dateTo       DateTime
-  repeat       Boolean  @default(false)
-  targetItemId String
-  targetValue  Int
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  activationId  String
+  dateFrom      DateTime
+  dateTo        DateTime
+  repeat        Boolean  @default(false)
+  targetItemId  String?
+  targetBrandId String?
+  targetValue   Int
+  createdAt     DateTime @default(now())
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { activations as activationsApi, campaigns as campaignsApi, items as itemsApi } from '../lib/endpoints';
+import { activations as activationsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -13,6 +13,7 @@ export default function ActivationTargets() {
   const [activation, setActivation] = useState(null);
   const [targets, setTargets] = useState([]);
   const [itemOptions, setItemOptions] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -20,16 +21,25 @@ export default function ActivationTargets() {
   async function load() {
     setLoading(true); setError(null);
     try {
-      const [actRes, targetsRes, ciRes] = await Promise.all([
+      const [actRes, targetsRes, aiRes] = await Promise.all([
         activationsApi.get(campaignId, activationId),
         activationsApi.targets.list(campaignId, activationId),
-        campaignsApi.items(campaignId),
+        activationsApi.items(campaignId, activationId),
       ]);
       setActivation(actRes?.data || null);
       setTargets(targetsRes?.data || []);
-      const itemsRes = await itemsApi.list();
-      const itemMap = Object.fromEntries((itemsRes?.data || []).map((i) => [i.id, i.name]));
-      setItemOptions((ciRes?.data || []).map((ci) => ({ value: ci.itemId, label: itemMap[ci.itemId] || ci.itemId })));
+
+      const activationItems = aiRes?.data || [];
+      setItemOptions(activationItems.map((ai) => {
+        const item = ai.campaignItem?.item;
+        return { value: item?.id, label: item?.name || item?.id };
+      }));
+      const brandMap = new Map();
+      activationItems.forEach((ai) => {
+        const brand = ai.campaignItem?.item?.brand;
+        if (brand) brandMap.set(brand.id, brand.name);
+      });
+      setBrandOptions([...brandMap].map(([value, label]) => ({ value, label })));
     } catch (e) {
       setError(e.message || 'Could not load targets.');
     } finally {
@@ -38,17 +48,23 @@ export default function ActivationTargets() {
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [campaignId, activationId]);
 
+  const isBrandWise = activation?.targetType === 'brand_wise';
+
   const fields = [
     { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
     { key: 'repeat', label: 'Repeat', type: 'radio', options: [{ value: false, label: 'Disabled' }, { value: true, label: 'Enabled' }] },
-    { key: 'targetItemId', label: 'Target Product', type: 'select', required: true, options: itemOptions },
+    isBrandWise
+      ? { key: 'targetBrandId', label: 'Target Brand', type: 'searchable-select', required: true, options: brandOptions, placeholder: 'Search brands…' }
+      : { key: 'targetItemId', label: 'Target Product', type: 'searchable-select', required: true, options: itemOptions, placeholder: 'Search products…' },
     { key: 'targetValue', label: 'Target', type: 'text', required: true, placeholder: 'Quantity or LKR, per the activation\'s Target Unit' },
   ];
 
   async function handleSubmit(values) {
     await activationsApi.targets.create(campaignId, activationId, {
       dateFrom: values.dateRange?.[0], dateTo: values.dateRange?.[1],
-      repeat: !!values.repeat, targetItemId: values.targetItemId, targetValue: Number(values.targetValue) || 0,
+      repeat: !!values.repeat,
+      ...(isBrandWise ? { targetBrandId: values.targetBrandId } : { targetItemId: values.targetItemId }),
+      targetValue: Number(values.targetValue) || 0,
     });
     push('Target added');
     load();
@@ -71,16 +87,31 @@ export default function ActivationTargets() {
           ) : (
             <div className="table-scroll">
               <table className="data-table">
-                <thead><tr><th>From</th><th>To</th><th>Product</th><th>Target</th><th>Repeat</th></tr></thead>
+                <thead><tr><th>From</th><th>To</th><th>Target</th><th>Value</th><th>Achieved</th><th>Progress</th><th>Repeat</th></tr></thead>
                 <tbody>
-                  {targets.map((t) => (
-                    <tr key={t.id}>
-                      <td>{t.dateFrom}</td><td>{t.dateTo}</td>
-                      <td>{itemOptions.find((o) => o.value === t.targetItemId)?.label || t.targetItemId}</td>
-                      <td>{t.targetValue}</td>
-                      <td><span className={`badge ${t.repeat ? 'success' : 'muted'}`}>{t.repeat ? 'Enabled' : 'Disabled'}</span></td>
-                    </tr>
-                  ))}
+                  {targets.map((t) => {
+                    const label = t.targetBrandId
+                      ? `${brandOptions.find((o) => o.value === t.targetBrandId)?.label || t.targetBrandId} (Brand)`
+                      : (itemOptions.find((o) => o.value === t.targetItemId)?.label || t.targetItemId);
+                    const percent = Math.min(t.percent ?? 0, 100);
+                    return (
+                      <tr key={t.id}>
+                        <td>{t.dateFrom}</td><td>{t.dateTo}</td>
+                        <td>{label}</td>
+                        <td>{t.targetValue}</td>
+                        <td>{t.achieved ?? 0}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--line)', overflow: 'hidden' }}>
+                              <div style={{ width: `${percent}%`, height: '100%', background: percent >= 100 ? 'var(--success, #2e7d32)' : 'var(--primary, #4f46e5)' }} />
+                            </div>
+                            <span className="cell-muted" style={{ fontSize: 12 }}>{t.percent ?? 0}%</span>
+                          </div>
+                        </td>
+                        <td><span className={`badge ${t.repeat ? 'success' : 'muted'}`}>{t.repeat ? 'Enabled' : 'Disabled'}</span></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

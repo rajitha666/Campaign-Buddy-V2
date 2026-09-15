@@ -7,6 +7,7 @@ import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "..
 import { coerceDates } from "../../utils/coerce";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { computeTargetProgress } from "./targetProgress";
 
 const router = Router();
 
@@ -123,7 +124,7 @@ router.get(
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationItem.findMany({
       where: { activationId: req.params.activationId },
-      include: { campaignItem: { include: { item: true } } },
+      include: { campaignItem: { include: { item: { include: { brand: true } } } } },
     });
     res.json(okList(rows, rows.length));
   })
@@ -181,7 +182,10 @@ router.get(
     const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationTarget.findMany({ where: { activationId: req.params.activationId } });
-    res.json(okList(rows, rows.length));
+    const withProgress = await Promise.all(
+      rows.map(async (row) => ({ ...row, ...(await computeTargetProgress(row, activation.targetUnit)) }))
+    );
+    res.json(okList(withProgress, withProgress.length));
   })
 );
 
@@ -191,18 +195,39 @@ router.post(
   requireRole("adm", "usr"),
   validate({ body: s.targetCreate }),
   asyncHandler(async (req, res) => {
-    const { dateFrom, dateTo, repeat, targetItemId, targetValue } = req.body as Record<string, unknown>;
+    const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
+    assertOutletAllowed(req, activation.outletId);
+
+    const { dateFrom, dateTo, repeat, targetItemId, targetBrandId, targetValue } = req.body as Record<string, unknown>;
+
+    if (activation.targetType === "brand_wise" && !targetBrandId) {
+      throw new ApiError(400, "VALIDATION_ERROR", "This activation is Brand Wise — targetBrandId is required");
+    }
+    if (activation.targetType === "item_wise" && !targetItemId) {
+      throw new ApiError(400, "VALIDATION_ERROR", "This activation is Item Wise — targetItemId is required");
+    }
+
+    if (targetBrandId) {
+      const brandOnActivation = await prisma.activationItem.findFirst({
+        where: { activationId: req.params.activationId, campaignItem: { item: { brandId: targetBrandId as string } } },
+      });
+      if (!brandOnActivation) {
+        throw new ApiError(400, "VALIDATION_ERROR", "targetBrandId has no items on this activation");
+      }
+    }
+
     const created = await prisma.activationTarget.create({
       data: {
         activationId: req.params.activationId,
         dateFrom: new Date(dateFrom as string),
         dateTo: new Date(dateTo as string),
         repeat: !!repeat,
-        targetItemId: targetItemId as string,
+        targetItemId: (targetItemId as string) ?? null,
+        targetBrandId: (targetBrandId as string) ?? null,
         targetValue: Number(targetValue) || 0,
       },
     });
-    res.status(201).json(ok(created));
+    res.status(201).json(ok({ ...created, ...(await computeTargetProgress(created, activation.targetUnit)) }));
   })
 );
 
