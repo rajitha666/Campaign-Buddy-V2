@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react';
 import { ICONS } from './Icons';
 import SearchableSelect from './SearchableSelect';
 
+// Stable identities for optional props: literal defaults ({}, []) inside the
+// destructure would be re-created on every render and re-trigger the reset
+// effect below (infinite loop that wipes whatever the user is typing).
+const EMPTY_FIELDS = [];
+const EMPTY_INIT = {};
+
 // Generic Add/Edit form drawer. `fields` config (see config/resources.js) drives
 // what renders; `initialValues` pre-fills for edit mode. onSubmit receives the
 // flat values object and should return a Promise (rejected -> shows error).
 export default function Drawer({
-  open, title, subtitle, fields = [], initialValues = {}, saveLabel = 'Save',
+  open, title, subtitle, fields = EMPTY_FIELDS, initialValues = EMPTY_INIT, saveLabel = 'Save',
   onClose, onSubmit,
 }) {
   const [values, setValues] = useState({});
