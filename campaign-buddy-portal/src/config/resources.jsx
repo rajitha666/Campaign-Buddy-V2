@@ -20,6 +20,7 @@ import {
   outletAttendance as outletAttendanceApi, tracking as trackingApi,
 } from '../lib/endpoints';
 import { validators, normalizePhone } from '../lib/validators';
+import { staffLabel } from '../lib/staffLabel';
 
 // @db.Date columns come back as "…T00:00:00.000Z"; render them in UTC so a
 // negative-offset browser doesn't show the previous day. Timestamps (checkInAt,
@@ -43,15 +44,11 @@ async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
   return (res?.data || []).map((r) => ({ value: r[valueKey], label: r[labelKey] || r.fullName || r.displayName || r[valueKey] }));
 }
 
-// Staff dropdowns (Promoter/Supervisor) show the full name plus the employee
-// code (e.g. "Tharindu Perera — EMP-0004") so they stay distinguishable once
-// the staff list grows — a bare first name isn't enough to pick the right person.
+// Staff dropdowns (Promoter/Supervisor) — see lib/staffLabel.js for the
+// "EMP-0004 - Tharindu Perera" format shared across every such dropdown.
 async function staffOptions() {
   const res = await staffApi.search('', { pageSize: 1000 });
-  return (res?.data || []).map((r) => ({
-    value: r.id,
-    label: r.employeeId ? `${r.fullName || r.displayName} — ${r.employeeId}` : (r.fullName || r.displayName || r.id),
-  }));
+  return (res?.data || []).map((r) => ({ value: r.id, label: staffLabel(r) }));
 }
 
 function buildLookup(rows, labelKey = 'name') {
@@ -126,7 +123,7 @@ export const RESOURCES = {
     deleteItem: ({ id }) => brandsApi.remove(id),
     formFields: [
       { key: 'name', label: 'Brand Name', type: 'text', required: true },
-      { key: 'clientId', label: 'Client', type: 'select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
+      { key: 'clientId', label: 'Client', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
     ],
   },
 
@@ -173,7 +170,7 @@ export const RESOURCES = {
     formFields: [
       { key: 'name', label: 'Product Name', type: 'text', required: true },
       { key: 'sku', label: 'SKU', type: 'text', required: true, validate: validators.required() },
-      { key: 'brandId', label: 'Brand', type: 'select', required: true, optionsLoader: () => optionsFrom(brandsApi.list) },
+      { key: 'brandId', label: 'Brand', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(brandsApi.list) },
       { key: 'shortDescription', label: 'Short Description', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'unitPrice', label: 'Price (LKR)', type: 'number', step: 1, required: true, validate: (v) => validators.integer()(v) || validators.required()(v) },
@@ -214,7 +211,7 @@ export const RESOURCES = {
       { key: 'name', label: 'Outlet Name', type: 'text', required: true },
       { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'address', label: 'Address', type: 'textarea', required: true },
-      { key: 'cityId', label: 'City', type: 'select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
+      { key: 'cityId', label: 'City', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
       { key: 'phone', label: 'Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'mobile', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'fax', label: 'Fax', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d' },
@@ -246,8 +243,8 @@ export const RESOURCES = {
       { key: 'name', label: 'Distributor Name', type: 'text', required: true },
       { key: 'contact', label: 'Contact', type: 'text' },
       { key: 'address', label: 'Address', type: 'text' },
-      { key: 'cityId', label: 'City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
-      { key: 'clientId', label: 'Client', type: 'select', optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
+      { key: 'cityId', label: 'City', type: 'searchable-select', optionsLoader: () => optionsFrom(citiesApi.list) },
+      { key: 'clientId', label: 'Client', type: 'searchable-select', optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
     ],
   },
 
@@ -261,8 +258,8 @@ export const RESOURCES = {
     deleteItem: ({ id }) => citiesApi.remove(id),
     formFields: [
       { key: 'name', label: 'City Name', type: 'text', required: true },
-      { key: 'province', label: 'Province', type: 'select', required: true, options: PROVINCES },
-      { key: 'district', label: 'District', type: 'select', required: true, options: DISTRICTS },
+      { key: 'province', label: 'Province', type: 'searchable-select', required: true, options: PROVINCES },
+      { key: 'district', label: 'District', type: 'searchable-select', required: true, options: DISTRICTS },
     ],
   },
 
@@ -301,7 +298,7 @@ export const RESOURCES = {
     formFields: [
       { key: 'campaignNo', label: 'Campaign No', type: 'text', required: true, placeholder: 'CMP-0234' },
       { key: 'name', label: 'Campaign Name', type: 'text', required: true },
-      { key: 'clientId', label: 'Client', type: 'select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
+      { key: 'clientId', label: 'Client', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
     ],
@@ -402,7 +399,7 @@ export const RESOURCES = {
       { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       // Promoter's city of residence — HR profile data, independent of any outlet
       // or activation. See issue #5: it is NOT derived from the assigned outlet.
-      { key: 'cityId', label: 'Home City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
+      { key: 'cityId', label: 'Home City', type: 'searchable-select', optionsLoader: () => optionsFrom(citiesApi.list) },
       { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea' },
       { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
 
@@ -426,7 +423,7 @@ export const RESOURCES = {
     title: 'Staff Attendance', subtitle: 'Check-in / check-out log for field promoters.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) },
       { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' },
     ],
     columns: [
@@ -489,7 +486,7 @@ export const RESOURCES = {
     updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, values),
     deleteItem: ({ campaignId, id }) => supervisorTasksApi.remove(campaignId, id),
     formFields: [
-      { key: 'category', label: 'Category', type: 'select', required: true, options: ['Sale', 'Outlet PR', 'Documentation', 'Discipline', 'Competitor Activities', 'Communication', 'Capability / Knowledge', 'Attitude', 'Attire & Grooming'] },
+      { key: 'category', label: 'Category', type: 'searchable-select', required: true, options: ['Sale', 'Outlet PR', 'Documentation', 'Discipline', 'Competitor Activities', 'Communication', 'Capability / Knowledge', 'Attitude', 'Attire & Grooming'] },
       { key: 'taskType', label: 'Task Type', type: 'radio', options: [{ value: 'range', label: 'Range' }, { value: 'feedback', label: 'Feedback' }] },
       { key: 'task', label: 'Task', type: 'textarea', required: true, placeholder: 'The question or instruction shown to the supervisor' },
     ],
@@ -535,7 +532,7 @@ export const RESOURCES = {
   skuSales: {
     title: 'SKU Wise Sales', subtitle: 'Raw per-item, per-promoter sales log.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
@@ -580,7 +577,7 @@ export const RESOURCES = {
   clientReports: {
     title: 'Client Reports', subtitle: 'Item-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    filters: [{ key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) }],
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }],
     columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
   },
@@ -596,8 +593,8 @@ export const RESOURCES = {
     title: 'Reorder', subtitle: 'Products at or below their reorder level, per outlet.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'outletId', label: 'Outlet', type: 'select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) },
-      { key: 'brandId', label: 'Brand', type: 'select', allLabel: 'All brands', optionsLoader: () => optionsFrom(brandsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'brandId', label: 'Brand', type: 'searchable-select', allLabel: 'All brands', optionsLoader: () => optionsFrom(brandsApi.list) },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
@@ -627,7 +624,7 @@ export const RESOURCES = {
       { key: 'password', label: 'Password', type: 'text', required: true },
       { key: 'displayName', label: 'Display Name', type: 'text', required: true },
       { key: 'email', label: 'Email', type: 'text' },
-      { key: 'roleId', label: 'User Role', type: 'select', required: true, optionsLoader: () => optionsFrom(rolesApi.list, 'label', 'id') },
+      { key: 'roleId', label: 'User Role', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(rolesApi.list, 'label', 'id') },
       { key: 'isActive', label: 'Is Active', type: 'radio', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
     ],
   },
@@ -636,8 +633,8 @@ export const RESOURCES = {
     title: 'Outlet Wise', subtitle: 'Sales rollup by outlet.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'outletId', label: 'Outlet', type: 'select', optionsLoader: () => optionsFrom(outletsApi.list) },
-      { key: 'duration', label: 'Duration', type: 'select', options: ['Daily', 'Weekly', 'Monthly'] },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'duration', label: 'Duration', type: 'searchable-select', options: ['Daily', 'Weekly', 'Monthly'] },
     ],
     columns: [{ key: 'outletName', label: 'Outlet' }, { key: 'footFall', label: 'Foot Fall' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     emptyHint: 'No sales or footfall recorded for the selected scope yet.',
@@ -648,7 +645,7 @@ export const RESOURCES = {
     title: 'Promoter Tracking', subtitle: 'GPS breadcrumb trail while checked in.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Promoter', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
+      { key: 'staffId', label: 'Promoter', type: 'searchable-select', optionsLoader: staffOptions },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
@@ -664,7 +661,7 @@ export const RESOURCES = {
     title: 'Supervisor Tracking', subtitle: 'GPS breadcrumb trail for supervisors.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Supervisor', type: 'select', optionsLoader: () => optionsFrom((q) => staffApi.search('', q), 'displayName') },
+      { key: 'staffId', label: 'Supervisor', type: 'searchable-select', optionsLoader: staffOptions },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [

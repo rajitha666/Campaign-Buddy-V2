@@ -5,6 +5,8 @@ import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import Drawer from '../components/Drawer';
+import SearchableSelect from '../components/SearchableSelect';
+import { staffLabel } from '../lib/staffLabel';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -42,7 +44,7 @@ export default function AssignRoutes() {
   }, [currentCampaignId]);
 
   const supervisorOptions = useMemo(
-    () => supervisors.map((s) => ({ value: s.id, label: s.displayName || s.fullName })),
+    () => supervisors.map((s) => ({ value: s.id, label: staffLabel(s) })),
     [supervisors]
   );
   const outletOptions = useMemo(
@@ -137,7 +139,7 @@ export default function AssignRoutes() {
 
   function supervisorLabel(id) {
     const s = supervisors.find((x) => x.id === id);
-    return s ? (s.displayName || s.fullName) : id;
+    return s ? staffLabel(s) : id;
   }
 
   return (
@@ -148,9 +150,7 @@ export default function AssignRoutes() {
       </div>
       <div className="filter-bar">
         <div className="filter-field"><label>Supervisor</label>
-          <select value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)}>
-            {supervisors.map((s) => <option key={s.id} value={s.id}>{s.displayName || s.fullName}</option>)}
-          </select>
+          <SearchableSelect options={supervisorOptions} value={supervisorId} onChange={setSupervisorId} placeholder="Search supervisors…" />
         </div>
         <button className="btn btn-secondary btn-sm" onClick={load}>Load</button>
       </div>

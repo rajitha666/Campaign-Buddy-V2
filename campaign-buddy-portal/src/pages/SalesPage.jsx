@@ -14,6 +14,8 @@ import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import SalesCorrectionGrid from '../components/SalesCorrectionGrid';
+import SearchableSelect from '../components/SearchableSelect';
+import { staffLabel } from '../lib/staffLabel';
 
 function todayISO(offsetDays = 0) {
   const d = new Date();
@@ -122,22 +124,20 @@ export default function SalesPage() {
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
 
+  const outletOptions = outlets.map((o) => ({ value: o.id, label: o.name }));
+  const staffOptions = staffList.map((s) => ({ value: s.id, label: staffLabel(s) }));
+  const activationOptions = activationsList.map((a) => ({ value: a.id, label: a.name }));
+
   const filterSlot = (
     <div className="filter-bar">
       <div className="filter-field"><label>Outlet</label>
-        <select value={form.outletId} onChange={(e) => setForm((f) => ({ ...f, outletId: e.target.value }))}>
-          <option value="">Select...</option>{outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-        </select>
+        <SearchableSelect options={outletOptions} value={form.outletId} onChange={(v) => setForm((f) => ({ ...f, outletId: v }))} placeholder="Search outlets…" />
       </div>
       <div className="filter-field"><label>Promoter</label>
-        <select value={form.staffId} onChange={(e) => setForm((f) => ({ ...f, staffId: e.target.value }))}>
-          <option value="">Select...</option>{staffList.map((s) => <option key={s.id} value={s.id}>{s.displayName || s.fullName}</option>)}
-        </select>
+        <SearchableSelect options={staffOptions} value={form.staffId} onChange={(v) => setForm((f) => ({ ...f, staffId: v }))} placeholder="Search promoters…" />
       </div>
       <div className="filter-field"><label>Activation</label>
-        <select value={form.activationId} onChange={(e) => setForm((f) => ({ ...f, activationId: e.target.value }))}>
-          <option value="">Select...</option>{activationsList.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
+        <SearchableSelect options={activationOptions} value={form.activationId} onChange={(v) => setForm((f) => ({ ...f, activationId: v }))} placeholder="Search activations…" />
       </div>
       <div className="filter-field"><label>Date</label>
         <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />

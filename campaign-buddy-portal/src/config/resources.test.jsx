@@ -117,6 +117,32 @@ describe('resources config', () => {
     expect(sku.validate('TF-320-TT')).toBeNull();
   });
 
+  it('no formField or filter uses a plain (non-searchable) select — issue #6', () => {
+    for (const [key, cfg] of Object.entries(RESOURCES)) {
+      for (const f of [...(cfg.formFields || []), ...(cfg.filters || [])]) {
+        expect(f.type, `${key}.${f.key}`).not.toBe('select');
+      }
+    }
+  });
+
+  it('every Promoter/Supervisor dropdown shows "ID - Full Name" — issue #7', async () => {
+    const spy = vi.spyOn(staffApi, 'search').mockResolvedValue({
+      data: [{ id: 's1', employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu', userType: 'promoter' }],
+    });
+    try {
+      const activationStaffField = RESOURCES.activations.formFields.find((f) => f.key === 'staffId');
+      const activationSupervisorField = RESOURCES.activations.formFields.find((f) => f.key === 'supervisorStaffId');
+      const promoterTrackingField = RESOURCES.promoterTracking.filters.find((f) => f.key === 'staffId');
+      const supervisorTrackingField = RESOURCES.supervisorTracking.filters.find((f) => f.key === 'staffId');
+      for (const f of [activationStaffField, activationSupervisorField, promoterTrackingField, supervisorTrackingField]) {
+        const options = await f.optionsLoader();
+        expect(options[0].label).toBe('EMP-0004 - Tharindu Jayasuriya');
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('items unitPrice and reorderLevel are native integer number fields (ACH)', async () => {
     const unitPrice = RESOURCES.items.formFields.find((f) => f.key === 'unitPrice');
     const reorder = RESOURCES.items.formFields.find((f) => f.key === 'reorderLevel');

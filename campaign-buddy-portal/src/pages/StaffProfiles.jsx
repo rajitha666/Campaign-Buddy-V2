@@ -4,6 +4,7 @@ import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import Badge from '../components/Badge';
 import SearchableSelect from '../components/SearchableSelect';
+import { staffLabel } from '../lib/staffLabel';
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '—');
 const typeLabel = (t) => (t === 'supervisor' ? 'Supervisor' : 'Promoter');
@@ -77,7 +78,7 @@ export default function StaffProfiles() {
 
   const selectOptions = staffOptions.map((s) => ({
     value: s.id,
-    label: `${s.fullName || s.displayName} — ${typeLabel(s.userType)}`,
+    label: `${staffLabel(s)} (${typeLabel(s.userType)})`,
   }));
 
   const profile = data?.profile;

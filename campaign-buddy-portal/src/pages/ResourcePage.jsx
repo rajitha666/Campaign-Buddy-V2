@@ -40,9 +40,26 @@ export default function ResourcePage({ resourceKey }) {
   const [drawerMode, setDrawerMode] = useState('add');
   const [drawerRow, setDrawerRow] = useState(null);
   const [resolvedFields, setResolvedFields] = useState([]);
+  const [resolvedFilters, setResolvedFilters] = useState(config?.filters || []);
   const [productsRow, setProductsRow] = useState(null);
 
   const needsCampaign = !!config?.scopeToCampaign;
+
+  // Filters (FilterBar) get the same optionsLoader -> options resolution as
+  // the Drawer's formFields — without this, a filter dropdown backed by
+  // optionsLoader (Outlet, Promoter, Supervisor, …) never gets any options.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const filters = await Promise.all((config?.filters || []).map(async (f) => {
+        if (!f.optionsLoader) return f;
+        try { return { ...f, options: await f.optionsLoader() }; }
+        catch { return { ...f, options: [] }; }
+      }));
+      if (!cancelled) setResolvedFilters(filters);
+    })();
+    return () => { cancelled = true; };
+  }, [config]);
   const campaignId = currentCampaignId;
 
   const load = useCallback(async () => {
@@ -164,7 +181,7 @@ export default function ResourcePage({ resourceKey }) {
       ) : (
         <>
           <FilterBar
-            filters={config.filters}
+            filters={resolvedFilters}
             values={filterValues}
             onChange={(k, v) => setFilterValues((f) => ({ ...f, [k]: v }))}
             onLoad={load}

@@ -1,3 +1,5 @@
+import SearchableSelect from './SearchableSelect';
+
 export default function FilterBar({ filters, values, onChange, onLoad }) {
   if (!filters || filters.length === 0) return null;
   return (
@@ -5,7 +7,14 @@ export default function FilterBar({ filters, values, onChange, onLoad }) {
       {filters.map((f) => (
         <div className="filter-field" key={f.key}>
           <label>{f.label}</label>
-          {f.type === 'select' ? (
+          {f.type === 'searchable-select' ? (
+            <SearchableSelect
+              options={f.allLabel ? [{ value: '', label: f.allLabel }, ...(f.options || [])] : (f.options || [])}
+              value={values[f.key] ?? ''}
+              onChange={(v) => onChange(f.key, v)}
+              placeholder={f.allLabel || `Search ${f.label.toLowerCase()}…`}
+            />
+          ) : f.type === 'select' ? (
             <select value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)}>
               {f.allLabel ? <option value="">{f.allLabel}</option> : null}
               {(f.options || []).map((o) => (
