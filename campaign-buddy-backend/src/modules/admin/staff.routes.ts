@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
@@ -89,8 +90,18 @@ router.delete(
   "/staff/:id",
   requireRole("adm"),
   asyncHandler(async (req, res) => {
-    await prisma.staff.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    try {
+      await prisma.staff.delete({ where: { id: req.params.id } });
+      res.status(204).send();
+    } catch (err) {
+      // Referenced by activations, attendance, sales history, etc. — this
+      // staff member has a real track record, so soft-delete (mark inactive:
+      // blocks mobile login, drops out of active pickers) instead of
+      // failing with IN_USE (#23).
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== "P2003") throw err;
+      const updated = await prisma.staff.update({ where: { id: req.params.id }, data: { status: "inactive" } });
+      res.json(ok({ ...updated, softDeleted: true })); // passwordHash omitted globally (src/utils/prisma.ts)
+    }
   })
 );
 

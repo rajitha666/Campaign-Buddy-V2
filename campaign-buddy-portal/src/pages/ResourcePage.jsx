@@ -111,8 +111,8 @@ export default function ResourcePage({ resourceKey }) {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
       if (!window.confirm('Delete this record? This cannot be undone.')) return;
       try {
-        await config.deleteItem({ campaignId, id: row.id });
-        push('Deleted');
+        const result = await config.deleteItem({ campaignId, id: row.id });
+        push(result?.data?.softDeleted ? 'This record has activity on file — marked inactive instead of deleted.' : 'Deleted');
         load();
       } catch (e) {
         push(e.message || 'Could not delete', 'error');
