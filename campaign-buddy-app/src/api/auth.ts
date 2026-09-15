@@ -14,6 +14,9 @@ export async function login(username: string, password: string): Promise<LoginRe
     username,
     password,
   });
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log('[login] raw response', JSON.stringify(data));
+  }
   return data.data;
 }
 

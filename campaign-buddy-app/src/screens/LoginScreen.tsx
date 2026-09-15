@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,13 +8,16 @@ import type { AuthStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
+import { getApiErrorMessage, warmUpApiConnection } from '@/api/client';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export function LoginScreen() {
   const { login } = useAuth();
   const navigation = useNavigation<Nav>();
+  // Warm the connection pool while the user reads/typing the form so the
+  // first real request doesn't pay the ~63s broken-IPv6 connect stall.
+  useEffect(() => warmUpApiConnection(), []);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +31,14 @@ export function LoginScreen() {
     try {
       await login(identifier.trim(), password);
     } catch (err) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        const axiosErr = err as { response?: { status?: number; data?: unknown }; message?: string };
+        console.log('[login] failed', {
+          message: axiosErr?.message,
+          status: axiosErr?.response?.status,
+          data: JSON.stringify(axiosErr?.response?.data),
+        });
+      }
       setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
