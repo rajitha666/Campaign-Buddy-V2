@@ -243,8 +243,8 @@ see a read-only **My Campaigns** card view.
     permanent & current address.
   - **Login**: mobile app username, password (set on create; leave blank on edit
     to keep). The promoter can sign in on CB Mobile with **either** their mobile
-    number (any common format — `0771234567`, `+94771234567` — stored canonical)
-    **or** this username.
+    number (any common format — `0771234567`, `+94771234567` — stored canonical
+    as `0771234567`) **or** this username.
   - **Emergency Contact**: name, phone.
   - **Bank Account**: account name, bank, account number, branch.
   - This 11-field HR set is the **final, deliberate scope** — no photo upload, no
@@ -511,7 +511,7 @@ These are the rules a marketing/sales or training writer needs to state correctl
 | **Mid-day restock edits opening stock** | There's never a second stock row for the same item/day — you raise `opening stock` in place, on mobile or via the portal's Update Sales. |
 | **Location pings: foreground + checked-in only** | ~60 s heartbeat, paused on background, stopped on check-out, never before a shift. |
 | **Read-only roles are enforced server-side** | Supervisor and Sponsor tokens are rejected on every write, regardless of the UI. |
-| **Promoters sign in by mobile number** | Either the mobile number (any format, stored canonical as `+94…`) or the legacy app username — same field, same password. |
+| **Promoters sign in by mobile number** | Either the mobile number (any format, stored canonical as `0…`, unique among active staff) or the legacy app username — same field, same password. |
 | **Custom sales fields are per campaign** | Defined by an admin; day-level or product-level; number / text / yes-no / dropdown. A required one blocks the promoter's submit. Type/scope freeze once values exist; used fields are archived, not deleted. |
 | **A confirmed sales summary is locked to the promoter** | After *Confirm & submit*, the promoter can't change that day's remarks or custom values — only head office can, via Update Sales. |
 | **Validation errors are already user-facing** | Every `VALIDATION_ERROR` message is a plain sentence naming the field ("From date is required") — the UI shows it directly, no translation layer needed. |

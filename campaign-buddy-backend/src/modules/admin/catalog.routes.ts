@@ -8,6 +8,7 @@ import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { normalizePhoneField } from "../../utils/phone";
 
 const router = Router();
 
@@ -49,11 +50,14 @@ router.get("/clients", asyncHandler(async (req, res) => {
   res.json(okList(rows, total));
 }));
 router.post("/clients", requireRole("adm", "usr"), validate({ body: s.clientCreate }), asyncHandler(async (req, res) => {
-  const created = await prisma.client.create({ data: req.body });
+  const created = await prisma.client.create({ data: { ...req.body, contactNumber: normalizePhoneField(req.body.contactNumber) } });
   res.status(201).json(ok(created));
 }));
 router.patch("/clients/:id", requireRole("adm", "usr"), validate({ body: s.clientUpdate }), asyncHandler(async (req, res) => {
-  const updated = await prisma.client.update({ where: { id: req.params.id }, data: req.body });
+  const updated = await prisma.client.update({
+    where: { id: req.params.id },
+    data: { ...req.body, contactNumber: normalizePhoneField(req.body.contactNumber) },
+  });
   res.json(ok(updated));
 }));
 router.delete("/clients/:id", requireRole("adm"), asyncHandler(async (req, res) => {
@@ -143,11 +147,16 @@ router.get("/outlets", asyncHandler(async (req, res) => {
   res.json(okList(rows, total));
 }));
 router.post("/outlets", requireRole("adm", "usr"), validate({ body: s.outletCreate }), asyncHandler(async (req, res) => {
-  const created = await prisma.outlet.create({ data: req.body });
+  const created = await prisma.outlet.create({
+    data: { ...req.body, phone: normalizePhoneField(req.body.phone), mobile: normalizePhoneField(req.body.mobile) },
+  });
   res.status(201).json(ok(created));
 }));
 router.patch("/outlets/:id", requireRole("adm", "usr"), validate({ body: s.outletUpdate }), asyncHandler(async (req, res) => {
-  const updated = await prisma.outlet.update({ where: { id: req.params.id }, data: req.body });
+  const updated = await prisma.outlet.update({
+    where: { id: req.params.id },
+    data: { ...req.body, phone: normalizePhoneField(req.body.phone), mobile: normalizePhoneField(req.body.mobile) },
+  });
   res.json(ok(updated));
 }));
 router.delete("/outlets/:id", requireRole("adm"), asyncHandler(async (req, res) => {

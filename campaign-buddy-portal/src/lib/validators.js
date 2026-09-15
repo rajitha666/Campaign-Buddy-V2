@@ -1,16 +1,21 @@
-// Normalises autofilled/typed phone input (separators, local 0-prefix,
-// IDD or country-code forms) so it matches the backend's strict +\d{10,14}.
+// Normalises autofilled/typed phone input (separators, IDD or country-code
+// forms) to the canonical local Sri Lankan format the backend stores
+// (issue #22) — e.g. "0771234567". Mirrors backend src/utils/phone.ts
+// normalizeLkPhone(). A recognizable foreign E.164 number (no local-SL
+// representation exists for it) is left as-is — e.g. an emergency contact
+// living abroad.
 export const normalizePhone = (v) => {
   if (!v) return v;
-  const digits = String(v).replace(/[\s.()\u2013\u2014-]/g, '');
-  if (!/^\+?\d+$/.test(digits)) return v.trim();
-  if (digits.startsWith('+')) return digits;
-  if (digits.startsWith('00')) return `+${digits.slice(2)}`; // IDD prefix
-  if (digits.startsWith('0')) return `+94${digits.slice(1)}`; // local trunk 0
-  // bare 9-digit local number (e.g. 772222222) — treat as 0-subscribed local
-  if (digits.length === 9) return `+940${digits}`;
-  // international number without the + (e.g. 94771234567)
-  return `+${digits}`;
+  const trimmed = String(v).trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return trimmed;
+
+  if (digits.length === 10 && digits.startsWith('0')) return digits; // already local
+  if (digits.length === 11 && digits.startsWith('94')) return `0${digits.slice(2)}`; // +94/94 country code
+  if (digits.length === 9 && digits.startsWith('7')) return `0${digits}`; // bare 9-digit mobile
+
+  if (trimmed.startsWith('+') && digits.length >= 10 && digits.length <= 15) return `+${digits}`;
+  return trimmed;
 };
 
 export const validators = {
@@ -19,9 +24,9 @@ export const validators = {
 
   mobile: (msg) => (v) => {
     if (!v || !v.trim()) return null;
-    if (!/^\+\d{10,14}$/.test(v.trim()))
-      return msg || 'Invalid format (e.g., +94771234567)';
-    return null;
+    const n = normalizePhone(v);
+    if (/^0\d{9}$/.test(n) || /^\+\d{10,15}$/.test(n)) return null;
+    return msg || 'Enter a valid mobile number (e.g. 0771234567)';
   },
 
   nic: (msg) => (v) => {

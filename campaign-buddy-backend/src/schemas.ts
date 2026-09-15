@@ -9,6 +9,41 @@ const dateish = z
 const nonNegInt = z.number().int().min(0);
 const lat = z.number().min(-90).max(90);
 const lng = z.number().min(-180).max(180);
+const phoneField = z.string().optional().refine(
+  (v) => !v || !v.trim() || looksLikePhone(v),
+  { message: "Enter a valid mobile number (e.g. 0771234567)" }
+);
+
+// Shared by staffCreate and staffUpdate (as .partial()) so PATCH validates
+// each field it's given the same way POST does, instead of the previous
+// unchecked passthrough (issue #22).
+const staffCreateSchema = z.object({
+  employeeId: z.string().min(1),
+  fullName: z.string().min(1),
+  displayName: z.string().min(1),
+  userType: z.enum(["promoter", "supervisor"]),
+  mobileUsername: z.string().min(1),
+  password: z.string().min(1),
+  status: z.enum(["active", "inactive"]).optional(),
+  phone: phoneField,
+  cityId: id.optional(),
+  reportsToStaffId: id.optional(),
+  linkedUserId: id.optional(),
+  nic: z.string().optional().refine(
+    (v) => !v || /^(\d{9}[VXvX]|\d{12})$/.test(v.trim()),
+    { message: "Invalid NIC format (e.g., 891234567V or 198912345678)" }
+  ),
+  dateOfBirth: z.string().optional(),
+  gender: z.string().optional(),
+  permanentAddress: z.string().optional(),
+  currentAddress: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: phoneField,
+  bankAccountName: z.string().optional(),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankBranch: z.string().optional(),
+});
 
 export const s = {
   // ---- Auth (both spaces) ----
@@ -71,7 +106,10 @@ export const s = {
   clientCreate: z.object({
     companyName: z.string().min(1),
     clientName: z.string().min(1),
-    contactNumber: z.string().optional(),
+    contactNumber: z.string().optional().refine(
+      (v) => !v || !v.trim() || looksLikePhone(v),
+      { message: "Enter a valid mobile number (e.g. 0771234567)" }
+    ),
     email: z.string().optional(),
     address: z.string().optional(),
   }),
@@ -79,7 +117,10 @@ export const s = {
     .object({
       companyName: z.string().min(1),
       clientName: z.string().min(1),
-      contactNumber: z.string(),
+      contactNumber: z.string().refine(
+        (v) => !v || !v.trim() || looksLikePhone(v),
+        { message: "Enter a valid mobile number (e.g. 0771234567)" }
+      ),
       email: z.string(),
       address: z.string(),
     })
@@ -125,12 +166,12 @@ export const s = {
     contactPerson: z.string().optional(),
     address: z.string().optional(),
     phone: z.string().optional().refine(
-      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-      { message: "Invalid format (e.g., +94771234567)" }
+      (v) => !v || !v.trim() || looksLikePhone(v),
+      { message: "Enter a valid mobile number (e.g. 0771234567)" }
     ),
     mobile: z.string().optional().refine(
-      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-      { message: "Invalid format (e.g., +94771234567)" }
+      (v) => !v || !v.trim() || looksLikePhone(v),
+      { message: "Enter a valid mobile number (e.g. 0771234567)" }
     ),
     fax: z.string().optional(),
     geofenceRadiusMeters: z.number().int().positive().optional(),
@@ -145,12 +186,12 @@ export const s = {
       contactPerson: z.string(),
       address: z.string(),
       phone: z.string().refine(
-        (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-        { message: "Invalid format (e.g., +94771234567)" }
+        (v) => !v || !v.trim() || looksLikePhone(v),
+        { message: "Enter a valid mobile number (e.g. 0771234567)" }
       ),
       mobile: z.string().refine(
-        (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-        { message: "Invalid format (e.g., +94771234567)" }
+        (v) => !v || !v.trim() || looksLikePhone(v),
+        { message: "Enter a valid mobile number (e.g. 0771234567)" }
       ),
       fax: z.string(),
       geofenceRadiusMeters: z.number().int().positive(),
@@ -347,40 +388,8 @@ export const s = {
   }),
 
   // ---- Admin: staff / RBAC ----
-  staffCreate: z.object({
-    employeeId: z.string().min(1),
-    fullName: z.string().min(1),
-    displayName: z.string().min(1),
-    userType: z.enum(["promoter", "supervisor"]),
-    mobileUsername: z.string().min(1),
-    password: z.string().min(1),
-    status: z.enum(["active", "inactive"]).optional(),
-    phone: z.string().optional().refine(
-      (v) => !v || !v.trim() || looksLikePhone(v) || /^\+\d{10,14}$/.test(v.trim()),
-      { message: "Enter a valid mobile number (e.g. 0771234567 or +94771234567)" }
-    ),
-    cityId: id.optional(),
-    reportsToStaffId: id.optional(),
-    linkedUserId: id.optional(),
-    nic: z.string().optional().refine(
-      (v) => !v || /^(\d{9}[VXvX]|\d{12})$/.test(v.trim()),
-      { message: "Invalid NIC format (e.g., 891234567V or 198912345678)" }
-    ),
-    dateOfBirth: z.string().optional(),
-    gender: z.string().optional(),
-    permanentAddress: z.string().optional(),
-    currentAddress: z.string().optional(),
-    emergencyContactName: z.string().optional(),
-    emergencyContactPhone: z.string().optional().refine(
-      (v) => !v || /^\+\d{10,14}$/.test(v.trim()),
-      { message: "Invalid format (e.g., +94771234567)" }
-    ),
-    bankAccountName: z.string().optional(),
-    bankName: z.string().optional(),
-    bankAccountNumber: z.string().optional(),
-    bankBranch: z.string().optional(),
-  }),
-  staffUpdate: z.record(z.string(), z.unknown()), // whitelisted in the handler
+  staffCreate: staffCreateSchema,
+  staffUpdate: staffCreateSchema.partial(), // also whitelisted in the handler (pickStaff)
   userCreate: z.object({
     username: z.string().min(1),
     password: z.string().min(1),

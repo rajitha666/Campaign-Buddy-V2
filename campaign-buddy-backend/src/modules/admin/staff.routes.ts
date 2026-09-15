@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
+import { ok, okList, notFound, validationError, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
@@ -22,15 +22,30 @@ const STAFF_WRITABLE = [
   "bankAccountName", "bankName", "bankAccountNumber", "bankBranch",
 ] as const;
 
+// staff.phone is only unique among *active* staff (a partial index — see
+// migration 20260915... phone_local_format_and_uniqueness). A plain P2002 from
+// the global error handler would report the raw index name; give a readable
+// message instead.
+async function withActivePhoneConflictAsDuplicate<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new ApiError(409, "DUPLICATE", "Another active staff member already uses this phone number", "phone");
+    }
+    throw err;
+  }
+}
+
 function pickStaff(body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
   for (const key of STAFF_WRITABLE) {
     if (body[key] === undefined) continue;
     if (key === "dateOfBirth" && body[key]) {
       data[key] = new Date(body[key] as string);
-    } else if (key === "phone" && typeof body[key] === "string" && body[key]) {
-      // Store the mobile number in canonical E.164 so login-by-number matches
-      // regardless of how the admin typed it (issue #3).
+    } else if ((key === "phone" || key === "emergencyContactPhone") && typeof body[key] === "string" && body[key]) {
+      // Store in the canonical local SL format so login-by-number matches
+      // regardless of how the admin typed it (issue #3, #22).
       data[key] = normalizeLkPhone(body[key] as string) ?? body[key];
     } else {
       data[key] = body[key];
@@ -68,7 +83,9 @@ router.post(
     const { password } = req.body as any;
     if (!password) throw validationError("password is required", "password");
     const passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
-    const created = await prisma.staff.create({ data: { ...pickStaff(req.body), passwordHash } as any });
+    const created = await withActivePhoneConflictAsDuplicate(() =>
+      prisma.staff.create({ data: { ...pickStaff(req.body), passwordHash } as any })
+    );
     res.status(201).json(ok(created)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
@@ -81,7 +98,9 @@ router.patch(
     const { password } = req.body as any;
     const data: any = pickStaff(req.body);
     if (password) data.passwordHash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
-    const updated = await prisma.staff.update({ where: { id: req.params.id }, data });
+    const updated = await withActivePhoneConflictAsDuplicate(() =>
+      prisma.staff.update({ where: { id: req.params.id }, data })
+    );
     res.json(ok(updated)); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );

@@ -227,7 +227,7 @@ Two entirely independent JWT spaces — different secrets, different payload sha
 
 ### 3.1 Staff (mobile)
 
-`POST /v1/auth/login` → `{ username, password }` → the `username` field is the staff member's mobile number (normalized to E.164 — see `src/utils/phone.ts`) or their legacy `Staff.mobileUsername`; resolves username first (unique), then phone (rejects if the number matches more than one staff row), verifies `passwordHash` (bcrypt), rejects if `status !== "active"`. Issues:
+`POST /v1/auth/login` → `{ username, password }` → the `username` field is the staff member's mobile number (normalized to the local SL format `0771234567` — see `src/utils/phone.ts`, issue #22) or their legacy `Staff.mobileUsername`; resolves username first (unique), then phone among **active** staff only (`phone` is unique per active staff, a partial index — rejects if the number matches more than one active staff row), verifies `passwordHash` (bcrypt), rejects if `status !== "active"`. Issues:
 - `accessToken` — JWT, payload `{ sub: staffId, type: "staff", userType }`, expires per `STAFF_JWT_EXPIRES_IN` (seconds).
 - `refreshToken` — random UUID, **hashed with SHA-256 before storage** in `StaffRefreshToken`, TTL `STAFF_REFRESH_TOKEN_TTL_DAYS`.
 

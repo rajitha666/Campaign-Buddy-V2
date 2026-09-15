@@ -38,8 +38,8 @@ describe("auth", () => {
     expect(res.status).toBe(401);
   });
 
-  it("mobile login accepts the mobile number in any common format (#3)", async () => {
-    await makeStaff({ mobileUsername: "field2b", phone: "+94771234567" });
+  it("mobile login accepts the mobile number in any common format (#3, #22)", async () => {
+    await makeStaff({ mobileUsername: "field2b", phone: "0771234567" });
     for (const id of ["+94771234567", "0771234567", "077 123 4567"]) {
       const res = await request(app).post("/v1/auth/login").send({ username: id, password: "field-pw" });
       expect(res.status, id).toBe(200);
@@ -47,11 +47,15 @@ describe("auth", () => {
     }
   });
 
-  it("mobile login rejects a phone number shared by more than one staff member", async () => {
-    await makeStaff({ mobileUsername: "dup1", phone: "+94770000009" });
-    await makeStaff({ mobileUsername: "dup2", phone: "+94770000009" });
+  it("a phone reused by an inactive staff member doesn't make login for the active one ambiguous (#22, #23)", async () => {
+    // The unique index only covers active staff, so an inactive (e.g.
+    // soft-deleted, #23) staff member can keep the same phone a new active
+    // hire now uses — login-by-number must still resolve unambiguously.
+    await makeStaff({ mobileUsername: "dup-active", phone: "0770000009" });
+    await makeStaff({ mobileUsername: "dup-gone", phone: "0770000009", status: "inactive" });
+
     const res = await request(app).post("/v1/auth/login").send({ username: "0770000009", password: "field-pw" });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
   });
 
   it("GET /v1/me returns the API-spec User shape", async () => {

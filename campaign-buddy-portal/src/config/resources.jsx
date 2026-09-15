@@ -95,14 +95,14 @@ export const RESOURCES = {
     fetchList: ({ query }) => clientsApi.list(query),
     createItem: ({ values }) => clientsApi.create({
       companyName: values.companyName, clientName: values.clientName,
-      contactNumber: values.contactNumber, email: values.email, address: values.address,
+      contactNumber: normalizePhone(values.contactNumber), email: values.email, address: values.address,
     }),
-    updateItem: ({ id, values }) => clientsApi.update(id, values),
+    updateItem: ({ id, values }) => clientsApi.update(id, { ...values, contactNumber: normalizePhone(values.contactNumber) }),
     deleteItem: ({ id }) => clientsApi.remove(id),
     formFields: [
       { key: 'companyName', label: 'Company', type: 'text', required: true, placeholder: 'e.g. Prisha Naturals (Pvt) Ltd' },
       { key: 'clientName', label: 'Client Name', type: 'text', required: true, placeholder: 'Primary contact name' },
-      { key: 'contactNumber', label: 'Contact Number', type: 'text', required: true, placeholder: '+94 71 234 5678' },
+      { key: 'contactNumber', label: 'Contact Number', type: 'tel', required: true, placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'email', label: 'Email', type: 'text', required: true, placeholder: 'name@company.lk' },
       { key: 'address', label: 'Address', type: 'textarea' },
     ],
@@ -215,8 +215,8 @@ export const RESOURCES = {
       { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'address', label: 'Address', type: 'textarea', required: true },
       { key: 'cityId', label: 'City', type: 'select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
-      { key: 'phone', label: 'Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
-      { key: 'mobile', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'phone', label: 'Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'mobile', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'fax', label: 'Fax', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d' },
       { key: 'geo', label: 'Coordinates', type: 'geocode' },
     ],
@@ -399,7 +399,7 @@ export const RESOURCES = {
       { key: 'gender', label: 'Gender', type: 'radio', options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
       { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
       { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number', validate: validators.nic() },
-      { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       // Promoter's city of residence — HR profile data, independent of any outlet
       // or activation. See issue #5: it is NOT derived from the assigned outlet.
       { key: 'cityId', label: 'Home City', type: 'select', optionsLoader: () => optionsFrom(citiesApi.list) },
@@ -412,7 +412,7 @@ export const RESOURCES = {
 
       { type: 'section', label: 'Emergency Contact' },
       { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
-      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', defaultValue: '+94', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
 
       { type: 'section', label: 'Bank Account' },
       { key: 'bankAccountName', label: 'Account Name', type: 'text' },

@@ -92,7 +92,7 @@ async function main() {
   for (const o of outletDefs) {
     const row = await findOrCreate(
       () => prisma.outlet.findFirst({ where: { outletNo: o.outletNo } }),
-      () => prisma.outlet.create({ data: { outletNo: o.outletNo, name: o.name, cityId: cities[o.city], latitude: o.lat, longitude: o.lng, contactPerson: o.contactPerson, address: o.address, phone: "+94 11 2" + rnd(100000, 999999) } }),
+      () => prisma.outlet.create({ data: { outletNo: o.outletNo, name: o.name, cityId: cities[o.city], latitude: o.lat, longitude: o.lng, contactPerson: o.contactPerson, address: o.address, phone: "011" + rnd(2000000, 2999999) } }),
     );
     outlets[o.name] = { id: row.id, lat: o.lat, lng: o.lng };
   }
@@ -111,8 +111,8 @@ async function main() {
 
   // ---- staff ----
   const supDefs = [
-    { employeeId: "SUP-0001", fullName: "Dinesh Ranatunga", displayName: "Dinesh", mobileUsername: "dinesh", phone: "+94775551122", city: "Rajagiriya", linkedUserId: supervisorUser.id },
-    { employeeId: "SUP-0002", fullName: "Ishara Fernando", displayName: "Ishara", mobileUsername: "ishara", phone: "+94775559988", city: "Dehiwala", linkedUserId: null as string | null },
+    { employeeId: "SUP-0001", fullName: "Dinesh Ranatunga", displayName: "Dinesh", mobileUsername: "dinesh", phone: "0775551122", city: "Rajagiriya", linkedUserId: supervisorUser.id },
+    { employeeId: "SUP-0002", fullName: "Ishara Fernando", displayName: "Ishara", mobileUsername: "ishara", phone: "0775559988", city: "Dehiwala", linkedUserId: null as string | null },
   ];
   const supervisors: Record<string, string> = {};
   for (const s of supDefs) {
@@ -125,10 +125,10 @@ async function main() {
   }
 
   const promDefs = [
-    { employeeId: "EMP-0001", fullName: "Sanduni Kumari", displayName: "Sanduni", mobileUsername: "sktest", phone: "+94771234567", city: "Nawala", outlet: "Nawala Retail Outlet", supervisor: "Dinesh Ranatunga" },
-    { employeeId: "EMP-0002", fullName: "Kasun Perera", displayName: "Kasun", mobileUsername: "kasunp", phone: "+94762223344", city: "Rajagiriya", outlet: "Keells Rajagiriya", supervisor: "Dinesh Ranatunga" },
-    { employeeId: "EMP-0003", fullName: "Nadeesha Silva", displayName: "Nadeesha", mobileUsername: "nadeeshas", phone: "+94713334455", city: "Dehiwala", outlet: "Arpico Dehiwala", supervisor: "Ishara Fernando" },
-    { employeeId: "EMP-0004", fullName: "Tharindu Jayasuriya", displayName: "Tharindu", mobileUsername: "tharinduj", phone: "+94714567890", city: "Nugegoda", outlet: "Glomark Nugegoda", supervisor: "Ishara Fernando" },
+    { employeeId: "EMP-0001", fullName: "Sanduni Kumari", displayName: "Sanduni", mobileUsername: "sktest", phone: "0771234567", city: "Nawala", outlet: "Nawala Retail Outlet", supervisor: "Dinesh Ranatunga" },
+    { employeeId: "EMP-0002", fullName: "Kasun Perera", displayName: "Kasun", mobileUsername: "kasunp", phone: "0762223344", city: "Rajagiriya", outlet: "Keells Rajagiriya", supervisor: "Dinesh Ranatunga" },
+    { employeeId: "EMP-0003", fullName: "Nadeesha Silva", displayName: "Nadeesha", mobileUsername: "nadeeshas", phone: "0713334455", city: "Dehiwala", outlet: "Arpico Dehiwala", supervisor: "Ishara Fernando" },
+    { employeeId: "EMP-0004", fullName: "Tharindu Jayasuriya", displayName: "Tharindu", mobileUsername: "tharinduj", phone: "0714567890", city: "Nugegoda", outlet: "Glomark Nugegoda", supervisor: "Ishara Fernando" },
   ];
   const promoters: Record<string, string> = {};
   for (const p of promDefs) {

@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 import { normalizeLkPhone, looksLikePhone } from "../src/utils/phone";
 
 describe("normalizeLkPhone", () => {
-  it("canonicalizes the common Sri Lankan formats to E.164", () => {
-    expect(normalizeLkPhone("0771234567")).toBe("+94771234567");
-    expect(normalizeLkPhone("771234567")).toBe("+94771234567");
-    expect(normalizeLkPhone("94771234567")).toBe("+94771234567");
-    expect(normalizeLkPhone("+94771234567")).toBe("+94771234567");
+  it("canonicalizes the common Sri Lankan formats to local format", () => {
+    expect(normalizeLkPhone("0771234567")).toBe("0771234567");
+    expect(normalizeLkPhone("771234567")).toBe("0771234567");
+    expect(normalizeLkPhone("94771234567")).toBe("0771234567");
+    expect(normalizeLkPhone("+94771234567")).toBe("0771234567");
   });
 
   it("ignores spaces, dashes and parens", () => {
-    expect(normalizeLkPhone("077 123 4567")).toBe("+94771234567");
-    expect(normalizeLkPhone("+94 77-123-4567")).toBe("+94771234567");
+    expect(normalizeLkPhone("077 123 4567")).toBe("0771234567");
+    expect(normalizeLkPhone("+94 77-123-4567")).toBe("0771234567");
   });
 
   it("returns null for things that aren't phone numbers", () => {

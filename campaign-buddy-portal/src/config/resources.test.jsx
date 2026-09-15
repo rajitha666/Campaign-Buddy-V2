@@ -72,7 +72,7 @@ describe('resources config', () => {
         expect(new RegExp(`^${f.pattern}$`).test(sample), `staff.${f.key}: ${sample}`).toBe(true);
       }
       expect(new RegExp(`^${f.pattern}$`).test('abc')).toBe(false);
-      // typed/local formats normalise to E.164 before hitting the backend
+      // typed/local formats normalise to the canonical local SL format before hitting the backend
       expect(f.validate('0771234567')).toBeNull();
       expect(f.validate('+94 71 222 2222')).toBeNull();
       expect(f.validate('abc')).toBeTypeOf('string');
@@ -83,8 +83,8 @@ describe('resources config', () => {
     const spy = vi.spyOn(staffApi, 'create').mockResolvedValue({ data: {} });
     try {
       await RESOURCES.staff.createItem({ values: { employeeId: 'E1', phone: '0771234567', emergencyContactPhone: '94771234567' } });
-      expect(spy.mock.calls[0][0].phone).toBe('+94771234567');
-      expect(spy.mock.calls[0][0].emergencyContactPhone).toBe('+94771234567');
+      expect(spy.mock.calls[0][0].phone).toBe('0771234567');
+      expect(spy.mock.calls[0][0].emergencyContactPhone).toBe('0771234567');
     } finally {
       spy.mockRestore();
     }

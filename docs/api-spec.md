@@ -79,7 +79,7 @@ See `src/utils/validationMessages.ts`.
 | `fullName` | string | |
 | `displayName` | string | preferred short name; used for the home-screen greeting |
 | `username` | string | app login username (mobile number also works — see §3) |
-| `phone` | string | E.164 format, e.g. `"+94771234567"` |
+| `phone` | string | local Sri Lankan format, e.g. `"0771234567"` |
 | `role` | enum: `field_rep`, `campaign_owner`, `admin` | |
 | `avatarInitials` | string | 2 chars, derived server-side from `displayName` (falls back to `fullName`) |
 | `reportsToUserId` | string (UUID), nullable | approver for leave requests |
@@ -291,8 +291,10 @@ See `GET /campaigns/{campaignId}/performance` in §6.9 for shape.
 | `username` | string | yes — the staff member's **mobile number** (any common Sri Lankan format: `0771234567`, `771234567`, `+94771234567`) **or** their legacy app username |
 | `password` | string | yes |
 
-The mobile number is matched after normalizing to E.164. A number that maps to
-more than one staff member is treated as invalid credentials.
+The mobile number is matched after normalizing to the local Sri Lankan format
+(`0771234567`). A number that maps to more than one *active* staff member is
+treated as invalid credentials — an inactive/soft-deleted staff member (#23)
+reusing an old number doesn't count.
 
 **Response `200`**
 ```json
@@ -328,7 +330,7 @@ Invalidates the current refresh token. **Response `204`.**
     "id": "u_123",
     "employeeId": "DYR-0142",
     "fullName": "Sanduni Kumari",
-    "phone": "+94771234567",
+    "phone": "0771234567",
     "role": "field_rep",
     "reportsToName": "Neel Dharmapriya"
   }

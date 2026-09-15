@@ -24,7 +24,10 @@ async function findStaffByIdentifier(identifier: string) {
 
   const phone = normalizeLkPhone(raw);
   if (!phone) return null;
-  const matches = await prisma.staff.findMany({ where: { phone }, take: 2 });
+  // Scoped to active staff: phone is only unique among active rows (#22, #23),
+  // so an inactive/soft-deleted staff member reusing an old number must not
+  // make a live login look ambiguous.
+  const matches = await prisma.staff.findMany({ where: { phone, status: "active" }, take: 2 });
   return matches.length === 1 ? matches[0] : null;
 }
 
