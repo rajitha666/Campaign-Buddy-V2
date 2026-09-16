@@ -3,6 +3,7 @@ import { NAV } from '../config/nav';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import ReportIssueModal from './ReportIssueModal';
+import { ICONS } from './Icons';
 
 function findLabel(pathname) {
   for (const sec of NAV) {
@@ -78,7 +79,17 @@ export default function Topbar() {
           </span>
         </div>
         <div style={{ position: 'relative' }}>
-          <div className="topbar-avatar" onClick={() => setMenuOpen((o) => !o)}>{initials}</div>
+          <div
+            className="topbar-profile"
+            onClick={() => setMenuOpen((o) => !o)}
+            role="button"
+            tabIndex={0}
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+          >
+            <div className="topbar-avatar">{initials}</div>
+            <span className={`topbar-profile-caret${menuOpen ? ' is-open' : ''}`}>{ICONS.chevron}</span>
+          </div>
           {menuOpen ? (
             <div className="logout-menu" onMouseLeave={() => setMenuOpen(false)}>
               <div className="item" style={{ cursor: 'default' }}>
