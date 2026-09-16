@@ -6,6 +6,11 @@ import SalesCorrectionGrid from '../components/SalesCorrectionGrid';
 import SearchableSelect from '../components/SearchableSelect';
 import { staffLabel } from '../lib/staffLabel';
 
+function dedupeByValue(options) {
+  const seen = new Set();
+  return options.filter((o) => (seen.has(o.value) ? false : (seen.add(o.value), true)));
+}
+
 export default function UpdateSales() {
   const { currentCampaignId } = useAuth();
   const [outlets, setOutlets] = useState([]);
@@ -20,11 +25,28 @@ export default function UpdateSales() {
       .catch(() => {});
   }, [currentCampaignId]);
 
+  // Auto-pick promoter + activation from the selected outlet (issue #37).
+  // Only auto-select when the outlet maps to exactly one Activation; if it has
+  // none or several, clear any stale pick from a previous outlet and leave it
+  // to the (now outlet-scoped) dropdowns below for a manual choice.
+  useEffect(() => {
+    if (!form.outletId) return;
+    const matches = activationsList.filter((a) => a.outletId === form.outletId);
+    setForm((f) => (matches.length === 1
+      ? { ...f, activationId: matches[0].id, staffId: matches[0].staffId }
+      : { ...f, activationId: '', staffId: '' }));
+  }, [form.outletId, activationsList]);
+
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
 
+  // Once an outlet is chosen, narrow Promoter/Activation to that outlet's own
+  // activations instead of the full campaign-wide lists.
+  const outletActivations = form.outletId ? activationsList.filter((a) => a.outletId === form.outletId) : activationsList;
   const outletOptions = outlets.map((o) => ({ value: o.id, label: o.name }));
-  const staffOptions = staffList.map((s) => ({ value: s.id, label: staffLabel(s) }));
-  const activationOptions = activationsList.map((a) => ({ value: a.id, label: a.name }));
+  const staffOptions = form.outletId
+    ? dedupeByValue(outletActivations.map((a) => ({ value: a.staffId, label: staffLabel(a.staff) })))
+    : staffList.map((s) => ({ value: s.id, label: staffLabel(s) }));
+  const activationOptions = outletActivations.map((a) => ({ value: a.id, label: a.name }));
 
   const filterSlot = (
     <div className="filter-bar">
