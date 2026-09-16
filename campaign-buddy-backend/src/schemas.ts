@@ -14,6 +14,13 @@ const phoneField = z.string().optional().refine(
   { message: "Enter a valid mobile number (e.g. 0771234567)" }
 );
 
+// FK-style id that also accepts the portal's "" for a blank optional field
+// (issue #21 convention). "" must survive parsing so the handler's pickStaff
+// can turn it into null — a PATCH that clears the field must still clear it;
+// zod's bare .optional() only passes undefined, so "" would 400 with a
+// misleading "is required" message (staff.cityId regression).
+const optionalId = id.or(z.literal("")).optional();
+
 // Shared by staffCreate and staffUpdate (as .partial()) so PATCH validates
 // each field it's given the same way POST does, instead of the previous
 // unchecked passthrough (issue #22).
@@ -26,9 +33,9 @@ const staffCreateSchema = z.object({
   password: z.string().min(1),
   status: z.enum(["active", "inactive"]).optional(),
   phone: phoneField,
-  cityId: id.optional(),
-  reportsToStaffId: id.optional(),
-  linkedUserId: id.optional(),
+  cityId: optionalId,
+  reportsToStaffId: optionalId,
+  linkedUserId: optionalId,
   nic: z.string().optional().refine(
     (v) => !v || /^(\d{9}[VXvX]|\d{12})$/.test(v.trim()),
     { message: "Invalid NIC format (e.g., 891234567V or 198912345678)" }

@@ -68,8 +68,22 @@ router.post(
   validate({ body: s.activationCreate }),
   asyncHandler(async (req, res) => {
     assertOutletAllowed(req, req.body.outletId);
-    const created = await prisma.activation.create({
-      data: { ...pickActivation(req.body), campaignId: req.params.campaignId } as any,
+    const created = await prisma.$transaction(async (tx) => {
+      const activation = await tx.activation.create({
+        data: { ...pickActivation(req.body), campaignId: req.params.campaignId } as any,
+      });
+      // #43 — default to the campaign's full item list. Portal activations used
+      // to start with zero ActivationItems and the promoter's Products screen
+      // was empty until every row was hand-created; the Activation Items screen
+      // still trims this default down to the actual subset.
+      const campaignItems = await tx.campaignItem.findMany({ where: { campaignId: req.params.campaignId }, select: { id: true } });
+      if (campaignItems.length) {
+        await tx.activationItem.createMany({
+          data: campaignItems.map((ci) => ({ activationId: activation.id, campaignItemId: ci.id })),
+          skipDuplicates: true,
+        });
+      }
+      return activation;
     });
     await autoGrantSupervisor(created.supervisorStaffId, req.params.campaignId, created.outletId);
     res.status(201).json(ok(created));

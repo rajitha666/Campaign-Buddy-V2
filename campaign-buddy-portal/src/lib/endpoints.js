@@ -80,6 +80,11 @@ export const staff = {
   update: (id, body) => api.patch(`/staff/${id}`, body),
   remove: (id) => api.delete(`/staff/${id}`),
   evaluation: (id, query) => api.get(`/staff/${id}/evaluation`, { query }),
+  uploadPhoto: (id, file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.postForm(`/staff/${id}/photo`, form);
+  },
 };
 export const activations = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/activations`, { query }),

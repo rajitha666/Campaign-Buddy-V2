@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app, resetDb, adminToken } from "./helpers";
+import { prisma } from "../src/utils/prisma";
 
 beforeEach(resetDb);
 
@@ -41,6 +42,56 @@ describe("POST /admin/v1/staff — blank optional fields (#21)", () => {
       .send({ dateOfBirth: "" });
     expect(patched.status).toBe(200);
     expect(patched.body.data.dateOfBirth).toBeNull();
+  });
+
+  // Blank optional *FK* fields — the schema used to reject "" for cityId (et.al.)
+  // with a misleading "City id is required" even though pickStaff converts ""
+  // to null. Regression: the exact payload reported from the portal.
+  it("accepts cityId as an empty string and stores null", async () => {
+    const token = await adminToken();
+    const res = await request(app)
+      .post("/admin/v1/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        employeeId: "EMP-BLANKCITY", fullName: "Blank City", displayName: "BC", userType: "promoter",
+        mobileUsername: "blankcity", password: "pw", cityId: "",
+      });
+      expect(res.status).toBe(201);
+      expect(res.body.data.cityId).toBeNull();
+  });
+
+  it("PATCH clears cityId when it is submitted as an empty string", async () => {
+    const token = await adminToken();
+    const city = await prisma.city.create({ data: { name: "C", province: "P", district: "D" } });
+    const created = await request(app)
+      .post("/admin/v1/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        employeeId: "EMP-CITYCLR", fullName: "City Clear", displayName: "CC", userType: "promoter",
+        mobileUsername: "cityclear", password: "pw", cityId: city.id,
+      });
+    expect(created.status).toBe(201);
+    expect(created.body.data.cityId).toBe(city.id);
+
+    const patched = await request(app)
+      .patch(`/admin/v1/staff/${created.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ cityId: "" });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data.cityId).toBeNull();
+  });
+
+  it("a real invalid cityId (non-empty) still reports the FK as not found", async () => {
+    const token = await adminToken();
+    const res = await request(app)
+      .post("/admin/v1/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        employeeId: "EMP-BADCITY", fullName: "X", displayName: "X", userType: "promoter",
+        mobileUsername: "badcity", password: "pw", cityId: "does-not-exist",
+      });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("IN_USE");
   });
 });
 

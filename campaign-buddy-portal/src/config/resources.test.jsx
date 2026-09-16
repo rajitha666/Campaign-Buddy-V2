@@ -90,6 +90,34 @@ describe('resources config', () => {
     }
   });
 
+  it('staff create/update uploads a picked profile photo after saving — issue #29', async () => {
+    const createSpy = vi.spyOn(staffApi, 'create').mockResolvedValue({ data: { id: 's_new' } });
+    const updateSpy = vi.spyOn(staffApi, 'update').mockResolvedValue({ data: { id: 's_1' } });
+    const photoSpy = vi.spyOn(staffApi, 'uploadPhoto').mockResolvedValue({ data: {} });
+    try {
+      const file = new File(['x'], 'me.jpg', { type: 'image/jpeg' });
+      // no photo picked → no upload call
+      await RESOURCES.staff.createItem({ values: { employeeId: 'E1' } });
+      expect(photoSpy).not.toHaveBeenCalled();
+      // photo picked → uploaded against the created/updated staff id
+      await RESOURCES.staff.createItem({ values: { employeeId: 'E2', image: file } });
+      expect(photoSpy).toHaveBeenCalledWith('s_new', file);
+      await RESOURCES.staff.updateItem({ id: 's_1', values: { employeeId: 'E2', image: file } });
+      expect(photoSpy).toHaveBeenCalledWith('s_1', file);
+    } finally {
+      createSpy.mockRestore();
+      updateSpy.mockRestore();
+      photoSpy.mockRestore();
+    }
+  });
+
+  it('staff form has a profile photo upload field with a preview — issue #29', () => {
+    const field = RESOURCES.staff.formFields.find((f) => f.key === 'image');
+    expect(field).toBeDefined();
+    expect(field.type).toBe('upload');
+    expect(field.previewKey).toBe('profilePictureUrl');
+  });
+
   it('outlets geo lat/lng inputs are native number fields', () => {
     expect(RESOURCES.outlets.formFields.find((f) => f.type === 'geo')?.latLngType || 'number').toBe('number');
   });

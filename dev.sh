@@ -2,8 +2,8 @@
 # Shortcut for the local dev stack. Does NOT tear anything down — for
 # `docker compose down` run it manually against the same -f files.
 #
-#   ./dev.sh up              start (services already built)
-#   ./dev.sh up backend      rebuild/report scoped:  ./dev.sh up && ./dev.sh up backend portal
+#   ./dev.sh up              start / rebuild changed images
+#   ./dev.sh up backend      rebuild + restart just the backend
 #   ./dev.sh stop            stop all services (volumes kept)
 #   ./dev.sh start           resume after stop
 #   ./dev.sh logs [service]  follow logs
@@ -24,7 +24,7 @@ cmd="$1"; shift
 files=(-f docker-compose.yml -f docker-compose.dev.yml $proxy)
 
 case "$cmd" in
-  up)    exec docker compose "${files[@]}" up -d "$@" ;;
+  up)    exec docker compose "${files[@]}" up -d --build "$@" ;;
   start) exec docker compose "${files[@]}" start "$@" ;;
   stop)  exec docker compose "${files[@]}" stop "$@" ;;
   logs)  exec docker compose "${files[@]}" logs -f "$@" ;;

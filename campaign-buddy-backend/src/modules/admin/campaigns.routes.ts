@@ -139,6 +139,14 @@ router.post(
     const created = await prisma.campaignItem.create({
       data: { campaignId, itemId: resolvedItemId },
     });
+    // #43 — backfill: item assigned to the campaign after activations exist
+    // must still reach the promoters; previously only future activations saw it.
+    await prisma.activationItem.createMany({
+      data: (
+        await prisma.activation.findMany({ where: { campaignId }, select: { id: true } })
+      ).map((a) => ({ activationId: a.id, campaignItemId: created.id })),
+      skipDuplicates: true,
+    });
     res.status(201).json(ok(created));
   })
 );

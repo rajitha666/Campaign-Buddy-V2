@@ -105,9 +105,18 @@ export default function StaffProfiles() {
           <div className="dash-grid">
             <div className="panel">
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div className="avatar-mini" style={{ width: 56, height: 56, fontSize: 19, borderRadius: 16 }}>
-                  {(profile?.displayName || profile?.fullName || '?').slice(0, 2).toUpperCase()}
-                </div>
+                {profile?.profilePictureUrl ? (
+                  <img
+                    src={profile.profilePictureUrl}
+                    alt=""
+                    className="avatar-mini"
+                    style={{ width: 56, height: 56, fontSize: 19, borderRadius: 16, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div className="avatar-mini" style={{ width: 56, height: 56, fontSize: 19, borderRadius: 16 }}>
+                    {(profile?.displayName || profile?.fullName || '?').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="h-display" style={{ fontSize: 17 }}>{profile?.fullName || profile?.displayName}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>

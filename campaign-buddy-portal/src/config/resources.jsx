@@ -363,7 +363,7 @@ export const RESOURCES = {
   staff: {
     title: 'Staff', subtitle: 'Promoters and supervisors across all campaigns.', addLabel: 'Add New Member',
     columns: [
-      { key: 'displayName', label: 'Name', render: (r) => <Avatar initials={(r.displayName || '?').slice(0, 2).toUpperCase()} name={r.displayName || r.fullName} sub={r.employeeId} /> },
+      { key: 'displayName', label: 'Name', render: (r) => <Avatar initials={(r.displayName || '?').slice(0, 2).toUpperCase()} imageUrl={r.profilePictureUrl} name={r.displayName || r.fullName} sub={r.employeeId} /> },
       { key: 'userType', label: 'Type', render: (r) => <Badge type={r.userType === 'supervisor' ? 'success' : 'info'}>{r.userType}</Badge> },
       { key: 'mobileUsername', label: 'App Username' },
       { key: 'cityName', label: 'Home City', render: (r) => r.cityName || r.cityId || '—' },
@@ -381,8 +381,22 @@ export const RESOURCES = {
       ...row,
       dateOfBirth: row.dateOfBirth ? fmtISO(row.dateOfBirth) : '',
     }),
-    createItem: ({ values }) => staffApi.create({ ...values, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) }),
-    updateItem: ({ id, values }) => staffApi.update(id, { ...values, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) }),
+    createItem: async ({ values }) => {
+      // `image` (the picked File) and `profilePictureUrl` (existing photo) are
+      // not JSON fields — the photo goes through the multipart upload route.
+      const { image, profilePictureUrl, ...jsonValues } = values;
+      const created = await staffApi.create({ ...jsonValues, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) });
+      // The photo endpoint targets an existing staff row, so the picked file
+      // uploads only after create — same pattern as catalog item images.
+      if (image instanceof File) await staffApi.uploadPhoto(created.data.id, image);
+      return created;
+    },
+    updateItem: async ({ id, values }) => {
+      const { image, profilePictureUrl, ...jsonValues } = values;
+      const updated = await staffApi.update(id, { ...jsonValues, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) });
+      if (image instanceof File) await staffApi.uploadPhoto(id, image);
+      return updated;
+    },
     deleteItem: ({ id }) => staffApi.remove(id),
     // Fixed HR field set for v3 (schema / Changelog v3 "Staff HR fields"). The
     // backend whitelists these columns; extras are ignored.
@@ -402,6 +416,7 @@ export const RESOURCES = {
       { key: 'cityId', label: 'Home City', type: 'searchable-select', optionsLoader: () => optionsFrom(citiesApi.list) },
       { key: 'permanentAddress', label: 'Permanent Address', type: 'textarea' },
       { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
+      { key: 'image', label: 'Profile Photo', type: 'upload', previewKey: 'profilePictureUrl' },
 
       { type: 'section', label: 'Login' },
       { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces' },

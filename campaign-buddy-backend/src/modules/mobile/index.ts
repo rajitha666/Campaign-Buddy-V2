@@ -11,8 +11,10 @@ import salesFieldsRoutes from "./salesFields.routes";
 import timeOffRoutes from "./timeOff.routes";
 import performanceRoutes from "./performance.routes";
 
-// Mobile app — /v1/*. Auth routes are public; everything else requires staffAuth.
+// Mobile app — /v1/*. Auth + health routes are public; everything else requires staffAuth.
 const router = Router();
+
+router.get("/health", (_req, res) => res.json({ status: "ok", service: "campaign-buddy-backend", spec: "v3" }));
 
 router.use(authRoutes); // /auth/login, /auth/refresh, /auth/forgot-password, /auth/logout (logout itself gated inline)
 
