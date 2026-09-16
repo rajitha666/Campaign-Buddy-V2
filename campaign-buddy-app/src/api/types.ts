@@ -27,6 +27,8 @@ export interface User {
   phone: string;
   role: UserRole;
   avatarInitials: string;
+  /** Staff profile photo, served from the API (/uploads/...) — issue #18/#29. */
+  profilePictureUrl?: string | null;
   reportsToUserId: UUID | null;
   reportsToName: string;
 }

@@ -17,6 +17,8 @@ interface AuthContextValue {
   isLoading: boolean; // true while restoring a session on cold start
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Re-fetch the signed-in user's profile (e.g. after uploading a new photo). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -71,8 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    setUser(await profileApi.getMe());
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>{children}</AuthContext.Provider>
   );
 }
 

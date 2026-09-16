@@ -332,10 +332,14 @@ Invalidates the current refresh token. **Response `204`.**
     "fullName": "Sanduni Kumari",
     "phone": "0771234567",
     "role": "field_rep",
-    "reportsToName": "Neel Dharmapriya"
+    "reportsToName": "Neel Dharmapriya",
+    "profilePictureUrl": "/uploads/staff/<staffId>-<ts>.png" | null
   }
 }
 ```
+
+### `POST /me/photo`
+Multipart `image` (JPEG/PNG, ≤ 5 MB). Uploads the caller's own profile picture (issue #18/#29); stored server-side like item images and returned/served via `profilePictureUrl` on `GET /me`. **Response `200`:** `{ "data": { "profilePictureUrl": "..." } }`
 
 ### `GET /me/assignments/today`
 Drives the Home campaign card. **Response `200`**

@@ -74,7 +74,7 @@ export function HomeScreen() {
               <HelpIcon />
             </Pressable>
             <Pressable onPress={() => navigation.navigate('Profile')}>
-              <Avatar initials={user?.avatarInitials ?? '—'} />
+              <Avatar initials={user?.avatarInitials ?? '—'} imageUrl={user?.profilePictureUrl} />
             </Pressable>
           </View>
         </View>
