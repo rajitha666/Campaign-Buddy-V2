@@ -2,10 +2,12 @@ import "dotenv/config";
 import { app } from "./app";
 import { startLicenseSnapshotJob } from "./jobs/licenseSnapshot";
 import { startIssueSyncJob } from "./jobs/issueSync";
+import { startAutoCheckoutJob } from "./jobs/autoCheckout";
 
 const port = Number(process.env.PORT || 4000);
 app.listen(port, () => {
   console.log(`Campaign Buddy backend (Spec v3) listening on port ${port}`);
   startLicenseSnapshotJob();
   startIssueSyncJob();
+  startAutoCheckoutJob();
 });
