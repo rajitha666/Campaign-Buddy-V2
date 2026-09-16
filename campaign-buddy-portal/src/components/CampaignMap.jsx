@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { ICONS } from './Icons';
 
 // Real basemap (OpenStreetMap tiles via Leaflet) with outlet + live sales-staff
 // markers. Staff use their last GPS ping; when none exists we fall back to the
@@ -14,10 +15,24 @@ const staffIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
+function fitMapToPoints(map, pts) {
+  if (!map || pts.length === 0) return;
+  map.invalidateSize();
+  if (pts.length === 1) { map.setView(pts[0], 15); return; }
+  const b = L.latLngBounds(pts);
+  // Coincident / near-coincident points give a degenerate box — just centre.
+  if (!b.isValid() || b.getNorth() - b.getSouth() < 0.001) map.setView(b.getCenter(), 15);
+  else map.fitBounds(b.pad(0.3), { maxZoom: 16 });
+}
+
 export default function CampaignMap({ outlets = [], staff = [], height = 380 }) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
+  // Auto-fit only the first time points show up — after that, periodic data
+  // refreshes (e.g. the 15s live-position poll) must not override the user's
+  // own pan/zoom (issue #40). "Recenter" below lets them opt back in.
+  const didInitialFitRef = useRef(false);
 
   const model = useMemo(() => resolvePoints(outlets, staff), [outlets, staff]);
 
@@ -73,26 +88,28 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380 }) 
     });
 
     const pts = [...model.outletPts, ...model.staffPts].map((p) => [p.lat, p.lng]);
-    const fit = () => {
-      if (pts.length === 0) return;
-      map.invalidateSize();
-      if (pts.length === 1) { map.setView(pts[0], 15); return; }
-      const b = L.latLngBounds(pts);
-      // Coincident / near-coincident points give a degenerate box — just centre.
-      if (!b.isValid() || b.getNorth() - b.getSouth() < 0.001) map.setView(b.getCenter(), 15);
-      else map.fitBounds(b.pad(0.3), { maxZoom: 16 });
-    };
-    fit();
-    const t = setTimeout(fit, 350); // re-fit once the container has its real size
+    if (didInitialFitRef.current || pts.length === 0) return undefined;
+    didInitialFitRef.current = true;
+    fitMapToPoints(map, pts);
+    const t = setTimeout(() => fitMapToPoints(map, pts), 350); // re-fit once the container has its real size
     return () => clearTimeout(t);
   }, [model]);
+
+  function recenter() {
+    const pts = [...model.outletPts, ...model.staffPts].map((p) => [p.lat, p.lng]);
+    fitMapToPoints(mapRef.current, pts);
+  }
 
   return (
     <div className="map-shell" style={{ height, position: 'relative' }}>
       <div ref={elRef} className="leaflet-host" style={{ height: '100%' }} />
       {model.outletPts.length === 0 && model.staffPts.length === 0 ? (
         <div className="map-overlay-note">No outlet locations or checked-in staff to show yet.</div>
-      ) : null}
+      ) : (
+        <button type="button" className="map-recenter-btn" onClick={recenter} title="Re-fit the map to all current points">
+          {ICONS.target} Recenter
+        </button>
+      )}
       <div className="map-legend">
         <div className="item"><span className="sw sw-staff" />Sales staff live ({model.staffPts.length})</div>
         <div className="item"><span className="sw sw-outlet" />Outlet ({model.outletPts.length})</div>

@@ -194,6 +194,12 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .leaflet-container a { color:var(--info); }
 .map-shell .leaflet-control-attribution { font-size:10px; background:rgba(255,255,255,0.8); }
 .map-shell .leaflet-bar a { color:var(--text-primary); }
+.map-recenter-btn {
+  position:absolute; right:14px; top:14px; z-index:500; display:flex; align-items:center; gap:6px;
+  background:var(--surface-card); border:1px solid var(--line); border-radius:8px; padding:7px 12px;
+  font-size:12px; font-weight:600; color:var(--text-primary); cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.12);
+}
+.map-recenter-btn:hover { background:var(--surface); }
 .map-overlay-note {
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:500;
   background:var(--surface-card); border:1px solid var(--line); border-radius:10px;
