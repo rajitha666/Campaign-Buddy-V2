@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campaign Buddy",
     "slug": "campaign-buddy",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F4F6F3",
