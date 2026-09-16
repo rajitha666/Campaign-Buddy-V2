@@ -392,8 +392,11 @@ export const RESOURCES = {
       return created;
     },
     updateItem: async ({ id, values }) => {
-      const { image, profilePictureUrl, ...jsonValues } = values;
-      const updated = await staffApi.update(id, { ...jsonValues, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) });
+      // Blank password = "keep existing" — never send it on the wire.
+      const { image, profilePictureUrl, password, ...jsonValues } = values;
+      const body = { ...jsonValues, phone: normalizePhone(values.phone), emergencyContactPhone: normalizePhone(values.emergencyContactPhone) };
+      if (password) body.password = password;
+      const updated = await staffApi.update(id, body);
       if (image instanceof File) await staffApi.uploadPhoto(id, image);
       return updated;
     },
@@ -420,7 +423,7 @@ export const RESOURCES = {
 
       { type: 'section', label: 'Login' },
       { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces' },
-      { key: 'password', label: 'Password', type: 'text', placeholder: 'Set on create; leave blank on edit to keep' },
+      { key: 'password', label: 'Password', type: 'text', required: true, resettable: true, placeholder: 'Set initial password' },
 
       { type: 'section', label: 'Emergency Contact' },
       { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
@@ -633,10 +636,14 @@ export const RESOURCES = {
     actions: ['edit'],
     fetchList: ({ query }) => usersApi.list(query),
     createItem: ({ values }) => usersApi.create(values),
-    updateItem: ({ id, values }) => usersApi.update(id, values),
+    updateItem: ({ id, values }) => {
+      const { password, ...rest } = values;
+      const body = password ? { ...rest, password } : rest;
+      return usersApi.update(id, body);
+    },
     formFields: [
       { key: 'username', label: 'Username', type: 'text', required: true },
-      { key: 'password', label: 'Password', type: 'text', required: true },
+      { key: 'password', label: 'Password', type: 'text', required: true, resettable: true, placeholder: 'Set initial password' },
       { key: 'displayName', label: 'Display Name', type: 'text', required: true },
       { key: 'email', label: 'Email', type: 'text' },
       { key: 'roleId', label: 'User Role', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(rolesApi.list, 'label', 'id') },

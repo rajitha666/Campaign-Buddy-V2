@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi, staff as staffApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi } from '../lib/endpoints';
 
 describe('resources config', () => {
   it('every resource has a title, subtitle and fetchList', () => {
@@ -116,6 +116,33 @@ describe('resources config', () => {
     expect(field).toBeDefined();
     expect(field.type).toBe('upload');
     expect(field.previewKey).toBe('profilePictureUrl');
+  });
+
+  it('password fields are required on create and resettable (hidden) on edit', () => {
+    const pwField = (key) => RESOURCES[key].formFields.find((f) => f.key === 'password');
+    for (const key of ['staff', 'users']) {
+      const f = pwField(key);
+      expect(f, `${key}.password field`).toBeDefined();
+      expect(f.required, `${key}.password.required`).toBe(true);
+      expect(f.resettable, `${key}.password.resettable`).toBe(true);
+    }
+  });
+
+  it('staff/users update payloads omit a blank password (keep existing)', async () => {
+    const staffSpy = vi.spyOn(staffApi, 'update').mockResolvedValue({ data: {} });
+    const usersSpy = vi.spyOn(usersApi, 'update').mockResolvedValue({ data: {} });
+    try {
+      await RESOURCES.staff.updateItem({ id: 's1', values: { fullName: 'X', password: '', image: null, profilePictureUrl: '/p.jpg' } });
+      expect(staffSpy.mock.calls[0][1]).not.toHaveProperty('password');
+      await RESOURCES.users.updateItem({ id: 'u1', values: { displayName: 'Y', password: '' } });
+      expect(usersSpy.mock.calls[0][1]).not.toHaveProperty('password');
+      // a re-typed password still travels
+      await RESOURCES.users.updateItem({ id: 'u1', values: { password: 'new-pw' } });
+      expect(usersSpy.mock.calls[1][1].password).toBe('new-pw');
+    } finally {
+      staffSpy.mockRestore();
+      usersSpy.mockRestore();
+    }
   });
 
   it('outlets geo lat/lng inputs are native number fields', () => {

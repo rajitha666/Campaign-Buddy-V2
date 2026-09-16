@@ -110,3 +110,47 @@ describe("P2003 error message is create/update-aware, not always \"cannot be del
     expect(res.body.error.message).not.toMatch(/cannot be deleted/i);
   });
 });
+
+describe("PATCH /admin/v1/staff — blank password keeps the existing hash", () => {
+  it("200s when password is submitted as an empty string, and the original password still works", async () => {
+    const token = await adminToken();
+    const created = await request(app)
+      .post("/admin/v1/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        employeeId: "EMP-PWBLANK", fullName: "Pw Blank", displayName: "PB", userType: "promoter",
+        mobileUsername: "pwblank", password: "original-pw",
+      });
+    expect(created.status).toBe(201);
+
+    const patched = await request(app)
+      .patch(`/admin/v1/staff/${created.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ fullName: "Pw Blank Renamed", password: "" });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data.fullName).toBe("Pw Blank Renamed");
+
+    const login = await request(app)
+      .post("/v1/auth/login")
+      .send({ username: "pwblank", password: "original-pw" });
+    expect(login.status).toBe(200);
+  });
+
+  it("200s when password is omitted entirely (unchanged)", async () => {
+    const token = await adminToken();
+    const created = await request(app)
+      .post("/admin/v1/staff")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        employeeId: "EMP-PWOMIT", fullName: "Pw Omit", displayName: "PO", userType: "promoter",
+        mobileUsername: "pwomit", password: "original-pw",
+      });
+    expect(created.status).toBe(201);
+
+    const patched = await request(app)
+      .patch(`/admin/v1/staff/${created.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ displayName: "PORenamed" });
+    expect(patched.status).toBe(200);
+  });
+});

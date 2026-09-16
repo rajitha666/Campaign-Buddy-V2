@@ -11,12 +11,19 @@ const EMPTY_INIT = {};
 // Generic Add/Edit form drawer. `fields` config (see config/resources.js) drives
 // what renders; `initialValues` pre-fills for edit mode. onSubmit receives the
 // flat values object and should return a Promise (rejected -> shows error).
+// A field can opt into `resettable` (used for password): in edit mode it renders
+// collapsed behind a "Reset Password" reveal — until revealed, its value is
+// excluded from the submit payload, so nothing is sent that would overwrite the
+// stored secret. Once revealed, blank on save also means "keep" (backend accepts
+// "" as keep on updates).
 export default function Drawer({
   open, title, subtitle, fields = EMPTY_FIELDS, initialValues = EMPTY_INIT, saveLabel = 'Save',
+  mode = 'add',
   onClose, onSubmit,
 }) {
   const [values, setValues] = useState({});
   const [builderRows, setBuilderRows] = useState({});
+  const [revealed, setRevealed] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -33,6 +40,7 @@ export default function Drawer({
       const builders = {};
       fields.filter((f) => f.type === 'builder').forEach((f) => { builders[f.key] = initialValues[f.key] || f.preset || []; });
       setBuilderRows(builders);
+      setRevealed({});
       setError(null);
       setFieldErrors({});
     }
@@ -48,6 +56,10 @@ export default function Drawer({
     const errs = {};
     fields.forEach((f) => {
       if (f.type === 'section') return;
+      // Resettable edit fields stay required only once revealed — hidden ones
+      // are excluded from the payload entirely (see handleSave).
+      const hidden = f.resettable && mode === 'edit' && !revealed[f.key];
+      if (hidden) return;
       if (f.type === 'multi-checkbox') {
         if (f.required && (values[f.key] || []).length === 0) errs[f.key] = 'Required';
         return;
@@ -67,7 +79,14 @@ export default function Drawer({
     setSaving(true);
     setError(null);
     try {
-      await onSubmit({ ...values, ...builderRows });
+      const removed = {};
+      // Hidden resettable fields (e.g. password on edit) must not reach the API.
+      fields.forEach((f) => {
+        if (f.resettable && mode === 'edit' && !revealed[f.key]) removed[f.key] = true;
+      });
+      const payload = { ...values, ...builderRows };
+      Object.keys(removed).forEach((k) => delete payload[k]);
+      await onSubmit(payload);
       onClose();
     } catch (e) {
       if (e?.field) setFieldErrors((f) => ({ ...f, [e.field]: e.message }));
@@ -100,6 +119,9 @@ export default function Drawer({
               builderRows={builderRows[f.key]}
               onBuilderChange={(rows) => setBuilderRows((b) => ({ ...b, [f.key]: rows }))}
               preview={f.previewKey ? initialValues[f.previewKey] : undefined}
+              edit={mode === 'edit'}
+              revealed={!!revealed[f.key]}
+              onReveal={() => setRevealed((r) => ({ ...r, [f.key]: true }))}
             />
           ))}
         </div>
@@ -114,11 +136,26 @@ export default function Drawer({
   );
 }
 
-function Field({ field: f, value, onChange, error, builderRows, onBuilderChange, preview }) {
+function Field({ field: f, value, onChange, error, builderRows, onBuilderChange, preview, edit, revealed, onReveal }) {
   const reqMark = f.required ? <span className="req">*</span> : null;
 
   if (f.type === 'section') {
     return <div className="section-divider">{f.label}</div>;
+  }
+
+  // Edit-mode collapse for secrets (password): hidden behind a reveal button so
+  // editing unrelated fields never looks like it demands a password re-entry.
+  // In add mode resettable fields render like any other required field.
+  if (f.resettable && edit && !revealed) {
+    return (
+      <div className="form-row">
+        <div className="form-two">
+          <label>{f.label}</label>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onReveal}>Reset Password</button>
+        </div>
+        <div className="cell-muted" style={{ fontSize: 12 }}>Password saved in the app — unchanged until reset.</div>
+      </div>
+    );
   }
 
   if (f.type === 'date') {

@@ -396,7 +396,13 @@ export const s = {
 
   // ---- Admin: staff / RBAC ----
   staffCreate: staffCreateSchema,
-  staffUpdate: staffCreateSchema.partial(), // also whitelisted in the handler (pickStaff)
+  // On edit the portal hides the password behind a "Reset Password" toggle; when
+  // it isn't revealed the form submits "" (or omits it) — both mean "keep the
+  // existing hash" (handlers hash only a non-empty value). min(1) still applies
+  // to any non-empty value.
+  staffUpdate: staffCreateSchema.partial().extend({
+    password: z.string().min(1).optional().or(z.literal("")),
+  }),
   userCreate: z.object({
     username: z.string().min(1),
     password: z.string().min(1),
@@ -414,7 +420,8 @@ export const s = {
       email: z.string(),
       isActive: z.boolean(),
     })
-    .partial(),
+    .partial()
+    .extend({ password: z.string().min(1).optional().or(z.literal("")) }),
   campaignAccessGrant: z
     .object({
       campaignId: id,

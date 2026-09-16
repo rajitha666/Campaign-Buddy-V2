@@ -218,6 +218,7 @@ export default function ResourcePage({ resourceKey }) {
         subtitle={config.title}
         fields={resolvedFields}
         initialValues={drawerRow || {}}
+        mode={drawerMode}
         saveLabel={config.saveLabel || 'Save'}
         onClose={() => setDrawerOpen(false)}
         onSubmit={handleSubmit}
