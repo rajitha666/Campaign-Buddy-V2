@@ -4,7 +4,8 @@ import fs from "fs";
 import multer from "multer";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, notFound, ApiError } from "../../utils/apiResponse";
+import { ApiError, ok, notFound } from "../../utils/apiResponse";
+import { dayDate } from "../../utils/dates";
 
 const router = Router();
 
@@ -80,7 +81,7 @@ router.post(
 router.get(
   "/me/assignments/today",
   asyncHandler(async (req, res) => {
-    const today = new Date();
+    const today = dayDate();
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
       include: { campaign: true, outlet: true },
@@ -116,8 +117,7 @@ router.get(
 router.get(
   "/me/assignments",
   asyncHandler(async (req, res) => {
-    const dateParam = typeof req.query.date === "string" ? new Date(req.query.date) : new Date();
-    const date = Number.isNaN(dateParam.getTime()) ? new Date() : dateParam;
+    const date = dayDate(typeof req.query.date === "string" ? req.query.date : undefined);
     const activations = await prisma.activation.findMany({
       where: { staffId: req.staff!.sub, dateFrom: { lte: date }, dateTo: { gte: date } },
       include: { campaign: true, outlet: true },

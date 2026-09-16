@@ -89,4 +89,18 @@ describe("GET /v1/campaigns/:campaignId/outlets/:outletId/products", () => {
     expect(names).toContain("Item 2");
     expect(names).toContain("Item 3");
   });
+
+  // #45 — soft-deleted catalog items must not reach the promoter's list (the
+  // product-details endpoint already excludes them; the list did not).
+  it("excludes soft-deleted catalog items from the products list", async () => {
+    const { staff, campaign, outlet, item } = await makeCampaignWithActivation();
+    await prisma.item.update({ where: { id: item.id }, data: { deletedAt: new Date() } });
+
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const res = await request(app)
+      .get(`/v1/campaigns/${campaign.id}/outlets/${outlet.id}/products`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
 });
