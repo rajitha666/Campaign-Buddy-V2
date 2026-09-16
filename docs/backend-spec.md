@@ -331,6 +331,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 |---|---|---|
 | GET | `/staff?search=&userType=` | any — **empty `search` must return the full pool** (paginated), load-bearing for ~8 dropdowns across the portal |
 | POST | `/staff` | **[adm/usr]** — create a new hire inline |
+| POST | `/staff/:id/photo` | **[adm/usr]** — multipart `image` (mirrors `POST /items/:id/image`); stores `/uploads/staff/...` and returns `profilePictureUrl` (issue #29) |
 | PATCH | `/staff/:id` | **[adm/usr]** — includes optional password reset |
 | GET | `/staff/:staffId/evaluation?dateFrom=&dateTo=` | any — **new in v3**, folded in from the retired contract doc's §7.7.1 (no conflict, just previously homeless). Response: `{ overallPerformancePct, attendancePct, totalSales, totalItems, avgSalesPerMonth, highestDailySales, highestPerformingDate, brandContribution: [{ brandName, percent }] }` |
 

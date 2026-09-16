@@ -1,9 +1,31 @@
 import { Router } from "express";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, notFound } from "../../utils/apiResponse";
+import { ok, notFound, ApiError } from "../../utils/apiResponse";
 
 const router = Router();
+
+// Staff self-service profile photo upload (#18/#29) — same disk-storage scheme
+// as the admin side (staff.routes.ts / catalog.routes.ts); served at /uploads.
+const staffPhotosDir = path.join(process.cwd(), "uploads", "staff");
+fs.mkdirSync(staffPhotosDir, { recursive: true });
+const staffPhotoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, staffPhotosDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+      cb(null, `${req.staff!.sub}-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
+    cb(null, true);
+  },
+});
 
 // The mobile app is built to docs/api-spec.md, whose data models
 // pre-date the v3 schema's Activation/Staff naming. `/v1/*` is consumed only by
@@ -34,8 +56,24 @@ router.get(
         avatarInitials: initials(staff.displayName || staff.fullName),
         reportsToUserId: staff.reportsToStaffId,
         reportsToName: staff.reportsTo?.fullName ?? "",
+        profilePictureUrl: staff.profilePictureUrl,
       })
     );
+  })
+);
+
+// Staff upload/update their OWN profile picture from the app (#18).
+router.post(
+  "/me/photo",
+  staffPhotoUpload.single("image"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) throw new ApiError(400, "VALIDATION_ERROR", "image file is required");
+    const profilePictureUrl = `/uploads/staff/${req.file.filename}`;
+    const updated = await prisma.staff.update({
+      where: { id: req.staff!.sub },
+      data: { profilePictureUrl },
+    });
+    res.json(ok({ profilePictureUrl: updated.profilePictureUrl }));
   })
 );
 

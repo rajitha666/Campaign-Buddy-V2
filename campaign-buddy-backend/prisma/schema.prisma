@@ -250,9 +250,10 @@ model DistributorPoint {
 //
 // HR profile scope confirmed v3: this is the FULL and FINAL field set for
 // this version — the ~30-field form referenced in earlier Admin Panel audit
-// notes (marital status, English proficiency, work details, designation,
-// profile photo upload) is explicitly OUT OF SCOPE, not a gap. See Changelog
-// v3 "Staff HR fields" for the record of this decision.
+// notes (marital status, English proficiency, work details, designation) is
+// explicitly OUT OF SCOPE, not a gap. See Changelog v3 "Staff HR fields" for
+// the record of this decision. (Profile photo upload WAS in that out-of-scope
+// set; issue #29 reversed it — profilePictureUrl below is deliberate.)
 
 model Staff {
   id               String      @id @default(uuid())
@@ -267,6 +268,7 @@ model Staff {
   status           StaffStatus @default(active)
   reportsToStaffId String?
   linkedUserId     String?     @unique // set when this Staff (typically a supervisor) also has a web portal login
+  profilePictureUrl String?    // served statically from /uploads/staff (issue #29)
 
   // HR profile sub-fields (flattened; not consumed by mobile/admin APIs in v1, profile-management only)
   nic                   String?

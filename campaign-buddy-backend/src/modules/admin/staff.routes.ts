@@ -1,4 +1,7 @@
 import { Router } from "express";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
 import bcrypt from "bcrypt";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../utils/prisma";
@@ -10,6 +13,25 @@ import { s } from "../../schemas";
 import { normalizeLkPhone } from "../../utils/phone";
 
 const router = Router();
+
+// Staff profile photos (issue #29) — same local-disk scheme as item photos
+// (catalog.routes.ts): <repo>/uploads/staff, served statically at /uploads.
+const staffPhotosDir = path.join(process.cwd(), "uploads", "staff");
+fs.mkdirSync(staffPhotosDir, { recursive: true });
+const staffPhotoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, staffPhotosDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+      cb(null, `${req.params.id}-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
+    cb(null, true);
+  },
+});
 
 // The Staff HR field set is fixed for v3 (schema comment / Changelog v3 "Staff HR
 // fields"). Whitelist writes to these columns so a portal form that posts extra
@@ -134,6 +156,19 @@ router.delete(
   })
 );
 
+// Staff profile photo (issue #29) — stored on disk, URL on the row.
+router.post(
+  "/staff/:id/photo",
+  requireRole("adm", "usr"),
+  staffPhotoUpload.single("image"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) throw new ApiError(400, "VALIDATION_ERROR", "image file is required");
+    const profilePictureUrl = `/uploads/staff/${req.file.filename}`;
+    const updated = await prisma.staff.update({ where: { id: req.params.id }, data: { profilePictureUrl } });
+    res.json(ok(updated)); // passwordHash omitted globally (src/utils/prisma.ts)
+  })
+);
+
 // NEW in v3 — folded in from the retired Full Backend Contract §7.7.1 (Spec v3 §4.2).
 router.get(
   "/staff/:staffId/evaluation",
@@ -245,6 +280,7 @@ router.get(
         userType: staff.userType, mobileUsername: staff.mobileUsername, phone: staff.phone,
         cityId: staff.cityId, cityName: staff.city?.name ?? null, status: staff.status,
         reportsToStaffId: staff.reportsToStaffId, reportsToName: staff.reportsTo?.fullName ?? null,
+        profilePictureUrl: staff.profilePictureUrl,
         nic: staff.nic, dateOfBirth: staff.dateOfBirth, gender: staff.gender,
         permanentAddress: staff.permanentAddress, currentAddress: staff.currentAddress,
         emergencyContactName: staff.emergencyContactName, emergencyContactPhone: staff.emergencyContactPhone,
