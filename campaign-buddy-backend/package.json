@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:seed:demo": "ts-node prisma/demo-seed.ts",
+    "backfill:activation-items": "ts-node src/scripts/backfillActivationItems.ts",
     "db:studio": "prisma studio",
     "test": "vitest run",
     "test:watch": "vitest"

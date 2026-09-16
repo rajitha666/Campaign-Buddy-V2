@@ -131,6 +131,14 @@ router.post(
           })
         )
       );
+      // #43 — backfill: bulk-added items must reach promoters on already-created
+      // activations too, same as the single-item path below.
+      await prisma.activationItem.createMany({
+        data: (
+          await prisma.activation.findMany({ where: { campaignId }, select: { id: true } })
+        ).flatMap((a) => created.map((ci) => ({ activationId: a.id, campaignItemId: ci.id }))),
+        skipDuplicates: true,
+      });
       res.status(201).json(okList(created, created.length));
       return;
     }
