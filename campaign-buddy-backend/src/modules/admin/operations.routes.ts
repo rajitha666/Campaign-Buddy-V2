@@ -417,17 +417,34 @@ router.get(
       include: { outlet: true, staff: true, attendanceRecords: { where: { date: day } } },
     });
 
-    const absent = activations
-      .filter((a) => !a.attendanceRecords[0]?.checkInAt)
-      .map((a) => ({
-        activationId: a.id,
-        activationName: a.name,
-        outletId: a.outletId,
-        outletName: a.outlet.name,
-        staffId: a.staffId,
-        staffName: a.staff.fullName,
-        onLeave: a.attendanceRecords[0]?.status === "leave",
-      }));
+    // Computed PER STAFF, not per activation (issue #33): the global
+    // one-open-shift lock (§5.1) means a staff member can only ever check in on
+    // ONE of their activations for the day, so treating each activation in
+    // isolation marked staff who HAD checked in as absent for their other
+    // concurrent activations. A staff member is absent only if NONE of their
+    // activations covering `date` has a check-in that day.
+    const byStaff = new Map<string, { activations: typeof activations; first: (typeof activations)[number] }>();
+    for (const a of activations) {
+      const entry = byStaff.get(a.staffId);
+      if (entry) entry.activations.push(a);
+      else byStaff.set(a.staffId, { activations: [a], first: a });
+    }
+
+    const absent = [...byStaff.values()].map(({ activations: staffActivations, first }) => {
+      const records = staffActivations.map((a) => a.attendanceRecords[0]).filter(Boolean);
+      const checkedIn = records.some((r) => r!.checkInAt);
+      return {
+        activationId: first.id,
+        activationName: first.name,
+        outletId: first.outletId,
+        outletName: first.outlet.name,
+        staffId: first.staffId,
+        staffName: first.staff.fullName,
+        onLeave: records.some((r) => r!.status === "leave"),
+        checkedIn,
+      };
+    }).filter((row) => !row.checkedIn && !row.onLeave)
+      .map(({ checkedIn, ...row }) => row);
     res.json(okList(absent, absent.length));
   })
 );
