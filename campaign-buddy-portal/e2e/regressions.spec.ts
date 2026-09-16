@@ -105,3 +105,39 @@ test("table search: keeps focus while typing and does not carry text across tabl
   await expect(page.locator(".search-box input")).toHaveValue("");
 });
 
+
+// Issue #28 (child of #24) — for a brand_wise activation the target form must
+// offer TARGET BRAND selection, not "Target Product"; creating a brand target
+// from the UI actually persists and reads back as "(Brand)".
+test("brand_wise activation target form offers brand selection and saves a brand target (issue #28)", async ({ page }) => {
+  await loginAs(page, "admin");
+  await page.locator(".topbar select").first().selectOption({ label: "Radiance Q3 Push" });
+  await page.locator(".nav-item", { hasText: "Campaigns" }).first().click();
+  await page.locator(".nav-child", { hasText: "Activation" }).first().click();
+  await expect(page.locator("table tbody tr", { hasText: "Nawala weekday activation" }).first()).toBeVisible({ timeout: 10000 });
+
+  await page.locator("table tbody tr", { hasText: "Nawala weekday activation" }).first().locator(".icon-btn.target").click();
+  await expect(page.locator("h1")).toHaveText(/Activation Targets/);
+
+  await page.getByRole("button", { name: /add target/i }).click();
+  await expect(page.locator(".drawer, .drawer-panel, [class*=drawer]").first()).toBeVisible();
+  // brand field, not the product field
+  await expect(page.locator(".drawer label", { hasText: "Target Brand" })).toBeVisible();
+  await expect(page.locator(".drawer label", { hasText: "Target Product" })).toHaveCount(0);
+
+  const brandField = page.locator(".drawer .searchable-select input").first();
+  await brandField.click();
+  await brandField.fill("Sulfate");
+  const options = await page.locator(".searchable-select-menu .searchable-select-option").allTextContents();
+  expect(options.length).toBeGreaterThan(0);
+  await page.locator(".searchable-select-menu .searchable-select-option").first().click();
+
+  // dates (required), value + save
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  await page.locator(".drawer input[type=date]").nth(0).fill(today);
+  await page.locator(".drawer input[type=date]").nth(1).fill(in30);
+  await page.locator(".drawer input").nth(3).fill("500");
+  await page.locator(".drawer button.btn-primary, .drawer button").last().click();
+  await expect(page.locator("table tbody tr", { hasText: "(Brand)" }).first()).toBeVisible({ timeout: 10000 });
+});
