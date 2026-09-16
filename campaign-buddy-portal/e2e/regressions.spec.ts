@@ -37,3 +37,45 @@ test("activations table shows outlet/promoter names, not raw ids (regression for
     }
   }
 });
+
+
+// Issue #30 — outlet dropdown on Staff Attendance "could not be selected".
+// In real sessions the failure modes were: re-clicking the (already focused)
+// input never re-opened the menu because onFocus doesn't re-fire once the
+// document-level close ran, and there was no keyboard path — typing a name and
+// pressing Enter did nothing, so the value never registered. There was also no
+// visible dropdown affordance (issue #34 class).
+test("staff attendance outlet dropdown: reopen on click, keyboard select, and filter applies (issue #30)", async ({ page }) => {
+  await loginAs(page, "admin");
+  // Use the demo campaign explicitly — the DB may hold other campaigns with
+  // no attendance data.
+  await page.locator(".topbar select").first().selectOption({ label: "Radiance Q3 Push" });
+  // client-side navigation (a full page reload resets the selected campaign);
+  // "Staff" opens its flyout, "Attendance" navigates.
+  await page.locator(".nav-item", { hasText: "Staff" }).first().click();
+  await page.locator(".nav-child", { hasText: "Attendance" }).first().click();
+  await expect(page.locator("table tbody tr").first()).toBeVisible();
+
+  const select = page.locator(".filter-bar .searchable-select input").first();
+
+  // A visible affordance: the select control shows a caret, not a bare input.
+  await expect(page.locator(".searchable-select .searchable-select-caret").first()).toBeVisible();
+
+  // Select the outlet with the seeded attendance data ("Nawala Retail Outlet").
+  await select.click();
+  await select.fill("Nawala Retail");
+  await page.keyboard.press("Enter");
+  await expect(select).toHaveValue(/Nawala/, { timeout: 5000 });
+
+  // The table reloads filtered to that outlet's rows.
+  await page.waitForTimeout(1500);
+  const outlets = await page.locator("table tbody tr td:nth-child(2)").allTextContents();
+  expect(outlets.length).toBeGreaterThan(0);
+  for (const o of outlets) expect(o).toContain("Nawala");
+
+  // clear the filter and ensure the table reloads — the control is still usable
+  await select.click();
+  await page.locator(".filter-bar .searchable-select-menu .searchable-select-option").first().click();
+  await expect(page.locator(".table-card").first()).toBeVisible({ timeout: 10000 });
+});
+
