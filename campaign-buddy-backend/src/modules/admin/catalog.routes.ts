@@ -87,7 +87,7 @@ router.delete("/brands/:id", requireRole("adm"), asyncHandler(async (req, res) =
 // ---- Items ----
 router.get("/items", asyncHandler(async (req, res) => {
   const search = (req.query.search as string) || "";
-  const where = search ? { name: { contains: search, mode: "insensitive" as const } } : {};
+  const where = { deletedAt: null, ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}) };
   const [rows, total] = await Promise.all([
     prisma.item.findMany({ where, include: { brand: true }, ...paginate(req) }),
     prisma.item.count({ where }),
@@ -99,12 +99,16 @@ router.post("/items", requireRole("adm", "usr"), validate({ body: s.itemCreate }
   res.status(201).json(ok(created));
 }));
 router.patch("/items/:id", requireRole("adm", "usr"), validate({ body: s.itemUpdate }), asyncHandler(async (req, res) => {
+  const existing = await prisma.item.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Item");
   const updated = await prisma.item.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
-router.delete("/items/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.item.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/items/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.item.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Item");
+  await prisma.item.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 router.post(
   "/items/:id/image",

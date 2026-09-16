@@ -77,7 +77,7 @@ router.get(
       where: { id: req.params.productId },
       include: { brand: true },
     });
-    if (!item) throw notFound("Product");
+    if (!item || item.deletedAt) throw notFound("Product");
 
     const today = dayDate();
     const activationItems = await prisma.activationItem.findMany({

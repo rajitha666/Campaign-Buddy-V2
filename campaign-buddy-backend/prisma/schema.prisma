@@ -176,6 +176,7 @@ model Item {
   description  String?
   attributes   String[] @default([])
   supplierName String?
+  deletedAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
