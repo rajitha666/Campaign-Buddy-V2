@@ -17,6 +17,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Optional docker-proxy routing: Traefik forwards Host
+    // office.campaignbuddy.localhost here (docker-compose.proxy.yml).
+    // Harmless when not using the proxy.
+    allowedHosts: ['office.campaignbuddy.localhost'],
     // Proxy avoids CORS pain while the backend is on a different port locally.
     // Point this at wherever the Unified Backend actually runs.
     proxy: {

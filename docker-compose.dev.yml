@@ -1,6 +1,12 @@
 # Localhost-only development overrides. Docker Compose does NOT load this file
 # automatically — start the stack with:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#   (or: ./dev.sh up)
+#
+# Optional: devs running the shared docker-proxy Traefik add:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#     -f docker-compose.proxy.yml up -d --build
+#   (or: ./dev.sh --proxy up) — see docker-compose.proxy.yml header.
 #
 # Differences from production:
 #   - All service ports are published to localhost, including Prisma Studio

@@ -1,0 +1,65 @@
+# Optional Traefik overlay for the shared docker-proxy stack
+# (~/Projects/docker-proxy). Only for devs running that proxy — everyone
+# else should start the stack with just the base + dev files.
+#
+# With the proxy running, start the whole stack with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#     -f docker-compose.proxy.yml up -d --build
+# or simply:  ./dev.sh --proxy up
+#
+# Routes (.localhost resolves to 127.0.0.1 automatically, no /etc/hosts edits):
+#   office.campaignbuddy.localhost     -> portal
+#   api.campaignbuddy.localhost        -> backend
+#   marketing.campaignbuddy.localhost  -> marketing
+#   studio.campaignbuddy.localhost     -> db-studio (Prisma Studio)
+# Router names are prefixed "cb-" so they don't clash with other projects
+# sharing the proxy. The dev port mappings still work as a fallback.
+services:
+  backend:
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cb-api.rule=Host(`api.campaignbuddy.localhost`)"
+      - "traefik.http.routers.cb-api.entrypoints=web"
+      - "traefik.http.routers.cb-api.service=cb-api"
+      - "traefik.http.services.cb-api.loadbalancer.server.port=4000"
+
+  portal:
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cb-portal.rule=Host(`office.campaignbuddy.localhost`)"
+      - "traefik.http.routers.cb-portal.entrypoints=web"
+      - "traefik.http.routers.cb-portal.service=cb-portal"
+      - "traefik.http.services.cb-portal.loadbalancer.server.port=5173"
+
+  marketing:
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cb-marketing.rule=Host(`marketing.campaignbuddy.localhost`)"
+      - "traefik.http.routers.cb-marketing.entrypoints=web"
+      - "traefik.http.routers.cb-marketing.service=cb-marketing"
+      - "traefik.http.services.cb-marketing.loadbalancer.server.port=80"
+
+  db-studio:
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cb-studio.rule=Host(`studio.campaignbuddy.localhost`)"
+      - "traefik.http.routers.cb-studio.entrypoints=web"
+      - "traefik.http.routers.cb-studio.service=cb-studio"
+      - "traefik.http.services.cb-studio.loadbalancer.server.port=5555"
+
+networks:
+  proxy:
+    external: true
+    name: proxy

@@ -126,6 +126,49 @@ docker compose build portal && docker compose up -d portal
 
 ## Production Checklist
 
+### VPS update/shortcut script
+
+`deploy-prod.sh` wraps the usual code-change flow (`up -d --build` under the
+`production` profile):
+
+```bash
+./deploy-prod.sh            # rebuild + restart backend & portal (the default)
+./deploy-prod.sh portal     # rebuild + restart just one service
+./deploy-prod.sh ""         # up the full stack incl. cloudflared (first boot)
+```
+
+It intentionally has no `down`/teardown — DB volume teardown is manual (see
+`deploy/README.md`; never `down -v` on the postgres volume).
+
+### Local develop with my docker proxy (optional)
+
+Developers running the shared `~/Projects/docker-proxy` Traefik can route the
+dev stack through it with `./dev.sh` (dev-only, no teardown):
+
+```bash
+./dev.sh up                 # normal localhost-port dev stack
+./dev.sh stop               # stop all services (volumes kept)
+./dev.sh start              # resume after stop
+./dev.sh logs backend       # follow a service's logs
+./dev.sh ps                 # status
+
+./dev.sh --proxy up         # route through docker-proxy instead (needs it running)
+```
+
+With the proxy mode the stack is reachable at:
+
+- `office.campaignbuddy.localhost` → portal
+- `api.campaignbuddy.localhost` → backend
+- `marketing.campaignbuddy.localhost` → marketing
+- `studio.campaignbuddy.localhost` → Prisma Studio
+
+(`.localhost` domains resolve to 127.0.0.1 automatically — no `/etc/hosts`
+edits; router names are prefixed `cb-` to avoid clashes on the shared proxy.)
+
+Developers without docker-proxy just ignore `--proxy`/`docker-compose.proxy.yml`
+— the plain two-file dev workflow works unchanged.
+
+
 - [ ] Change all JWT secrets to strong random values
 - [ ] Set strong PostgreSQL password
 - [ ] Configure Cloudflare tunnel with correct hostnames
