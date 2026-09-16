@@ -79,3 +79,29 @@ test("staff attendance outlet dropdown: reopen on click, keyboard select, and fi
   await expect(page.locator(".table-card").first()).toBeVisible({ timeout: 10000 });
 });
 
+
+// Issue #27 — the table search bar: (a) typing one char re-fetched the table,
+// which UNMOUNTED the DataTable and stole focus mid-typing; (b) navigating
+// between two table screens kept the previous screen's search text, because
+// both routes render the same <ResourcePage> component instance and React
+// preserves its state.
+test("table search: keeps focus while typing and does not carry text across tables (issue #27)", async ({ page }) => {
+  await loginAs(page, "admin");
+  await page.goto("/outlets");
+  await expect(page.locator("table tbody tr").first()).toBeVisible();
+
+  const search = page.locator(".search-box input");
+  await search.click();
+  await page.keyboard.type("Nawala");
+  // focus survives each keystroke's reload (used to be lost after 1 char)
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("Nawala");
+  await expect(page.locator("table tbody tr").first()).toBeVisible();
+
+  // switch to another table — search must not carry over
+  await page.locator(".nav-item", { hasText: "Staff" }).first().click();
+  await page.locator(".nav-child", { hasText: "List" }).first().click();
+  await expect(page.locator("table tbody tr").first()).toBeVisible();
+  await expect(page.locator(".search-box input")).toHaveValue("");
+});
+

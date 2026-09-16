@@ -22,7 +22,11 @@ import MonthlyAttendance from './pages/MonthlyAttendance';
 import LiveMap from './pages/LiveMap';
 import NotFound from './pages/NotFound';
 
-const R = (key) => () => <ResourcePage resourceKey={key} />;
+// `key` on the element forces a REMOUNT when navigating between two table
+// screens — both routes otherwise render the same <ResourcePage> component
+// type, and React would carry page-local state (search text, filters, paging)
+// from one table into the other (issue #27).
+const R = (key) => () => <ResourcePage key={key} resourceKey={key} />;
 
 export default function App() {
   return (

@@ -35,6 +35,10 @@ export default function ResourcePage({ resourceKey }) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Once the first load completes, the DataTable stays MOUNTED during further
+  // reloads (search/filter/paging). Swapping it for a <Loader> re-created the
+  // search input and stole focus on every keystroke (issue #27).
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState('add');
@@ -80,6 +84,7 @@ export default function ResourcePage({ resourceKey }) {
       setTotal(0);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, campaignId, page, pageSize, search, JSON.stringify(filterValues)]);
@@ -186,20 +191,23 @@ export default function ResourcePage({ resourceKey }) {
             onChange={(k, v) => setFilterValues((f) => ({ ...f, [k]: v }))}
             onLoad={load}
           />
-          {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (
-            <DataTable
-              columns={config.columns}
-              rows={rows}
-              actions={visibleActions}
-              onAction={handleAction}
-              excel={config.excel}
-              onExport={exportCsv}
-              page={page} pageSize={pageSize} total={total}
-              onPageChange={setPage} onPageSizeChange={setPageSize}
-              search={config.noSearch ? undefined : search}
-              onSearchChange={config.noSearch ? undefined : setSearch}
-              emptyHint={config.emptyHint}
-            />
+          {!hasLoaded && loading ? <Loader /> : (
+            <>
+              {error ? <ErrorState message={error} onRetry={load} /> : null}
+              <DataTable
+                columns={config.columns}
+                rows={rows}
+                actions={visibleActions}
+                onAction={handleAction}
+                excel={config.excel}
+                onExport={exportCsv}
+                page={page} pageSize={pageSize} total={total}
+                onPageChange={setPage} onPageSizeChange={setPageSize}
+                search={config.noSearch ? undefined : search}
+                onSearchChange={config.noSearch ? undefined : setSearch}
+                emptyHint={config.emptyHint}
+              />
+            </>
           )}
         </>
       )}
