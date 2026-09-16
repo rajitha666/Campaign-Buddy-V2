@@ -242,6 +242,9 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .map-legend { position:absolute; left:14px; bottom:14px; z-index:500; background:rgba(255,255,255,0.92); border-radius:10px; padding:9px 12px; font-size:11px; display:flex; gap:14px; box-shadow:0 2px 10px rgba(0,0,0,0.12); }
 .map-legend .item { display:flex; align-items:center; gap:6px; }
 .map-legend .sw { width:9px; height:9px; border-radius:50%; }
+.trail-endpoint-icon span { display:block; width:14px; height:14px; border-radius:50%; border:2.5px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.35); }
+.trail-endpoint-icon.trail-start span { background:#2E8B57; }
+.trail-endpoint-icon.trail-end span { background:#C0392B; }
 
 /* ===== modal ===== */
 .modal-card {

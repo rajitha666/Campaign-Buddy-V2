@@ -194,6 +194,7 @@ export default function ResourcePage({ resourceKey }) {
           {!hasLoaded && loading ? <Loader /> : (
             <>
               {error ? <ErrorState message={error} onRetry={load} /> : null}
+              {config.renderExtra ? <div className="panel" style={{ marginBottom: 16 }}>{config.renderExtra(rows)}</div> : null}
               <DataTable
                 columns={config.columns}
                 rows={rows}

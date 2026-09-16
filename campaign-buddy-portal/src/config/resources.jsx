@@ -7,9 +7,14 @@
 // matching docs/api-spec.md §1.1's list envelope.
 // `hydrate(rows)` is optional client-side joining (e.g. attach a clientName
 // onto a Campaign row) for endpoints that return bare foreign keys.
+import { lazy, Suspense } from 'react';
 import Badge from '../components/Badge';
 import Avatar from '../components/Avatar';
 import ProductThumb from '../components/ProductThumb';
+// Lazy: resources.jsx is imported by resources.test.jsx, which runs under
+// vitest's `node` environment (no `window`) — a top-level `import 'leaflet'`
+// would crash that test on module load even though it never renders anything.
+const PromoterTrailMap = lazy(() => import('../components/PromoterTrailMap'));
 import {
   clients as clientsApi, brands as brandsApi, items as itemsApi, outlets as outletsApi,
   distributorPoints as distributorPointsApi, cities as citiesApi, campaigns as campaignsApi,
@@ -670,6 +675,7 @@ export const RESOURCES = {
       { key: 'staffId', label: 'Promoter', type: 'searchable-select', optionsLoader: staffOptions },
       { key: 'date', label: 'Date', type: 'date' },
     ],
+    renderExtra: (rows) => <Suspense fallback={null}><PromoterTrailMap rows={rows} /></Suspense>,
     columns: [
       { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
       { key: 'outletName', label: 'Outlet' },
