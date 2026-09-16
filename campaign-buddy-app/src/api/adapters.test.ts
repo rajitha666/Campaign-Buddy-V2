@@ -96,14 +96,3 @@ describe('api adapters — path + verb', () => {
     expect(calls[0].params).toEqual({ reorderOnly: true });
   });
 });
-
-describe('profile.uploadPhoto (issue #18/#29)', () => {
-  it('posts the picked image file to /me/photo as multipart', async () => {
-    const form = new FormData();
-    form.append('image', { uri: 'file:///tmp/selfie.jpg', name: 'profile.jpg', type: 'image/jpeg' } as any);
-    const url = await profile.uploadPhoto(form);
-    expect(calls[0]).toMatchObject({ method: 'post', path: '/me/photo' });
-    // mock echoes the request body; the envelope unwrap is exercised above
-    expect((calls[0] as any).body).toBe(form);
-  });
-});

@@ -3,10 +3,8 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/context/AuthContext';
 import { openPromoterGuide, openSupervisorGuide } from '@/lib/trainingGuide';
-import { uploadPhoto } from '@/api/profile';
 import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -14,7 +12,7 @@ import { colors, fontFamily, fontSize, spacing } from '@/theme';
 
 export function ProfileScreen() {
   const navigation = useNavigation();
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout } = useAuth();
   // Supervisor mode mounts this as a root tab (no back history) instead of
   // pushing it from Home/Attendance, so only show the back chevron when
   // there's actually somewhere to go back to.
@@ -27,30 +25,6 @@ export function ProfileScreen() {
       // AuthContext's `user` becomes null.
     } catch {
       Alert.alert('Something went wrong logging out. Please try again.');
-    }
-  }
-
-  // Profile picture (#18) — tap the avatar to pick a photo and upload it.
-  async function handlePickPhoto() {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-      if (result.canceled) return;
-      const asset = result.assets?.[0];
-      if (!asset?.uri) return;
-      const form = new FormData();
-      form.append('image', {
-        uri: asset.uri, name: 'profile.jpg', type: asset.mimeType || 'image/jpeg',
-      } as unknown as Blob);
-      await uploadPhoto(form);
-      await refreshUser();
-      Alert.alert('Profile picture updated');
-    } catch {
-      Alert.alert('Something went wrong uploading your photo. Please try again.');
     }
   }
 
@@ -72,14 +46,7 @@ export function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <Pressable onPress={handlePickPhoto} hitSlop={8} accessibilityLabel="Change profile picture">
-            <Avatar initials={user?.avatarInitials ?? '—'} imageUrl={user?.profilePictureUrl} size={76} />
-            <View style={styles.photoBadge}>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                <Path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" />
-              </Svg>
-            </View>
-          </Pressable>
+          <Avatar initials={user?.avatarInitials ?? '—'} imageUrl={user?.profilePictureUrl} size={76} />
           <Text style={styles.name}>{user?.fullName}</Text>
           <Text style={styles.role}>{user?.role === 'campaign_owner' ? 'Field Supervisor' : 'Field Promoter'}</Text>
         </View>
@@ -134,19 +101,6 @@ const styles = StyleSheet.create({
   subtitle: { color: '#9FB2AA', fontSize: 12.5, marginTop: 2 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
   hero: { alignItems: 'center', paddingTop: spacing.lg },
-  photoBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
   name: { fontFamily: fontFamily.display, fontSize: fontSize.lg, marginTop: spacing.md, color: colors.textPrimary },
   role: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
   infoRow: {
