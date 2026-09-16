@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { dayDate } from "../../utils/dates";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
@@ -9,12 +10,6 @@ import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
 const GRACE_PERIOD_MINUTES = 10; // Confirmed v3 — stays hardcoded, not configurable yet (Spec §5.6/§8)
-
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
 
 // docs/api-spec.md §2.5 AttendanceRecord — the app expects userId /
 // assignmentId, which are activation.staffId / activation.id in v3.
@@ -40,7 +35,7 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
 router.get(
   "/attendance/today",
   asyncHandler(async (req, res) => {
-    const today = startOfDay(new Date());
+    const today = dayDate();
     // A supervisor can have several concurrent Activations today (one per
     // route outlet); `?assignmentId=` lets the caller ask about a specific
     // one instead of relying on an arbitrary findFirst pick. Promoters never
@@ -91,7 +86,7 @@ router.post(
       longitude: number;
     };
 
-    const today = startOfDay(new Date());
+    const today = dayDate();
     let activation;
     if (assignmentId) {
       activation = await prisma.activation.findFirst({
@@ -201,7 +196,7 @@ router.post(
   validate({ body: s.checkOut }),
   asyncHandler(async (req, res) => {
     const { latitude, longitude } = req.body as { latitude?: number; longitude?: number };
-    const today = startOfDay(new Date());
+    const today = dayDate();
 
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { dayDate } from "../../utils/dates";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
@@ -14,10 +15,9 @@ import {
 } from "../../utils/salesFieldStore";
 
 const router = Router();
-function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 
 async function currentActivationOrThrow(staffId: string) {
-  const today = startOfDay(new Date());
+  const today = dayDate();
   const activation = await prisma.activation.findFirst({
     where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
   });
@@ -53,7 +53,7 @@ router.get(
   "/sales-summary/today",
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
-    res.json(ok(await fullSummary(activation, req.staff!.sub, startOfDay(new Date()))));
+    res.json(ok(await fullSummary(activation, req.staff!.sub, dayDate())));
   })
 );
 
@@ -72,7 +72,7 @@ router.patch(
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
     const { remarks, customFields } = req.body as { remarks?: string; customFields?: Record<string, unknown> };
-    const today = startOfDay(new Date());
+    const today = dayDate();
     await assertNotConfirmed(activation.id, today);
 
     const dayDefs = await activeDefsForCampaign(activation.campaignId, "day");
@@ -95,7 +95,7 @@ router.post(
   validate({ body: s.salesSummaryConfirm }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
-    const today = startOfDay(new Date());
+    const today = dayDate();
     const { remarks, customFields } = req.body as { remarks?: string; customFields?: Record<string, unknown> };
 
     const dayDefs = await activeDefsForCampaign(activation.campaignId, "day");

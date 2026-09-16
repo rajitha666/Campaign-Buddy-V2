@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { dayDate } from "../../utils/dates";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound, validationError } from "../../utils/apiResponse";
@@ -13,14 +14,13 @@ import {
 } from "../../utils/salesFieldStore";
 
 const router = Router();
-function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 
 router.get(
   "/campaigns/:campaignId/outlets/:outletId/products",
   asyncHandler(async (req, res) => {
     const { campaignId, outletId } = req.params;
     const reorderOnly = req.query.reorderOnly === "true";
-    const today = startOfDay(new Date());
+    const today = dayDate();
 
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, campaignId, outletId, dateFrom: { lte: today }, dateTo: { gte: today } },
@@ -79,7 +79,7 @@ router.get(
     });
     if (!item) throw notFound("Product");
 
-    const today = startOfDay(new Date());
+    const today = dayDate();
     const activationItems = await prisma.activationItem.findMany({
       where: { campaignItem: { itemId: item.id } },
       include: { salesRecords: { where: { date: today } }, campaignItem: true },
@@ -118,7 +118,7 @@ router.patch(
       openingStock?: number; soldToday?: number; otherInterestedCustomers?: number; reorderFlag?: boolean;
       customFields?: Record<string, unknown>;
     };
-    const today = startOfDay(new Date());
+    const today = dayDate();
 
     const activationItem = await prisma.activationItem.findUnique({
       where: { id: activationItemId },

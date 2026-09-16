@@ -5,6 +5,36 @@ import { prisma } from "../src/utils/prisma";
 
 beforeEach(resetDb);
 
+describe("attendance — activation lookup day boundary (issue #42)", () => {
+  it("check-in succeeds on the activation's first day even when the server is ahead of UTC", async () => {
+    // Regression: the mobile routes computed "today" with server-LOCAL
+    // midnight, while activation dateFrom/dateTo are stored as UTC
+    // midnights. On servers with a positive UTC offset this makes
+    // `startOfDay(now) < dateFrom` for the first hours of the local day,
+    // so staff assigned for today got "No assignment for today".
+    const { staff, outlet } = await makeCampaignWithActivation();
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const auth = { Authorization: `Bearer ${token}` };
+    const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
+
+    const prevTz = process.env.TZ;
+    try {
+      process.env.TZ = "Asia/Colombo"; // UTC+5:30 — before 05:30 local, local midnight is still "yesterday" in UTC terms
+      const tomorrow = new Date();
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      await prisma.activation.update({
+        where: { id: (await prisma.activation.findFirstOrThrow({ where: { staffId: staff.id } })).id },
+        data: { dateFrom: new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`) },
+      });
+
+      const checkIn = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
+      expect(checkIn.status).toBe(201);
+    } finally {
+      process.env.TZ = prevTz;
+    }
+  });
+});
+
 describe("attendance — geofence soft flag (§5.6)", () => {
   it("check-in succeeds inside AND outside the geofence; only checkInLocationVerified differs", async () => {
     const { staff, outlet } = await makeCampaignWithActivation();
