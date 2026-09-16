@@ -11,6 +11,7 @@ Field-marketing execution platform for in-store product activations. One backend
 | `campaign-buddy-app/` | CB Mobile (field-rep app) | React Native · Expo SDK 57 | Expo |
 | `docs/` | specs & product docs | — | — |
 | `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides, shipped in-product) | static HTML, no build | — |
+| `triage-agent/` | scheduled GitHub issue triage bot (3x/day via `.github/workflows/triage-agent.yml`) | Node, zero deps | — |
 
 ## Prerequisites
 
@@ -82,6 +83,11 @@ Examples:
 - `[portal] Fix campaign list pagination`
 - `[app] Sync offline reports on reconnect`
 
+Open issues also carry bot-managed `triage:*` / `component:*` labels and an
+`approved-for-build` label a human adds to approve — see
+`docs/triage-agent-spec.md`. Don't hand-edit those labels except to approve
+or correct a component.
+
 ## Keep the user guides in sync
 
 `marketing/training/` is shipped **inside the product** — CB Office serves it at
@@ -121,3 +127,4 @@ swap in place, same filename. Full procedure and the screen↔guide map:
 - `docs/product-documentation.md` — feature reference
 - `docs/archive/` — superseded specs, do NOT build against
 - `marketing/README.md` — the landing site, evaluation brief and user-training guides
+- `docs/triage-agent-spec.md` — the scheduled issue-triage bot; setup in `triage-agent/README.md`

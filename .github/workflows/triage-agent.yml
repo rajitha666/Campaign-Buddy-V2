@@ -1,0 +1,35 @@
+name: Issue Triage Agent
+
+on:
+  schedule:
+    # Asia/Colombo (UTC+5:30) ~08:00, ~13:00, ~18:00
+    - cron: '30 2 * * *'
+    - cron: '30 7 * * *'
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (log planned comments/labels, write nothing to GitHub)'
+        type: boolean
+        default: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run triage agent
+        working-directory: triage-agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.TRIAGE_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROJECT_NUMBER: ${{ vars.TRIAGE_PROJECT_NUMBER }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+        run: node run.mjs

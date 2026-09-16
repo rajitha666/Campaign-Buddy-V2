@@ -1,0 +1,14 @@
+{
+  "name": "campaign-buddy-triage-agent",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Scheduled GitHub issue/enhancement triage agent for Campaign-Buddy-V2",
+  "scripts": {
+    "triage": "node run.mjs",
+    "triage:dry": "node --env-file=.env run.mjs"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  }
+}
