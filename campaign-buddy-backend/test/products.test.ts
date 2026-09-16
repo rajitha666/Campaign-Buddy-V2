@@ -64,4 +64,29 @@ describe("GET /v1/campaigns/:campaignId/outlets/:outletId/products", () => {
       .set("Authorization", `Bearer ${token}`);
     expect(list.body.data.map((r: any) => r.product.name)).toContain("Item 2");
   });
+
+  // #44 — the portal's "Campaign Products" screen always posts the bulk
+  // `itemIds` shape (never a single `itemId`), which had no backfill at all:
+  // existing activations' promoters never saw products added this way.
+  it("includes campaign items added in bulk (itemIds) after the activation was created", async () => {
+    const { staff, campaign, outlet } = await makeCampaignWithActivation();
+    const admin = await adminToken();
+    const brandId = (await prisma.brand.findFirstOrThrow()).id;
+
+    const item2 = await prisma.item.create({ data: { brandId, sku: "SKU-2", name: "Item 2", unitPrice: 500 } });
+    const item3 = await prisma.item.create({ data: { brandId, sku: "SKU-3", name: "Item 3", unitPrice: 750 } });
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/items`)
+      .set("Authorization", `Bearer ${admin}`)
+      .send({ itemIds: [item2.id, item3.id] });
+    expect(res.status).toBe(201);
+
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const list = await request(app)
+      .get(`/v1/campaigns/${campaign.id}/outlets/${outlet.id}/products`)
+      .set("Authorization", `Bearer ${token}`);
+    const names = list.body.data.map((r: any) => r.product.name);
+    expect(names).toContain("Item 2");
+    expect(names).toContain("Item 3");
+  });
 });
