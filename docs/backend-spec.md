@@ -431,7 +431,8 @@ This only ever expands access, never revokes it.
 ### 5.6 Geofence & late-arrival grace period — CONFIRMED v3
 
 - **Geofence check is a soft flag only.** Check-in verifies location via haversine distance between the submitted lat/lng and `Outlet.{latitude,longitude}`, compared against `Outlet.geofenceRadiusMeters` (default 150). If outside the radius, `checkInLocationVerified` is set to `false` — **check-in is never rejected for this reason.** Attendance tables (mobile + portal) surface unverified check-ins for review; they don't prevent them.
-- **Grace period stays at 10 minutes**, hardcoded (`GRACE_PERIOD_MINUTES` constant in `attendance.routes.ts`), compared against `Activation.shiftStart`. **Still not configurable per outlet/campaign** — flagged as a future improvement, not built in this pass.
+- **Grace period stays at 10 minutes**, hardcoded (`GRACE_PERIOD_MINUTES` constant in `src/utils/attendanceWindow.ts`), compared against `Activation.shiftStart`. **Still not configurable per outlet/campaign** — flagged as a future improvement, not built in this pass.
+- **Ideal shift window (issue #31): 09:00–17:00 local (Asia/Colombo).** When an Activation omits `shiftStart`, check-in falls back to 09:00 of the record's calendar day for the late/on-time computation (`idealShiftStart()` in `src/utils/attendanceWindow.ts`). `idealShiftEnd()` (17:00) backs the end-of-day auto check-out job (issue #32). Check-in is never *rejected* outside the window — the window only drives flagging, per the soft-flag policy above.
 
 ### 5.7 Location ping enforcement
 

@@ -6,10 +6,10 @@ import { ApiError, ok } from "../../utils/apiResponse";
 import { haversineDistanceMeters } from "../../utils/geo";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { checkInStatus, idealShiftStart } from "../../utils/attendanceWindow";
 import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
-const GRACE_PERIOD_MINUTES = 10; // Confirmed v3 — stays hardcoded, not configurable yet (Spec §5.6/§8)
 
 // docs/api-spec.md §2.5 AttendanceRecord — the app expects userId /
 // assignmentId, which are activation.staffId / activation.id in v3.
@@ -152,13 +152,14 @@ router.post(
     );
     const checkInLocationVerified = distance <= activation.outlet.geofenceRadiusMeters;
 
-    // Late/on-time vs. shiftStart + grace period
+    // Late/on-time vs. shiftStart + grace period (§5.6). When the activation
+    // has no shiftStart, fall back to the ideal 09:00 local shift window
+    // (issue #31) so the standard day is still enforced.
     const now = new Date();
-    let status: "on_time" | "late" = "on_time";
-    if (activation.shiftStart) {
-      const graceDeadline = new Date(activation.shiftStart.getTime() + GRACE_PERIOD_MINUTES * 60000);
-      if (now > graceDeadline) status = "late";
-    }
+    const status = checkInStatus(
+      activation.shiftStart ?? idealShiftStart(today),
+      now
+    );
 
     const record = await prisma.attendanceRecord.upsert({
       where: { activationId_date: { activationId: activation.id, date: today } },
