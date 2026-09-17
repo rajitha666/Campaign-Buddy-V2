@@ -136,14 +136,15 @@ enum IssueReportSyncStatus {
 // ============================================================================
 
 model Client {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   companyName   String
   clientName    String
   contactNumber String?
   email         String?
   address       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+  updatedAt     DateTime  @updatedAt
 
   brands    Brand[]
   campaigns Campaign[]
@@ -152,11 +153,12 @@ model Client {
 }
 
 model Brand {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   clientId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+  updatedAt DateTime  @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items  Item[]
@@ -166,19 +168,19 @@ model Brand {
 }
 
 model Item {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   brandId      String
   sku          String
   name         String
   unitPrice    Int // integer LKR
-  reorderLevel Int      @default(0)
+  reorderLevel Int       @default(0)
   imageUrl     String?
   description  String?
-  attributes   String[] @default([])
+  attributes   String[]  @default([])
   supplierName String?
   deletedAt    DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
   campaignItems CampaignItem[]
@@ -193,10 +195,11 @@ model Item {
 // ============================================================================
 
 model City {
-  id       String @id @default(uuid())
-  name     String
-  province String
-  district String
+  id        String    @id @default(uuid())
+  name      String
+  province  String
+  district  String
+  deletedAt DateTime?
 
   outlets           Outlet[]
   distributorPoints DistributorPoint[]
@@ -206,8 +209,8 @@ model City {
 }
 
 model Outlet {
-  id                   String   @id @default(uuid())
-  outletNo             String   @unique
+  id                   String    @id @default(uuid())
+  outletNo             String    @unique
   name                 String
   contactPerson        String?
   address              String?
@@ -217,9 +220,10 @@ model Outlet {
   fax                  String?
   latitude             Float
   longitude            Float
-  geofenceRadiusMeters Int      @default(150)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  geofenceRadiusMeters Int       @default(150)
+  createdAt            DateTime  @default(now())
+  deletedAt            DateTime?
+  updatedAt            DateTime  @updatedAt
 
   city        City         @relation(fields: [cityId], references: [id])
   activations Activation[]
@@ -229,13 +233,14 @@ model Outlet {
 }
 
 model DistributorPoint {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   contact   String?
   address   String?
   cityId    String
   clientId  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 
   city        City         @relation(fields: [cityId], references: [id])
   activations Activation[]
@@ -257,19 +262,19 @@ model DistributorPoint {
 // set; issue #29 reversed it — profilePictureUrl below is deliberate.)
 
 model Staff {
-  id               String      @id @default(uuid())
-  employeeId       String      @unique
-  fullName         String
-  displayName      String
-  userType         StaffType
-  mobileUsername   String      @unique
-  passwordHash     String
-  phone            String?
-  cityId           String?
-  status           StaffStatus @default(active)
-  reportsToStaffId String?
-  linkedUserId     String?     @unique // set when this Staff (typically a supervisor) also has a web portal login
-  profilePictureUrl String?    // served statically from /uploads/staff (issue #29)
+  id                String      @id @default(uuid())
+  employeeId        String      @unique
+  fullName          String
+  displayName       String
+  userType          StaffType
+  mobileUsername    String      @unique
+  passwordHash      String
+  phone             String?
+  cityId            String?
+  status            StaffStatus @default(active)
+  reportsToStaffId  String?
+  linkedUserId      String?     @unique // set when this Staff (typically a supervisor) also has a web portal login
+  profilePictureUrl String? // served statically from /uploads/staff (issue #29)
 
   // HR profile sub-fields (flattened; not consumed by mobile/admin APIs in v1, profile-management only)
   nic                   String?
@@ -363,10 +368,11 @@ model Campaign {
   shiftStartMinutes Int @default(540)
   shiftEndMinutes   Int @default(1080)
 
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+  updatedAt DateTime  @updatedAt
 
-  client                Client                 @relation(fields: [clientId], references: [id])
+  client                Client                         @relation(fields: [clientId], references: [id])
   campaignItems         CampaignItem[]
   activations           Activation[]
   accessGrants          CampaignAccessGrant[]
@@ -442,6 +448,7 @@ model Activation {
   shiftStartMinutes    Int?
   shiftEndMinutes      Int?
   createdAt            DateTime             @default(now())
+  deletedAt            DateTime?
   updatedAt            DateTime             @updatedAt
 
   campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -671,6 +678,7 @@ model SupervisorTask {
   taskType   SupervisorTaskType
   task       String
   createdAt  DateTime           @default(now())
+  deletedAt  DateTime?
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
@@ -686,14 +694,15 @@ model SupervisorTask {
 // campaign-scoped resource, instead of needing a special-cased global route.
 // See Backend Spec v3 §4.2 and §5.9, and Changelog v3.
 model SupervisorRoute {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   campaignId        String
   supervisorStaffId String
-  outletIds         String[] @default([])
-  dateFrom          DateTime @db.Date
-  dateTo            DateTime @db.Date
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  outletIds         String[]  @default([])
+  dateFrom          DateTime  @db.Date
+  dateTo            DateTime  @db.Date
+  createdAt         DateTime  @default(now())
+  deletedAt         DateTime?
+  updatedAt         DateTime  @updatedAt
 
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   supervisor Staff    @relation(fields: [supervisorStaffId], references: [id], onDelete: Cascade)
@@ -750,7 +759,7 @@ model IssueReport {
   title             String
   body              String
   category          IssueReportCategory   @default(bug)
-  severity          IssueReportSeverity?  // only meaningful for category = bug
+  severity          IssueReportSeverity? // only meaningful for category = bug
   context           Json? // { page, persona, campaignName, portalVersion, userAgent } — no PII beyond reporter display name
   reporterUserId    String
   reporterName      String // snapshot of User.displayName at report time

@@ -5,14 +5,16 @@ import { app, resetDb, adminToken, makeCampaignWithActivation, makeStaff } from 
 
 beforeEach(resetDb);
 
-describe("DELETE /admin/v1/staff/:id (#23)", () => {
-  it("hard-deletes a staff member with no history", async () => {
+describe("DELETE /admin/v1/staff/:id (#23, #102)", () => {
+  it("always soft-deletes (marks inactive), even with no history (#102)", async () => {
     const token = await adminToken();
     const staff = await makeStaff();
 
     const res = await request(app).delete(`/admin/v1/staff/${staff.id}`).set("Authorization", `Bearer ${token}`);
-    expect(res.status).toBe(204);
-    expect(await prisma.staff.findUnique({ where: { id: staff.id } })).toBeNull();
+    expect(res.status).toBe(200);
+    expect(res.body.data.softDeleted).toBe(true);
+    expect(res.body.data.status).toBe("inactive");
+    expect(await prisma.staff.findUnique({ where: { id: staff.id } })).not.toBeNull();
   });
 
   it("soft-deletes (marks inactive) a promoter referenced by an activation, instead of 409 IN_USE", async () => {
@@ -28,7 +30,7 @@ describe("DELETE /admin/v1/staff/:id (#23)", () => {
     expect(stillThere?.status).toBe("inactive");
   });
 
-  it("404s on an unknown staff id (unaffected by the soft-delete fallback)", async () => {
+  it("404s on an unknown staff id", async () => {
     const token = await adminToken();
     const res = await request(app).delete("/admin/v1/staff/does-not-exist").set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(404);

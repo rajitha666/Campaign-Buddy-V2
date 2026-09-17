@@ -96,6 +96,7 @@ router.get(
     const pageSize = Number(req.query.pageSize || 25);
 
     const where = {
+      status: "active" as const,
       ...(search ? { fullName: { contains: search, mode: "insensitive" as const } } : {}),
       ...(userType ? { userType } : {}),
     };
@@ -139,20 +140,15 @@ router.patch(
 
 router.delete(
   "/staff/:id",
-  requireRole("adm"),
+  requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    try {
-      await prisma.staff.delete({ where: { id: req.params.id } });
-      res.status(204).send();
-    } catch (err) {
-      // Referenced by activations, attendance, sales history, etc. — this
-      // staff member has a real track record, so soft-delete (mark inactive:
-      // blocks mobile login, drops out of active pickers) instead of
-      // failing with IN_USE (#23).
-      if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== "P2003") throw err;
-      const updated = await prisma.staff.update({ where: { id: req.params.id }, data: { status: "inactive" } });
-      res.json(ok({ ...updated, softDeleted: true })); // passwordHash omitted globally (src/utils/prisma.ts)
-    }
+    const existing = await prisma.staff.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw notFound("Staff");
+    // Always soft-delete (#102): mark inactive — blocks mobile login, drops out
+    // of active lists/pickers, preserves the staff member's track record
+    // (activations, attendance, sales history). The row stays in the DB.
+    const updated = await prisma.staff.update({ where: { id: req.params.id }, data: { status: "inactive" } });
+    res.json(ok({ ...updated, softDeleted: true })); // passwordHash omitted globally (src/utils/prisma.ts)
   })
 );
 

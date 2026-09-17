@@ -281,6 +281,7 @@ router.get(
     const rows = await prisma.supervisorRoute.findMany({
       where: {
         campaignId: req.params.campaignId,
+        deletedAt: null,
         ...(supervisorId ? { supervisorStaffId: supervisorId } : {}),
         ...(outletId ? { outletIds: { has: outletId } } : {}),
         ...(dateFrom ? { dateTo: { gte: dayDate(dateFrom) } } : {}),
@@ -332,8 +333,10 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.supervisorRoute.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    const existing = await prisma.supervisorRoute.findUnique({ where: { id: req.params.id } });
+    if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Supervisor route");
+    await prisma.supervisorRoute.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+    res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
   })
 );
 
@@ -344,7 +347,7 @@ router.get(
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
     const rows = await prisma.supervisorTask.findMany({
-      where: { campaignId: req.params.campaignId },
+      where: { campaignId: req.params.campaignId, deletedAt: null },
       orderBy: { createdAt: "asc" },
     });
     res.json(okList(rows, rows.length));
@@ -390,8 +393,10 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.supervisorTask.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    const existing = await prisma.supervisorTask.findUnique({ where: { id: req.params.id } });
+    if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Supervisor task");
+    await prisma.supervisorTask.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+    res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
   })
 );
 

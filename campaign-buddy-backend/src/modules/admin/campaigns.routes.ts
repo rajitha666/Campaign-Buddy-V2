@@ -19,8 +19,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const where =
       req.user!.roleId === "adm"
-        ? {}
-        : { accessGrants: { some: { userId: req.user!.sub } } };
+        ? { deletedAt: null }
+        : { deletedAt: null, accessGrants: { some: { userId: req.user!.sub } } };
     const campaigns = await prisma.campaign.findMany({ where, include: { client: true } });
 
     // Auto-sync status on read (§5.8) — skip campaigns with a manual override,
@@ -62,7 +62,7 @@ router.get(
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
     const campaign = await prisma.campaign.findUnique({ where: { id: req.params.campaignId }, include: { client: true } });
-    if (!campaign) throw notFound("Campaign");
+    if (!campaign || campaign.deletedAt) throw notFound("Campaign");
     const computed = computeCampaignStatus(campaign.startDate, campaign.endDate);
     const synced =
       !campaign.statusManuallySet && computed !== campaign.status
@@ -95,10 +95,12 @@ router.patch(
 router.delete(
   "/campaigns/:campaignId",
   requireCampaignAccess,
-  requireRole("adm"),
+  requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.campaign.delete({ where: { id: req.params.campaignId } });
-    res.status(204).send();
+    const existing = await prisma.campaign.findUnique({ where: { id: req.params.campaignId } });
+    if (!existing || existing.deletedAt) throw notFound("Campaign");
+    await prisma.campaign.update({ where: { id: req.params.campaignId }, data: { deletedAt: new Date() } });
+    res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
   })
 );
 

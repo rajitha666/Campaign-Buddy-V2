@@ -162,7 +162,7 @@ router.get(
       orderBy: { dateFrom: "asc" },
     });
     const outletIds = Array.from(new Set(routes.flatMap((r) => r.outletIds)));
-    const outlets = await prisma.outlet.findMany({ where: { id: { in: outletIds } } });
+    const outlets = await prisma.outlet.findMany({ where: { id: { in: outletIds }, deletedAt: null } });
     const outletById = new Map(outlets.map((o) => [o.id, o]));
     res.json(
       ok(

@@ -55,7 +55,7 @@ sponsor    → "sponsor" persona (read-only, campaign-scoped)
 | Id | Label | Write access | Default landing |
 |---|---|---|---|
 | `adm` | Super Admin | Full — bypasses campaign access checks entirely, sees every campaign | `/dashboard` |
-| `usr` | Campaign Admin | Full, but still grant-scoped like Supervisor/Sponsor — only sees campaigns they hold a grant for | `/dashboard` |
+| `usr` | Campaign Admin | Full, but still grant-scoped like Supervisor/Sponsor — only sees campaigns they hold a grant for. Delete = soft delete (#102): every `DELETE` marks the row `deletedAt` (or staff `inactive` / sales-field `archivedAt`) — the record stays in the database and disappears from all lists. Applies to clients, brands, items, cities, outlets, distributor points, campaigns, activations, supervisor routes/tasks, staff and sales fields; user/role admin (RBAC) remains `adm`-only | `/dashboard` |
 | `supervisor` | Supervisor | **Read-only** — attendance, sales, live tracking for their granted campaign(s)/outlet(s) | `/portal/campaigns` |
 | `sponsor` | Sponsor | **Read-only** — stats, reports, live tracking for their granted campaign(s) | `/portal/campaigns` |
 

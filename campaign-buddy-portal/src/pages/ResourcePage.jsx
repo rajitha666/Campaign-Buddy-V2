@@ -131,10 +131,10 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
-      if (!window.confirm('Delete this record? This cannot be undone.')) return;
+      if (!window.confirm('Remove this record?')) return;
       try {
         const result = await config.deleteItem({ campaignId, id: row.id });
-        push(result?.data?.softDeleted ? 'This record has activity on file — marked inactive instead of deleted.' : 'Deleted');
+        push('Removed');
         load();
       } catch (e) {
         push(e.message || 'Could not delete', 'error');

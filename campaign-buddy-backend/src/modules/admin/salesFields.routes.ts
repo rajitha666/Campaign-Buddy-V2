@@ -124,12 +124,14 @@ router.delete(
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
     const field = await loadOwnedField(req.params.campaignId, req.params.id);
-    const used = await prisma.salesFieldValue.count({ where: { definitionId: field.id } });
-    if (used > 0) {
-      throw new ApiError(409, "IN_USE", "This field has recorded values — archive it instead of deleting.");
-    }
-    await prisma.salesFieldDefinition.delete({ where: { id: field.id } });
-    res.status(204).send();
+    if (field.archivedAt) throw notFound("Custom sales field");
+    // Always archive (soft delete, #102): keep the definition and any recorded
+    // values in the DB; archived fields drop out of the mobile form and lists.
+    const updated = await prisma.salesFieldDefinition.update({
+      where: { id: field.id },
+      data: { archivedAt: new Date() },
+    });
+    res.json(ok({ ...serializeDefinition(updated), softDeleted: true }));
   })
 );
 

@@ -314,7 +314,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/clients` | any authenticated User |
 | POST | `/clients` | **[adm/usr]** |
 | PATCH | `/clients/:id` | **[adm/usr]** |
-| DELETE | `/clients/:id` | **[adm]** |
+| DELETE | `/clients/:id` | **[adm/usr]** — soft delete (#102) |
 | GET | `/brands?clientId=` | any |
 | POST | `/brands` | **[adm/usr]** |
 | GET | `/items?search=` | any |
@@ -346,7 +346,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | PATCH | `/campaigns/:campaignId` | **[adm/usr]** — includes optional manual `status` override (§5.8) |
 | GET | `/campaigns/:campaignId/items` | grant required — this campaign's `CampaignItem` catalog |
 | POST | `/campaigns/:campaignId/items` | **[adm/usr]** — body `{ itemId }` to link existing, or `{ newItem: {...} }` to create-and-link in one call |
-| DELETE | `/campaigns/:campaignId/items/:campaignItemId` | **[adm/usr]** |
+| DELETE | `/campaigns/:campaignId/items/:campaignItemId` | **[adm/usr]** — join-row delete (hard) |
 | GET | `/campaigns/:campaignId/access` | **[adm/usr]** — lists every User with a grant on this campaign, with their `scopeType`/`outletIds` |
 
 **Activations** (`activations.routes.ts`, nested under the campaign-scoped router)
@@ -356,7 +356,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | POST | `/campaigns/:campaignId/activations` | **[adm/usr]** — `assertOutletAllowed()` on `outletId`; **auto-grants the named supervisor (§5.3)** |
 | GET | `/campaigns/:campaignId/activations/:activationId` | grant + outlet check |
 | PATCH | `/campaigns/:campaignId/activations/:activationId` | **[adm/usr]** — re-checks outlet if `outletId` changes; **re-runs the supervisor auto-grant** |
-| DELETE | `/campaigns/:campaignId/activations/:activationId` | **[adm/usr]** |
+| DELETE | `/campaigns/:campaignId/activations/:activationId` | **[adm/usr]** — soft delete (#102) |
 | POST | `/.../activations/:activationId/items` | **[adm/usr]** — body `{ campaignItemId }` or `{ addAll: true }` |
 | DELETE | `/.../activations/:activationId/items/:activationItemId` | **[adm/usr]** |
 | GET | `/.../activations/:activationId/targets` | grant + outlet check |
@@ -369,7 +369,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/campaigns/:campaignId/sales?outletId=&dateFrom=&dateTo=` | grant required, outlet-filtered |
 | PATCH | `/campaigns/:campaignId/sales/:salesRecordId` | **[adm/usr]** — correction, re-validates outlet ownership; can raise `openingStock` mid-day (§2.6) |
 | GET | `/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` | grant required — **new in v3**, folded in from the retired contract doc's §7.7.4. The cascading-dropdown load step before the portal's editable Update Sales grid. Response: `data: [{ id (=salesRecordId), activationItemId, itemName, unitPrice, openingStock, soldToday, customFields }]`, `meta: { total, activationId, date, dayCustomFields }` (#13). Nested under the campaign-scoped router (the original draft had this as a global endpoint with `campaignId` as a query param — moved here for consistency with every other grant-enforced resource) |
-| GET/POST/PATCH/DELETE | `/campaigns/:campaignId/sales-fields[/:id]` | `salesFields.routes.ts` — **[adm/usr]** for writes. Custom sales-field definitions (#13): auto-slugged `key`, `type`/`scope` frozen once values exist, `DELETE` 409s when values exist (archive instead via `PATCH { archived: true }`) |
+| GET/POST/PATCH/DELETE | `/campaigns/:campaignId/sales-fields[/:id]` | `salesFields.routes.ts` — **[adm/usr]** for writes. Custom sales-field definitions (#13): auto-slugged `key`, `type`/`scope` frozen once values exist, `DELETE` archives instead (soft delete, #102) — recorded values are kept |
 | PUT | `/campaigns/:campaignId/sales/custom-values` | **[adm/usr]** — bulk save `{ activationId, date, day: {key:val}, products: {activationItemId: {key:val}} }`; `null` clears a value |
 | GET | `/campaigns/:campaignId/stats?outletId=&dateFrom=&dateTo=` | returns `{ totals, byDay }` |
 | GET | `/campaigns/:campaignId/tracking/live` | current position of every checked-in staff member (open `AttendanceRecord` + latest `TrackingPing`), outlet-filtered — **powers the Supervisor/Sponsor live map**. **Confirmed campaign-scoped** (not global — see Changelog v3 for why the retired contract doc's "global" call doesn't carry forward: a global endpoint would sidestep `CampaignAccessGrant` scoping entirely, which conflicts with the rest of this API's design) |
@@ -378,7 +378,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/campaigns/:campaignId/supervisor-routes?supervisorId=&outletId=&dateFrom=&dateTo=` | grant required — **new in v3** (Assign Routes, built this pass). See §5.9 |
 | POST | `/campaigns/:campaignId/supervisor-routes` | **[adm/usr]** — body `{ supervisorStaffId, outletIds: [...], dateFrom, dateTo }`; every id in `outletIds` is checked with `assertOutletAllowed()` |
 | PATCH | `/campaigns/:campaignId/supervisor-routes/:id` | **[adm/usr]** |
-| DELETE | `/campaigns/:campaignId/supervisor-routes/:id` | **[adm/usr]** |
+| DELETE | `/campaigns/:campaignId/supervisor-routes/:id` | **[adm/usr]** — soft delete (#102) |
 
 **Reports** (`reports.routes.ts`, nested under the campaign-scoped router)
 | Method | Path | Notes |
@@ -510,12 +510,21 @@ time" §5.2, campaign-scoped tracking §5.9, one report route not a `-client` va
 
 **Catalog CRUD completion:** `PATCH`/`DELETE /brands/:id`, `DELETE /items/:id`,
 `PATCH`/`DELETE /cities/:id`, `DELETE /outlets/:id`,
-`PATCH`/`DELETE /distributor-points/:id` — all `[adm/usr]` for `PATCH`, `[adm]` for
-`DELETE`. A `DELETE` that violates a foreign key returns `409 IN_USE`.
+`PATCH`/`DELETE /distributor-points/:id` — all `[adm/usr]` (`#102`: DELETE is open
+to Campaign Admins too, and Super Admin keeps the same access).
 
-**Other CRUD:** `DELETE /campaigns/:campaignId` `[adm]` (cascades to activations,
-items, grants, tasks, routes). `DELETE /staff/:id` `[adm]`. `PATCH /roles/:id`
-`[adm]` (the `id` is the PK and is never rewritten from the body).
+**Soft delete everywhere (`#102`):** every `DELETE` endpoint soft-deletes — the
+row stays in the database and is hidden from all lists. Master-data and
+campaign-scoped entity rows get a `deletedAt` timestamp (clients, brands,
+cities, outlets, distributor points, campaigns, activations, supervisor routes,
+supervisor tasks); items already had one. Staff `DELETE` always marks
+`status: "inactive"` (blocks mobile login, keeps the track record). Sales-field
+`DELETE` always sets `archivedAt` (values are preserved). Unique codes that made
+sense to reuse (`items` brand+sku, `outlets.outletNo`, `campaigns.campaignNo`)
+use partial unique indexes `WHERE "deletedAt" IS NULL` so a soft-deleted row's
+code can be reused. Unlink/join deletes (`campaignItems`, `activationItems`,
+`CampaignAccessGrant`, targets) are ordinary row deletions — there is no
+history value in a link row, so they stay hard deletes.
 
 **Activations:** `GET /campaigns/:campaignId/activations/:activationId/items`
 (grant + outlet check) — lists attached `ActivationItem`s so the portal's

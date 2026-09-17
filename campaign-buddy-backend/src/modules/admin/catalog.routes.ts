@@ -42,7 +42,7 @@ function paginate(req: any) {
 // ---- Clients ----
 router.get("/clients", asyncHandler(async (req, res) => {
   const search = (req.query.search as string) || "";
-  const where = search ? { clientName: { contains: search, mode: "insensitive" as const } } : {};
+  const where = { deletedAt: null, ...(search ? { clientName: { contains: search, mode: "insensitive" as const } } : {}) };
   const [rows, total] = await Promise.all([
     prisma.client.findMany({ where, ...paginate(req) }),
     prisma.client.count({ where }),
@@ -60,15 +60,17 @@ router.patch("/clients/:id", requireRole("adm", "usr"), validate({ body: s.clien
   });
   res.json(ok(updated));
 }));
-router.delete("/clients/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.client.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/clients/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.client.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Client");
+  await prisma.client.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
 // ---- Brands ----
 router.get("/brands", asyncHandler(async (req, res) => {
   const clientId = req.query.clientId as string | undefined;
-  const rows = await prisma.brand.findMany({ where: clientId ? { clientId } : {} });
+  const rows = await prisma.brand.findMany({ where: { deletedAt: null, ...(clientId ? { clientId } : {}) } });
   res.json(okList(rows, rows.length));
 }));
 router.post("/brands", requireRole("adm", "usr"), validate({ body: s.brandCreate }), asyncHandler(async (req, res) => {
@@ -79,9 +81,11 @@ router.patch("/brands/:id", requireRole("adm", "usr"), validate({ body: s.brandU
   const updated = await prisma.brand.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
-router.delete("/brands/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.brand.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/brands/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.brand.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Brand");
+  await prisma.brand.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
 // ---- Items ----
@@ -124,7 +128,7 @@ router.post(
 
 // ---- Cities ----
 router.get("/cities", asyncHandler(async (_req, res) => {
-  const rows = await prisma.city.findMany();
+  const rows = await prisma.city.findMany({ where: { deletedAt: null } });
   res.json(okList(rows, rows.length));
 }));
 router.post("/cities", requireRole("adm"), validate({ body: s.cityCreate }), asyncHandler(async (req, res) => {
@@ -135,15 +139,17 @@ router.patch("/cities/:id", requireRole("adm"), validate({ body: s.cityUpdate })
   const updated = await prisma.city.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
-router.delete("/cities/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.city.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/cities/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.city.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("City");
+  await prisma.city.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
 // ---- Outlets ----
 router.get("/outlets", asyncHandler(async (req, res) => {
   const search = (req.query.search as string) || "";
-  const where = search ? { name: { contains: search, mode: "insensitive" as const } } : {};
+  const where = { deletedAt: null, ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}) };
   const [rows, total] = await Promise.all([
     prisma.outlet.findMany({ where, include: { city: true }, ...paginate(req) }),
     prisma.outlet.count({ where }),
@@ -163,14 +169,16 @@ router.patch("/outlets/:id", requireRole("adm", "usr"), validate({ body: s.outle
   });
   res.json(ok(updated));
 }));
-router.delete("/outlets/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.outlet.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.outlet.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Outlet");
+  await prisma.outlet.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
 // ---- Distributor Points ----
 router.get("/distributor-points", asyncHandler(async (_req, res) => {
-  const rows = await prisma.distributorPoint.findMany();
+  const rows = await prisma.distributorPoint.findMany({ where: { deletedAt: null } });
   res.json(okList(rows, rows.length));
 }));
 router.post("/distributor-points", requireRole("adm", "usr"), validate({ body: s.distributorCreate }), asyncHandler(async (req, res) => {
@@ -181,9 +189,11 @@ router.patch("/distributor-points/:id", requireRole("adm", "usr"), validate({ bo
   const updated = await prisma.distributorPoint.update({ where: { id: req.params.id }, data: req.body });
   res.json(ok(updated));
 }));
-router.delete("/distributor-points/:id", requireRole("adm"), asyncHandler(async (req, res) => {
-  await prisma.distributorPoint.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+router.delete("/distributor-points/:id", requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  const existing = await prisma.distributorPoint.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.deletedAt) throw notFound("Distributor point");
+  await prisma.distributorPoint.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+  res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
 export default router;

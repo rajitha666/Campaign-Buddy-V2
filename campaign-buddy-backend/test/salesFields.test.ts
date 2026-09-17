@@ -65,18 +65,26 @@ describe("admin custom sales fields — CRUD", () => {
     expect(blocked.status).toBe(409);
   });
 
-  it("won't hard-delete a field with values; deletes a clean one", async () => {
+  it("archives a field with values instead of hard-deleting (#102)", async () => {
     const { token, base, activation } = await setup();
     const f = await request(app).post(base).set("Authorization", `Bearer ${token}`).send({ label: "Keep", type: "number" });
     const id = f.body.data.id;
     await prisma.salesFieldValue.create({ data: { definitionId: id, activationId: activation.id, date: new Date(`${today}T00:00:00Z`), value: "3" } });
 
-    const blocked = await request(app).delete(`${base}/${id}`).set("Authorization", `Bearer ${token}`);
-    expect(blocked.status).toBe(409);
+    const res = await request(app).delete(`${base}/${id}`).set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.softDeleted).toBe(true);
+    const row = await prisma.salesFieldDefinition.findUnique({ where: { id } });
+    expect(row).not.toBeNull();
+    expect(row?.archivedAt).not.toBeNull();
+  });
 
+  it("archives a clean field on delete", async () => {
+    const { token, base } = await setup();
     const g = await request(app).post(base).set("Authorization", `Bearer ${token}`).send({ label: "Gone", type: "number" });
     const del = await request(app).delete(`${base}/${g.body.data.id}`).set("Authorization", `Bearer ${token}`);
-    expect(del.status).toBe(204);
+    expect(del.status).toBe(200);
+    expect(del.body.data.softDeleted).toBe(true);
   });
 });
 

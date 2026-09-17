@@ -104,11 +104,12 @@ describe("zod validation on admin writes", () => {
     expect(good.status).toBe(201);
   });
 
-  it("a FK-violating delete returns 409 IN_USE, not 500", async () => {
+  it("soft-deletes a referenced brand (#102), keeping the row in the DB", async () => {
     const token = await adminToken();
     const { brand } = await makeCampaignWithActivation(); // brand has an item
     const res = await request(app).delete(`/admin/v1/brands/${brand.id}`).set("Authorization", `Bearer ${token}`);
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe("IN_USE");
+    expect(res.status).toBe(200);
+    expect(res.body.data.softDeleted).toBe(true);
+    expect(await prisma.brand.findUnique({ where: { id: brand.id } })).not.toBeNull();
   });
 });

@@ -54,7 +54,11 @@ router.get(
   asyncHandler(async (req, res) => {
     const allowedOutlets = outletIdsAllowed(req);
     const rows = await prisma.activation.findMany({
-      where: { campaignId: req.params.campaignId, ...(allowedOutlets ? { outletId: { in: allowedOutlets } } : {}) },
+      where: {
+        campaignId: req.params.campaignId,
+        deletedAt: null,
+        ...(allowedOutlets ? { outletId: { in: allowedOutlets } } : {}),
+      },
       include: { outlet: true, staff: true, supervisor: true },
     });
     res.json(okList(rows, rows.length));
@@ -98,7 +102,7 @@ router.get(
       where: { id: req.params.activationId },
       include: { outlet: true, staff: true, supervisor: true, activationItems: true },
     });
-    if (!activation) throw notFound("Activation");
+    if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     res.json(ok(activation));
   })
@@ -125,8 +129,12 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.activation.delete({ where: { id: req.params.activationId } });
-    res.status(204).send();
+    const outletIds = outletIdsAllowed(req);
+    const existing = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
+    if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Activation");
+    if (outletIds) assertOutletAllowed(req, existing.outletId);
+    await prisma.activation.update({ where: { id: req.params.activationId }, data: { deletedAt: new Date() } });
+    res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
   })
 );
 
@@ -134,7 +142,8 @@ router.get(
   "/campaigns/:campaignId/activations/:activationId/items",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
+    const activation = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
+    if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationItem.findMany({
       where: { activationId: req.params.activationId },
@@ -193,7 +202,8 @@ router.get(
   "/campaigns/:campaignId/activations/:activationId/targets",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
+    const activation = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
+    if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationTarget.findMany({ where: { activationId: req.params.activationId } });
     const withProgress = await Promise.all(
@@ -209,7 +219,8 @@ router.post(
   requireRole("adm", "usr"),
   validate({ body: s.targetCreate }),
   asyncHandler(async (req, res) => {
-    const activation = await prisma.activation.findUniqueOrThrow({ where: { id: req.params.activationId } });
+    const activation = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
+    if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
 
     const { dateFrom, dateTo, repeat, targetItemId, targetBrandId, targetValue } = req.body as Record<string, unknown>;
