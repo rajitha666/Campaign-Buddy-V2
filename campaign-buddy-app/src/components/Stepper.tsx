@@ -6,10 +6,14 @@
  * `value` and receives the new value via `onChange`. Parents are expected
  * to debounce/batch their own PATCH calls (see ProductUpdateScreen.tsx for
  * the pattern) rather than firing a network request on every single tap.
+ *
+ * The number itself is also tappable — reps entering a large count (e.g.
+ * opening stock of 60) shouldn't have to tap "+" sixty times.
  */
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
+import { parseStepperInput } from '@/lib/stepper';
 
 interface StepperProps {
   value: number;
@@ -21,8 +25,19 @@ interface StepperProps {
 
 export function Stepper({ value, onChange, min = 0, max, size = 'default' }: StepperProps) {
   const large = size === 'large';
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
   const dec = () => onChange(Math.max(min, value - 1));
   const inc = () => onChange(max !== undefined ? Math.min(max, value + 1) : value + 1);
+
+  const startEditing = () => {
+    setDraft(String(value));
+    setEditing(true);
+  };
+  const commit = () => {
+    setEditing(false);
+    onChange(parseStepperInput(draft, min, max));
+  };
 
   return (
     <View style={styles.row}>
@@ -33,7 +48,22 @@ export function Stepper({ value, onChange, min = 0, max, size = 'default' }: Ste
       >
         <Text style={styles.btnLabel}>–</Text>
       </Pressable>
-      <Text style={[styles.value, large && styles.valueLarge]}>{value}</Text>
+      {editing ? (
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          keyboardType="number-pad"
+          autoFocus
+          selectTextOnFocus
+          style={[styles.value, styles.valueInput, large && styles.valueLarge]}
+        />
+      ) : (
+        <Pressable onPress={startEditing}>
+          <Text style={[styles.value, large && styles.valueLarge]}>{value}</Text>
+        </Pressable>
+      )}
       <Pressable
         onPress={inc}
         disabled={max !== undefined && value >= max}
@@ -67,5 +97,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textPrimary,
   },
+  valueInput: { padding: 0, minWidth: 34 },
   valueLarge: { fontSize: 21, minWidth: 34 },
 });

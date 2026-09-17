@@ -12,7 +12,8 @@
  * contained change.
  */
 import React from 'react';
-import { Modal, View, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Modal, View, Pressable, StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { colors, radius, spacing } from '@/theme';
 
 interface BottomSheetModalProps {
@@ -28,13 +29,16 @@ export function BottomSheetModal({ visible, onClose, children }: BottomSheetModa
         {/* Inner Pressable with no onPress swallows taps so they don't bubble to the scrim above. */}
         <Pressable style={styles.sheetWrap} onPress={() => {}}>
           <View style={styles.dragHandle} />
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.sheet}
             contentContainerStyle={styles.sheetContent}
             showsVerticalScrollIndicator={false}
+            enableOnAndroid
+            extraScrollHeight={24}
+            keyboardShouldPersistTaps="handled"
           >
             {children}
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </Pressable>
       </Pressable>
     </Modal>

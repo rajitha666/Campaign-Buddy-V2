@@ -47,9 +47,10 @@ export function PerformanceScreen() {
             </View>
 
             <View style={styles.perfStats}>
-              <PerfStat n={`LKR ${formatK(p.totalSales)}`} l="Total sales" />
+              <PerfStat n={`LKR ${p.totalSales.toLocaleString()}`} l="Total sales" />
               <PerfStat n={String(p.totalUnitsSold)} l="Units sold" />
               <PerfStat n={String(p.totalApproached)} l="Approached" />
+              {p.totalTarget != null && <PerfStat n={`LKR ${p.totalTarget.toLocaleString()}`} l="Target" />}
             </View>
 
             <View style={styles.chartCard}>
@@ -97,10 +98,6 @@ export function PerformanceScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function formatK(n: number) {
-  return n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
 }
 
 function MetaItem({ n, l }: { n: string; l: string }) {

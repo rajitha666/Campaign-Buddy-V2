@@ -6,9 +6,11 @@
  * unauthenticated request the moment the app opens.
  */
 import React from 'react';
+import { View } from 'react-native';
 import { AttendanceProvider } from '@/context/AttendanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
+import { useInactivityLogout } from '@/hooks/useInactivityLogout';
 import { MainTabs } from './MainTabs';
 import { SupervisorTabs } from './SupervisorTabs';
 
@@ -20,10 +22,13 @@ function LocationTrackerMount() {
 export function AuthenticatedApp() {
   const { user } = useAuth();
   const isSupervisor = user?.role === 'campaign_owner';
+  const recordActivity = useInactivityLogout();
   return (
     <AttendanceProvider>
       <LocationTrackerMount />
-      {isSupervisor ? <SupervisorTabs /> : <MainTabs />}
+      <View style={{ flex: 1 }} onTouchStart={recordActivity}>
+        {isSupervisor ? <SupervisorTabs /> : <MainTabs />}
+      </View>
     </AttendanceProvider>
   );
 }

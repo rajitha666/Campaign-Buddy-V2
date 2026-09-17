@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
@@ -63,10 +64,26 @@ export function SalesSummaryScreen() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Total sales today</Text>
-          <Text style={styles.totalValue}>LKR {(s?.totalSales ?? 0).toLocaleString()}</Text>
+          <View style={styles.totalHeadRow}>
+            <View>
+              <Text style={styles.totalLabel}>Total sales today</Text>
+              <Text style={styles.totalValue}>LKR {(s?.totalSales ?? 0).toLocaleString()}</Text>
+            </View>
+            {s?.target != null && (
+              <View style={styles.targetBox}>
+                <Text style={styles.targetLabel}>Target</Text>
+                <Text style={styles.targetValue}>LKR {s.target.toLocaleString()}</Text>
+              </View>
+            )}
+          </View>
           <View style={styles.subRow}>
             <SubItem n={s?.itemsReceived ?? 0} l="Items received" />
             <SubItem n={s?.itemsSold ?? 0} l="Items sold" />
@@ -190,7 +207,7 @@ export function SalesSummaryScreen() {
             </>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -221,8 +238,12 @@ const styles = StyleSheet.create({
   subtitle: { color: '#9FB2AA', fontSize: 12.5, marginTop: 2 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
   totalCard: { backgroundColor: colors.ink, borderRadius: radius.xxl, padding: spacing.xl, marginTop: spacing.sm },
+  totalHeadRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   totalLabel: { fontSize: 12.5, color: '#9FB2AA' },
   totalValue: { fontFamily: fontFamily.display, fontSize: fontSize.display, color: colors.white, marginTop: 4 },
+  targetBox: { alignItems: 'flex-end' },
+  targetLabel: { fontSize: 12.5, color: '#9FB2AA' },
+  targetValue: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.mango, marginTop: 4 },
   subRow: { flexDirection: 'row', gap: spacing.xxl, marginTop: spacing.lg },
   subItem: {},
   subN: { fontFamily: fontFamily.display, fontSize: 16, color: colors.white },

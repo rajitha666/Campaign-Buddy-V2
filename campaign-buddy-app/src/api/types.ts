@@ -229,6 +229,8 @@ export interface SalesSummary {
   footFall: number;
   approached: number;
   converted: number;
+  /** Sum of every admin-set target active today (LKR), or null when none is set — hide the Target UI in that case. */
+  target: number | null;
   remarks: string | null;
   confirmed: boolean;
   confirmedAt: ISODateTime | null;
@@ -278,6 +280,8 @@ export interface PerformanceSummary {
   totalSales: number;
   totalUnitsSold: number;
   totalApproached: number;
+  /** Today's active target (LKR) projected across the activation's full calendar-day run, or null when no target is set. */
+  totalTarget: number | null;
   dailySales: PerformanceDailySalesPoint[];
   topProducts: PerformanceTopProduct[];
 }

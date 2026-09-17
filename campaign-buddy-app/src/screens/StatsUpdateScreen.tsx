@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
@@ -67,7 +68,13 @@ export function StatsUpdateScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+      >
         <MetricCard
           iconBg={colors.infoTint}
           icon={
@@ -119,7 +126,7 @@ export function StatsUpdateScreen() {
           loading={saveMutation.isPending}
           style={{ marginTop: spacing.xl }}
         />
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -53,7 +53,7 @@ export function ProductDetailsSheet({ visible, onClose, productId, bandColor }: 
           <View style={styles.divider} />
 
           <InfoRow k="In this campaign since" v={d.addedToCampaignAt} />
-          <InfoRow k="Supplier" v={d.supplierName} />
+          {d.supplierName ? <InfoRow k="Supplier" v={d.supplierName} /> : null}
           <InfoRow k="Sold across all outlets today" v={`${d.soldAcrossAllOutletsToday} units`} />
 
           <Text style={styles.hint}>Tap outside this card to go back</Text>

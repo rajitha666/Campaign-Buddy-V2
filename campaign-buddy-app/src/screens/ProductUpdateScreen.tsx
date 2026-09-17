@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -29,6 +30,17 @@ export function ProductUpdateScreen() {
   const [otherInterested, setOtherInterested] = useState(params.otherInterestedCustomers);
   const [reorderFlag, setReorderFlag] = useState(params.reorderFlag);
   const [detailsVisible, setDetailsVisible] = useState(false);
+
+  // Prefetch the "View details" sheet's data as soon as this screen mounts,
+  // rather than waiting for the tap — by the time the rep opens the sheet
+  // it's usually already in the query cache, instead of a few seconds of
+  // spinner. ProductDetailsSheet queries with the same key.
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['product', params.productId],
+      queryFn: () => productsApi.getProductDetails(params.productId),
+    });
+  }, [queryClient, params.productId]);
 
   const customFields = params.customFields ?? [];
   const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>(() =>
@@ -70,7 +82,13 @@ export function ProductUpdateScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.heroImg}>
           <ProductThumb size={64} bandColor={params.bandColor} imageUrl={params.imageUrl} />
           <Pressable style={styles.viewDetailsBtn} onPress={() => setDetailsVisible(true)}>
@@ -138,7 +156,7 @@ export function ProductUpdateScreen() {
           loading={saveMutation.isPending}
           style={{ marginTop: spacing.xl }}
         />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <ProductDetailsSheet
         visible={detailsVisible}
