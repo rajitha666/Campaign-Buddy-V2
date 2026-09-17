@@ -82,6 +82,21 @@ services:
     # ports:
     #   - "8083:80"   # uncomment for local access at http://localhost:8083
 
+  # CB Mobile web build (iOS users open the URL, "Add to Home Screen").
+  # API base URL is baked in at build time — override with a build arg when the
+  # prod hostname differs from the default:
+  #   docker compose --profile production build --build-arg \
+  #     EXPO_PUBLIC_API_BASE_URL=https://api.campaignbuddy.lk/v1 app
+  # CB Mobile web build; point tunnel hostname (e.g. app.campaignbuddy.lk)
+  # at `http://app:80`. No local ports are exposed.
+  app:
+    build:
+      context: ./campaign-buddy-app
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - backend
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
@@ -102,6 +117,7 @@ services:
       - portal
       - backend
       - marketing
+      - app
     profiles:
       - production
 

@@ -1,0 +1,12 @@
+node_modules
+dist
+web-build
+.expo
+android
+ios
+.env
+.env.local
+e2e
+test-results
+playwright-report
+scripts

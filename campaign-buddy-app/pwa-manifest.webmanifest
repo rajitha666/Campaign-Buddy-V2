@@ -1,0 +1,17 @@
+{
+  "name": "Campaign Buddy",
+  "short_name": "Campaign",
+  "description": "CB Mobile — field-rep app for Campaign Buddy activations.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12241F",
+  "theme_color": "#FF7A33",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

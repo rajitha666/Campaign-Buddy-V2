@@ -1,0 +1,38 @@
+# CB Mobile web build (iOS users) — matches portal/Dockerfile's
+# build-then-nginx-serve pattern. Static export, EXPO_PUBLIC_* values are
+# baked into the bundle at build time (must rebuild to change them).
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+
+# --ignore-scripts: same install mode as development (skips RN native setup).
+RUN npm ci --ignore-scripts
+
+COPY . .
+
+# Public /v1 base URL for the deployed backend. Override per environment, e.g.
+#   docker compose build --build-arg EXPO_PUBLIC_API_BASE_URL=https://api.example.com/v1 app
+# (Default is the production tunnel hostname; a forgotten override must not
+# bake .env's localhost URL into the deployed bundle.)
+ARG EXPO_PUBLIC_API_BASE_URL=https://api.campaignbuddy.lk/v1
+RUN EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL} npx expo export --platform web
+
+FROM nginx:alpine
+
+COPY nginx.web.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
+# Home-screen icon: the Android adaptive foreground composited onto #FF7A33
+# (iOS rejects transparency in touch icons, so it's baked into the file).
+COPY --from=builder /app/assets/images/apple-touch-icon.png /usr/share/nginx/html/apple-touch-icon.png
+# PWA manifest so Safari offers standalone mode (no browser chrome) instead
+# of a plain bookmark when the rep does Add to Home Screen.
+COPY --from=builder /app/pwa-manifest.webmanifest /usr/share/nginx/html/pwa-manifest.webmanifest
+# Expo's SPA export doesn't emit PWA head tags; inject them.
+COPY inject-head.sh /tmp/inject-head.sh
+RUN chmod +x /tmp/inject-head.sh && sh /tmp/inject-head.sh && rm /tmp/inject-head.sh
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
