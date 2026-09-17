@@ -15,7 +15,8 @@ feature added 2026-09-08.
 |---|---|---|---|
 | **API** — serves both front ends | `campaign-buddy-backend/` | Node 20 · TypeScript · Express · Prisma | `4000` |
 | **CB Office** — web portal (admin / supervisor / sponsor) | `campaign-buddy-portal/` | React 18 · Vite · nginx | `80` |
-| **CB Mobile** — field-rep app | `campaign-buddy-app/` | Expo SDK 57 · React Native | Expo (not containerised) |
+| **CB Mobile** — field-rep app (native build) | `campaign-buddy-app/` | Expo SDK 57 · React Native | Expo (not containerised) |
+| **CB Mobile web** — same app, installable PWA for phone browsers | `campaign-buddy-app/` | Expo web export (`react-native-web`) · nginx | `80` |
 | **Database** | — | PostgreSQL 16 | `5432` |
 | **Tunnel** (prod only) | — | `cloudflare/cloudflared` | — |
 
@@ -191,12 +192,20 @@ Then open the portal, sign in, and check **Admin → License Usage** loads.
 
 1. Cloudflare **Zero Trust → Networks → Tunnels → Create a tunnel → Cloudflared**.
 2. Copy the tunnel token into `.env` as `CLOUDFLARED_TUNNEL_TOKEN`.
-3. Add one public hostname routing **all** traffic through the portal's nginx
-   (it proxies the API paths):
+3. Add a public hostname routing **all** traffic through the portal's nginx
+   (it proxies the API paths), plus one for the mobile-web build if you want
+   CB Mobile reachable from a phone browser (it talks straight to the API,
+   so it needs its own hostname routed to the backend too):
 
    | Public hostname | Service |
    |---|---|
    | `cb.yourdomain.com` | `http://portal:80` |
+   | `app.cb.yourdomain.com` (optional) | `http://app:80` |
+   | `api.cb.yourdomain.com` (only if using the row above) | `http://backend:4000` |
+
+   If you add the mobile-web hostname, rebuild `app` with
+   `EXPO_PUBLIC_API_BASE_URL` set to that API hostname (see §5) — it's baked
+   into the JS bundle at build time, not read at runtime.
 
 4. Start with the `production` profile (as in §3.2 step 5). `cloudflared` only
    runs under that profile; `docker-compose.dev.yml` (public ports + Vite dev

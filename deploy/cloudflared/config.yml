@@ -6,6 +6,7 @@
 #   cloudflared tunnel route dns campaign-buddy campaignbuddy.lk
 #   cloudflared tunnel route dns campaign-buddy office.campaignbuddy.lk
 #   cloudflared tunnel route dns campaign-buddy api.campaignbuddy.lk
+#   cloudflared tunnel route dns campaign-buddy app.campaignbuddy.lk
 #   cloudflared tunnel route dns campaign-buddy www.campaignbuddy.lk
 #
 # Then set TUNNEL_ID below and run:  docker compose --profile production up -d cloudflared
@@ -24,7 +25,14 @@ ingress:
   - hostname: office.campaignbuddy.lk
     service: http://portal:80
 
-  # Direct API access (optional)
+  # CB Mobile as an installable PWA — for phone browsers not using the native
+  # app build. Static export, talks directly to api.campaignbuddy.lk (baked in
+  # at build time, see campaign-buddy-app/Dockerfile.web).
+  - hostname: app.campaignbuddy.lk
+    service: http://app:80
+
+  # Direct API access (needed by app.campaignbuddy.lk above, and optionally
+  # for direct API consumers)
   - hostname: api.campaignbuddy.lk
     service: http://backend:4000
 
