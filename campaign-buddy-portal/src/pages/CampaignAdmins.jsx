@@ -101,7 +101,7 @@ export default function CampaignAdmins() {
       {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (
         <>
           {isAdmin ? (
-            <div className="table-card" style={{ marginBottom: 16, padding: 16 }}>
+            <div className="table-card allow-overflow" style={{ marginBottom: 16, padding: 16 }}>
               <div className="filter-bar">
                 <div className="filter-field" style={{ minWidth: 320 }}>
                   <label>Link an existing admin account</label>
