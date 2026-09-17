@@ -3,6 +3,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok } from "../../utils/apiResponse";
 import { workingDaysBetween } from "../../utils/salesGuards";
+import { todaysTarget, totalTargetFromDaily } from "../../utils/targets";
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.get(
           totalSales: 0,
           totalUnitsSold: 0,
           totalApproached: 0,
+          totalTarget: null,
           dailySales: [],
           topProducts: [],
         })
@@ -69,6 +71,11 @@ router.get(
     const totalApproached = dailyStats.reduce((s, d) => s + d.approached, 0);
     const totalSales = Object.values(byDay).reduce((s, v) => s + v, 0);
 
+    // "Total target" projects today's active target across the whole
+    // activation run — see utils/targets.ts.
+    const dailyTarget = await todaysTarget(activation.id);
+    const totalTarget = totalTargetFromDaily(dailyTarget, activation.dateFrom, activation.dateTo);
+
     res.json(
       ok({
         campaignName: campaign?.name ?? "",
@@ -78,6 +85,7 @@ router.get(
         totalSales,
         totalUnitsSold,
         totalApproached,
+        totalTarget,
         dailySales,
         topProducts,
       })

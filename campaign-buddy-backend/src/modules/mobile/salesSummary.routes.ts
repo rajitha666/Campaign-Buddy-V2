@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { buildSalesSummary } from "../../utils/salesCalc";
 import { requireOpenShift } from "../../utils/salesGuards";
+import { todaysTarget } from "../../utils/targets";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import {
@@ -34,10 +35,11 @@ async function fullSummary(
   date: Date
 ) {
   const activationId = activation.id;
-  const [rollup, row, dayDefs] = await Promise.all([
+  const [rollup, row, dayDefs, target] = await Promise.all([
     buildSalesSummary(prisma, activationId, date),
     prisma.salesSummary.findUnique({ where: { activationId_date: { activationId, date } } }),
     activeDefsForCampaign(activation.campaignId, "day"),
+    todaysTarget(activationId, date),
   ]);
   const values = await dayValueMap(activationId, date);
   return {
@@ -46,6 +48,7 @@ async function fullSummary(
     assignmentId: activationId,
     date,
     ...rollup,
+    target,
     customFields: serializeWithValues(dayDefs, values),
   };
 }
