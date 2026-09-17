@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi } from '../lib/endpoints';
 
 describe('resources config', () => {
   it('every resource has a title, subtitle and fetchList', () => {
@@ -193,6 +193,44 @@ describe('resources config', () => {
         const options = await f.optionsLoader();
         expect(options[0].label).toBe('EMP-0004 - Tharindu Jayasuriya');
       }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('staff fetchList forwards page/pageSize to GET /staff', async () => {
+    const spy = vi.spyOn(staffApi, 'search').mockResolvedValue({ data: [], meta: { total: 0 } });
+    try {
+      await RESOURCES.staff.fetchList({ query: { page: 2, pageSize: 50, search: 'th' } });
+      expect(spy.mock.calls[0][0]).toBe('th');
+      expect(spy.mock.calls[0][1].page).toBe(2);
+      expect(spy.mock.calls[0][1].pageSize).toBe(50);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('clientPaged slices full-list endpoints into the requested page', async () => {
+    const full = { data: Array.from({ length: 125 }, (_, i) => ({ id: i })), meta: {} };
+    const spy = vi.spyOn(activationsApi, 'list').mockResolvedValue(full);
+    try {
+      const res = await RESOURCES.activations.fetchList({ campaignId: 'c1', query: { page: 3, pageSize: 50 } });
+      expect(spy).toHaveBeenCalledWith('c1', { page: 3, pageSize: 50 });
+      expect(res.data).toHaveLength(25);
+      expect(res.data[0].id).toBe(100);
+      expect(res.meta.total).toBe(125);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('clientPaged preserves meta when present and defaults total to list length', async () => {
+    const spy = vi.spyOn(activationsApi, 'list').mockResolvedValue({ data: [{ id: 1 }], meta: { grandTotal: 7 } });
+    try {
+      const res = await RESOURCES.activations.fetchList({ campaignId: 'c1', query: { page: 2, pageSize: 25 } });
+      expect(res.data).toHaveLength(0); // page 2 of a 1-row list
+      expect(res.meta.total).toBe(1);
+      expect(res.meta.grandTotal).toBe(7);
     } finally {
       spy.mockRestore();
     }

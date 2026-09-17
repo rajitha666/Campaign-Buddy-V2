@@ -90,6 +90,25 @@ async function hydrateActivations(rows) {
   return rows.map((r) => ({ ...r, outletName: outletMap[r.outletId], staffName: staffMap[r.staffId], supervisorName: staffMap[r.supervisorStaffId] }));
 }
 
+// Pages whose backing endpoint does NOT honor page/pageSize server-side (it
+// always returns the full list) — clientPaged() slices the returned rows into
+// the page ResourcePage asked for and reports the unfiltered count as
+// meta.total, so DataTable's pager works. Endpoints that DO paginate
+// server-side (catalog, /staff, attendance, sales, tracking, …) must NOT be
+// wrapped — their rows are already the requested page and re-slicing would
+// double it.
+const clientPaged = (fetchFn) => async (args) => {
+  const res = await fetchFn(args);
+  const data = res?.data || [];
+  const page = args.query?.page || 1;
+  const pageSize = args.query?.pageSize || 25;
+  return {
+    ...res,
+    data: data.slice((page - 1) * pageSize, page * pageSize),
+    meta: { ...(res?.meta || {}), total: res?.meta?.total ?? data.length },
+  };
+};
+
 export const RESOURCES = {
 
   clients: {
@@ -339,7 +358,7 @@ export const RESOURCES = {
       { key: 'dateTo', label: 'To', render: (r) => fmtDate(r.dateTo) },
     ],
     actions: ['target', 'items', 'edit', 'delete'],
-    fetchList: ({ campaignId, query }) => activationsApi.list(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => activationsApi.list(campaignId, query)),
     hydrate: hydrateActivations,
     editValues: (row) => ({
       name: row.name, outletId: row.outletId, staffId: row.staffId,
@@ -397,7 +416,7 @@ export const RESOURCES = {
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : 'muted'}>{r.status}</Badge> },
     ],
     actions: ['edit', 'delete'],
-    fetchList: ({ query }) => staffApi.search(query?.search || ''),
+    fetchList: ({ query }) => staffApi.search(query?.search || '', query),
     hydrate: async (rows) => {
       const cityRes = await citiesApi.list().catch(() => null);
       const map = buildLookup(cityRes?.data);
@@ -493,7 +512,7 @@ export const RESOURCES = {
     ],
     fetchList: ({ campaignId, query }) => {
       if (!query?.date) return Promise.resolve({ data: [], meta: { total: 0 } });
-      return staffAbsenceApi.list(campaignId, { date: query.date });
+      return staffAbsenceApi.list(campaignId, query);
     },
     emptyHint: 'Pick a date above and Load. Promoters with an activation covering that day but no check-in appear here.',
   },
@@ -525,7 +544,7 @@ export const RESOURCES = {
       { key: 'taskType', label: 'Task Type', render: (r) => <Badge type={r.taskType === 'range' ? 'info' : 'muted'}>{r.taskType}</Badge> },
     ],
     actions: ['edit', 'delete'],
-    fetchList: ({ campaignId }) => supervisorTasksApi.list(campaignId),
+    fetchList: clientPaged(({ campaignId, query }) => supervisorTasksApi.list(campaignId, query)),
     createItem: ({ campaignId, values }) => supervisorTasksApi.create(campaignId, values),
     updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, values),
     deleteItem: ({ campaignId, id }) => supervisorTasksApi.remove(campaignId, id),
@@ -570,7 +589,7 @@ export const RESOURCES = {
       { key: 'email', label: 'Email' }, { key: 'phone', label: 'Mobile' },
     ],
     actions: ['view'],
-    fetchList: ({ query }) => staffApi.search(query?.search || ''),
+    fetchList: ({ query }) => staffApi.search(query?.search || '', query),
   },
 
   skuSales: {
@@ -596,11 +615,11 @@ export const RESOURCES = {
       { key: 'footFall', label: 'Foot Fall' },
       { key: 'updatedAt', label: 'Status', render: (r) => <Badge type={r.updatedAt ? 'success' : 'alert'}>{r.updatedAt ? 'Completed' : 'Missing'}</Badge> },
     ],
-    fetchList: async ({ campaignId, query }) => {
+    fetchList: clientPaged(async ({ campaignId, query }) => {
       const res = await dailyStatsApi.list(campaignId, query);
       const rows = res?.data?.byDay || [];
       return { data: rows, meta: { total: rows.length } };
-    },
+    }),
   },
 
   reportSkuWise: {
@@ -608,14 +627,14 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.skuWise(campaignId, query)),
   },
 
   reportBrandWise: {
     title: 'Overall Brand Wise', subtitle: 'Aggregated sales by brand.', excel: true, noAdd: true,
     scopeToCampaign: true,
     columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => reportsApi.brandWise(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
 
   clientReports: {
@@ -623,14 +642,14 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }],
     columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => reportsApi.skuWise(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.skuWise(campaignId, query)),
   },
 
   brandWiseClient: {
     title: 'Overall Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
     columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
-    fetchList: ({ campaignId, query }) => reportsApi.brandWise(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
 
   reorder: {
@@ -647,7 +666,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet' }, { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'remainingStock', label: 'Remaining' },
     ],
-    fetchList: ({ campaignId, query }) => reportsApi.reorder(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.reorder(campaignId, query)),
   },
 
   users: {
@@ -686,7 +705,7 @@ export const RESOURCES = {
     ],
     columns: [{ key: 'outletName', label: 'Outlet' }, { key: 'footFall', label: 'Foot Fall' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     emptyHint: 'No sales or footfall recorded for the selected scope yet.',
-    fetchList: ({ campaignId, query }) => reportsApi.outletWise(campaignId, query),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.outletWise(campaignId, query)),
   },
 
   promoterTracking: {

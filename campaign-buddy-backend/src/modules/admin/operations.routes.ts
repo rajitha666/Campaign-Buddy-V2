@@ -12,6 +12,16 @@ import { activeDefsForCampaign, dayValueMap, serializeWithValues } from "../../u
 
 const router = Router();
 
+// Shared server-side paging for the list-shaped log endpoints (§4.2: every
+// /admin/v1 list accepts ?page=&pageSize=). Clamped so a caller can't enumerate
+// the whole table in one request.
+function paginate(req: any) {
+  const page = Math.max(1, Number(req.query.page || 1) || 1);
+  const requested = Number(req.query.pageSize || 25) || 25;
+  const pageSize = Math.min(Math.max(1, requested), 200);
+  return { skip: (page - 1) * pageSize, take: pageSize };
+}
+
 // ---- Attendance ----
 router.get(
   "/campaigns/:campaignId/attendance",
@@ -23,19 +33,33 @@ router.get(
     const allowed = outletIdsAllowed(req);
     if (outletId) assertOutletAllowed(req, outletId);
 
-    const rows = await prisma.attendanceRecord.findMany({
-      where: {
-        activation: {
-          campaignId: req.params.campaignId,
-          ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
-          ...(role ? { staff: { is: { userType: role } } } : {}),
+    const paged = paginate(req);
+    const [rows, total] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where: {
+          activation: {
+            campaignId: req.params.campaignId,
+            ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+            ...(role ? { staff: { is: { userType: role } } } : {}),
+          },
+          ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
         },
-        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
-      },
-      include: { activation: { include: { staff: true, outlet: true } } },
-      orderBy: { date: "desc" },
-    });
-    res.json(okList(rows, rows.length));
+        include: { activation: { include: { staff: true, outlet: true } } },
+        orderBy: { date: "desc" },
+        ...paged,
+      }),
+      prisma.attendanceRecord.count({
+        where: {
+          activation: {
+            campaignId: req.params.campaignId,
+            ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+            ...(role ? { staff: { is: { userType: role } } } : {}),
+          },
+          ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
+        },
+      }),
+    ]);
+    res.json(okList(rows, total));
   })
 );
 
@@ -48,19 +72,26 @@ router.get(
     const allowed = outletIdsAllowed(req);
     if (outletId) assertOutletAllowed(req, outletId);
 
-    const rows = await prisma.salesRecord.findMany({
-      where: {
-        activationItem: {
-          activation: {
-            campaignId: req.params.campaignId,
-            ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
-          },
+    const paged = paginate(req);
+    const whereSales = {
+      activationItem: {
+        activation: {
+          campaignId: req.params.campaignId,
+          ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
         },
-        ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
       },
-      include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { staff: true, outlet: true } } } } },
-    });
-    res.json(okList(rows, rows.length));
+      ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
+    };
+    const [rows, total] = await Promise.all([
+      prisma.salesRecord.findMany({
+        where: whereSales,
+        include: { activationItem: { include: { campaignItem: { include: { item: true } }, activation: { include: { staff: true, outlet: true } } } } },
+        orderBy: { date: "asc" },
+        ...paged,
+      }),
+      prisma.salesRecord.count({ where: whereSales }),
+    ]);
+    res.json(okList(rows, total));
   })
 );
 
@@ -253,8 +284,13 @@ router.get(
       select: { staffId: true },
     });
     const staffIds = [...new Set(activations.map((a) => a.staffId))];
-    const rows = await prisma.leaveRequest.findMany({ where: { staffId: { in: staffIds } }, include: { staff: true } });
-    res.json(okList(rows, rows.length));
+    const paged = paginate(req);
+    const whereLeave = { staffId: { in: staffIds } };
+    const [rows, total] = await Promise.all([
+      prisma.leaveRequest.findMany({ where: whereLeave, include: { staff: true }, orderBy: { fromDate: "desc" }, ...paged }),
+      prisma.leaveRequest.count({ where: whereLeave }),
+    ]);
+    res.json(okList(rows, total));
   })
 );
 
@@ -450,7 +486,10 @@ router.get(
       };
     }).filter((row) => !row.checkedIn && !row.onLeave)
       .map(({ checkedIn, ...row }) => row);
-    res.json(okList(absent, absent.length));
+    // Computed in memory from full-day activations — page it by slicing (no
+    // DB-level skip/take possible).
+    const paged = paginate(req);
+    res.json(okList(absent.slice(paged.skip, paged.skip + paged.take), absent.length));
   })
 );
 
@@ -471,11 +510,16 @@ router.get(
       },
     };
     if (date) where.date = dayDate(date);
-    const rows = await prisma.attendanceRecord.findMany({
-      where,
-      include: { activation: { include: { staff: true, outlet: true } } },
-      orderBy: { date: "desc" },
-    });
+    const paged = paginate(req);
+    const [rows, total] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where,
+        include: { activation: { include: { staff: true, outlet: true } } },
+        orderBy: { date: "desc" },
+        ...paged,
+      }),
+      prisma.attendanceRecord.count({ where }),
+    ]);
     const shaped = rows.map((r) => ({
       id: r.id,
       supervisorName: r.activation.staff.fullName,
@@ -485,12 +529,13 @@ router.get(
       checkInAt: r.checkInAt,
       checkOutAt: r.checkOutAt,
     }));
-    res.json(okList(shaped, shaped.length));
+    res.json(okList(shaped, total));
   })
 );
 
-// ---- GPS breadcrumb history (raw TrackingPing trail). Campaign-scoped like
-// tracking/live (§5.9), split promoter vs supervisor by the activation's staff. ----
+// ---- GPS breadcrumb history ----
+// Raw TrackingPing trail. Campaign-scoped like tracking/live (§5.9), split
+// promoter vs supervisor by the activation's staff.
 async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
   const { staffId, date, outletId } = req.query as { staffId?: string; date?: string; outletId?: string };
   if (outletId) assertOutletAllowed(req, outletId);
@@ -498,19 +543,25 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
 
   const dateFilter = date ? dayBounds(date) : undefined;
 
-  const rows = await prisma.trackingPing.findMany({
-    where: {
-      ...(dateFilter ? { capturedAt: dateFilter } : {}),
-      activation: {
-        campaignId: req.params.campaignId,
-        staff: { is: { userType, ...(staffId ? { id: staffId } : {}) } },
-        ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
-      },
+  const where = {
+    ...(dateFilter ? { capturedAt: dateFilter } : {}),
+    activation: {
+      campaignId: req.params.campaignId,
+      staff: { is: { userType, ...(staffId ? { id: staffId } : {}) } },
+      ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
     },
-    include: { activation: { include: { staff: true, outlet: true } } },
-    orderBy: { capturedAt: "asc" },
-  });
-  return rows.map((p) => ({
+  };
+  const paged = paginate(req);
+  const [rows, total] = await Promise.all([
+    prisma.trackingPing.findMany({
+      where,
+      include: { activation: { include: { staff: true, outlet: true } } },
+      orderBy: { capturedAt: "asc" },
+      ...paged,
+    }),
+    prisma.trackingPing.count({ where }),
+  ]);
+  const data = rows.map((p) => ({
     id: p.id,
     staffId: p.activation.staffId,
     staffName: p.activation.staff.fullName,
@@ -521,14 +572,15 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
     capturedAt: p.capturedAt,
     appState: p.appState,
   }));
+  return { data, total };
 }
 
 router.get(
   "/campaigns/:campaignId/tracking/promoter-history",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const rows = await trackingHistory(req, "promoter");
-    res.json(okList(rows, rows.length));
+    const { data, total } = await trackingHistory(req, "promoter");
+    res.json(okList(data, total));
   })
 );
 
@@ -536,8 +588,8 @@ router.get(
   "/campaigns/:campaignId/tracking/supervisor-history",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const rows = await trackingHistory(req, "supervisor");
-    res.json(okList(rows, rows.length));
+    const { data, total } = await trackingHistory(req, "supervisor");
+    res.json(okList(data, total));
   })
 );
 
