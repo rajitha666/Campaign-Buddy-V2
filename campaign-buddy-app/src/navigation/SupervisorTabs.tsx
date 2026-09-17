@@ -8,6 +8,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Svg, { Path, Circle } from 'react-native-svg';
 import type { SupervisorTabParamList } from './types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { buildTabBarStyle } from './tabBarStyle';
 import { SupervisorRouteScreen } from '@/screens/SupervisorRouteScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { colors } from '@/theme';
@@ -33,13 +35,15 @@ function ProfileIcon({ color }: { color: string }) {
 }
 
 export function SupervisorTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.mango,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.line, height: 76, paddingTop: 8, paddingBottom: 18 },
+        tabBarStyle: buildTabBarStyle(insets.bottom),
         tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600' },
       }}
     >

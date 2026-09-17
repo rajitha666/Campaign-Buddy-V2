@@ -8,7 +8,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabParamList } from './types';
+import { buildTabBarStyle } from './tabBarStyle';
 import { HomeStack } from './HomeStack';
 import { AttendanceStack } from './AttendanceStack';
 import { SalesSummaryScreen } from '@/screens/SalesSummaryScreen';
@@ -59,13 +61,15 @@ function PerformanceIcon({ color }: { color: string }) {
 }
 
 export function MainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.mango,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.line, height: 76, paddingTop: 8, paddingBottom: 18 },
+        tabBarStyle: buildTabBarStyle(insets.bottom),
         tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600' },
       }}
     >

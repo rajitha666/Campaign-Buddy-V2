@@ -57,8 +57,10 @@ export function HomeScreen() {
     <SafeAreaView style={styles.frame} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.greetRow}>
-          <View>
-            <Text style={styles.greetName}>Good morning, {user?.displayName ?? user?.fullName?.split(' ')[0] ?? ''}</Text>
+          <View style={styles.greetInfo}>
+            <Text style={styles.greetName} numberOfLines={2}>
+              Good morning, {user?.displayName ?? user?.fullName?.split(' ')[0] ?? ''}
+            </Text>
             <Text style={styles.greetSub}>
               {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
@@ -249,7 +251,8 @@ const styles = StyleSheet.create({
   frame: { flex: 1, backgroundColor: colors.surface },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
   greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
-  greetActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  greetInfo: { flex: 1, marginRight: spacing.sm },
+  greetActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexShrink: 0 },
   helpBtn: {
     width: 34,
     height: 34,
@@ -260,7 +263,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  greetName: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
+  greetName: {
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.xl,
+    color: colors.textPrimary,
+    flexShrink: 1,
+  },
   greetSub: { fontSize: fontSize.base, color: colors.textMuted, marginTop: 2 },
   campaignCard: { backgroundColor: colors.ink, borderRadius: radius.xxl, padding: spacing.lg, marginTop: spacing.lg },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
