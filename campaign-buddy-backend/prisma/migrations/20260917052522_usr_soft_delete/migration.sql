@@ -18,5 +18,5 @@ ALTER TABLE "supervisor_routes"   ADD COLUMN "deletedAt" TIMESTAMP(3);
 DROP INDEX "outlets_outletNo_key";
 CREATE UNIQUE INDEX "outlets_outletNo_key" ON "outlets"("outletNo") WHERE "deletedAt" IS NULL;
 
-ALTER TABLE "campaigns" DROP CONSTRAINT "campaigns_campaignNo_key";
+DROP INDEX "campaigns_campaignNo_key";
 CREATE UNIQUE INDEX "campaigns_campaignNo_key" ON "campaigns"("campaignNo") WHERE "deletedAt" IS NULL;
