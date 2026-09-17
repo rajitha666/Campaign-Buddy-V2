@@ -15,6 +15,14 @@ describe('resolveFileUrl', () => {
       .toBe('https://api.campaignbuddy.lk/uploads/staff/a.png');
   });
 
+  it('uses EXPO_PUBLIC_UPLOADS_ORIGIN override when set', () => {
+    // Uploads are served by the CB Office site, which is a different host
+    // from the /v1 API — see .env.example.
+    expect(
+      resolveFileUrl('/uploads/items/a.jpeg', DEV_BASE, 'https://office.campaignbuddy.lk')
+    ).toBe('https://office.campaignbuddy.lk/uploads/items/a.jpeg');
+  });
+
   it('passes absolute URLs through untouched', () => {
     const url = 'https://cdn.example.com/pic.png';
     expect(resolveFileUrl(url, DEV_BASE)).toBe(url);

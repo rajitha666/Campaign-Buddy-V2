@@ -72,7 +72,7 @@ export function ProductUpdateScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroImg}>
-          <ProductThumb size={64} bandColor={params.bandColor} />
+          <ProductThumb size={64} bandColor={params.bandColor} imageUrl={params.imageUrl} />
           <Pressable style={styles.viewDetailsBtn} onPress={() => setDetailsVisible(true)}>
             <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
               <Circle cx={12} cy={12} r={9} stroke="white" strokeWidth={1.8} />

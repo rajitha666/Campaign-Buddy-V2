@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { colors, radius } from '@/theme';
+import { resolveFileUrl } from '@/lib/files';
 
 interface ProductThumbProps {
   size?: number;
@@ -14,13 +15,20 @@ interface ProductThumbProps {
   imageUrl?: string | null;
 }
 
-export function ProductThumb({ size = 46, bandColor = colors.info, imageUrl }: ProductThumbProps) {
+export function ProductThumb({
+  size = 46,
+  bandColor = colors.info,
+  imageUrl,
+}: ProductThumbProps) {
   const [failed, setFailed] = useState(false);
+  // imageUrl comes from the API as a relative `/uploads/items/<file>`; RN
+  // <Image> has no document origin, so it must be made absolute (#41).
+  const resolved = resolveFileUrl(imageUrl);
 
-  if (imageUrl && !failed) {
+  if (resolved && !failed) {
     return (
       <Image
-        source={{ uri: imageUrl }}
+        source={{ uri: resolved }}
         style={{ width: size, height: size, borderRadius: size * 0.24, backgroundColor: '#EEF1EC' }}
         onError={() => setFailed(true)}
       />

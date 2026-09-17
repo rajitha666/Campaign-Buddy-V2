@@ -23,6 +23,7 @@ export type HomeStackParamList = {
     otherInterestedCustomers: number;
     reorderFlag: boolean;
     bandColor: string;
+    imageUrl?: string | null;
     customFields?: CustomSalesField[];
   };
   StatsUpdate: undefined;
