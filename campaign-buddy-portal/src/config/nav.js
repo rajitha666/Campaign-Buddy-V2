@@ -74,8 +74,7 @@ export const NAV = [
     { label: 'Admin Reports', icon: 'reports', roles: ['admin'], children: [
       { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
     ]},
-    { path: '/reports/client-sku-wise', label: 'Client Reports', icon: 'reports', roles: ['admin', 'sponsor'] },
-    { label: 'Statistic Reports', icon: 'reports', roles: ['admin'], children: [
+    { label: 'Client Reports', icon: 'reports', roles: ['admin', 'sponsor'], children: [
       { path: '/reports/client-sku-wise', label: 'Overall SKU wise' },
       { path: '/reports/client-brand-wise', label: 'Overall Brand Wise' },
     ]},
