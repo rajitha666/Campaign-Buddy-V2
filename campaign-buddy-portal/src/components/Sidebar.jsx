@@ -1,14 +1,24 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NAV } from '../config/nav';
 import { ICONS } from './Icons';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ collapsed = false, onToggleCollapse }) {
+export default function Sidebar({ collapsed = false, isPhone = false, onToggleCollapse, onNavigate }) {
   const { persona } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  // Which collapsed nav-group's flyout is pinned open by a tap — hover alone
+  // never fires on touch, so collapsed groups need a click-to-open fallback.
+  const [openGroup, setOpenGroup] = useState(null);
 
   const roleLabel = persona === 'admin' ? 'SUPER ADMIN' : persona === 'supervisor' ? 'SUPERVISOR' : 'SPONSOR';
+
+  function go(path) {
+    navigate(path);
+    setOpenGroup(null);
+    onNavigate?.();
+  }
 
   return (
     <div className="sidebar">
@@ -28,12 +38,14 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
             type="button"
             className="nav-collapse-btn"
             onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+            aria-label={isPhone ? 'Close menu' : collapsed ? 'Expand menu' : 'Collapse menu'}
+            title={isPhone ? 'Close menu' : collapsed ? 'Expand menu' : 'Collapse menu'}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d={collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {isPhone ? ICONS.close : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d={collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </button>
         ) : null}
       </div>
@@ -46,7 +58,14 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
             <div key={si}>
               {sec.section ? <div className="nav-section-label">{sec.section}</div> : null}
               {visibleItems.map((it, ii) => (
-                <NavEntry key={ii} item={it} pathname={location.pathname} navigate={navigate} />
+                <NavEntry
+                  key={ii}
+                  item={it}
+                  pathname={location.pathname}
+                  go={go}
+                  isOpen={openGroup === `${si}-${ii}`}
+                  onToggleOpen={() => setOpenGroup((g) => (g === `${si}-${ii}` ? null : `${si}-${ii}`))}
+                />
               ))}
             </div>
           );
@@ -56,12 +75,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapse }) {
   );
 }
 
-function NavEntry({ item, pathname, navigate }) {
+function NavEntry({ item, pathname, go, isOpen, onToggleOpen }) {
   if (item.children) {
     const activeParent = item.children.some((c) => c.path === pathname);
     return (
-      <div className="nav-group">
-        <div className={`nav-item ${activeParent ? 'active' : ''}`}>
+      <div className={`nav-group ${isOpen ? 'flyout-open' : ''}`}>
+        <div className={`nav-item ${activeParent ? 'active' : ''}`} onClick={onToggleOpen}>
           {ICONS[item.icon]}<span>{item.label}</span>
         </div>
         <div className="nav-children">
@@ -70,7 +89,7 @@ function NavEntry({ item, pathname, navigate }) {
             <div
               key={c.path}
               className={`nav-child ${c.path === pathname ? 'active' : ''}`}
-              onClick={() => navigate(c.path)}
+              onClick={() => go(c.path)}
             >
               <span className="dot" />{c.label}
             </div>
@@ -83,7 +102,7 @@ function NavEntry({ item, pathname, navigate }) {
     <div className="nav-group">
       <div
         className={`nav-item ${item.path === pathname ? 'active' : ''}`}
-        onClick={() => navigate(item.path)}
+        onClick={() => go(item.path)}
         title={item.label}
       >
         {ICONS[item.icon]}<span>{item.label}</span>

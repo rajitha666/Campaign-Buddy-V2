@@ -44,34 +44,62 @@ export default function DataTable({
       {rows.length === 0 ? (
         <div className="empty-state"><div className="big">{emptyTitle}</div>{emptyHint}</div>
       ) : (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                {columns.map((c) => <th key={c.key} className={c.className}>{c.label}</th>)}
-                {actions.length > 0 ? <th>Action</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row[rowKey] ?? JSON.stringify(row)}>
-                  {columns.map((c) => <td key={c.key} className={c.className}>{c.render ? c.render(row) : row[c.key]}</td>)}
-                  {actions.length > 0 ? (
-                    <td>
-                      <div className="row-actions">
-                        {actions.map((a) => (
-                          <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
-                            {ICONS[a]}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                  ) : null}
+        <>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {columns.map((c) => <th key={c.key} className={c.className}>{c.label}</th>)}
+                  {actions.length > 0 ? <th>Action</th> : null}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row[rowKey] ?? JSON.stringify(row)}>
+                    {columns.map((c) => <td key={c.key} className={c.className}>{c.render ? c.render(row) : row[c.key]}</td>)}
+                    {actions.length > 0 ? (
+                      <td>
+                        <div className="row-actions">
+                          {actions.map((a) => (
+                            <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
+                              {ICONS[a]}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phone-width fallback for the table above — CSS toggles which one
+              shows (see .table-cards / .table-scroll in app.css). Rendered
+              unconditionally rather than behind a resize listener since these
+              are presentational-only, page-capped lists. */}
+          <div className="table-cards">
+            {rows.map((row) => (
+              <div className="data-card" key={row[rowKey] ?? JSON.stringify(row)}>
+                {columns.map((c) => (
+                  <div className="data-card-field" key={c.key}>
+                    <span className="data-card-label">{c.label}</span>
+                    <span className="data-card-value">{c.render ? c.render(row) : row[c.key]}</span>
+                  </div>
+                ))}
+                {actions.length > 0 ? (
+                  <div className="data-card-actions row-actions">
+                    {actions.map((a) => (
+                      <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
+                        {ICONS[a]}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {rows.length > 0 ? (

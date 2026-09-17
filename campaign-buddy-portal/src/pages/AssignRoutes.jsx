@@ -163,32 +163,36 @@ export default function AssignRoutes() {
               <span className="icon-btn" onClick={() => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}>›</span>
             </div>
           </div>
-          <div className="cal-grid">
-            {DOW.map((d) => <div className="cal-dow" key={d}>{d}</div>)}
-            {cells}
+          <div className="cal-grid-scroll">
+            <div className="cal-grid">
+              {DOW.map((d) => <div className="cal-dow" key={d}>{d}</div>)}
+              {cells}
+            </div>
           </div>
         </div>
       )}
       <div className="panel" style={{ marginTop: 16 }}>
         <div className="panel-title">Routes this month</div>
-        <table className="data-table">
-          <thead><tr><th>Supervisor</th><th>Outlets</th><th>Date range</th><th></th></tr></thead>
-          <tbody>
-            {routes.length === 0 ? (
-              <tr><td colSpan={4} className="cell-muted">No routes assigned for this supervisor this month.</td></tr>
-            ) : routes.map((r) => (
-              <tr key={r.id}>
-                <td className="cell-strong">{supervisorLabel(r.supervisorStaffId)}</td>
-                <td>{(r.outletIds || []).length} outlet{(r.outletIds || []).length === 1 ? '' : 's'}</td>
-                <td>{String(r.dateFrom).slice(0, 10)} – {String(r.dateTo).slice(0, 10)}</td>
-                <td>
-                  <span className="icon-btn" onClick={() => openEdit(r)} title="Edit">✎</span>
-                  <span className="icon-btn delete" onClick={() => handleDelete(r)} title="Delete">✕</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead><tr><th>Supervisor</th><th>Outlets</th><th>Date range</th><th></th></tr></thead>
+            <tbody>
+              {routes.length === 0 ? (
+                <tr><td colSpan={4} className="cell-muted">No routes assigned for this supervisor this month.</td></tr>
+              ) : routes.map((r) => (
+                <tr key={r.id}>
+                  <td className="cell-strong">{supervisorLabel(r.supervisorStaffId)}</td>
+                  <td>{(r.outletIds || []).length} outlet{(r.outletIds || []).length === 1 ? '' : 's'}</td>
+                  <td>{String(r.dateFrom).slice(0, 10)} – {String(r.dateTo).slice(0, 10)}</td>
+                  <td>
+                    <span className="icon-btn" onClick={() => openEdit(r)} title="Edit">✎</span>
+                    <span className="icon-btn delete" onClick={() => handleDelete(r)} title="Delete">✕</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <Drawer
         open={drawerOpen}

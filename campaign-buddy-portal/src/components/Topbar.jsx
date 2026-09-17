@@ -19,7 +19,7 @@ function findLabel(pathname) {
   return { title: 'Campaign Buddy', crumb: 'Portal' };
 }
 
-export default function Topbar() {
+export default function Topbar({ onOpenMobileNav }) {
   const { user, persona, campaignList, currentCampaignId, setCurrentCampaignId, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,22 +47,33 @@ export default function Topbar() {
 
   return (
     <div className="topbar">
-      <div>
-        <div className="crumb">{crumb}</div>
-        <div className="page-title-mini">{title}</div>
+      <div className="topbar-left">
+        <button
+          type="button"
+          className="hamburger-btn"
+          onClick={onOpenMobileNav}
+          aria-label="Open menu"
+          title="Open menu"
+        >
+          {ICONS.menu}
+        </button>
+        <div>
+          <div className="crumb">{crumb}</div>
+          <div className="page-title-mini">{title}</div>
+        </div>
       </div>
       <div className="topbar-right">
         {persona === 'admin' ? (
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm report-issue-btn"
             onClick={() => setReportOpen(true)}
             title="Report a bug or suggest an enhancement"
           >
-            🐞 Report issue
+            🐞 <span className="btn-label-text">Report issue</span>
           </button>
         ) : null}
-        <div className="switcher">
+        <div className="switcher campaign-switcher">
           🗂️
           <select
             value={currentCampaignId || ''}
@@ -73,7 +84,7 @@ export default function Topbar() {
             {campaignList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
-        <div className="switcher">
+        <div className="switcher persona-switcher">
           <span className={`badge ${persona === 'admin' ? 'success' : persona === 'supervisor' ? 'info' : 'muted'}`}>
             {persona}
           </span>

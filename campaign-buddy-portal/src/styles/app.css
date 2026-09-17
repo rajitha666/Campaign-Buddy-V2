@@ -46,21 +46,41 @@
 .nav-collapsed .nav-item { justify-content:center; padding:10px 0; }
 .nav-collapsed .nav-item > span { display:none; }
 .nav-collapsed .nav-children { display:none; }
-.nav-collapsed .nav-group:hover .nav-flyout-label {
+.nav-collapsed .nav-group:hover .nav-flyout-label,
+.nav-collapsed .nav-group.flyout-open .nav-flyout-label {
   display:block; position:absolute; left:calc(100% + 6px); top:50%; transform:translateY(-50%);
   background:var(--ink-soft); color:#fff; font-size:12px; font-weight:600; white-space:nowrap;
   padding:7px 11px; border-radius:8px; box-shadow:0 8px 22px rgba(0,0,0,0.28); z-index:60;
 }
-.nav-collapsed .nav-group:hover .nav-children {
+.nav-collapsed .nav-group:hover .nav-children,
+.nav-collapsed .nav-group.flyout-open .nav-children {
   display:block; position:absolute; left:calc(100% + 6px); top:0; min-width:180px;
   background:var(--ink-soft); border-radius:10px; padding:8px; box-shadow:0 10px 26px rgba(0,0,0,0.3); z-index:60;
 }
-.nav-collapsed .nav-group:hover .nav-flyout-title {
+.nav-collapsed .nav-group:hover .nav-flyout-title,
+.nav-collapsed .nav-group.flyout-open .nav-flyout-title {
   display:block; font-size:10.5px; font-weight:700; color:#9FB2AA; letter-spacing:0.4px;
   padding:4px 8px 7px; text-transform:uppercase;
 }
 .nav-collapsed .nav-children .nav-child { display:flex; }
 .nav-section-label { font-size:10.5px; font-weight:700; color:#7C948A; letter-spacing:0.4px; padding:14px 10px 6px; }
+
+/* ===== mobile off-canvas nav (phone widths) ===== */
+/* AppShell forces `collapsed` false whenever the phone breakpoint matches, so
+   the sidebar always renders in its full/expanded (labelled) markup here —
+   these rules only need to reposition it as an off-canvas drawer. */
+.mobile-nav-backdrop { display:none; }
+@media (max-width: 767px) {
+  .sidebar {
+    position:fixed; left:0; top:0; z-index:910; width:82vw; max-width:300px;
+    transform:translateX(-100%); transition:transform .22s ease; box-shadow:14px 0 30px rgba(0,0,0,0.2);
+  }
+  #app-shell.mobile-nav-open .sidebar { transform:translateX(0); }
+  .mobile-nav-open .mobile-nav-backdrop {
+    display:block; position:fixed; inset:0; z-index:905; background:rgba(10,18,15,0.45);
+  }
+  .nav-item { padding:12px 10px; }
+}
 .nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:13px; font-weight:600; color:#C6D4CC; cursor:pointer; }
 .nav-item svg { width:16px; height:16px; flex-shrink:0; opacity:0.85; }
 .nav-item:hover { background:rgba(255,255,255,0.06); color:#fff; }
@@ -77,6 +97,12 @@
   height:var(--topbar-h); background:var(--surface-card); border-bottom:1px solid var(--line);
   display:flex; align-items:center; justify-content:space-between; padding:0 26px; position:sticky; top:0; z-index:20; gap:20px;
 }
+.topbar-left { display:flex; align-items:center; gap:14px; min-width:0; }
+.hamburger-btn {
+  display:none; width:38px; height:38px; flex-shrink:0; align-items:center; justify-content:center;
+  border-radius:9px; border:1px solid var(--line); background:var(--surface-card); color:var(--ink); cursor:pointer;
+}
+.hamburger-btn:hover { background:var(--surface); }
 .topbar .crumb { font-size:12.5px; color:var(--text-muted); }
 .topbar .page-title-mini { font-size:15px; font-weight:700; }
 .topbar-right { display:flex; align-items:center; gap:12px; }
@@ -145,6 +171,7 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .icon-btn.approve { color:var(--success); } .icon-btn.decline { color:var(--alert); }
 .icon-btn.items { color:var(--mango-dark); } .icon-btn.viewItems { color:var(--info); }
 .row-actions .icon-btn svg { width:15px; height:15px; }
+.table-cards { display:none; }
 .table-footer { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; font-size:12px; color:var(--text-muted); flex-wrap:wrap; gap:10px; }
 .pager { display:flex; gap:6px; }
 .pager button { padding:6px 11px; border-radius:8px; border:1px solid var(--line); cursor:pointer; background:var(--surface-card); font-size:12px; }
@@ -338,4 +365,100 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 @media (max-width: 980px) {
   .stat-grid, .stat-grid.cols-5 { grid-template-columns:repeat(2,1fr); }
   .dash-grid { grid-template-columns:1fr; }
+}
+
+/* ===== tablet / touch: bigger tap targets ===== */
+@media (max-width: 1024px), (pointer: coarse) {
+  .icon-btn { width:36px; height:36px; }
+  .row-actions .icon-btn svg { width:17px; height:17px; }
+  .close-btn { width:36px; height:36px; }
+  .nav-collapse-btn { width:32px; height:32px; }
+  .pager button { padding:9px 14px; }
+  .btn { padding:11px 18px; }
+  .btn-sm { padding:9px 14px; }
+  .chip-opt { padding:9px 15px; }
+  .cal-nav .icon-btn { width:34px; height:34px; }
+}
+
+/* ===== tablet & phone: horizontal-scrolling tables keep their lead column
+   in view (raw hand-rolled tables — e.g. Monthly Attendance's per-day grid —
+   stay as real scrollable tables rather than becoming cards). ===== */
+@media (max-width: 1024px) {
+  .table-scroll table.data-table th:first-child,
+  .table-scroll table.data-table td:first-child {
+    position:sticky; left:0; background:var(--surface-card); z-index:1;
+  }
+  .table-scroll table.data-table th:first-child { background:var(--surface); }
+}
+
+/* ===== tablet (≤980px covered above) down through phone ===== */
+@media (max-width: 767px) {
+  .content { padding:16px 16px 40px; }
+  .page-head { margin-bottom:14px; }
+  .page-head h1 { font-size:18px; }
+
+  .filter-bar { flex-direction:column; align-items:stretch; padding:12px; }
+  .filter-field { min-width:0; width:100%; }
+  .filter-bar > .btn { width:100%; justify-content:center; }
+
+  .table-toolbar { flex-direction:column; align-items:stretch; }
+  .toolbar-right { justify-content:space-between; }
+  .search-box input { width:100%; }
+  .table-footer { flex-direction:column; align-items:stretch; text-align:center; }
+  .pager { justify-content:center; }
+
+  /* stacked cards replace the real table below 640px (see 640px block) but
+     between 640–767px the table stays, just with roomier rows for touch */
+  table.data-table th, table.data-table td { padding:12px 14px; }
+
+  .stat-grid, .stat-grid.cols-5 { grid-template-columns:1fr; }
+  .detail-grid { grid-template-columns:1fr; }
+  .dash-grid { gap:14px; }
+  .form-two { grid-template-columns:1fr; }
+
+  .modal-card { width:94vw; max-height:90vh; }
+  .modal-head, .modal-body, .modal-foot { padding:14px 16px; }
+  .drawer { width:100vw; max-width:100vw; }
+  .drawer-head, .drawer-body, .drawer-foot { padding:16px; }
+
+  .map-shell { height:260px; }
+
+  .cal-grid-scroll { overflow-x:auto; }
+  .cal-grid { min-width:560px; }
+  .cal-cell { min-height:64px; }
+
+  .logout-menu { right:16px; }
+
+  /* topbar: keep only what fits a phone width — full title, campaign picker,
+     account menu. Persona badge and the report-issue label are redundant
+     with what's reachable via the drawer/account menu, so they compress. */
+  .topbar { padding:0 12px; gap:10px; }
+  .topbar-left { gap:8px; }
+  .page-title-mini { font-size:13.5px; }
+  .crumb { display:none; }
+  .topbar-right { gap:8px; }
+  .hamburger-btn { display:flex; }
+  .persona-switcher { display:none; }
+  .report-issue-btn .btn-label-text { display:none; }
+  .report-issue-btn { padding:9px 11px; }
+  .campaign-switcher { padding:7px 9px; max-width:120px; }
+  .campaign-switcher select { max-width:90px; overflow:hidden; text-overflow:ellipsis; }
+}
+
+/* ===== phone: tables become stacked cards =====
+   Only swaps when a .table-cards sibling actually exists (DataTable renders
+   one) — raw hand-rolled tables (attendance grid, routes list, …) have no
+   card fallback and are left as scrollable tables instead of disappearing. */
+@media (max-width: 640px) {
+  .table-card:has(.table-cards) .table-scroll { display:none; }
+  .table-cards { display:flex; flex-direction:column; gap:10px; padding:14px; }
+  .data-card { border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--surface-card); }
+  .data-card-field {
+    display:flex; flex-direction:column; align-items:flex-start; gap:3px;
+    padding:7px 0; border-bottom:1px solid var(--line);
+  }
+  .data-card-field:last-of-type { border-bottom:none; }
+  .data-card-label { font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
+  .data-card-value { font-size:13px; text-align:left; word-break:break-word; max-width:100%; }
+  .data-card-actions { justify-content:flex-end; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
 }
