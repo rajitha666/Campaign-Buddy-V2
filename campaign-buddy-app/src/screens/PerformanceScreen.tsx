@@ -42,7 +42,7 @@ export function PerformanceScreen() {
                   n={new Date(p.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                   l="Start date"
                 />
-                {/* <MetaItem n={`Day ${p.dayNumber} of ${p.totalDays}`} l="Days passed" /> */}
+                <MetaItem n={`Day ${p.dayNumber} of ${p.totalDays}`} l="Days passed" />
               </View>
             </View>
 
