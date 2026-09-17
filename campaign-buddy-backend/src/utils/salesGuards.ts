@@ -15,6 +15,21 @@ export async function requireOpenShift(activation: { id: string }) {
   }
 }
 
+/**
+ * Confirm variant: requires the rep to have checked in at some point today,
+ * but allows the shift to already be closed — otherwise a rep who checks out
+ * without confirming could never confirm the day (checkout is not forced
+ * through the confirmation sheet).
+ */
+export async function requireCheckedInToday(activation: { id: string }) {
+  const record = await prisma.attendanceRecord.findUnique({
+    where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+  });
+  if (!record?.checkInAt) {
+    throw new ApiError(422, "NOT_CHECKED_IN", "You need to check in before entering sales data");
+  }
+}
+
 // Issue #53 — performance day counters must reflect working days, since
 // outlets are closed on weekends. Counts Mon–Fri inclusive; weekend-only
 // ranges clamp to 1 so "Day X of Y" never shows 0.
