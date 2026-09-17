@@ -122,7 +122,7 @@ export default function CampaignAdmins() {
               {showNewForm ? (
                 <div className="form-two" style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
                   <div className="form-row">
-                    <label>Mobile App Username <span className="req">*</span></label>
+                    <label>Username <span className="req">*</span></label>
                     <input type="text" placeholder="lowercase, no spaces" value={newAdmin.username}
                       onChange={(e) => setNewAdmin((v) => ({ ...v, username: e.target.value }))} />
                   </div>

@@ -87,7 +87,18 @@ async function hydrateActivations(rows) {
   ]);
   const outletMap = buildLookup(outletRes?.data);
   const staffMap = buildLookup(staffRes?.data, 'displayName');
-  return rows.map((r) => ({ ...r, outletName: outletMap[r.outletId], staffName: staffMap[r.staffId], supervisorName: staffMap[r.supervisorStaffId] }));
+  // The activations payload embeds the related staff rows, so prefer those —
+  // the /staff list used to build staffMap is active-only, which would leave a
+  // deactivated (soft-deleted) promoter rendering as a raw staffId (#uuid bug)
+  // even though its name is right there on the row.
+  const staffNameOf = (r, idKey, relKey) =>
+    r[relKey]?.displayName || r[relKey]?.fullName || staffMap[r[idKey]];
+  return rows.map((r) => ({
+    ...r,
+    outletName: outletMap[r.outletId],
+    staffName: staffNameOf(r, 'staffId', 'staff'),
+    supervisorName: staffNameOf(r, 'supervisorStaffId', 'supervisor'),
+  }));
 }
 
 // Pages whose backing endpoint does NOT honor page/pageSize server-side (it

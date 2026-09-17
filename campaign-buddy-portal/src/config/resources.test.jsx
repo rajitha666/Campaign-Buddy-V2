@@ -111,6 +111,25 @@ describe('resources config', () => {
     }
   });
 
+  it('activations hydrate names from the embedded staff/supervisor/outlet rows, not the active-only staff list', async () => {
+    // A deactivated (soft-deleted) promoter drops out of the active-only /staff
+    // list, but the activations payload still embeds its staff row — the name
+    // must resolve from that relation instead of rendering the raw staffId.
+    vi.spyOn(staffApi, 'search').mockResolvedValue({ data: [] });
+    vi.spyOn(outletsApi, 'list').mockResolvedValue({ data: [{ id: 'o1', name: 'Test Outlet' }] });
+    try {
+      const rows = await RESOURCES.activations.hydrate([{
+        id: 'a1', outletId: 'o1', staffId: 'f7bac026', supervisorStaffId: null,
+        staff: { id: 'f7bac026', fullName: 'Inactive Promoter', displayName: null },
+      }]);
+      expect(rows[0].outletName).toBe('Test Outlet');
+      expect(rows[0].staffName).toBe('Inactive Promoter');
+      expect(rows[0].supervisorName).toBeUndefined();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
   it('staff form has a profile photo upload field with a preview — issue #29', () => {
     const field = RESOURCES.staff.formFields.find((f) => f.key === 'image');
     expect(field).toBeDefined();
