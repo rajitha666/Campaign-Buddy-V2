@@ -141,6 +141,17 @@ describe("attendance — mobile response shapes", () => {
   it("stock PATCH validates soldToday <= openingStock", async () => {
     const { staff, outlet, campaign } = await makeCampaignWithActivation();
     const token = await staffToken(staff.mobileUsername, "field-pw");
+
+    const listBefore = await request(app)
+      .get(`/v1/campaigns/${campaign.id}/outlets/${outlet.id}/products`)
+      .set("Authorization", `Bearer ${token}`);
+    const blockedStock = await request(app)
+      .patch(`/v1/products/${listBefore.body.data[0].campaignProductAssignmentId}/stock`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ openingStock: 5, soldToday: 1 });
+    expect(blockedStock.status).toBe(422);
+    expect(blockedStock.body.error.code).toBe("NOT_CHECKED_IN");
+
     await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
 
     const list = await request(app)

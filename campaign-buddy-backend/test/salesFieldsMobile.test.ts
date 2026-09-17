@@ -32,9 +32,10 @@ describe("mobile custom sales fields", () => {
   });
 
   it("PATCH /v1/sales-summary/today saves day values and echoes them back", async () => {
-    const { campaign, staff } = await makeCampaignWithActivation();
+    const { campaign, staff, outlet } = await makeCampaignWithActivation();
     await fieldsFor(campaign.id);
     const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
 
     const res = await request(app).patch("/v1/sales-summary/today").set("Authorization", `Bearer ${token}`)
       .send({ customFields: { weather: "Rain", samples: 12 } });
@@ -44,9 +45,10 @@ describe("mobile custom sales fields", () => {
   });
 
   it("rejects a value that doesn't match the field type", async () => {
-    const { campaign, staff } = await makeCampaignWithActivation();
+    const { campaign, staff, outlet } = await makeCampaignWithActivation();
     await fieldsFor(campaign.id);
     const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
     const res = await request(app).patch("/v1/sales-summary/today").set("Authorization", `Bearer ${token}`)
       .send({ customFields: { weather: "Snow" } });
     expect(res.status).toBe(400);
@@ -54,14 +56,14 @@ describe("mobile custom sales fields", () => {
   });
 
   it("confirm is blocked until required day fields are filled, then succeeds", async () => {
-    const { campaign, staff } = await makeCampaignWithActivation();
+    const { campaign, staff, outlet } = await makeCampaignWithActivation();
     await fieldsFor(campaign.id);
     const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
 
     const blocked = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
     expect(blocked.status).toBe(422);
     expect(blocked.body.error.code).toBe("MISSING_REQUIRED_FIELD");
-
     const okRes = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`)
       .send({ customFields: { samples: 5 } });
     expect(okRes.status).toBe(200);
@@ -69,9 +71,10 @@ describe("mobile custom sales fields", () => {
   });
 
   it("locks the promoter out of edits once confirmed", async () => {
-    const { campaign, staff } = await makeCampaignWithActivation();
+    const { campaign, staff, outlet } = await makeCampaignWithActivation();
     await fieldsFor(campaign.id);
     const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
     await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({ customFields: { samples: 5 } });
 
     const after = await request(app).patch("/v1/sales-summary/today").set("Authorization", `Bearer ${token}`)

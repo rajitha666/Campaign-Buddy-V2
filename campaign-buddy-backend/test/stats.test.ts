@@ -22,8 +22,9 @@ describe("GET /v1/stats/today", () => {
   });
 
   it("returns saved stats after PATCH", async () => {
-    const { staff } = await makeCampaignWithActivation();
+    const { staff, outlet } = await makeCampaignWithActivation();
     const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
 
     const patch = await request(app)
       .patch("/v1/stats/today")
@@ -52,6 +53,69 @@ describe("PATCH /v1/stats/today", () => {
       .send({ footFall: 4, approached: 5, converted: 5 });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("NO_ACTIVATION");
+  });
+
+  it("is blocked before check-in and allowed after (#51)", async () => {
+    const { staff, outlet } = await makeCampaignWithActivation();
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+
+    const blocked = await request(app)
+      .patch("/v1/stats/today")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ footFall: 4 });
+    expect(blocked.status).toBe(422);
+    expect(blocked.body.error.code).toBe("NOT_CHECKED_IN");
+
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
+
+    const okRes = await request(app)
+      .patch("/v1/stats/today")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ footFall: 4 });
+    expect(okRes.status).toBe(200);
+    expect(okRes.body.data.footFall).toBe(4);
+  });
+});
+
+describe("performance day counts (#53)", () => {
+  // Monday 00:00 UTC of the current week as the campaign start, so the range
+  // always spans at least one weekend regardless of when the suite runs.
+  function utcMonday(offsetDays = 0) {
+    const now = new Date();
+    const dow = (now.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dow + offsetDays));
+  }
+
+  function workingDays(from: Date, to: Date) {
+    let count = 0;
+    for (const d = new Date(from); d.getTime() <= to.getTime(); d.setUTCDate(d.getUTCDate() + 1)) {
+      if (d.getUTCDay() % 6 !== 0) count++; // skip Sat(6)/Sun(0)
+    }
+    return count;
+  }
+
+  it("counts working days, not calendar days", async () => {
+    const { client, brand, item, city, outlet, staff } = await makeCampaignWithActivation();
+    const dateFrom = utcMonday(-7); // previous Monday
+    const dateTo = new Date(dateFrom.getTime() + 13 * 86400000); // ends this Sunday — two weekends inside
+    const campaign = await prisma.campaign.create({
+      data: { campaignNo: "CMP-WKD", name: "Campaign", clientId: client.id, startDate: dateFrom, endDate: dateTo },
+    });
+    await prisma.activation.create({
+      data: { name: "Activation", campaignId: campaign.id, outletId: outlet.id, staffId: staff.id, dateFrom, dateTo },
+    });
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+
+    const res = await request(app)
+      .get(`/v1/campaigns/${campaign.id}/performance`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    // Calendar span is 14 days but only 10 are weekdays.
+    expect(res.body.data.totalDays).toBe(10);
+    expect(res.body.data.totalDays).not.toBe(14);
+    expect(res.body.data.dayNumber).toBe(workingDays(dateFrom, new Date()));
+    expect(item.unitPrice).toBe(1000); // silence unused fixture vars
+    void brand; void city; void client;
   });
 });
 

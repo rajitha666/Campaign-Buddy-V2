@@ -4,6 +4,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { buildSalesSummary } from "../../utils/salesCalc";
+import { requireOpenShift } from "../../utils/salesGuards";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import {
@@ -71,6 +72,7 @@ router.patch(
   validate({ body: s.salesSummaryRemarks }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
+    await requireOpenShift(activation); // #51 — sales edits need an open shift
     const { remarks, customFields } = req.body as { remarks?: string; customFields?: Record<string, unknown> };
     const today = dayDate();
     await assertNotConfirmed(activation.id, today);
@@ -95,6 +97,7 @@ router.post(
   validate({ body: s.salesSummaryConfirm }),
   asyncHandler(async (req, res) => {
     const activation = await currentActivationOrThrow(req.staff!.sub);
+    await requireOpenShift(activation); // #51 — sales edits need an open shift
     const today = dayDate();
     const { remarks, customFields } = req.body as { remarks?: string; customFields?: Record<string, unknown> };
 

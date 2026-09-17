@@ -30,6 +30,9 @@ services:
       # images, plus photos uploaded via POST /items/:id/image (multer writes
       # to process.cwd()/uploads/items, i.e. <workdir>/uploads/items).
       - ./campaign-buddy-backend/uploads/items:/app/uploads/items
+      # Staff profile photos — same scheme; without this mount, /uploads/staff
+      # 404s inside the container for anything uploaded before it started (#48).
+      - ./campaign-buddy-backend/uploads/staff:/app/uploads/staff
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000

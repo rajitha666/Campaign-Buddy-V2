@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok } from "../../utils/apiResponse";
+import { workingDaysBetween } from "../../utils/salesGuards";
 
 const router = Router();
 
@@ -41,8 +42,10 @@ router.get(
       }),
     ]);
 
-    const daysPassed = Math.max(1, Math.round((Date.now() - activation.dateFrom.getTime()) / 86400000) + 1);
-    const totalCampaignDays = Math.round((activation.dateTo.getTime() - activation.dateFrom.getTime()) / 86400000) + 1;
+    // Issue #53 — "Day X of Y" counts working days (outlets closed on weekends).
+    const todayEnd = Date.now() < activation.dateTo.getTime() ? new Date() : activation.dateTo;
+    const daysPassed = workingDaysBetween(activation.dateFrom, todayEnd);
+    const totalCampaignDays = workingDaysBetween(activation.dateFrom, activation.dateTo);
 
     const byDay: Record<string, number> = {};
     for (const rec of salesRecords) {

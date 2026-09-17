@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound, validationError } from "../../utils/apiResponse";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { requireOpenShift } from "../../utils/salesGuards";
 import {
   activeDefsForCampaign,
   productValueMap,
@@ -125,6 +126,7 @@ router.patch(
       include: { activation: true },
     });
     if (!activationItem) throw notFound("Activation product");
+    await requireOpenShift(activationItem.activation);
 
     const existing = await prisma.salesRecord.findUnique({
       where: { activationItemId_date: { activationItemId, date: today } },

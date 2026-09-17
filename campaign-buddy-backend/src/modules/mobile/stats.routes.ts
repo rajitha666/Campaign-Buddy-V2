@@ -4,6 +4,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { computeTotalSales } from "../../utils/salesCalc";
+import { requireOpenShift, workingDaysBetween } from "../../utils/salesGuards";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 
@@ -53,6 +54,7 @@ router.patch(
   asyncHandler(async (req, res) => {
     const activation = await currentActivation(req.staff!.sub);
     if (!activation) throw new ApiError(422, "NO_ACTIVATION", "No active assignment for today — contact your supervisor");
+    await requireOpenShift(activation);
     const today = dayDate();
     const { footFall, approached, converted } = req.body as { footFall?: number; approached?: number; converted?: number };
 
