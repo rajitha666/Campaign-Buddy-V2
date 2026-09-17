@@ -271,6 +271,16 @@ docker compose -f docker-compose.yml --profile production up -d
 | **Background job** | Hourly cron + boot catch-up, same single-container caveat as the license job — disable on all but one replica with `ISSUE_SYNC_DISABLED=1`. No-op until GitHub is configured. |
 | **Outbound network** | The backend container now makes HTTPS calls to `api.github.com` when sync is enabled. |
 
+### 4.4 What the per-campaign shift window change touches at deploy time
+
+| Concern | Detail |
+|---|---|
+| **Migration** | `20260917090000_campaign_shift_windows` — adds `shiftStartMinutes`/`shiftEndMinutes` (`NOT NULL`, default `540`/`1080` = 09:00/18:00) to `campaigns`; on `activations`, adds the same two columns (nullable), backfills them from the old `shiftStart`/`shiftEnd` timestamp columns for any activation that had one set, then drops those old columns. Applied automatically by the entrypoint. |
+| **Behaviour change** | Any Activation that previously relied on the hardcoded fallback (no explicit shift set — true for every activation before this release, since the portal never exposed the fields) now uses its campaign's shift, defaulting to **09:00–18:00** instead of the old hardcoded **09:00–17:00**. Late/on-time flagging at check-in is unaffected (both windows start at 09:00); the end-of-day auto check-out job now fires an hour later by default. No stored attendance history is modified. |
+| **Existing data** | Every existing campaign gets the 540/1080 default by column default — no admin action needed. An activation that already had an explicit `shiftStart`/`shiftEnd` (e.g. the demo seed) keeps the same effective time via the backfill. |
+| **New env vars** | None. |
+| **Downtime** | ~10–30 s while the backend container restarts. The migration is additive plus one data backfill on `activations` — fast at this scale. |
+
 ---
 
 ## 5. Environment variable reference
@@ -327,6 +337,12 @@ Current migration chain:
 20260906190437_campaign_status_manual_override
 20260908152251_add_custom_sales_fields
 20260908171132_add_license_usage_tracking      ← License Usage Tracking
+20260909003626_add_issue_reports
+20260915134224_activation_target_brand_wise
+20260915143618_phone_local_format_and_uniqueness
+20260916084819_staff_profile_picture
+20260916130608_item_soft_delete
+20260917090000_campaign_shift_windows          ← Per-campaign shift window
 ```
 
 ---
