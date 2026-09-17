@@ -35,6 +35,15 @@ const fmtTime = (v) => (v ? new Date(v).toLocaleString() : '—');
 const fmtISO = (v) => (v ? new Date(v).toISOString().slice(0, 10) : ''); // for <input type="date">
 const nameOf = (s) => s?.displayName || s?.fullName || '';
 
+// Campaign/Activation shift window fields store minutes-since-midnight on the
+// wire; the "time" form field works in "HH:mm" for <input type="time">.
+const minutesToHHMM = (m) => (m == null ? '' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+const hhmmToMinutes = (v) => {
+  if (!v) return null;
+  const [h, m] = v.split(':').map(Number);
+  return h * 60 + m;
+};
+
 const PROVINCES = ['Western', 'Eastern', 'Central', 'Southern', 'Sabaragamuwa', 'North Western', 'Northern', 'Uva', 'North Central'];
 const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota',
   'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala',
@@ -275,6 +284,7 @@ export const RESOURCES = {
       { key: 'clientName', label: 'Client', render: (r) => r.clientName || r.clientId },
       { key: 'startDate', label: 'From', render: (r) => fmtDate(r.startDate) },
       { key: 'endDate', label: 'To', render: (r) => fmtDate(r.endDate) },
+      { key: 'shift', label: 'Shift', render: (r) => `${minutesToHHMM(r.shiftStartMinutes)}–${minutesToHHMM(r.shiftEndMinutes)}` },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'active' ? 'success' : r.status === 'ended' ? 'muted' : 'pending'}>{r.status}</Badge> },
     ],
     actions: ['viewItems', 'items', 'admins', 'edit', 'delete'],
@@ -288,16 +298,20 @@ export const RESOURCES = {
     editValues: (row) => ({
       campaignNo: row.campaignNo, name: row.name, clientId: row.clientId,
       description: row.description, dateRange: [fmtISO(row.startDate), fmtISO(row.endDate)],
+      shiftStart: minutesToHHMM(row.shiftStartMinutes), shiftEnd: minutesToHHMM(row.shiftEndMinutes),
     }),
     createItem: ({ values }) => campaignsApi.create({
       campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
       description: values.description, startDate: values.dateRange?.[0], endDate: values.dateRange?.[1],
+      ...(values.shiftStart ? { shiftStartMinutes: hhmmToMinutes(values.shiftStart) } : {}),
+      ...(values.shiftEnd ? { shiftEndMinutes: hhmmToMinutes(values.shiftEnd) } : {}),
     }),
     updateItem: ({ id, values }) => campaignsApi.update(id, {
       campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
       description: values.description,
       ...(values.dateRange?.[0] ? { startDate: values.dateRange[0] } : {}),
       ...(values.dateRange?.[1] ? { endDate: values.dateRange[1] } : {}),
+      shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     deleteItem: ({ id }) => campaignsApi.remove(id),
     formFields: [
@@ -306,6 +320,8 @@ export const RESOURCES = {
       { key: 'clientId', label: 'Client', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
+      { key: 'shiftStart', label: 'Shift start', type: 'time', defaultValue: '09:00', hint: 'Default check-in time for every activation in this campaign — used for late/on-time flagging.' },
+      { key: 'shiftEnd', label: 'Shift end', type: 'time', defaultValue: '18:00', hint: 'Default check-out time — used for the end-of-day auto check-out.' },
     ],
     itemsRoute: (row) => `/campaigns/${row.id}/items`,
     adminsRoute: (row) => `/campaigns/${row.id}/admins`,
@@ -330,6 +346,7 @@ export const RESOURCES = {
       supervisorStaffId: row.supervisorStaffId, distributorPointId: row.distributorPointId,
       dateRange: [fmtISO(row.dateFrom), fmtISO(row.dateTo)],
       targetType: row.targetType, targetCategorization: row.targetCategorization, targetUnit: row.targetUnit,
+      shiftStart: minutesToHHMM(row.shiftStartMinutes), shiftEnd: minutesToHHMM(row.shiftEndMinutes),
     }),
     // Prefills the new activation's date range from the parent campaign's
     // dates — still freely editable, not constrained to that range.
@@ -341,6 +358,7 @@ export const RESOURCES = {
       supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
       dateFrom: values.dateRange?.[0], dateTo: values.dateRange?.[1],
       targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
+      shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     updateItem: ({ campaignId, id, values }) => activationsApi.update(campaignId, id, {
       name: values.name, outletId: values.outletId, staffId: values.staffId,
@@ -348,6 +366,7 @@ export const RESOURCES = {
       ...(values.dateRange?.[0] ? { dateFrom: values.dateRange[0] } : {}),
       ...(values.dateRange?.[1] ? { dateTo: values.dateRange[1] } : {}),
       targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
+      shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
     formFields: [
@@ -360,6 +379,8 @@ export const RESOURCES = {
       { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Product Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
       { key: 'targetCategorization', label: 'Target Categorization', type: 'radio', options: [{ value: 'daily', label: 'Daily' }, { value: 'monthly', label: 'Monthly' }] },
       { key: 'targetUnit', label: 'Target Unit', type: 'radio', options: [{ value: 'unit_wise', label: 'Unit Wise' }, { value: 'sales_wise', label: 'Sales Wise' }] },
+      { key: 'shiftStart', label: 'Shift start override', type: 'time', hint: 'Leave blank to use the campaign’s default shift.' },
+      { key: 'shiftEnd', label: 'Shift end override', type: 'time', hint: 'Leave blank to use the campaign’s default shift.' },
     ],
     targetRoute: (row, campaignId) => `/campaigns/${campaignId}/activations/${row.id}/targets`,
     itemsRoute: (row, campaignId) => `/campaigns/${campaignId}/activations/${row.id}/items`,

@@ -220,6 +220,16 @@ function Field({ field: f, value, onChange, error, builderRows, onBuilderChange,
       </div>
     );
   }
+  if (f.type === 'time') {
+    return (
+      <div className="form-row">
+        <label>{f.label} {reqMark}</label>
+        <input type="time" value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        {f.hint ? <div className="cell-muted" style={{ marginTop: 4 }}>{f.hint}</div> : null}
+        {error ? <div className="form-error">{error}</div> : null}
+      </div>
+    );
+  }
   if (f.type === 'textarea') {
     return (
       <div className="form-row">

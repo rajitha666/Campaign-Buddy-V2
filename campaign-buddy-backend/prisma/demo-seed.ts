@@ -200,15 +200,16 @@ async function main() {
   }
 
   // ---- activations ----
-  const shiftStart = new Date(start.getTime() + (9 * 60 - COLOMBO_OFFSET_MIN) * 60000);
-  const shiftEnd = new Date(start.getTime() + (18 * 60 - COLOMBO_OFFSET_MIN) * 60000);
+  // No per-activation shift override — these inherit the campaign's default
+  // shift window (Campaign.shiftStartMinutes/shiftEndMinutes, 09:00-18:00),
+  // which is exactly what this demo campaign already uses.
   const actDefs = promDefs.map((p) => ({ prom: p.fullName, outlet: p.outlet, sup: p.supervisor, name: `${p.outlet.split(" ")[0]} weekday activation` }));
   const activations: { id: string; prom: string; outlet: { id: string; lat: number; lng: number }; items: Record<string, string> }[] = [];
   for (const a of actDefs) {
     let act = await prisma.activation.findFirst({ where: { campaignId: campaign.id, outletId: outlets[a.outlet].id, staffId: promoters[a.prom] } });
     act = act
-      ? await prisma.activation.update({ where: { id: act.id }, data: { dateFrom: start, dateTo: end, supervisorStaffId: supervisors[a.sup], shiftStart, shiftEnd } })
-      : await prisma.activation.create({ data: { name: a.name, campaignId: campaign.id, outletId: outlets[a.outlet].id, staffId: promoters[a.prom], supervisorStaffId: supervisors[a.sup], dateFrom: start, dateTo: end, shiftStart, shiftEnd, targetType: "brand_wise", targetCategorization: "daily", targetUnit: "unit_wise" } });
+      ? await prisma.activation.update({ where: { id: act.id }, data: { dateFrom: start, dateTo: end, supervisorStaffId: supervisors[a.sup] } })
+      : await prisma.activation.create({ data: { name: a.name, campaignId: campaign.id, outletId: outlets[a.outlet].id, staffId: promoters[a.prom], supervisorStaffId: supervisors[a.sup], dateFrom: start, dateTo: end, targetType: "brand_wise", targetCategorization: "daily", targetUnit: "unit_wise" } });
     const aitems: Record<string, string> = {};
     for (const it of items) {
       const ai = await findOrCreate(
@@ -230,8 +231,8 @@ async function main() {
   for (const [supName, outletName] of [["Dinesh Ranatunga", "Keells Rajagiriya"], ["Ishara Fernando", "Arpico Dehiwala"]] as const) {
     let sv = await prisma.activation.findFirst({ where: { campaignId: campaign.id, outletId: outlets[outletName].id, staffId: supervisors[supName] } });
     sv = sv
-      ? await prisma.activation.update({ where: { id: sv.id }, data: { dateFrom: start, dateTo: end, shiftStart, shiftEnd } })
-      : await prisma.activation.create({ data: { name: `${outletName.split(" ")[0]} supervisor route`, campaignId: campaign.id, outletId: outlets[outletName].id, staffId: supervisors[supName], dateFrom: start, dateTo: end, shiftStart, shiftEnd } });
+      ? await prisma.activation.update({ where: { id: sv.id }, data: { dateFrom: start, dateTo: end } })
+      : await prisma.activation.create({ data: { name: `${outletName.split(" ")[0]} supervisor route`, campaignId: campaign.id, outletId: outlets[outletName].id, staffId: supervisors[supName], dateFrom: start, dateTo: end } });
     supVisits.push({ id: sv.id, sup: supName, outlet: outlets[outletName] });
   }
   for (const sv of supVisits) {

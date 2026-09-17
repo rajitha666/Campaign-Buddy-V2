@@ -14,13 +14,13 @@ const router = Router();
 const ACTIVATION_WRITABLE = [
   "name", "outletId", "staffId", "supervisorStaffId", "distributorPointId",
   "dateFrom", "dateTo", "targetType", "targetCategorization", "targetUnit",
-  "shiftStart", "shiftEnd",
+  "shiftStartMinutes", "shiftEndMinutes",
 ] as const;
 
 function pickActivation(body: Record<string, unknown>) {
   const picked: Record<string, unknown> = {};
   for (const key of ACTIVATION_WRITABLE) if (body[key] !== undefined) picked[key] = body[key];
-  return coerceDates(picked, ["dateFrom", "dateTo", "shiftStart", "shiftEnd"]);
+  return coerceDates(picked, ["dateFrom", "dateTo"]);
 }
 
 // Confirmed v3 (§5.3): setting supervisorStaffId auto-provisions/expands that

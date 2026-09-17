@@ -7,6 +7,9 @@ const dateish = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}/, "must be a YYYY-MM-DD or ISO date");
 const nonNegInt = z.number().int().min(0);
+// Minutes since midnight local time, for the campaign/activation shift window
+// enhancement (0 = 00:00, 1439 = 23:59).
+const shiftMinutes = z.number().int().min(0).max(1439);
 const lat = z.number().min(-90).max(90);
 const lng = z.number().min(-180).max(180);
 const phoneField = z.string().optional().refine(
@@ -224,6 +227,8 @@ export const s = {
     endDate: dateish,
     description: z.string().optional(),
     timezone: z.string().optional(),
+    shiftStartMinutes: shiftMinutes.optional(),
+    shiftEndMinutes: shiftMinutes.optional(),
   }),
   campaignUpdate: z
     .object({
@@ -235,6 +240,8 @@ export const s = {
       description: z.string(),
       status: z.enum(["upcoming", "active", "ended"]),
       timezone: z.string(),
+      shiftStartMinutes: shiftMinutes,
+      shiftEndMinutes: shiftMinutes,
     })
     .partial(),
   campaignItemAdd: z
@@ -284,8 +291,8 @@ export const s = {
     targetType: z.enum(["item_wise", "brand_wise"]).optional(),
     targetCategorization: z.enum(["daily", "monthly"]).optional(),
     targetUnit: z.enum(["unit_wise", "sales_wise"]).optional(),
-    shiftStart: z.string().nullish(),
-    shiftEnd: z.string().nullish(),
+    shiftStartMinutes: shiftMinutes.nullish(),
+    shiftEndMinutes: shiftMinutes.nullish(),
   }),
   activationUpdate: z
     .object({
@@ -299,8 +306,8 @@ export const s = {
       targetType: z.enum(["item_wise", "brand_wise"]),
       targetCategorization: z.enum(["daily", "monthly"]),
       targetUnit: z.enum(["unit_wise", "sales_wise"]),
-      shiftStart: z.string().nullable(),
-      shiftEnd: z.string().nullable(),
+      shiftStartMinutes: shiftMinutes.nullable(),
+      shiftEndMinutes: shiftMinutes.nullable(),
     })
     .partial(),
   activationItemsAdd: z

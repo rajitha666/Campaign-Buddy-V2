@@ -6,6 +6,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound } from "../../utils/apiResponse";
 import { dayDate } from "../../utils/dates";
+import { resolveShiftStart, resolveShiftEnd } from "../../utils/attendanceWindow";
 
 const router = Router();
 
@@ -103,8 +104,10 @@ router.get(
           longitude: activation.outlet.longitude,
           geofenceRadiusMeters: activation.outlet.geofenceRadiusMeters,
         },
-        shiftStart: activation.shiftStart,
-        shiftEnd: activation.shiftEnd,
+        // Effective shift for today — the activation's own override, else its
+        // campaign's configured shift window (enhancement: per-campaign shift).
+        shiftStart: resolveShiftStart(activation, activation.campaign, today),
+        shiftEnd: resolveShiftEnd(activation, activation.campaign, today),
       })
     );
   })
@@ -140,8 +143,8 @@ router.get(
             longitude: activation.outlet.longitude,
             geofenceRadiusMeters: activation.outlet.geofenceRadiusMeters,
           },
-          shiftStart: activation.shiftStart,
-          shiftEnd: activation.shiftEnd,
+          shiftStart: resolveShiftStart(activation, activation.campaign, date),
+          shiftEnd: resolveShiftEnd(activation, activation.campaign, date),
         }))
       )
     );

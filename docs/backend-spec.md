@@ -122,7 +122,9 @@ Relations: `city`, `reportsTo`/`reports` (self, named `StaffReportsTo`), `linked
 ### 2.5 Campaign / Activation — the tenancy boundary
 
 **Campaign** (`campaigns`)
-`id`, `campaignNo` (unique), `name`, `clientId` (FK), `description?`, `startDate`, `endDate`, `status: CampaignStatus` (default `upcoming`), `timezone` (default `"Asia/Colombo"`), `createdAt`, `updatedAt` → has many `CampaignItem`, `Activation`, `CampaignAccessGrant`, `SupervisorTask`, `SupervisorRoute` (new in v3).
+`id`, `campaignNo` (unique), `name`, `clientId` (FK), `description?`, `startDate`, `endDate`, `status: CampaignStatus` (default `upcoming`), `timezone` (default `"Asia/Colombo"`), `shiftStartMinutes` (default `540` = 09:00), `shiftEndMinutes` (default `1080` = 18:00), `createdAt`, `updatedAt` → has many `CampaignItem`, `Activation`, `CampaignAccessGrant`, `SupervisorTask`, `SupervisorRoute` (new in v3).
+
+`shiftStartMinutes`/`shiftEndMinutes` are the campaign's default shift window (minutes since midnight local `timezone`), editable by a Campaign Admin — see §5.6.
 
 **Confirmed v3 — `status` is a real, stored column, not purely computed at read time.** It's kept in sync automatically (recomputed from `startDate`/`endDate` vs. today, in the campaign's `timezone`, whenever the row is read or written) but an `adm`/`usr` can also override it manually (e.g. ending a campaign early). See §5.8.
 
@@ -143,7 +145,7 @@ Relations: `city`, `reportsTo`/`reports` (self, named `StaffReportsTo`), `linked
 | `targetType` | `TargetType`, default `item_wise` | |
 | `targetCategorization` | `TargetCategorization`, default `daily` | |
 | `targetUnit` | `TargetUnit`, default `unit_wise` | |
-| `shiftStart?`, `shiftEnd?` | DateTime | planned shift window, used for late/on-time computation |
+| `shiftStartMinutes?`, `shiftEndMinutes?` | Int, nullable | per-activation override of the campaign's default shift window (minutes since midnight local time); `null` inherits the campaign — see §5.6 |
 | `createdAt`, `updatedAt` | DateTime | |
 
 Relations: `campaign`, `outlet`, `staff`, `supervisor`, `distributorPoint`, and has many `ActivationItem`, `ActivationTarget`, `AttendanceRecord`, `DailyStats`, `SalesSummary`, `TrackingPing`.
@@ -432,8 +434,8 @@ This only ever expands access, never revokes it.
 ### 5.6 Geofence & late-arrival grace period — CONFIRMED v3
 
 - **Geofence check is a soft flag only.** Check-in verifies location via haversine distance between the submitted lat/lng and `Outlet.{latitude,longitude}`, compared against `Outlet.geofenceRadiusMeters` (default 150). If outside the radius, `checkInLocationVerified` is set to `false` — **check-in is never rejected for this reason.** Attendance tables (mobile + portal) surface unverified check-ins for review; they don't prevent them.
-- **Grace period stays at 10 minutes**, hardcoded (`GRACE_PERIOD_MINUTES` constant in `src/utils/attendanceWindow.ts`), compared against `Activation.shiftStart`. **Still not configurable per outlet/campaign** — flagged as a future improvement, not built in this pass.
-- **Ideal shift window (issue #31): 09:00–17:00 local (Asia/Colombo).** When an Activation omits `shiftStart`, check-in falls back to 09:00 of the record's calendar day for the late/on-time computation (`idealShiftStart()` in `src/utils/attendanceWindow.ts`). `idealShiftEnd()` (17:00) backs the end-of-day auto check-out job (issue #32). Check-in is never *rejected* outside the window — the window only drives flagging, per the soft-flag policy above.
+- **Grace period stays at 10 minutes**, hardcoded (`GRACE_PERIOD_MINUTES` constant in `src/utils/attendanceWindow.ts`). **Still not configurable per outlet/campaign** — flagged as a future improvement, not built in this pass.
+- **Per-campaign shift window (enhancement, supersedes the former hardcoded-only 09:00–17:00 ideal window from issue #31).** Every `Campaign` carries its own default shift window — `shiftStartMinutes`/`shiftEndMinutes`, minutes since midnight local (Asia/Colombo), defaulting to 540/1080 (09:00–18:00) — editable by a Campaign Admin from CB Office (Campaigns → Add/Edit). Every existing campaign got these defaults via migration, so nothing changed for a live campaign until an admin edits them. An `Activation` may still set its own `shiftStartMinutes`/`shiftEndMinutes` to override the campaign default for that one assignment (e.g. a promoter on an early shift); `null` on the activation means "inherit the campaign's default". `resolveShiftStart()`/`resolveShiftEnd()` in `src/utils/attendanceWindow.ts` resolve the effective window for a given day (activation override → campaign default → the original hardcoded 09:00–17:00 as a last-resort fallback, which should never actually be reached since every Activation has a Campaign). If the resolved end is at or before the resolved start (an overnight shift, e.g. 22:00–06:00), the end rolls over to the next calendar day. Late/on-time flagging at check-in and the end-of-day auto check-out job (issue #32) both resolve through these same functions. Check-in is never *rejected* outside the window — the window only drives flagging, per the soft-flag policy above.
 
 ### 5.7 Location ping enforcement
 

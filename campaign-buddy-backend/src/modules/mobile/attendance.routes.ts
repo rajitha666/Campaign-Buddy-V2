@@ -6,7 +6,7 @@ import { ApiError, ok } from "../../utils/apiResponse";
 import { haversineDistanceMeters } from "../../utils/geo";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
-import { checkInStatus, idealShiftStart } from "../../utils/attendanceWindow";
+import { checkInStatus, resolveShiftStart } from "../../utils/attendanceWindow";
 import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
@@ -91,12 +91,12 @@ router.post(
     if (assignmentId) {
       activation = await prisma.activation.findFirst({
         where: { id: assignmentId, staffId: req.staff!.sub },
-        include: { outlet: true },
+        include: { outlet: true, campaign: true },
       });
     } else {
       activation = await prisma.activation.findFirst({
         where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
-        include: { outlet: true },
+        include: { outlet: true, campaign: true },
       });
     }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
@@ -152,12 +152,13 @@ router.post(
     );
     const checkInLocationVerified = distance <= activation.outlet.geofenceRadiusMeters;
 
-    // Late/on-time vs. shiftStart + grace period (§5.6). When the activation
-    // has no shiftStart, fall back to the ideal 09:00 local shift window
-    // (issue #31) so the standard day is still enforced.
+    // Late/on-time vs. the effective shift start + grace period (§5.6): the
+    // activation's own override if set, else the campaign's configured shift,
+    // else the hardcoded ideal window as a last resort (enhancement: per-
+    // campaign shift windows).
     const now = new Date();
     const status = checkInStatus(
-      activation.shiftStart ?? idealShiftStart(today),
+      resolveShiftStart(activation, activation.campaign, today),
       now
     );
 

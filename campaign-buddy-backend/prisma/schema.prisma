@@ -353,6 +353,16 @@ model Campaign {
   licenseSponsorCap       Int  @default(2)
   licenseWarnThresholdPct Int?
 
+  // Default shift window for every Activation in this campaign, in minutes
+  // since midnight local (Campaign.timezone) time — 540 = 09:00, 1080 = 18:00.
+  // Drives late/on-time attendance flagging and the end-of-day auto check-out
+  // job (src/utils/attendanceWindow.ts) for any Activation that doesn't set
+  // its own shiftStartMinutes/shiftEndMinutes override. Editable by a Campaign
+  // Admin from CB Office; existing campaigns got these defaults via migration
+  // so nothing changes for a live campaign until an admin edits them.
+  shiftStartMinutes Int @default(540)
+  shiftEndMinutes   Int @default(1080)
+
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -426,8 +436,11 @@ model Activation {
   targetType           TargetType           @default(item_wise)
   targetCategorization TargetCategorization @default(daily)
   targetUnit           TargetUnit           @default(unit_wise)
-  shiftStart           DateTime?
-  shiftEnd             DateTime?
+  // Per-activation override of the parent Campaign's default shift window
+  // (minutes since midnight local time, same unit as Campaign.shiftStart/EndMinutes).
+  // Null on both means "inherit the campaign's default" — see attendanceWindow.ts.
+  shiftStartMinutes    Int?
+  shiftEndMinutes      Int?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
