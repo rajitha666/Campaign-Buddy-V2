@@ -130,14 +130,26 @@ router.get(
     };
     if (outletId) assertOutletAllowed(req, outletId);
     if (!date) throw validationError("date is required", "date");
+    const when = dayDate(date);
 
+    // Resolving by staffId/outletId alone (no explicit activationId) picks the
+    // activation whose own date range covers the selected day, so the portal's
+    // outlet+date-only Update Sales flow lands on the right promoter even when
+    // an outlet has run more than one activation over time.
     const activation = activationId
-      ? await prisma.activation.findUnique({ where: { id: activationId } })
-      : await prisma.activation.findFirst({ where: { campaignId: req.params.campaignId, ...(staffId ? { staffId } : {}), ...(outletId ? { outletId } : {}) } });
+      ? await prisma.activation.findUnique({ where: { id: activationId }, include: { staff: true } })
+      : await prisma.activation.findFirst({
+          where: {
+            campaignId: req.params.campaignId,
+            ...(staffId ? { staffId } : {}),
+            ...(outletId ? { outletId } : {}),
+            dateFrom: { lte: when },
+            dateTo: { gte: when },
+          },
+          include: { staff: true },
+        });
     if (!activation) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
-
-    const when = dayDate(date);
     const [activationItems, salesDefs] = await Promise.all([
       prisma.activationItem.findMany({
         where: { activationId: activation.id },
@@ -169,6 +181,9 @@ router.get(
       meta: {
         total: activationItems.length,
         activationId: activation.id,
+        activationName: activation.name,
+        staffId: activation.staffId,
+        staffName: activation.staff.fullName,
         date,
         dayCustomFields: serializeWithValues(dayDefs, dayValues),
       },

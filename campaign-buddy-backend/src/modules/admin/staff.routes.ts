@@ -11,6 +11,9 @@ import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { normalizeLkPhone } from "../../utils/phone";
+import { dayDate } from "../../utils/dates";
+import { computeTargetProgress } from "./targetProgress";
+import { countActivationWorkingDays, workingDaysPerMonth } from "../../utils/activationPerformance";
 
 const router = Router();
 
@@ -242,11 +245,6 @@ router.get(
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5);
 
-    // Overall performance is a simple blended score — attendance + a sales-target-free
-    // sales-activity signal. Documented as a placeholder heuristic; refine once a
-    // target/quota concept exists to compare totalSales against.
-    const overallPerformancePct = Math.round((attendancePct + Math.min(100, totalItems)) / 2);
-
     const today = new Date();
     const activationsOut = activations.map((a) => ({
       id: a.id,
@@ -268,6 +266,36 @@ router.get(
         .filter((a) => a.dateTo < today)
         .sort((a, b) => b.dateTo.getTime() - a.dateTo.getTime());
       currentActivationId = past[0]?.id ?? null;
+    }
+
+    // Overall performance (client doc B) — pacing against the current
+    // activation's own target(s), prorated by activation type: how much of
+    // the target that SHOULD be achieved by today (targetValue ÷ 8 or 25
+    // working days/month × working days elapsed so far) has actually been
+    // achieved. 0% when there's no current activation or no target covering
+    // today — there's nothing to pace against. Attendance stays a separate
+    // figure on this same view rather than blended in, so it's never masked.
+    let overallPerformancePct = 0;
+    const currentActivation = activations.find((a) => a.id === currentActivationId);
+    if (currentActivation) {
+      const asOf = dayDate();
+      const targets = await prisma.activationTarget.findMany({
+        where: { activationId: currentActivation.id, dateFrom: { lte: asOf }, dateTo: { gte: asOf } },
+      });
+      let totalAchieved = 0;
+      let totalExpectedToDate = 0;
+      for (const target of targets) {
+        const { achieved } = await computeTargetProgress(target, currentActivation.targetUnit);
+        const periodEnd = asOf < target.dateTo ? asOf : target.dateTo;
+        const elapsedWorkingDays = countActivationWorkingDays(target.dateFrom, periodEnd, currentActivation.activationType);
+        const dailyRate = target.targetValue / workingDaysPerMonth(currentActivation.activationType);
+        totalAchieved += achieved;
+        totalExpectedToDate += dailyRate * elapsedWorkingDays;
+      }
+      // 1 decimal place, matching targetProgress.ts's achievement% — rounding
+      // to a whole number would silently turn the client's own 87.5% example
+      // into 88%.
+      overallPerformancePct = totalExpectedToDate > 0 ? Math.round((totalAchieved / totalExpectedToDate) * 1000) / 10 : 0;
     }
 
     res.json(ok({

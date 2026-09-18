@@ -13,7 +13,7 @@ const router = Router();
 
 const ACTIVATION_WRITABLE = [
   "name", "outletId", "staffId", "supervisorStaffId", "distributorPointId",
-  "dateFrom", "dateTo", "targetType", "targetCategorization", "targetUnit",
+  "dateFrom", "dateTo", "targetType", "targetCategorization", "targetUnit", "activationType",
   "shiftStartMinutes", "shiftEndMinutes",
 ] as const;
 

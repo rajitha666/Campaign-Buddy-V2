@@ -113,22 +113,23 @@ describe("GET /admin/v1/campaigns/:id/reports/sku-wise", () => {
 });
 
 describe("GET /admin/v1/campaigns/:id/reports/brand-wise", () => {
-  it("aggregates sales per brand", async () => {
+  it("aggregates sales per (outlet, brand), not brand alone (client doc D — replaces Overall Brand Wise)", async () => {
     const f = await buildReportsFixture();
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/brand-wise`)
       .set("Authorization", `Bearer ${await adminToken()}`);
     expect(res.status).toBe(200);
     const rows = res.body.data as any[];
-    expect(rows).toHaveLength(2);
-    expect(rows.find((r) => r.brandName === "B")).toMatchObject({ itemCount: 33, totalSales: 33000 });
-    expect(rows.find((r) => r.brandName === "Brand B")).toMatchObject({ itemCount: 40, totalSales: 10000 });
+    expect(rows).toHaveLength(3); // (outlet1,B), (outlet2,B), (outlet2,Brand B)
+    expect(rows.find((r) => r.outletId === f.outlet.id && r.brandName === "B")).toMatchObject({ outletName: "Outlet", itemCount: 20, totalSales: 20000 });
+    expect(rows.find((r) => r.outletId === f.outlet2.id && r.brandName === "B")).toMatchObject({ itemCount: 13, totalSales: 13000 });
+    expect(rows.find((r) => r.outletId === f.outlet2.id && r.brandName === "Brand B")).toMatchObject({ itemCount: 40, totalSales: 10000 });
     expect(res.body.meta.grandTotal).toBe(43000);
   });
 });
 
 describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
-  it("rolls up sales and footfall per outlet", async () => {
+  it("rolls up sales, footfall, approach and conversion per outlet — one row per outlet, no promoter breakdown", async () => {
     const f = await buildReportsFixture();
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/outlet-wise`)
@@ -136,8 +137,102 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
     expect(res.status).toBe(200);
     const rows = res.body.data as any[];
     expect(rows).toHaveLength(2);
-    expect(rows.find((r) => r.outletId === f.outlet.id)).toMatchObject({ footFall: 120, totalSales: 20000 });
+    expect(rows.find((r) => r.outletId === f.outlet.id)).toMatchObject({
+      footFall: 120, approached: 0, converted: 0, totalSales: 20000, target: 0, achievementPct: 0,
+    });
     expect(rows.find((r) => r.outletId === f.outlet2.id)).toMatchObject({ footFall: 80, totalSales: 23000 });
+    expect(rows.every((r) => !("staffName" in r))).toBe(true);
+    expect(res.body.meta.customFieldDefs).toEqual([]);
+  });
+
+  it("merges a second activation at the same outlet into one row instead of splitting by promoter", async () => {
+    const f = await buildReportsFixture();
+    const staff3 = await prisma.staff.create({
+      data: {
+        employeeId: `EMP3-${Math.random().toString(36).slice(2, 8)}`, fullName: "Staff Three", displayName: "S3",
+        userType: "promoter", mobileUsername: `staff3_${Math.random().toString(36).slice(2, 8)}`, passwordHash: "x", status: "active",
+      },
+    });
+    const activation3 = await prisma.activation.create({
+      data: { name: "Activation 3", campaignId: f.campaign.id, outletId: f.outlet.id, staffId: staff3.id, dateFrom: f.campaign.startDate, dateTo: f.campaign.endDate },
+    });
+    const today = new Date(new Date().toISOString().slice(0, 10));
+    await prisma.dailyStats.create({ data: { activationId: activation3.id, date: today, footFall: 15, approached: 6, converted: 2 } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/outlet-wise`)
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    const rows = res.body.data as any[];
+    expect(rows).toHaveLength(2); // still one row per outlet, not per activation
+    const mine = rows.find((r) => r.outletId === f.outlet.id);
+    expect(mine).toMatchObject({ footFall: 135, approached: 6, converted: 2 }); // 120 + 15
+  });
+
+  it("sums achievement across every target overlapping the range, and target value", async () => {
+    const f = await buildReportsFixture();
+    const today = new Date().toISOString().slice(0, 10);
+    await prisma.activationTarget.create({
+      data: {
+        activationId: f.activation.id, dateFrom: new Date(today), dateTo: new Date(today),
+        targetItemId: f.item.id, targetValue: 50,
+      },
+    });
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/outlet-wise`)
+      .query({ dateFrom: today, dateTo: today })
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    const mine = (res.body.data as any[]).find((r) => r.outletId === f.outlet.id);
+    // day0 sale for outlet1/item1 is 20 units (unit_wise default) against a target of 50
+    expect(mine).toMatchObject({ target: 50, achievementPct: 40 });
+  });
+
+  it("sums a number-type day-scope custom field per outlet over the date range, listing it (with type) in meta.customFieldDefs", async () => {
+    const f = await buildReportsFixture();
+    const fieldsBase = `/admin/v1/campaigns/${f.campaign.id}/sales-fields`;
+    const token = await adminToken();
+    await request(app).post(fieldsBase).set("Authorization", `Bearer ${token}`)
+      .send({ label: "Samples Given", type: "number", scope: "day" });
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
+      .send({ activationId: f.activation.id, date: today, day: { samples_given: 4 } });
+    await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
+      .send({ activationId: f.activation.id, date: yesterday, day: { samples_given: 3 } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/outlet-wise`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.customFieldDefs).toEqual([{ key: "samples_given", label: "Samples Given", type: "number" }]);
+    const mine = (res.body.data as any[]).find((r) => r.outletId === f.outlet.id);
+    expect(mine.samples_given).toBe(7);
+    const other = (res.body.data as any[]).find((r) => r.outletId === f.outlet2.id);
+    expect(other.samples_given).toBe(0);
+  });
+
+  it("shows the latest value (not a sum) for a non-numeric day-scope custom field, over the date range", async () => {
+    const f = await buildReportsFixture();
+    const fieldsBase = `/admin/v1/campaigns/${f.campaign.id}/sales-fields`;
+    const token = await adminToken();
+    await request(app).post(fieldsBase).set("Authorization", `Bearer ${token}`)
+      .send({ label: "Weather", type: "select", scope: "day", options: ["Sunny", "Rain"] });
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
+      .send({ activationId: f.activation.id, date: yesterday, day: { weather: "Rain" } });
+    await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
+      .send({ activationId: f.activation.id, date: today, day: { weather: "Sunny" } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/outlet-wise`)
+      .query({ dateFrom: yesterday, dateTo: today })
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.customFieldDefs).toContainEqual({ key: "weather", label: "Weather", type: "select" });
+    const mine = (res.body.data as any[]).find((r) => r.outletId === f.outlet.id);
+    expect(mine.weather).toBe("Sunny"); // the later of the two days in range
   });
 });
 
@@ -166,6 +261,51 @@ describe("GET /admin/v1/campaigns/:id/reports/reorder", () => {
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/reorder`)
       .query({ date: yesterday })
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+});
+
+describe("GET /admin/v1/campaigns/:id/reports/sales-status", () => {
+  it("lists every activation running today: absent (no check-in), pending (checked in, unconfirmed), or completed (confirmed)", async () => {
+    const f = await buildReportsFixture();
+    const today = new Date().toISOString().slice(0, 10);
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sales-status`)
+      .query({ date: today })
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    const rows = res.body.data as any[];
+    expect(rows).toHaveLength(2); // both activations, neither checked in nor confirmed yet
+    expect(rows.every((r) => r.status === "absent")).toBe(true);
+    const mine = rows.find((r) => r.outletName === f.outlet.name);
+    expect(mine).toMatchObject({ staffName: f.staff.fullName });
+    expect(mine.footFall).toBeUndefined();
+
+    // Checks in but hasn't confirmed sales yet -> pending
+    await prisma.attendanceRecord.create({
+      data: { activationId: f.activation2.id, date: new Date(today), checkInAt: new Date(), status: "on_time" },
+    });
+    // Confirms sales -> completed (even without an explicit check-in row)
+    await prisma.salesSummary.create({
+      data: { activationId: f.activation.id, date: new Date(today), confirmed: true, confirmedAt: new Date() },
+    });
+    const after = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sales-status`)
+      .query({ date: today })
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    const rows2 = after.body.data as any[];
+    expect(rows2.find((r) => r.activationId === f.activation.id).status).toBe("completed");
+    expect(rows2.find((r) => r.activationId === f.activation2.id).status).toBe("pending");
+  });
+
+  it("omits an activation whose date range doesn't cover the requested day", async () => {
+    const f = await buildReportsFixture();
+    const pastDay = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sales-status`)
+      .query({ date: pastDay })
       .set("Authorization", `Bearer ${await adminToken()}`);
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([]);

@@ -56,6 +56,14 @@ enum TargetUnit {
   sales_wise
 }
 
+// Governs day-counting and target proration for the Overall Performance calc
+// (client doc B): weekend activations run Sat/Sun only (target ÷ 8 working
+// days/month); monthly activations run Mon-Fri (target ÷ 25 working days/month).
+enum ActivationType {
+  weekend
+  monthly
+}
+
 enum AttendanceStatus {
   on_time
   late
@@ -368,6 +376,21 @@ model Campaign {
   shiftStartMinutes Int @default(540)
   shiftEndMinutes   Int @default(1080)
 
+  // Configurable per-campaign designation label (client doc F) — e.g. "Beauty
+  // Advisor" instead of "Promoter" for a client whose field staff carry that
+  // title. Null means "use the default label". The internal role value stays
+  // `promoter` everywhere (Staff.userType, RBAC, …) — this only swaps the
+  // user-facing word wherever the portal would otherwise say "Promoter".
+  promoterLabel String?
+
+  // Tester count (client doc D) — "how many testers a customer tried",
+  // toggled on/off per campaign rather than hand-configured as a generic
+  // custom field. Toggling this auto-provisions/archives a standard day-scope
+  // number SalesFieldDefinition (key "tester") so it reuses the existing
+  // custom-field capture UI (Update Sales page) and reporting (Outlet Wise)
+  // for free — see syncTesterField in campaigns.routes.ts.
+  testerFieldEnabled Boolean @default(false)
+
   createdAt DateTime  @default(now())
   deletedAt DateTime?
   updatedAt DateTime  @updatedAt
@@ -442,6 +465,7 @@ model Activation {
   targetType           TargetType           @default(item_wise)
   targetCategorization TargetCategorization @default(daily)
   targetUnit           TargetUnit           @default(unit_wise)
+  activationType       ActivationType       @default(monthly)
   // Per-activation override of the parent Campaign's default shift window
   // (minutes since midnight local time, same unit as Campaign.shiftStart/EndMinutes).
   // Null on both means "inherit the campaign's default" — see attendanceWindow.ts.

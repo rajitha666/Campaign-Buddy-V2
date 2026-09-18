@@ -4,6 +4,8 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList } from "../../utils/apiResponse";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { dayDate } from "../../utils/dates";
+import { activeDefsForCampaign } from "../../utils/salesFieldStore";
+import { readFieldValue } from "../../utils/salesFields";
 
 const router = Router();
 
@@ -55,6 +57,8 @@ router.get(
   })
 );
 
+// Brand-wise — grouped by (outlet, brand), replacing the old campaign-wide-only
+// rollup so a brand's performance can be compared outlet to outlet (client doc D).
 router.get(
   "/campaigns/:campaignId/reports/brand-wise",
   requireCampaignAccess,
@@ -66,25 +70,33 @@ router.get(
         ...(range ? { date: range } : {}),
         activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
       },
-      include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
+      include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } }, activation: { include: { outlet: true } } } } },
     });
-    const byBrand: Record<string, { brandName: string; itemCount: number; totalSales: number }> = {};
+    const byOutletBrand: Record<string, { outletId: string; outletName: string; brandName: string; itemCount: number; totalSales: number }> = {};
     let grandTotal = 0;
     for (const r of records) {
+      const outlet = r.activationItem.activation.outlet;
       const brand = r.activationItem.campaignItem.item.brand;
       const value = r.soldToday * r.activationItem.campaignItem.item.unitPrice;
-      byBrand[brand.id] = byBrand[brand.id] ?? { brandName: brand.name, itemCount: 0, totalSales: 0 };
-      byBrand[brand.id].itemCount += r.soldToday;
-      byBrand[brand.id].totalSales += value;
+      const key = `${outlet.id}:${brand.id}`;
+      byOutletBrand[key] = byOutletBrand[key] ?? { outletId: outlet.id, outletName: outlet.name, brandName: brand.name, itemCount: 0, totalSales: 0 };
+      byOutletBrand[key].itemCount += r.soldToday;
+      byOutletBrand[key].totalSales += value;
       grandTotal += value;
     }
-    const rows = Object.values(byBrand);
+    const rows = Object.values(byOutletBrand);
     res.json({ data: rows, meta: { total: rows.length, grandTotal } });
   })
 );
 
-// Outlet-wise rollup — footfall (DailyStats) + sales (SalesRecord) per outlet.
-// Added for portal completion; computed, never stored (§5.2).
+// Outlet-wise rollup — footfall/approach/conversion (DailyStats) + sales
+// (SalesRecord) + target achievement (ActivationTarget), one row per outlet
+// (summed across every promoter/activation there), over a date range that
+// defaults to today on the portal side. Every one of the campaign's own
+// day-scope custom sales fields gets a column too: number-type fields are
+// summed over the range, other types show the latest value recorded in the
+// range (flagged client-side since that's a snapshot, not a range total).
+// Computed, never stored (§5.2).
 router.get(
   "/campaigns/:campaignId/reports/outlet-wise",
   requireCampaignAccess,
@@ -93,7 +105,11 @@ router.get(
     const range = dateRange(req);
     const campaignId = req.params.campaignId;
 
-    const [salesRecords, stats] = await Promise.all([
+    const dayDefs = await activeDefsForCampaign(campaignId, "day");
+    const numberDefs = dayDefs.filter((d) => d.type === "number");
+    const latestDefs = dayDefs.filter((d) => d.type !== "number");
+
+    const [salesRecords, stats, targets, numberValues, latestValues] = await Promise.all([
       prisma.salesRecord.findMany({
         where: {
           ...(range ? { date: range } : {}),
@@ -108,19 +124,150 @@ router.get(
         },
         include: { activation: { include: { outlet: true } } },
       }),
+      prisma.activationTarget.findMany({
+        where: {
+          activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+          ...(range?.lte ? { dateFrom: { lte: range.lte } } : {}),
+          ...(range?.gte ? { dateTo: { gte: range.gte } } : {}),
+        },
+        include: { activation: { include: { outlet: true } } },
+      }),
+      numberDefs.length
+        ? prisma.salesFieldValue.findMany({
+            where: {
+              definitionId: { in: numberDefs.map((d) => d.id) },
+              activationItemId: null,
+              ...(range ? { date: range } : {}),
+              activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+            },
+            include: { activation: { include: { outlet: true } } },
+          })
+        : Promise.resolve([]),
+      latestDefs.length
+        ? prisma.salesFieldValue.findMany({
+            where: {
+              definitionId: { in: latestDefs.map((d) => d.id) },
+              activationItemId: null,
+              ...(range ? { date: range } : {}),
+              activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
+            },
+            include: { activation: { include: { outlet: true } } },
+            orderBy: { date: "asc" }, // last write per outlet below ends up the latest date
+          })
+        : Promise.resolve([]),
     ]);
 
-    const byOutlet: Record<string, { outletId: string; outletName: string; footFall: number; totalSales: number }> = {};
-    const ensure = (id: string, name: string) => (byOutlet[id] = byOutlet[id] ?? { outletId: id, outletName: name, footFall: 0, totalSales: 0 });
+    type Row = {
+      outletId: string; outletName: string; footFall: number; approached: number; converted: number;
+      totalSales: number; target: number; achieved: number; [customFieldKey: string]: unknown;
+    };
+    const byOutlet: Record<string, Row> = {};
+    const ensure = (outlet: { id: string; name: string }) =>
+      (byOutlet[outlet.id] = byOutlet[outlet.id] ?? {
+        outletId: outlet.id, outletName: outlet.name,
+        footFall: 0, approached: 0, converted: 0, totalSales: 0, target: 0, achieved: 0,
+        ...Object.fromEntries(numberDefs.map((d) => [d.key, 0])),
+        ...Object.fromEntries(latestDefs.map((d) => [d.key, null])),
+      });
+
     for (const r of salesRecords) {
-      const o = r.activationItem.activation.outlet;
-      ensure(o.id, o.name).totalSales += r.soldToday * r.activationItem.campaignItem.item.unitPrice;
+      ensure(r.activationItem.activation.outlet).totalSales += r.soldToday * r.activationItem.campaignItem.item.unitPrice;
     }
     for (const s of stats) {
-      const o = s.activation.outlet;
-      ensure(o.id, o.name).footFall += s.footFall;
+      const row = ensure(s.activation.outlet);
+      row.footFall += s.footFall;
+      row.approached += s.approached;
+      row.converted += s.converted;
     }
-    const rows = Object.values(byOutlet);
+
+    // Target achievement: for each target overlapping the range, sum the
+    // target value and the matching sales already pulled above, clamped to
+    // both the target's own window and the report's range.
+    const defById = new Map(numberDefs.concat(latestDefs).map((d) => [d.id, d]));
+    for (const t of targets) {
+      const row = ensure(t.activation.outlet);
+      row.target += t.targetValue;
+      for (const r of salesRecords) {
+        if (r.activationItem.activation.id !== t.activationId) continue;
+        const item = r.activationItem.campaignItem.item;
+        const matchesScope = t.targetBrandId ? item.brandId === t.targetBrandId : item.id === t.targetItemId;
+        if (!matchesScope) continue;
+        const recDate = new Date(r.date);
+        if (recDate < t.dateFrom || recDate > t.dateTo) continue;
+        row.achieved += t.activation.targetUnit === "sales_wise" ? r.soldToday * item.unitPrice : r.soldToday;
+      }
+    }
+
+    for (const v of numberValues) {
+      const row = byOutlet[v.activation.outlet.id];
+      const def = defById.get(v.definitionId);
+      if (!row || !def) continue;
+      row[def.key] = (Number(row[def.key]) || 0) + (Number(v.value) || 0);
+    }
+    for (const v of latestValues) {
+      const row = byOutlet[v.activation.outlet.id];
+      const def = defById.get(v.definitionId);
+      if (!row || !def) continue;
+      row[def.key] = readFieldValue(def, v.value); // ascending order => last assignment wins = latest date
+    }
+
+    const rows = Object.values(byOutlet).map((r) => {
+      const { achieved, ...rest } = r;
+      return { ...rest, achievementPct: r.target > 0 ? Math.round((achieved / r.target) * 1000) / 10 : 0 };
+    });
+    res.json({
+      data: rows,
+      meta: {
+        total: rows.length,
+        customFieldDefs: dayDefs.map((d) => ({ key: d.key, label: d.label, type: d.type })),
+      },
+    });
+  })
+);
+
+// Daily submission-compliance — every activation running on the given day,
+// left-joined against that day's AttendanceRecord (checked in at all?) and
+// SalesSummary (confirmed = the promoter actually submitted their sales), so
+// an activation that never submitted still shows up instead of being
+// silently dropped. Three-way status (client doc D):
+//   completed — sales confirmed
+//   absent    — never checked in (same definition as the Staff Absence report)
+//   pending   — checked in, sales not yet confirmed
+router.get(
+  "/campaigns/:campaignId/reports/sales-status",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const outlets = outletScope(req);
+    const when = dayDate((req.query.date as string) || new Date().toISOString().slice(0, 10));
+    const campaignId = req.params.campaignId;
+
+    const activations = await prisma.activation.findMany({
+      where: {
+        campaignId,
+        deletedAt: null,
+        dateFrom: { lte: when },
+        dateTo: { gte: when },
+        ...(outlets ? { outletId: { in: outlets } } : {}),
+      },
+      include: {
+        outlet: true,
+        staff: true,
+        salesSummaries: { where: { date: when } },
+        attendanceRecords: { where: { date: when } },
+      },
+    });
+
+    const rows = activations.map((a) => {
+      const confirmed = a.salesSummaries[0]?.confirmed ?? false;
+      const checkedIn = a.attendanceRecords.some((r) => r.checkInAt);
+      const status: "completed" | "pending" | "absent" = confirmed ? "completed" : checkedIn ? "pending" : "absent";
+      return {
+        activationId: a.id,
+        outletName: a.outlet.name,
+        staffName: a.staff.fullName,
+        status,
+      };
+    });
     res.json(okList(rows, rows.length));
   })
 );

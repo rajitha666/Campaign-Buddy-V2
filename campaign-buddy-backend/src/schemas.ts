@@ -229,6 +229,8 @@ export const s = {
     timezone: z.string().optional(),
     shiftStartMinutes: shiftMinutes.optional(),
     shiftEndMinutes: shiftMinutes.optional(),
+    promoterLabel: z.string().trim().min(1).max(60).nullish(),
+    testerFieldEnabled: z.boolean().optional(),
   }),
   campaignUpdate: z
     .object({
@@ -242,6 +244,8 @@ export const s = {
       timezone: z.string(),
       shiftStartMinutes: shiftMinutes,
       shiftEndMinutes: shiftMinutes,
+      promoterLabel: z.string().trim().min(1).max(60).nullable(),
+      testerFieldEnabled: z.boolean(),
     })
     .partial(),
   campaignItemAdd: z
@@ -291,6 +295,7 @@ export const s = {
     targetType: z.enum(["item_wise", "brand_wise"]).optional(),
     targetCategorization: z.enum(["daily", "monthly"]).optional(),
     targetUnit: z.enum(["unit_wise", "sales_wise"]).optional(),
+    activationType: z.enum(["weekend", "monthly"]).optional(),
     shiftStartMinutes: shiftMinutes.nullish(),
     shiftEndMinutes: shiftMinutes.nullish(),
   }),
@@ -306,6 +311,7 @@ export const s = {
       targetType: z.enum(["item_wise", "brand_wise"]),
       targetCategorization: z.enum(["daily", "monthly"]),
       targetUnit: z.enum(["unit_wise", "sales_wise"]),
+      activationType: z.enum(["weekend", "monthly"]),
       shiftStartMinutes: shiftMinutes.nullable(),
       shiftEndMinutes: shiftMinutes.nullable(),
     })

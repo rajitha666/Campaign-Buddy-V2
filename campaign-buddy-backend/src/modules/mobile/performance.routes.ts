@@ -3,6 +3,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok } from "../../utils/apiResponse";
 import { workingDaysBetween } from "../../utils/salesGuards";
+import { countActivationWorkingDays } from "../../utils/activationPerformance";
 import { todaysTarget, totalTargetFromDaily } from "../../utils/targets";
 
 const router = Router();
@@ -44,10 +45,17 @@ router.get(
       }),
     ]);
 
-    // Issue #53 — "Day X of Y" counts working days (outlets closed on weekends).
+    // Issue #53 — "Day X of Y" counts working days (outlets closed on weekends);
+    // client doc B — which days count as "working" depends on activation type
+    // (weekend activations run Sat/Sun, so #53's Mon-Fri-only helper would
+    // undercount almost every day for them).
     const todayEnd = Date.now() < activation.dateTo.getTime() ? new Date() : activation.dateTo;
-    const daysPassed = workingDaysBetween(activation.dateFrom, todayEnd);
-    const totalCampaignDays = workingDaysBetween(activation.dateFrom, activation.dateTo);
+    const daysPassed = activation.activationType === "weekend"
+      ? Math.max(countActivationWorkingDays(activation.dateFrom, todayEnd, "weekend"), 1)
+      : workingDaysBetween(activation.dateFrom, todayEnd);
+    const totalCampaignDays = activation.activationType === "weekend"
+      ? Math.max(countActivationWorkingDays(activation.dateFrom, activation.dateTo, "weekend"), 1)
+      : workingDaysBetween(activation.dateFrom, activation.dateTo);
 
     const byDay: Record<string, number> = {};
     for (const rec of salesRecords) {

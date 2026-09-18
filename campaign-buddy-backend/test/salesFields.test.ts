@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
-import { app, resetDb, adminToken, makeCampaignWithActivation } from "./helpers";
+import { app, resetDb, adminToken, makeCampaignWithActivation, makeStaff } from "./helpers";
 import { prisma } from "../src/utils/prisma";
 
 beforeEach(resetDb);
@@ -137,6 +137,29 @@ describe("admin custom sales fields — bulk value save", () => {
     expect(res.body.meta.dayCustomFields.map((f: any) => f.key)).toEqual(["weather"]);
     expect(res.body.data[0].customFields.map((f: any) => f.key)).toEqual(["damaged"]);
     expect(res.body.data[0].activationItemId).toBeTypeOf("string");
+  });
+
+  it("sales/lookup resolves outletId+date to the activation covering that date, ignoring one that doesn't (portal item 2)", async () => {
+    const { token, campaign, outlet, activation, staff } = await setup();
+    const otherStaff = await makeStaff();
+    await prisma.activation.create({
+      data: {
+        name: "Past Activation",
+        campaignId: campaign.id,
+        outletId: outlet.id,
+        staffId: otherStaff.id,
+        dateFrom: new Date(Date.now() - 30 * 86400000),
+        dateTo: new Date(Date.now() - 10 * 86400000),
+      },
+    });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/sales/lookup?outletId=${outlet.id}&date=${today}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.activationId).toBe(activation.id);
+    expect(res.body.meta.staffId).toBe(staff.id);
+    expect(res.body.meta.staffName).toBe(staff.fullName);
   });
 
   it("sales-field-values returns day values across a date range with names", async () => {

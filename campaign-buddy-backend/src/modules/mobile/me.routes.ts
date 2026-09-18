@@ -122,7 +122,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const date = dayDate(typeof req.query.date === "string" ? req.query.date : undefined);
     const activations = await prisma.activation.findMany({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: date }, dateTo: { gte: date } },
+      // Supervisor mode (#63): a supervisor is recorded as supervisorStaffId on
+      // the promoter's Activation, never as staffId — matching staffId here (the
+      // original bug) meant this always returned empty for a real supervisor.
+      where: { supervisorStaffId: req.staff!.sub, dateFrom: { lte: date }, dateTo: { gte: date } },
       include: { campaign: true, outlet: true },
     });
     activations.sort((a, b) => a.outlet.name.localeCompare(b.outlet.name));

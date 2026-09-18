@@ -12,6 +12,32 @@ import { s } from "../../schemas";
 
 const router = Router();
 
+// Tester count toggle (client doc D) — "how many testers a customer tried".
+// Reuses the existing custom-sales-fields machinery (day-scope, number type)
+// instead of a bespoke storage path, so the Update Sales page and Outlet Wise
+// report pick it up automatically with zero extra code on their end. Archived
+// (never hard-deleted) when turned off, so historical counts survive a
+// toggle-off/toggle-on cycle.
+const TESTER_FIELD_KEY = "tester";
+const TESTER_FIELD_LABEL = "Tester";
+
+async function syncTesterField(campaignId: string, enabled: boolean) {
+  const existing = await prisma.salesFieldDefinition.findFirst({
+    where: { campaignId, key: TESTER_FIELD_KEY },
+  });
+  if (enabled) {
+    if (!existing) {
+      await prisma.salesFieldDefinition.create({
+        data: { campaignId, key: TESTER_FIELD_KEY, label: TESTER_FIELD_LABEL, type: "number", scope: "day", required: false },
+      });
+    } else if (existing.archivedAt) {
+      await prisma.salesFieldDefinition.update({ where: { id: existing.id }, data: { archivedAt: null } });
+    }
+  } else if (existing && !existing.archivedAt) {
+    await prisma.salesFieldDefinition.update({ where: { id: existing.id }, data: { archivedAt: new Date() } });
+  }
+}
+
 // GET /campaigns doubles as the portal's campaign switcher — filtered to the
 // caller's grants (or every campaign, for adm). Spec v3 §4.2.
 router.get(
@@ -53,6 +79,7 @@ router.post(
     await prisma.campaignAccessGrant.create({
       data: { userId: req.user!.sub, campaignId: created.id, scopeType: "all", outletIds: [] },
     });
+    if (created.testerFieldEnabled) await syncTesterField(created.id, true);
     res.status(201).json(ok(created));
   })
 );
@@ -88,6 +115,7 @@ router.patch(
       data.statusManuallySet = false;
     }
     const updated = await prisma.campaign.update({ where: { id: req.params.campaignId }, data });
+    if (body.testerFieldEnabled !== undefined) await syncTesterField(updated.id, updated.testerFieldEnabled);
     res.json(ok(updated));
   })
 );
