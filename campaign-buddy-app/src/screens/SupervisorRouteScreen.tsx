@@ -11,7 +11,7 @@
  *    eligibility (Backend Spec v3 §5.9) — don't add a check-in affordance here.
  */
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as supervisorRouteApi from '@/api/supervisorRoute';
@@ -22,6 +22,8 @@ import { Chip } from '@/components/Chip';
 import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
+import { LocationUnavailableError } from '@/lib/checkInLocation';
+import { showAlert } from '@/lib/showAlert';
 import { formatDay } from '@/lib/date';
 import type { SupervisorAssignment } from '@/api/types';
 
@@ -101,7 +103,11 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
       await checkIn(assignment.assignmentId);
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
     } catch (err) {
-      Alert.alert('Could not check in', getApiErrorMessage(err));
+      if (err instanceof LocationUnavailableError) {
+        showAlert('Location required', err.message);
+      } else {
+        showAlert('Could not check in', getApiErrorMessage(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -113,7 +119,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
       await checkOut();
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
     } catch (err) {
-      Alert.alert('Could not check out', getApiErrorMessage(err));
+      showAlert('Could not check out', getApiErrorMessage(err));
     } finally {
       setBusy(false);
     }

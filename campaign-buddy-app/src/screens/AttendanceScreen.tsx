@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +15,8 @@ import { CheckoutConfirmSheet } from '@/components/CheckoutConfirmSheet';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 import { formatDay } from '@/lib/date';
+import { LocationUnavailableError } from '@/lib/checkInLocation';
+import { showAlert } from '@/lib/showAlert';
 import type { AttendanceStatus } from '@/api/types';
 
 type Nav = NativeStackNavigationProp<AttendanceStackParamList, 'Attendance'>;
@@ -49,7 +51,11 @@ export function AttendanceScreen() {
     try {
       await checkIn(assignmentQuery.data.assignmentId);
     } catch (err) {
-      Alert.alert('Could not check in', getApiErrorMessage(err));
+      if (err instanceof LocationUnavailableError) {
+        showAlert('Location required', err.message);
+      } else {
+        showAlert('Could not check in', getApiErrorMessage(err));
+      }
     } finally {
       setCheckingIn(false);
     }

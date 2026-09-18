@@ -13,6 +13,7 @@ import * as Location from 'expo-location';
 import * as attendanceApi from '@/api/attendance';
 import type { AttendanceStatus } from '@/api/types';
 import { getCheckoutCoords } from '@/lib/checkoutLocation';
+import { getCheckInCoords } from '@/lib/checkInLocation';
 
 interface AttendanceContextValue {
   checkedIn: boolean;
@@ -62,15 +63,14 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
   }, [refresh]);
 
   const checkIn = useCallback(async (assignmentId: string) => {
-    const { status: permStatus } = await Location.requestForegroundPermissionsAsync();
-    if (permStatus !== 'granted') {
-      throw new Error('Location permission is required to check in.');
-    }
-    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    const position = await getCheckInCoords({
+      requestPermission: Location.requestForegroundPermissionsAsync,
+      getCurrentPosition: () => Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+    });
     const record = await attendanceApi.checkIn({
       assignmentId,
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
+      latitude: position.latitude,
+      longitude: position.longitude,
       timestamp: new Date().toISOString(),
     });
     setCheckedIn(true);
