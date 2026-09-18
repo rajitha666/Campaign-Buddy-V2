@@ -311,6 +311,15 @@ describe('resources config', () => {
     expect(cfg.columns.find((c) => c.key === 'totalSales').label).toBe('Total After Sales');
   });
 
+  it.each([['brandWiseClient'], ['reportBrandWise']])('%s has Outlet / From / To filters in the header', (key) => {
+    const cfg = RESOURCES[key];
+    expect(cfg.filters.map((f) => f.key)).toEqual(['outletId', 'dateFrom', 'dateTo']);
+    const outlet = cfg.filters.find((f) => f.key === 'outletId');
+    expect(outlet.type).toBe('searchable-select');
+    expect(outlet.optionsLoader).toBeDefined();
+    expect(cfg.filters.filter((f) => f.key === 'dateFrom' || f.key === 'dateTo').every((f) => f.type === 'date' && !f.defaultToday)).toBe(true);
+  });
+
   it('Campaign form has a Tester Field toggle that round-trips through create/edit (client doc D)', async () => {
     const field = RESOURCES.campaigns.formFields.find((f) => f.key === 'testerFieldEnabled');
     expect(field).toBeDefined();

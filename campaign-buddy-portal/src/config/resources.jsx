@@ -679,6 +679,7 @@ export const RESOURCES = {
   reportBrandWise: {
     title: 'Brand Wise', subtitle: 'Aggregated sales by outlet and brand.', excel: true, noAdd: true,
     scopeToCampaign: true,
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
@@ -699,6 +700,7 @@ export const RESOURCES = {
   brandWiseClient: {
     title: 'Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
