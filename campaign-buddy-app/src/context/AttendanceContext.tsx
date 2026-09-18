@@ -17,6 +17,12 @@ interface AttendanceContextValue {
   checkedIn: boolean;
   checkInAt: string | null;
   status: AttendanceStatus | null;
+  /**
+   * Server-computed geofence result for today's check-in (client doc C) —
+   * null before any check-in has happened yet today. Never blocks check-in
+   * (soft flag only); screens use it to show a warning, not to gate anything.
+   */
+  locationVerified: boolean | null;
   isLoading: boolean;
   refresh: () => Promise<void>;
   /** Requests location permission + a fresh fix, then calls POST /attendance/check-in. */
@@ -35,6 +41,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkInAt, setCheckInAt] = useState<string | null>(null);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
+  const [locationVerified, setLocationVerified] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -43,6 +50,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       setCheckedIn(today.checkedIn);
       setCheckInAt(today.checkInAt);
       setStatus(today.status);
+      setLocationVerified(today.checkInAt ? today.locationVerified : null);
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +75,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
     setCheckedIn(true);
     setCheckInAt(record.checkInAt);
     setStatus(record.status);
+    setLocationVerified(record.checkInLocationVerified);
   }, []);
 
   const checkOut = useCallback(async () => {
@@ -79,11 +88,12 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
     });
     setCheckedIn(false);
     setCheckInAt(null);
+    setLocationVerified(null);
   }, []);
 
   return (
     <AttendanceContext.Provider
-      value={{ checkedIn, checkInAt, status, isLoading, refresh, checkIn, checkOut }}
+      value={{ checkedIn, checkInAt, status, locationVerified, isLoading, refresh, checkIn, checkOut }}
     >
       {children}
     </AttendanceContext.Provider>

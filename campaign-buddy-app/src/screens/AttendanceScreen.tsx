@@ -21,7 +21,7 @@ type Nav = NativeStackNavigationProp<AttendanceStackParamList, 'Attendance'>;
 
 export function AttendanceScreen() {
   const navigation = useNavigation<Nav>();
-  const { checkedIn, checkInAt, checkIn, refresh } = useAttendance();
+  const { checkedIn, checkInAt, locationVerified, checkIn, refresh } = useAttendance();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkoutSheetVisible, setCheckoutSheetVisible] = useState(false);
   const [elapsed, setElapsed] = useState('');
@@ -78,7 +78,11 @@ export function AttendanceScreen() {
             <Text style={styles.timer}>
               On shift for <Text style={styles.timerBold}>{elapsed}</Text>
             </Text>
-            <LocationRow label="Location verified at check-in" />
+            {locationVerified === false ? (
+              <LocationRow label="You checked in away from the outlet — your supervisor can see this" warn />
+            ) : (
+              <LocationRow label="Location verified at check-in" />
+            )}
           </View>
         ) : (
           <View style={styles.hero}>
@@ -171,14 +175,18 @@ function statusChip(status: AttendanceStatus) {
   return null;
 }
 
-function LocationRow({ label }: { label: string }) {
+// `warn` (client doc C) — the server flagged this check-in as outside the
+// outlet's geofence. Soft signal only: an amber note, never a block on
+// checking in, so a promoter with a slow/inaccurate GPS fix is never locked out.
+function LocationRow({ label, warn }: { label: string; warn?: boolean }) {
+  const tone = warn ? colors.pending : colors.textMuted;
   return (
     <View style={styles.locRow}>
       <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
-        <Path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke={colors.textMuted} strokeWidth={1.8} />
-        <Circle cx={12} cy={9} r={2.4} stroke={colors.textMuted} strokeWidth={1.8} />
+        <Path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" stroke={tone} strokeWidth={1.8} />
+        <Circle cx={12} cy={9} r={2.4} stroke={tone} strokeWidth={1.8} />
       </Svg>
-      <Text style={styles.locText}>{label}</Text>
+      <Text style={[styles.locText, warn && { color: colors.pending, fontWeight: '600' }]}>{label}</Text>
     </View>
   );
 }
