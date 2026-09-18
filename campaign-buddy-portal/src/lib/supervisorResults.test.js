@@ -38,16 +38,16 @@ describe('absoluteUrl', () => {
 });
 
 describe('resultsCsv', () => {
-  it('exports one line per answer with working photo links and upload times', () => {
+  it('exports one line per answer with working photo links and readable upload times', () => {
     const rows = [
       { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: 'Kasun', supervisorName: 'Dinesh', category: 'Sale', task: 'Pricing', taskType: 'range', rating: 4, feedback: null, photos: [] },
-      { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: null, supervisorName: 'Dinesh', category: 'Outlet PR', task: 'Display', taskType: 'photo', rating: null, feedback: null, photos: [photo('/uploads/visit-photos/a.jpg')] },
+      { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: 'Kasun', supervisorName: 'Dinesh', category: 'Outlet PR', task: 'Display', taskType: 'photo', rating: null, feedback: null, photos: [photo('/uploads/visit-photos/a.jpg')] },
     ];
     const [header, first, second] = resultsCsv(rows, 'https://office.example.lk');
     expect(header).toEqual(['Date', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded']);
     expect(first.slice(0, 8)).toEqual(['2026-09-18', 'Keells', 'Kasun', 'Dinesh', 'Sale', 'Pricing', '4 / 5', '']);
-    expect(second[2]).toBe('');
+    expect(second[2]).toBe('Kasun');
     expect(second[7]).toBe('https://office.example.lk/uploads/visit-photos/a.jpg');
-    expect(second[8]).toBe('2026-09-18T04:30:00.000Z');
+    expect(second[8]).toBe('2026-09-18 04:30');
   });
 });

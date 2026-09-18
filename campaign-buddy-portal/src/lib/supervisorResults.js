@@ -28,10 +28,20 @@ export function toCsv(lines) {
   return lines.map((l) => l.map(cell).join(',')).join('\n');
 }
 
+// Export-friendly timestamps: date-only for the visit day, `YYYY-MM-DD HH:MM`
+// for photo upload times so Excel doesn't show raw ISO strings.
+export function exportDate(d) {
+  return String(d).slice(0, 10);
+}
+
+export function exportDateTime(d) {
+  return String(d).slice(0, 16).replace('T', ' ');
+}
+
 export function resultsCsv(rows, origin) {
   const header = ['Date', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded'];
   const lines = rows.map((r) => [
-    String(r.date).slice(0, 10),
+    exportDate(r.date),
     r.outletName,
     r.promoterName ?? '',
     r.supervisorName,
@@ -39,7 +49,7 @@ export function resultsCsv(rows, origin) {
     r.task,
     resultText(r),
     (r.photos || []).map((p) => absoluteUrl(p.url, origin)).join(' '),
-    (r.photos || []).map((p) => p.uploadedAt).join(' '),
+    (r.photos || []).map((p) => exportDateTime(p.uploadedAt)).join(' '),
   ]);
   return [header, ...lines];
 }

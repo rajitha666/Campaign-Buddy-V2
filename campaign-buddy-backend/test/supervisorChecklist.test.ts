@@ -261,7 +261,7 @@ describe("two promoters at one outlet", () => {
 });
 
 describe("GET /admin/v1/campaigns/:id/supervisor-task-responses", () => {
-  it("lists each answer with supervisor, outlet, rating and timestamped photos; photo rows are outlet-level", async () => {
+  it("lists each answer with supervisor, outlet, rating and timestamped photos; photo rows include the visit's promoter", async () => {
     const f = await fixture();
     await save(f, f.activation.id, [{ taskId: f.rating.id, rating: 4 }]);
     await upload(f, f.activation.id);
@@ -275,7 +275,7 @@ describe("GET /admin/v1/campaigns/:id/supervisor-task-responses", () => {
       supervisorName: f.supervisor.fullName, promoterName: f.staff.fullName, outletName: f.outlet.name, category: "Attitude", rating: 4,
     });
     const photoRow = res.body.data.find((r: { taskId: string }) => r.taskId === f.photo.id);
-    expect(photoRow.promoterName).toBeNull();
+    expect(photoRow.promoterName).toBe(f.staff.fullName);
     expect(photoRow.photos).toHaveLength(1);
     expect(photoRow.photos[0]).toHaveProperty("uploadedAt");
   });

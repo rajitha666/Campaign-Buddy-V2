@@ -495,8 +495,9 @@ router.get(
       taskId: r.taskId,
       date: r.date,
       supervisorName: r.supervisor.fullName,
-      // Photo tasks are outlet-level (shared by the supervisor's promoters there), so no single promoter.
-      promoterName: r.task.taskType === "photo" ? null : r.activation.staff.fullName,
+      // The response row is tied to the supervisor's visit (activation), so the
+      // visit's promoter is known even for outlet-level photo tasks.
+      promoterName: r.activation.staff.fullName,
       outletName: r.activation.outlet.name,
       category: r.task.category,
       taskType: r.task.taskType,
