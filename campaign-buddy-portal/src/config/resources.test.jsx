@@ -305,10 +305,10 @@ describe('resources config', () => {
     expect(columnText(col, row)).toBe(3200);
   });
 
-  it('client Brand Wise report shows Sold Qty and Total After Sales (client request)', () => {
+  it('client Brand Wise report shows Sold Qty and Total Sales (client request)', () => {
     const cfg = RESOURCES.brandWiseClient;
     expect(cfg.columns.find((c) => c.key === 'itemCount').label).toBe('Sold Qty');
-    expect(cfg.columns.find((c) => c.key === 'totalSales').label).toBe('Total After Sales');
+    expect(cfg.columns.find((c) => c.key === 'totalSales').label).toBe('Total Sales');
   });
 
   it.each([['brandWiseClient'], ['reportBrandWise']])('%s has Outlet / From / To filters in the header', (key) => {
@@ -418,18 +418,24 @@ describe('resources config', () => {
     expect(outletFilter.allLabel).toBe('All outlets');
   });
 
-  it('Staff Attendance has separate Promoter (ID + name) and Name columns, and times drop seconds (client doc A)', () => {
+  it('Staff Attendance shows Outlet first, one Promoter name column without the employee-ID code, and time-only check-in/check-out', () => {
     const cfg = RESOURCES.staffAttendance;
-    const row = { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu' }, outlet: { name: 'Outlet A' } }, checkInAt: '2026-09-17T08:03:45.000Z' };
-    const promoterCol = cfg.columns.find((c) => c.key === 'promoterLabel');
+    const row = { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu' }, outlet: { name: 'Outlet A' } }, checkInAt: '2026-09-17T08:03:45.000Z', checkOutAt: '2026-09-17T17:29:59.000Z' };
+    expect(cfg.columns.map((c) => c.key)).toEqual(['outletName', 'staffName', 'date', 'checkInAt', 'checkOutAt', 'status']);
     const nameCol = cfg.columns.find((c) => c.key === 'staffName');
-    expect(promoterCol.label).toBe('Promoter');
-    expect(columnText(promoterCol, row)).toBe('EMP-0004 - Tharindu Jayasuriya');
-    expect(nameCol.label).toBe('Name');
-    expect(columnText(nameCol, row)).toBe('Tharindu');
+    expect(nameCol.label).toBe('Promoter'); // DataTable swaps this for the campaign's designation label, e.g. "Beauty Advisor"
+    expect(columnText(nameCol, row)).toBe('Tharindu Jayasuriya'); // full name — no "EMP-0004 - " code, no duplicate Name column
 
-    const checkInCol = cfg.columns.find((c) => c.key === 'checkInAt');
-    expect(columnText(checkInCol, row)).not.toMatch(/\d{1,2}:\d{2}:\d{2}/); // HH:MM only, no :SS
+    const timeRe = /\d{1,2}:\d{2}/;
+    const secondsRe = /\d{1,2}:\d{2}:\d{2}/;
+    const datePartRe = /\/|\d{4}/;
+    for (const key of ['checkInAt', 'checkOutAt']) {
+      const col = cfg.columns.find((c) => c.key === key);
+      const text = columnText(col, row);
+      expect(text).toMatch(timeRe);
+      expect(text).not.toMatch(secondsRe);
+      expect(text).not.toMatch(datePartRe); // time only — the Date column already carries the day
+    }
   });
 
   it('Promoter Tracking has an "All Promoters" filter option and highlights the clicked row on the map (client doc E)', () => {

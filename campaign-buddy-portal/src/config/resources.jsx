@@ -34,6 +34,7 @@ const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone
 // Explicit format (no `second`) so check-in/check-out times never show
 // seconds, on screen or in exports (client doc A).
 const fmtTime = (v) => (v ? new Date(v).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
+const fmtClockTime = (v) => (v ? new Date(v).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—');
 const fmtISO = (v) => (v ? new Date(v).toISOString().slice(0, 10) : ''); // for <input type="date">
 const nameOf = (s) => s?.displayName || s?.fullName || '';
 
@@ -529,12 +530,11 @@ export const RESOURCES = {
       { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' },
     ],
     columns: [
-      { key: 'promoterLabel', label: 'Promoter', render: (r) => (r.activation?.staff ? staffLabel(r.activation.staff) : '—') },
-      { key: 'staffName', label: 'Name', render: (r) => nameOf(r.activation?.staff) || r.activation?.staff?.fullName || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
+      { key: 'staffName', label: 'Promoter', render: (r) => r.activation?.staff?.fullName || nameOf(r.activation?.staff) || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
-      { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
-      { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
+      { key: 'checkInAt', label: 'Check-in', render: (r) => fmtClockTime(r.checkInAt) },
+      { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtClockTime(r.checkOutAt) },
       { key: 'status', label: 'Status', render: (r) => <Badge type={r.status === 'on_time' ? 'success' : r.status === 'late' ? 'pending' : 'muted'}>{r.status}</Badge> },
     ],
     fetchList: ({ campaignId, query }) => attendanceApi.list(campaignId, query),
@@ -705,7 +705,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
       { key: 'itemCount', label: 'Sold Qty' },
-      { key: 'totalSales', label: 'Total After Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
     ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
