@@ -282,14 +282,17 @@ describe('resources config', () => {
     expect(columnText(col, { activationItem: {} })).toBe('—');
   });
 
-  it('SKU Wise Sales has an Amount column (sold qty × unit price) alongside Promoter (client doc D)', () => {
+  it('SKU Wise Sales ends with a Total Sales column (sold qty × unit price) alongside Promoter (client doc D)', () => {
     const cfg = RESOURCES.skuSales;
     expect(cfg.columns.map((c) => c.key)).toEqual(
-      expect.arrayContaining(['itemName', 'amount', 'outletName', 'staffName', 'date', 'openingStock', 'soldToday', 'remainingStock'])
+      expect.arrayContaining(['itemName', 'outletName', 'staffName', 'date', 'openingStock', 'soldToday', 'totalSales'])
     );
-    const amountCol = cfg.columns.find((c) => c.key === 'amount');
+    expect(cfg.columns[cfg.columns.length - 1].key).toBe('totalSales');
+    const col = cfg.columns.find((c) => c.key === 'totalSales');
+    expect(col.label).toBe('Total Sales');
     const row = { soldToday: 5, activationItem: { campaignItem: { item: { unitPrice: 3200 } } } };
-    expect(columnText(amountCol, row)).toBe(16000);
+    expect(col.render(row)).toBe('LKR 16,000');
+    expect(columnText(col, row)).toBe(16000);
   });
 
   it('Campaign form has a Tester Field toggle that round-trips through create/edit (client doc D)', async () => {
