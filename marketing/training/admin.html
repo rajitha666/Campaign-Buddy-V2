@@ -43,7 +43,7 @@
       <li><a href="#t1">Sign in and the campaign switcher <span class="n">2 steps</span></a></li>
       <li><a href="#t2">Set up the catalog <span class="n">3 steps</span></a></li>
       <li><a href="#t3">Cities and outlets <span class="n">2 steps</span></a></li>
-      <li><a href="#t4">Create the campaign <span class="n">3 steps</span></a></li>
+      <li><a href="#t4">Create the campaign <span class="n">5 steps</span></a></li>
       <li><a href="#t5">Add your staff <span class="n">2 steps</span></a></li>
       <li><a href="#t6">Create activations <span class="n">4 steps</span></a></li>
       <li><a href="#t7">Custom sales fields <span class="n">2 steps</span></a></li>
@@ -138,6 +138,11 @@
             <div class="step-text"><p>Every campaign also has a <b>shift start</b> and <b>shift end</b> (default <b>9:00 AM&ndash;6:00 PM</b>) &mdash; this is what decides whether a promoter's check-in is flagged <b>on time</b> or <b>late</b>, and when the end-of-day auto check-out happens. Edit it any time from the campaign's <b>Edit</b> action if this campaign runs a different day.</p></div>
           </li>
           <li>
+            <div class="step-text">
+              <p>Two optional fields on the same form: <b>Designation Label</b> swaps the word "Promoter" for one of your own (e.g. "Beauty Advisor") everywhere in the portal for this campaign &mdash; leave it blank to keep "Promoter". <b>Tester Field</b>, when enabled, adds a "Tester" count (how many testers a customer tried) to Update Sales and the Outlet Wise report.</p>
+            </div>
+          </li>
+          <li>
             <div class="step-text"><p>The <b>status</b> follows the dates on its own (upcoming &rarr; active &rarr; ended). You can override it, for example to end a campaign early, and the override sticks until you change the dates.</p></div>
           </li>
           <li>
@@ -171,12 +176,12 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>With the right campaign selected, open <b>Campaigns &rarr; Activation</b> and add one. An activation is <b>one promoter, at one outlet, for this campaign, over one date range</b>.</p></div>
-            <figure><img src="assets/portal-admin/07-activations.webp" alt="Activation list showing promoter, outlet, supervisor, dates and status" /></figure>
+            <div class="step-text"><p>With the right campaign selected, open <b>Campaigns &rarr; Activation</b> and add one. An activation is <b>one promoter, at one outlet, for this campaign, over one date range</b>. The list's <b>Type</b> column shows each activation as <b>Weekend</b> or <b>Monthly</b>.</p></div>
+            <figure><img src="assets/portal-admin/07-activations.webp" alt="Activation list showing promoter, outlet, supervisor, activation type, dates and status" /></figure>
           </li>
           <li>
             <div class="step-text">
-              <p>Set the outlet, promoter, an optional <b>named supervisor</b>, the distributor point if any, the date range, and the three target settings (item- or brand-wise, daily or monthly, by units or by value). Outlet, promoter, supervisor and distributor point all show the person's name (and employee ID, for staff) and are searchable, so a long roster stays easy to pick from. The date range starts pre-filled with the campaign's own dates &mdash; adjust it if this activation runs shorter. Leave <b>shift start/end override</b> blank to use the campaign's own shift (the normal case) &mdash; only set it if this one promoter works a different shift than the rest of the campaign.</p>
+              <p>Set the outlet, promoter, an optional <b>named supervisor</b>, the distributor point if any, the date range, the required <b>Activation Type</b> (<b>Weekend</b> or <b>Monthly</b> &mdash; this governs day-counting and target pacing on the promoter's Performance view: weekend activations count Sat/Sun against an 8-day month, monthly ones count Mon-Fri against 25), and the three target settings (item- or brand-wise, daily or monthly, by units or by value). Outlet, promoter, supervisor and distributor point all show the person's name (and employee ID, for staff) and are searchable, so a long roster stays easy to pick from. The date range starts pre-filled with the campaign's own dates &mdash; adjust it if this activation runs shorter. Leave <b>shift start/end override</b> blank to use the campaign's own shift (the normal case) &mdash; only set it if this one promoter works a different shift than the rest of the campaign.</p>
               <div class="tip"><b>The auto-grant:</b> naming a supervisor here gives their portal login access to <b>that outlet on this campaign</b>, automatically. It only ever widens their access, and the portal confirms it.</div>
             </div>
           </li>
@@ -258,16 +263,16 @@
             <figure><img src="assets/portal-admin/05-reorder.webp" alt="Reorder screen listing items at or below their reorder level per outlet" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Staff &rarr; Attendance</b> for the check-in log with on-time / late badges. A blank check-in time means the promoter has not started.</p></div>
-            <figure><img src="assets/portal-admin/12-staff-attendance.webp" alt="Staff attendance log with on-time, late, leave and pending statuses" /></figure>
+            <div class="step-text"><p>Open <b>Staff &rarr; Attendance</b> for the check-in log with on-time / late badges. <b>Promoter</b> (employee ID) and <b>Name</b> are separate columns, and check-in/check-out times are shown to the minute. A blank check-in time means the promoter has not started.</p></div>
+            <figure><img src="assets/portal-admin/12-staff-attendance.webp" alt="Staff attendance log with separate Promoter and Name columns, and on-time, late, leave and pending statuses" /></figure>
           </li>
           <li>
             <div class="step-text"><p>Open <b>Staff &rarr; Absence</b> and pick today. It lists everyone with an activation today but no check-in, flagged "on leave" or "no check-in".</p></div>
             <figure><img src="assets/portal-admin/13-staff-absence.webp" alt="Absence screen for the selected date" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Sales Update Status</b> under <b>Sales Overview</b> in the sidebar and pick a date to see which activations have submitted their sales ("Completed") and which have not ("Missing"), with footfall.</p></div>
-            <figure><img src="assets/portal-admin/22-sales-status.webp" alt="Sales Update Status showing which activations submitted and which are missing" /></figure>
+            <div class="step-text"><p>Open <b>Sales Update Status</b> under <b>Sales Overview</b> in the sidebar and pick a date to see each outlet/promoter's status: <b>Completed</b> (sales submitted), <b>Pending</b> (not yet, but still could be), or <b>Absent</b> (no check-in). Export the list to Excel from the same screen.</p></div>
+            <figure><img src="assets/portal-admin/22-sales-status.webp" alt="Sales Update Status showing Completed, Pending and Absent badges per outlet and promoter" /></figure>
           </li>
         </ol>
       </div>
@@ -278,7 +283,7 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Update Sales</b> in the Sales section. Work down the cascading dropdowns: <b>Outlet</b>, then <b>Promoter</b>, then <b>Activation</b>, then <b>Date</b>. Press <b>Load sales</b>.</p></div>
+            <div class="step-text"><p>Open <b>Update Sales</b> in the Sales section. Pick the <b>Outlet</b> first &mdash; if it only has one activation, <b>Promoter</b> and <b>Activation</b> fill in on their own; if it has several, those two dropdowns narrow to just that outlet's activations for you to pick from. Set the <b>Date</b> and press <b>Load sales</b>.</p></div>
             <figure><img src="assets/portal-admin/24-sales-update.webp" alt="Update Sales screen with cascading outlet, promoter, activation and date dropdowns" /></figure>
           </li>
           <li>
@@ -315,8 +320,8 @@
             <figure><img src="assets/portal-admin/26-tracking-live.webp" alt="Seller Live Locations map for the admin" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Tracking &rarr; Promoter</b> (or Supervisor), the GPS breadcrumb trail for one person on one date, as a coordinate-and-time table.</p></div>
-            <figure><img src="assets/portal-admin/27-tracking-promoter.webp" alt="Promoter tracking breadcrumb table" /></figure>
+            <div class="step-text"><p><b>Tracking &rarr; Promoter</b> (or Supervisor), the GPS breadcrumb trail for one person on one date, drawn as a coloured path on a map (bigger markers at the start and last-seen point) above the coordinate-and-time table. Set the Promoter filter to <b>All Promoters</b> to see everyone's trail at once, each in their own colour; click a row in the table to bring that person's trail to full strength and zoom to just their points.</p></div>
+            <figure><img src="assets/portal-admin/27-tracking-promoter.webp" alt="Promoter tracking map with colour-coded GPS trails and the breadcrumb table below" /></figure>
           </li>
           <li>
             <div class="step-text"><p><b>Supervisors &rarr; Outlet Attendance</b>, the supervisor visit log, cross-checked against the promoters' attendance for the same outlets and dates.</p></div>
@@ -331,11 +336,11 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p><b>Sales Overview &rarr; SKU Wise Sales</b> and <b>Sales Overview &rarr; Outlet Wise</b>, the raw log and the per-outlet rollup, both filterable and exportable.</p></div>
-            <figure><img src="assets/portal-admin/23-sales-outlet-wise.webp" alt="Outlet Wise sales and footfall rollup" /></figure>
+            <div class="step-text"><p><b>Sales Overview &rarr; SKU Wise Sales</b>, the raw per-item, per-promoter log (each row's <b>Amount</b> is sold quantity &times; unit price), and <b>Sales Overview &rarr; Outlet Wise</b>, the per-outlet rollup for a date range &mdash; footfall, approach, conversion %, total sale, <b>target</b> and <b>achievement %</b>, plus a column for each of the campaign's custom sales fields. Both are filterable and exportable.</p></div>
+            <figure><img src="assets/portal-admin/23-sales-outlet-wise.webp" alt="Outlet Wise sales rollup with footfall, conversion, target and achievement percentage" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Reports &rarr; Overall SKU Wise</b> / <b>Overall Brand Wise</b>, campaign totals by product or brand, with grand totals and Excel export.</p></div>
+            <div class="step-text"><p><b>Reports &rarr; Overall SKU Wise</b> / <b>Brand Wise</b>, campaign totals by product or by outlet-and-brand, with grand totals and Excel export.</p></div>
             <figure><img src="assets/portal-admin/28-reports-sku-wise.webp" alt="Overall SKU Wise report with totals per product" /></figure>
           </li>
           <li>

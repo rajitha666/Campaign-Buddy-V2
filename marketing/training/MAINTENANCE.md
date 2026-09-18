@@ -40,7 +40,7 @@ only" from "needs a re-shoot," so use judgment same as always.
 |---|---|---|---|
 | `admin.html` | `adm`, `usr`, `super` (persona `admin`) | CB Office | catalog, outlets, campaigns, activations, staff, attendance, leave, sales + corrections, custom fields, tracking, reports, users, roles, licence usage |
 | `supervisor.html` | `supervisor` | CB Office **and** CB Mobile | supervisor dashboard, my campaigns, staff attendance/absence, my outlet attendance, my leave requests, promoter list, SKU-wise sales, reports — **plus** the app's My Route (today's visits + planned route) and Profile tabs |
-| `sponsor.html` | `sponsor`, `client` | CB Office | sponsor dashboard, activation list, sales & footfall, live locations, client reports (SKU / brand) |
+| `sponsor.html` | `sponsor`, `client` | CB Office | sponsor dashboard, activation list, sales & footfall, promoter/supervisor attendance, promoter/supervisor tracking history, live locations, client reports (SKU / brand) |
 | `promoter.html` | Staff logins | CB Mobile, **and** the `admin` + `supervisor` menus in CB Office | login, shift check-in/out, products, sales & stats entry, performance, time-off, profile |
 
 Persona mapping lives in `campaign-buddy-portal/src/context/AuthContext.jsx`
@@ -55,16 +55,18 @@ needed unless the step text changed.
 
 - `assets/portal-admin/` → the `admin` persona's routes (`/dashboard`, `/clients`,
   `/items`, `/brands`, `/reorder`, `/campaigns`, `/activations`, `/outlets`,
-  `/cities`, `/staff*`, `/leave-requests`, `/supervisor-tasks`, `/assign-routes`,
-  `/outlet-attendance`, `/sales*`, `/tracking/*`, `/reports/*`, `/users`,
-  `/roles`, `/license`)
+  `/distributors`, `/cities`, `/staff*`, `/leave-requests`, `/supervisor-tasks`,
+  `/assign-routes`, `/outlet-attendance`, `/supervisor-attendance`, `/sales*`,
+  `/tracking/*`, `/reports/*`, `/promoter-list`, `/license`, `/issues`,
+  `/system-status`, `/users`, `/roles`)
 - `assets/portal-supervisor/` → the `supervisor` persona's routes
   (`/dashboard`, `/my-campaigns`, `/staff/attendance`, `/staff/absence`,
   `/my-outlet-attendance`, `/my-leave-requests`, `/promoter-list`,
   `/sales/sku-wise`, `/reports/sku-wise`)
 - `assets/portal-sponsor/` → the `sponsor` persona's routes (`/dashboard`,
-  `/activations/client`, `/sponsor/sales`, `/tracking/live`,
-  `/reports/client-sku-wise`, `/reports/client-brand-wise`)
+  `/activations/client`, `/staff/attendance`, `/supervisor-attendance`,
+  `/sponsor/sales`, `/tracking/promoter`, `/tracking/supervisor`,
+  `/tracking/live`, `/reports/client-sku-wise`, `/reports/client-brand-wise`)
 - `assets/mobile-promoter/` → CB Mobile screens for a promoter (`role: field_rep`) login
 - `assets/mobile-supervisor/` → CB Mobile screens for a supervisor (`role: campaign_owner`)
   login — My Route, Profile. Log in as `dinesh` / `Field123!` after the demo seed
@@ -89,9 +91,12 @@ needed unless the step text changed.
 6. `cd marketing && npx serve . -l 8080` (or `python -m http.server 8080`),
    open `http://localhost:8080/training/`, and eyeball the guide.
 
-> The Puppeteer capture harness that produced the original batch is **not in the
-> repo**. Re-shoots are manual for now. If re-shooting becomes frequent, that
-> harness is worth committing.
+> A committed Playwright capture harness lives in `capture/` (this folder) —
+> `node capture/portal.js <shots.json>` and `node capture/mobile.js <shots.json>`
+> log in with the same demo-seed credentials as the e2e suites and screenshot a
+> list of routes straight to WebP. See `capture/README.md`. The original 2026-09
+> batch predates this harness and was shot with a one-off Puppeteer script that
+> was never committed — re-shoots since then use this one.
 
 ## How the portal ships these files
 
