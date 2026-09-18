@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app, resetDb, staffToken, makeCampaignWithActivation, makeStaff } from "./helpers";
 import { prisma } from "../src/utils/prisma";
+import { dayDate } from "../src/utils/dates";
 
 beforeEach(resetDb);
 
@@ -38,6 +39,9 @@ describe("attendance — activation lookup day boundary (issue #42)", () => {
 describe("attendance — geofence soft flag (§5.6)", () => {
   it("check-in succeeds inside AND outside the geofence; only checkInLocationVerified differs", async () => {
     const { staff, outlet } = await makeCampaignWithActivation();
+    // Two check-ins in one day need the supervisor exemption — geofence
+    // verification itself is identical for promoters and supervisors.
+    await prisma.staff.update({ where: { id: staff.id }, data: { userType: "supervisor" } });
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     const outside = await request(app)
@@ -69,8 +73,8 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     expect(again.body.error.code).toBe("ALREADY_CHECKED_IN");
   });
 
-  it("re-check-in after check-out clears checkOutAt and the lock still holds", async () => {
-    const { staff, outlet } = await makeCampaignWithActivation();
+  it("a PROMOTER cannot re-check-in after checking out for the day", async () => {
+    const { staff, outlet, activation } = await makeCampaignWithActivation();
     const token = await staffToken(staff.mobileUsername, "field-pw");
     const auth = { Authorization: `Bearer ${token}` };
     const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
@@ -78,11 +82,41 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
     await request(app).post("/v1/attendance/check-out").set(auth).send(geo);
     const reIn = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
-    expect(reIn.status).toBe(201);
-    expect(reIn.body.data.checkOutAt).toBeNull();
+    expect(reIn.status).toBe(409);
+    expect(reIn.body.error.code).toBe("ALREADY_CHECKED_OUT");
 
-    const again = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
-    expect(again.status).toBe(409);
+    const record = await prisma.attendanceRecord.findUniqueOrThrow({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(record.checkOutAt).not.toBeNull();
+  });
+
+  it("a SUPERVISOR can check out of one outlet and check into the next on their route", async () => {
+    const { staff, campaign, outlet, activation } = await makeCampaignWithActivation();
+    await prisma.staff.update({ where: { id: staff.id }, data: { userType: "supervisor" } });
+    const city = await prisma.city.create({ data: { name: "City2", province: "P", district: "D" } });
+    const outlet2 = await prisma.outlet.create({
+      data: { outletNo: `O2-${Math.random().toString(36).slice(2, 7)}`, name: "Outlet 2", cityId: city.id, latitude: 7.1, longitude: 80.1 },
+    });
+    const activation2 = await prisma.activation.create({
+      data: { name: "Activation 2", campaignId: campaign.id, outletId: outlet2.id, staffId: staff.id, dateFrom: campaign.startDate, dateTo: campaign.endDate },
+    });
+
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const auth = { Authorization: `Bearer ${token}` };
+    const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
+    const geo2 = { latitude: outlet2.latitude, longitude: outlet2.longitude };
+
+    await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo, assignmentId: activation.id }).expect(201);
+    await request(app).post("/v1/attendance/check-out").set(auth).send({}).expect(200);
+    const next = await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo2, assignmentId: activation2.id });
+    expect(next.status).toBe(201);
+    expect(next.body.data.assignmentId).toBe(activation2.id);
+
+    const stale = await prisma.attendanceRecord.findUnique({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(stale?.checkOutAt).not.toBeNull();
   });
 
   it("a shift left open from a PRIOR day does not block today's check-in", async () => {

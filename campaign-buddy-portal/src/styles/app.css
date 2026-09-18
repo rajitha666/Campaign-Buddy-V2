@@ -151,10 +151,13 @@
 .search-box input { border:none; background:transparent; font-size:12.5px; outline:none; width:170px; }
 .btn-excel { display:flex; align-items:center; gap:6px; background:var(--success-tint); color:var(--success); font-size:12px; font-weight:700; padding:7px 12px; border-radius:9px; cursor:pointer; border:none; }
 .table-scroll { overflow-x:auto; }
+/* Tables must fit the window width — cells wrap instead of pushing the table
+   wider than the viewport (which used to clip the last rows under the card's
+   rounded corners once the horizontal scrollbar appeared). */
 table.data-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-table.data-table th { text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; padding:11px 18px; background:var(--surface); border-bottom:1px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none; }
+table.data-table th { text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; padding:11px 18px; background:var(--surface); border-bottom:1px solid var(--line); word-break:break-word; cursor:pointer; user-select:none; }
 table.data-table th.sortable:hover { color:var(--text-primary); }
-table.data-table td { padding:12px 18px; border-bottom:1px solid var(--line); vertical-align:middle; white-space:nowrap; }
+table.data-table td { padding:12px 18px; border-bottom:1px solid var(--line); vertical-align:middle; word-break:break-word; }
 table.data-table tbody tr:last-child td { border-bottom:none; }
 table.data-table tbody tr:hover { background:#FBFCFA; }
 table.data-table tbody tr.is-clickable { cursor:pointer; }

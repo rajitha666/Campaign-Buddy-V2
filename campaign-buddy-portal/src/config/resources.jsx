@@ -633,7 +633,7 @@ export const RESOURCES = {
   },
 
   skuSales: {
-    title: 'SKU Wise Sales', subtitle: 'Raw per-item, per-promoter sales log.', excel: true, noAdd: true,
+    title: 'Overall Outlet and SKU Wise', subtitle: 'Raw per-item, per-outlet sales log.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
@@ -641,6 +641,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
       { key: 'staffName', label: 'Promoter', render: (r) => r.activationItem?.activation?.staff ? staffLabel(r.activationItem.activation.staff) : '—' },
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
+      { key: 'unitPrice', label: 'Unit Price', render: (r) => `LKR ${Number(r.activationItem?.campaignItem?.item?.unitPrice || 0).toLocaleString()}`, csvValue: (r) => r.activationItem?.campaignItem?.item?.unitPrice || 0 },
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
       {
         key: 'totalSales', label: 'Total Sales',
@@ -701,8 +702,8 @@ export const RESOURCES = {
     columns: [
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
-      { key: 'itemCount', label: 'Product Count' },
-      { key: 'totalSales', label: 'Total', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      { key: 'itemCount', label: 'Sold Qty' },
+      { key: 'totalSales', label: 'Total After Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
     ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },

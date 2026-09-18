@@ -119,7 +119,7 @@ async function main() {
     const row = await prisma.staff.upsert({
       where: { mobileUsername: s.mobileUsername },
       create: { employeeId: s.employeeId, fullName: s.fullName, displayName: s.displayName, userType: "supervisor", mobileUsername: s.mobileUsername, passwordHash: fieldHash, phone: s.phone, cityId: cities[s.city], status: "active", linkedUserId: s.linkedUserId ?? undefined },
-      update: { linkedUserId: s.linkedUserId ?? undefined },
+      update: { passwordHash: fieldHash, linkedUserId: s.linkedUserId ?? undefined, status: "active" },
     });
     supervisors[s.fullName] = row.id;
   }
@@ -135,7 +135,7 @@ async function main() {
     const row = await prisma.staff.upsert({
       where: { mobileUsername: p.mobileUsername },
       create: { employeeId: p.employeeId, fullName: p.fullName, displayName: p.displayName, userType: "promoter", mobileUsername: p.mobileUsername, passwordHash: fieldHash, phone: p.phone, cityId: cities[p.city], status: "active", reportsToStaffId: supervisors[p.supervisor] },
-      update: { phone: p.phone, reportsToStaffId: supervisors[p.supervisor], displayName: p.displayName, fullName: p.fullName },
+      update: { passwordHash: fieldHash, phone: p.phone, reportsToStaffId: supervisors[p.supervisor], displayName: p.displayName, fullName: p.fullName, status: "active" },
     });
     promoters[p.fullName] = row.id;
   }

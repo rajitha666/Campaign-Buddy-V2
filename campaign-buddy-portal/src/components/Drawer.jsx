@@ -140,9 +140,16 @@ export default function Drawer({
 
 function Field({ field: rawField, value, onChange, error, builderRows, onBuilderChange, preview, edit, revealed, onReveal }) {
   const { designationLabel } = useAuth();
-  // Substituted once here (client doc F) — every f.label/f.hint reference
-  // below picks it up automatically, no need to touch each call site.
-  const f = { ...rawField, label: applyDesignationLabel(rawField.label, designationLabel), hint: applyDesignationLabel(rawField.hint, designationLabel) };
+  // Substituted once here (client doc F) — every f.label/f.hint/f.options
+  // reference below picks it up automatically, no need to touch each call site.
+  const f = {
+    ...rawField,
+    label: applyDesignationLabel(rawField.label, designationLabel),
+    hint: applyDesignationLabel(rawField.hint, designationLabel),
+    options: (rawField.options || []).map((o) => (typeof o === 'string'
+      ? applyDesignationLabel(o, designationLabel)
+      : { ...o, label: applyDesignationLabel(o.label, designationLabel) })),
+  };
   const reqMark = f.required ? <span className="req">*</span> : null;
 
   if (f.type === 'section') {

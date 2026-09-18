@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 import { license as licenseApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -27,9 +28,10 @@ function UsageBar({ pct, state }) {
 }
 
 function GroupCard({ group }) {
+  const { designationLabel } = useAuth();
   return (
     <div className="stat-card">
-      <div className="l">{GROUP_LABELS[group.group] || group.group}</div>
+      <div className="l">{applyDesignationLabel(GROUP_LABELS[group.group] || group.group, designationLabel)}</div>
       <div className="n">{group.used} <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>/ {group.cap}</span></div>
       <UsageBar pct={group.pct} state={group.state} />
       <div style={{ marginTop: 8 }}><Badge type={STATE_BADGE[group.state]}>{STATE_LABEL[group.state]}</Badge></div>
@@ -40,7 +42,7 @@ function GroupCard({ group }) {
 const EMPTY_FORM = { promoterCap: '', supervisorCap: '', adminCap: '', sponsorCap: '', warnThresholdPct: '' };
 
 export default function LicenseUsage() {
-  const { currentCampaignId, currentCampaign, isSuperAdmin } = useAuth();
+  const { currentCampaignId, currentCampaign, isSuperAdmin, designationLabel } = useAuth();
   const { push } = useToast();
 
   const [detail, setDetail] = useState(null);
@@ -174,7 +176,7 @@ export default function LicenseUsage() {
             <div className="table-scroll" style={{ marginTop: 12 }}>
               <table className="data-table">
                 <thead>
-                  <tr><th>{period === 'week' ? 'Week of' : 'Month'}</th><th>Promoters</th><th>Supervisors</th><th>Admins</th><th>Sponsors</th></tr>
+                  <tr><th>{period === 'week' ? 'Week of' : 'Month'}</th><th>{applyDesignationLabel('Promoters', designationLabel)}</th><th>Supervisors</th><th>Admins</th><th>Sponsors</th></tr>
                 </thead>
                 <tbody>
                   {history.length === 0 ? (
@@ -214,7 +216,7 @@ export default function LicenseUsage() {
           <div className="table-scroll" style={{ marginTop: 12 }}>
             <table className="data-table">
               <thead>
-                <tr><th>Campaign</th><th>Client</th><th>Status</th><th>Promoters</th><th>Supervisors</th><th>Admins</th><th>Sponsors</th><th>Overall</th></tr>
+                <tr><th>Campaign</th><th>Client</th><th>Status</th><th>{applyDesignationLabel('Promoters', designationLabel)}</th><th>Supervisors</th><th>Admins</th><th>Sponsors</th><th>Overall</th></tr>
               </thead>
               <tbody>
                 {(rollup || []).length === 0 ? (
@@ -244,7 +246,7 @@ export default function LicenseUsage() {
         {formErr ? <div className="error-state" style={{ marginBottom: 14 }}>{formErr}</div> : null}
         {[['promoterCap', 'Promoters'], ['supervisorCap', 'Supervisors'], ['adminCap', 'Admins'], ['sponsorCap', 'Sponsors']].map(([k, l]) => (
           <div className="form-row" key={k}>
-            <label>{l} seat cap</label>
+            <label>{applyDesignationLabel(l, designationLabel)} seat cap</label>
             <input type="number" min="0" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
           </div>
         ))}

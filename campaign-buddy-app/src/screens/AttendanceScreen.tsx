@@ -13,7 +13,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { CheckoutConfirmSheet } from '@/components/CheckoutConfirmSheet';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
+import { getApiErrorMessage, getApiErrorCode } from '@/api/client';
 import { formatDay } from '@/lib/date';
 import { LocationUnavailableError } from '@/lib/checkInLocation';
 import { showAlert } from '@/lib/showAlert';
@@ -23,7 +23,7 @@ type Nav = NativeStackNavigationProp<AttendanceStackParamList, 'Attendance'>;
 
 export function AttendanceScreen() {
   const navigation = useNavigation<Nav>();
-  const { checkedIn, checkInAt, locationVerified, checkIn, refresh } = useAttendance();
+  const { checkedIn, checkedOutToday, checkInAt, locationVerified, checkIn, refresh } = useAttendance();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkoutSheetVisible, setCheckoutSheetVisible] = useState(false);
   const [elapsed, setElapsed] = useState('');
@@ -54,6 +54,9 @@ export function AttendanceScreen() {
       if (err instanceof LocationUnavailableError) {
         showAlert('Location required', err.message);
       } else {
+        // Server says today's checkout already happened (e.g. stale local
+        // state) — re-sync so the screen switches to the checked-out view.
+        if (getApiErrorCode(err) === 'ALREADY_CHECKED_OUT') refresh();
         showAlert('Could not check in', getApiErrorMessage(err));
       }
     } finally {
@@ -90,6 +93,21 @@ export function AttendanceScreen() {
               <LocationRow label="Location verified at check-in" />
             )}
           </View>
+        ) : checkedOutToday ? (
+          // Shift's done — no check-in until tomorrow (the backend rejects a
+          // promoter's re-check-in with ALREADY_CHECKED_OUT), so no tap target.
+          <View style={styles.hero}>
+            <View style={[styles.ring, { backgroundColor: colors.infoTint }]}>
+              <View style={[styles.ringInner, { backgroundColor: colors.info }]}>
+                <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
+                  <Path d="M5 13l4 4L19 7" stroke="white" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+                <Text style={styles.ringLabel}>Checked out</Text>
+              </View>
+            </View>
+            <Text style={styles.timer}>Shift completed for today</Text>
+            <Text style={styles.doneNote}>You've checked out for the day. Check-in reopens on your next shift day.</Text>
+          </View>
         ) : (
           <View style={styles.hero}>
             <Pressable
@@ -118,7 +136,7 @@ export function AttendanceScreen() {
             onPress={() => setCheckoutSheetVisible(true)}
             style={{ marginTop: spacing.xl }}
           />
-        ) : (
+        ) : checkedOutToday ? null : (
           <Button label="Check in" onPress={handleCheckIn} loading={checkingIn} style={{ marginTop: spacing.xl }} />
         )}
 
@@ -210,6 +228,7 @@ const styles = StyleSheet.create({
   ringSub: { fontSize: 10.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   timer: { fontSize: fontSize.base, color: colors.textMuted, marginTop: spacing.lg },
   timerBold: { fontFamily: fontFamily.display, color: colors.textPrimary },
+  doneNote: { fontSize: 12.5, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.xl },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   locText: { fontSize: 12.5, color: colors.textMuted },
   linkRow: {

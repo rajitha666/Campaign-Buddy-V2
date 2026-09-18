@@ -408,6 +408,8 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 
 A Staff member can only ever have **one open shift at a time, across every campaign they're assigned to** — not just within a single Activation. `POST /v1/attendance/check-in` queries for *any* `AttendanceRecord` across *any* of the staff's Activations where `checkInAt` is set and `checkOutAt` is null; if one exists, the request is rejected with `409 ALREADY_CHECKED_IN` (message differs depending on whether the open shift is on the same Activation or a different one). This blocks moonlighting across concurrent campaigns by policy — note this governs **checking in**, not being *assigned* to concurrent Activations, which is allowed (§2.5). Implemented in `src/modules/mobile/attendance.routes.ts`.
 
+Additionally, **a promoter's day ends at check-out**: once a promoter has a checked-out record for today (`checkInAt` and `checkOutAt` both set, any of their Activations), further check-ins that day are rejected with `409 ALREADY_CHECKED_OUT`. Supervisors are exempt — they check out of one route outlet and check into the next (api-spec `/me/assignments`), and each supervisor re-check-in clears the prior `checkOutAt`.
+
 ### 5.2 `totalSales` / rollups are always computed, never stored
 
 `DailyStats.totalSales`, `SalesSummary.{itemsReceived,itemsSold,itemsRemaining,totalSales,footFall,approached,converted}`, and `SalesRecord.remainingStock` are **derived at read time**, not columns. Any new reporting endpoint should follow the same pattern.

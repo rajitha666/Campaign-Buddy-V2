@@ -17,6 +17,12 @@ import { getCheckInCoords } from '@/lib/checkInLocation';
 
 interface AttendanceContextValue {
   checkedIn: boolean;
+  /**
+   * True once the rep has checked out today — check-in is done for the day
+   * (promoters; the backend rejects a re-check-in with ALREADY_CHECKED_OUT).
+   * Supervisors still move between outlets, and their re-check-ins reset this.
+   */
+  checkedOutToday: boolean;
   checkInAt: string | null;
   status: AttendanceStatus | null;
   /**
@@ -41,6 +47,7 @@ const AttendanceContext = createContext<AttendanceContextValue | undefined>(unde
 
 export function AttendanceProvider({ children }: { children: React.ReactNode }) {
   const [checkedIn, setCheckedIn] = useState(false);
+  const [checkedOutToday, setCheckedOutToday] = useState(false);
   const [checkInAt, setCheckInAt] = useState<string | null>(null);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
   const [locationVerified, setLocationVerified] = useState<boolean | null>(null);
@@ -50,6 +57,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
     try {
       const today = await attendanceApi.getAttendanceToday();
       setCheckedIn(today.checkedIn);
+      setCheckedOutToday(!today.checkedIn && !!today.checkOutAt);
       setCheckInAt(today.checkInAt);
       setStatus(today.status);
       setLocationVerified(today.checkInAt ? today.locationVerified : null);
@@ -74,6 +82,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       timestamp: new Date().toISOString(),
     });
     setCheckedIn(true);
+    setCheckedOutToday(false);
     setCheckInAt(record.checkInAt);
     setStatus(record.status);
     setLocationVerified(record.checkInLocationVerified);
@@ -92,13 +101,14 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       salesSummaryConfirmed: true,
     });
     setCheckedIn(false);
+    setCheckedOutToday(true);
     setCheckInAt(null);
     setLocationVerified(null);
   }, []);
 
   return (
     <AttendanceContext.Provider
-      value={{ checkedIn, checkInAt, status, locationVerified, isLoading, refresh, checkIn, checkOut }}
+      value={{ checkedIn, checkedOutToday, checkInAt, status, locationVerified, isLoading, refresh, checkIn, checkOut }}
     >
       {children}
     </AttendanceContext.Provider>

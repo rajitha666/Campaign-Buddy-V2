@@ -416,7 +416,7 @@ Optional `?assignmentId=` — for supervisor mode, where several Activations can
 
 Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `geofenceRadiusMeters`) and `status` (`on_time` vs `late`, vs. `shiftStart` + grace period).
 **Response `201`** → the created `AttendanceRecord`.
-**Errors:** `409 ALREADY_CHECKED_IN`.
+**Errors:** `409 ALREADY_CHECKED_IN`, `409 ALREADY_CHECKED_OUT` (promoters only — once a promoter has checked out today, check-in is closed for the day; supervisors are exempt so they can move between route outlets).
 
 ### `POST /attendance/check-out`
 **Request**

@@ -121,6 +121,23 @@ router.post(
       });
     }
 
+    // Promoters are done for the day once they check out — no re-check-in
+    // (client request 2026-09). Supervisors are exempt: they check out of one
+    // route outlet and check into the next (docs/api-spec.md /me/assignments).
+    if (req.staff!.userType !== "supervisor") {
+      const checkedOutToday = await prisma.attendanceRecord.findFirst({
+        where: {
+          checkInAt: { not: null },
+          checkOutAt: { not: null },
+          date: today,
+          activation: { staffId: req.staff!.sub },
+        },
+      });
+      if (checkedOutToday) {
+        throw new ApiError(409, "ALREADY_CHECKED_OUT", "You have already checked out for today.");
+      }
+    }
+
     // Global one-open-shift lock (Spec v3 §5.1) — across EVERY Activation this staff
     // member has, not just this one. Confirmed: concurrent Activation assignment is
     // fine, concurrent open check-ins are not.

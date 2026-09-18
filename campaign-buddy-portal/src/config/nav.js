@@ -58,7 +58,6 @@ export const NAV = [
     { path: '/sales/update', label: 'Update Sales', icon: 'updatesales', roles: ['admin'] },
     { path: '/sales/custom-fields', label: 'Custom Fields', icon: 'sales', roles: ['admin'] },
     { path: '/sales/sku-wise', label: 'SKU Wise Sales', icon: 'sales', roles: ['supervisor'] },
-    { path: '/sponsor/sales', label: 'Sales & Foot Fall', icon: 'sales', roles: ['sponsor'] },
   ]},
   { section: 'Tracking', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Tracking', icon: 'tracking', roles: ['admin'], children: [
@@ -79,7 +78,7 @@ export const NAV = [
       { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
     ]},
     { label: 'Client Reports', icon: 'reports', roles: ['admin', 'sponsor'], children: [
-      { path: '/reports/client-sku-wise', label: 'Overall SKU wise' },
+      { path: '/sponsor/sales', label: 'Overall Outlet and SKU Wise' },
       { path: '/reports/client-brand-wise', label: 'Brand Wise' },
     ]},
     { path: '/reports/sku-wise', label: 'Overall Reports', icon: 'reports', roles: ['supervisor'] },

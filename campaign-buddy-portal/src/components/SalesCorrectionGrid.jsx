@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { salesLookup, salesRecords as salesRecordsApi, salesFields as salesFieldsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { exportFilename } from '../lib/exportFilename';
@@ -46,6 +48,7 @@ function CustomFieldCell({ def, value, onChange }) {
 // table, a column per product-level field, saved alongside stock corrections.
 export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSaved }) {
   const { push } = useToast();
+  const { designationLabel } = useAuth();
   const [rows, setRows] = useState(null);
   const [meta, setMeta] = useState({});
   const [dayValues, setDayValues] = useState({});
@@ -139,7 +142,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
       </div>
       {rows && meta.activationId ? (
         <div className="cell-muted" style={{ fontSize: 12, marginTop: 6 }}>
-          Promoter: <strong>{meta.staffName}</strong> · Activation: <strong>{meta.activationName}</strong>
+          {applyDesignationLabel('Promoter', designationLabel)}: <strong>{meta.staffName}</strong> · Activation: <strong>{meta.activationName}</strong>
         </div>
       ) : null}
 

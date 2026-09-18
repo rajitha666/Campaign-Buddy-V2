@@ -23,6 +23,7 @@ export default function DataTable({
 }) {
   const { designationLabel } = useAuth();
   const label = (c) => applyDesignationLabel(c.label, designationLabel);
+  const emptyText = { title: applyDesignationLabel(emptyTitle, designationLabel), hint: applyDesignationLabel(emptyHint, designationLabel) };
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = Math.min(page * pageSize, total);
@@ -49,7 +50,7 @@ export default function DataTable({
       </div>
 
       {rows.length === 0 ? (
-        <div className="empty-state"><div className="big">{emptyTitle}</div>{emptyHint}</div>
+        <div className="empty-state"><div className="big">{emptyText.title}</div>{emptyText.hint}</div>
       ) : (
         <>
           <div className="table-scroll">

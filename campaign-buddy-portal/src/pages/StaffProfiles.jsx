@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { staff as staffApi } from '../lib/endpoints';
+import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import Badge from '../components/Badge';
@@ -7,7 +9,7 @@ import SearchableSelect from '../components/SearchableSelect';
 import { staffLabel } from '../lib/staffLabel';
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '—');
-const typeLabel = (t) => (t === 'supervisor' ? 'Supervisor' : 'Promoter');
+const typeLabel = (t, designationLabel) => applyDesignationLabel(t === 'supervisor' ? 'Supervisor' : 'Promoter', designationLabel);
 
 function Field({ label, value }) {
   return (
@@ -46,6 +48,7 @@ function ActivationTrend({ activations }) {
 }
 
 export default function StaffProfiles() {
+  const { designationLabel } = useAuth();
   const [staffOptions, setStaffOptions] = useState([]);
   const [staffId, setStaffId] = useState('');
   const [data, setData] = useState(null);
@@ -78,7 +81,7 @@ export default function StaffProfiles() {
 
   const selectOptions = staffOptions.map((s) => ({
     value: s.id,
-    label: `${staffLabel(s)} (${typeLabel(s.userType)})`,
+    label: `${staffLabel(s)} (${typeLabel(s.userType, designationLabel)})`,
   }));
 
   const profile = data?.profile;
@@ -120,7 +123,7 @@ export default function StaffProfiles() {
                 <div>
                   <div className="h-display" style={{ fontSize: 17 }}>{profile?.fullName || profile?.displayName}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                    <Badge type={profile?.userType === 'supervisor' ? 'success' : 'info'}>{typeLabel(profile?.userType)}</Badge>
+                    <Badge type={profile?.userType === 'supervisor' ? 'success' : 'info'}>{typeLabel(profile?.userType, designationLabel)}</Badge>
                     <Badge type={profile?.status === 'active' ? 'success' : 'muted'}>{profile?.status}</Badge>
                   </div>
                 </div>

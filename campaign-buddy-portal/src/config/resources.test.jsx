@@ -295,6 +295,22 @@ describe('resources config', () => {
     expect(columnText(col, row)).toBe(16000);
   });
 
+  it('Overall Outlet and SKU Wise shows a Unit Price column (client request)', () => {
+    const cfg = RESOURCES.skuSales;
+    expect(cfg.title).toBe('Overall Outlet and SKU Wise');
+    const col = cfg.columns.find((c) => c.key === 'unitPrice');
+    expect(col.label).toBe('Unit Price');
+    const row = { activationItem: { campaignItem: { item: { unitPrice: 3200 } } } };
+    expect(col.render(row)).toBe('LKR 3,200');
+    expect(columnText(col, row)).toBe(3200);
+  });
+
+  it('client Brand Wise report shows Sold Qty and Total After Sales (client request)', () => {
+    const cfg = RESOURCES.brandWiseClient;
+    expect(cfg.columns.find((c) => c.key === 'itemCount').label).toBe('Sold Qty');
+    expect(cfg.columns.find((c) => c.key === 'totalSales').label).toBe('Total After Sales');
+  });
+
   it('Campaign form has a Tester Field toggle that round-trips through create/edit (client doc D)', async () => {
     const field = RESOURCES.campaigns.formFields.find((f) => f.key === 'testerFieldEnabled');
     expect(field).toBeDefined();
