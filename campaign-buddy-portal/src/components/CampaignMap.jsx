@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ICONS } from './Icons';
+import { addBaseLayer } from './baseLayer';
 
 // Real basemap (OpenStreetMap tiles via Leaflet) with outlet + live sales-staff
 // markers. Staff use their last GPS ping; when none exists we fall back to the
@@ -49,10 +50,8 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380, hi
   useEffect(() => {
     if (!elRef.current || mapRef.current) return undefined;
     const map = L.map(elRef.current, { scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+    addBaseLayer(map);
+
     map.setView([7.8731, 80.7718], 7); // Sri Lanka, until points load
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;

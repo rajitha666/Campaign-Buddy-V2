@@ -28,4 +28,14 @@ describe('Seller Live Locations row click highlights the marker on the map', () 
     // the selected marker's dot is recolored, not just ringed
     expect(map).toMatch(/geo-staff-dot--selected/);
   });
+
+  it('both map components use the shared minimal light basemap', () => {
+    const trail = readFileSync(fileURLToPath(new URL('../components/PromoterTrailMap.jsx', import.meta.url)), 'utf8');
+    const base = readFileSync(fileURLToPath(new URL('../components/baseLayer.js', import.meta.url)), 'utf8');
+    expect(map).toMatch(/addBaseLayer\(map\)/);
+    expect(trail).toMatch(/addBaseLayer\(map\)/);
+    // keyless — no API key/watermark overlay (CARTO's anonymous raster tiles are watermarked)
+    expect(base).toMatch(/World_Light_Gray_Base/);
+    expect(base).not.toMatch(/cartocdn/);
+  });
 });

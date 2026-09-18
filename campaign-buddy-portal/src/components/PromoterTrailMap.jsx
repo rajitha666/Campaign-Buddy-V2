@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { addBaseLayer } from './baseLayer';
 
 // GPS breadcrumb trail — one promoter/date (issue #39), or several at once
 // when the Promoter filter is set to "All" (client doc E). Each promoter gets
@@ -35,10 +36,7 @@ export default function PromoterTrailMap({ rows = [], height = 360, highlightedS
   useEffect(() => {
     if (!elRef.current || mapRef.current) return undefined;
     const map = L.map(elRef.current, { scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+    addBaseLayer(map);
     map.setView([7.8731, 80.7718], 7); // Sri Lanka, until points load
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
