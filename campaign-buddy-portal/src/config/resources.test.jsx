@@ -423,4 +423,15 @@ describe('resources config', () => {
     const cfg = RESOURCES.promoterTracking;
     expect(cfg.columns.some((c) => c.key === 'latitude' || c.key === 'longitude')).toBe(false);
   });
+
+  it('SKU Wise Sales, Supervisor Tracking and Client Reports offer "All" filter options', () => {
+    const skuOutlet = RESOURCES.skuSales.filters.find((f) => f.key === 'outletId');
+    const supervisor = RESOURCES.supervisorTracking.filters.find((f) => f.key === 'staffId');
+    const clientOutlet = RESOURCES.clientReports.filters.find((f) => f.key === 'outletId');
+    const outletWiseOutlet = RESOURCES.outletWise.filters.find((f) => f.key === 'outletId');
+    expect(skuOutlet.allLabel).toBe('All outlets');
+    expect(supervisor.allLabel).toBe('All Supervisors');
+    expect(clientOutlet.allLabel).toBe('All outlets');
+    expect(outletWiseOutlet.allLabel).toBe('All outlets');
+  });
 });

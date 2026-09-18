@@ -635,7 +635,7 @@ export const RESOURCES = {
   skuSales: {
     title: 'SKU Wise Sales', subtitle: 'Raw per-item, per-promoter sales log.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
       {
@@ -691,7 +691,7 @@ export const RESOURCES = {
   clientReports: {
     title: 'Client Reports', subtitle: 'Item-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }],
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }],
     columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.skuWise(campaignId, query)),
   },
@@ -756,7 +756,7 @@ export const RESOURCES = {
     title: 'Outlet Wise', subtitle: 'Sales rollup by outlet, for the selected date range.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) },
       { key: 'dateFrom', label: 'From', type: 'date', defaultToday: true },
       { key: 'dateTo', label: 'To', type: 'date', defaultToday: true },
     ],
@@ -808,7 +808,7 @@ export const RESOURCES = {
     title: 'Supervisor Tracking', subtitle: 'GPS breadcrumb trail for supervisors.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Supervisor', type: 'searchable-select', optionsLoader: staffOptions },
+      { key: 'staffId', label: 'Supervisor', type: 'searchable-select', allLabel: 'All Supervisors', optionsLoader: staffOptions },
       { key: 'date', label: 'Date', type: 'date' },
     ],
     columns: [
