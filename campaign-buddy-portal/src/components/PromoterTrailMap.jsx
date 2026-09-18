@@ -6,12 +6,14 @@ import 'leaflet/dist/leaflet.css';
 // when the Promoter filter is set to "All" (client doc E). Each promoter gets
 // their own coloured trail; clicking their row in the table below sets
 // `highlightedStaffId`, which brings their trail to full strength, dims the
-// rest, and zooms the map to just their points. Rows already come back
-// ordered by capturedAt ascending (see operations.routes.ts trackingHistory).
+// rest, and zooms the map to just their points. `highlightedPingId` selects a
+// single breadcrumb (the clicked record) — it gets a highlighted ring and the
+// map pans to it. Rows already come back ordered by capturedAt ascending (see
+// operations.routes.ts trackingHistory).
 const TRAIL_COLORS = ['#E5762B', '#2E7D32', '#1565C0', '#8E24AA', '#C62828', '#00838F', '#6D4C41', '#AD1457'];
 const DIM_OPACITY = 0.25;
 
-export default function PromoterTrailMap({ rows = [], height = 360, highlightedStaffId = null }) {
+export default function PromoterTrailMap({ rows = [], height = 360, highlightedStaffId = null, highlightedPingId = null }) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -23,7 +25,7 @@ export default function PromoterTrailMap({ rows = [], height = 360, highlightedS
     (rows || []).filter((r) => isNum(r.latitude) && isNum(r.longitude)).forEach((r) => {
       const key = r.staffId ?? '—';
       if (!byStaff.has(key)) byStaff.set(key, { staffId: r.staffId, staffName: r.staffName || '', points: [] });
-      byStaff.get(key).points.push({ lat: r.latitude, lng: r.longitude, capturedAt: r.capturedAt, outletName: r.outletName || '' });
+      byStaff.get(key).points.push({ id: r.id, lat: r.latitude, lng: r.longitude, capturedAt: r.capturedAt, outletName: r.outletName || '' });
     });
     return Array.from(byStaff.values()).map((t, i) => ({ ...t, color: TRAIL_COLORS[i % TRAIL_COLORS.length] }));
   }, [rows]);
@@ -70,18 +72,32 @@ export default function PromoterTrailMap({ rows = [], height = 360, highlightedS
       L.polyline(latlngs, { color, weight: dimmed ? 2 : 3, opacity }).addTo(layer);
       points.forEach((p, i) => {
         const isEndpoint = i === 0 || i === points.length - 1;
+        const isSelected = highlightedPingId != null && p.id === highlightedPingId;
         const time = p.capturedAt ? new Date(p.capturedAt).toLocaleTimeString() : '';
         const tooltip = `${trail.staffName ? `<b>${esc(trail.staffName)}</b><br>` : ''}${isEndpoint ? `<b>${i === 0 ? 'Start' : 'Last seen'}</b><br>` : ''}${time}${p.outletName ? `<br>${esc(p.outletName)}` : ''}`;
-        L.circleMarker([p.lat, p.lng], { radius: isEndpoint ? 7 : 4, color: '#fff', weight: isEndpoint ? 2 : 1.5, fillColor: color, fillOpacity: opacity })
-          .bindTooltip(tooltip, { direction: 'top' })
-          .addTo(layer);
+        const marker = L.circleMarker([p.lat, p.lng], {
+          radius: isSelected ? 9 : isEndpoint ? 7 : 4,
+          color: isSelected ? '#111' : '#fff',
+          weight: isSelected ? 3 : isEndpoint ? 2 : 1.5,
+          fillColor: color,
+          fillOpacity: opacity,
+        }).bindTooltip(tooltip, { direction: 'top' }).addTo(layer);
+        if (isSelected) {
+          // Ring + crosshair callout around the clicked record's exact position.
+          L.circleMarker([p.lat, p.lng], { radius: 18, color: '#111', weight: 2, opacity: 0.7, fill: false, interactive: false }).addTo(layer);
+          marker.openTooltip();
+        }
       });
     }
 
     // Zoom to the highlighted promoter's own points when one is selected,
-    // otherwise fit everything currently drawn.
+    // otherwise fit everything currently drawn. When a specific record was
+    // clicked, centre the map on that exact ping instead.
     const highlighted = highlightedStaffId != null ? trails.find((t) => t.staffId === highlightedStaffId) : null;
-    const pts = (highlighted ? highlighted.points : allPoints).map((p) => [p.lat, p.lng]);
+    const selectedPing = highlightedPingId != null ? allPoints.find((p) => p.id === highlightedPingId) : null;
+    const pts = selectedPing
+      ? [[selectedPing.lat, selectedPing.lng]]
+      : (highlighted ? highlighted.points : allPoints).map((p) => [p.lat, p.lng]);
     const fit = () => {
       if (pts.length === 0) return;
       map.invalidateSize();
@@ -93,7 +109,7 @@ export default function PromoterTrailMap({ rows = [], height = 360, highlightedS
     fit();
     const t = setTimeout(fit, 350);
     return () => clearTimeout(t);
-  }, [trails, allPoints, highlightedStaffId]);
+  }, [trails, allPoints, highlightedStaffId, highlightedPingId]);
 
   return (
     <div className="map-shell" style={{ height, position: 'relative' }}>

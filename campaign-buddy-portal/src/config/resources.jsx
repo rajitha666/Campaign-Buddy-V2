@@ -525,7 +525,7 @@ export const RESOURCES = {
     title: 'Staff Attendance', subtitle: 'Check-in / check-out log for field promoters.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) },
+      { key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) },
       { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' },
     ],
     columns: [
@@ -794,13 +794,12 @@ export const RESOURCES = {
       { key: 'date', label: 'Date', type: 'date' },
     ],
     renderExtra: (rows, selectedRow) => (
-      <Suspense fallback={null}><PromoterTrailMap rows={rows} highlightedStaffId={selectedRow?.staffId ?? null} /></Suspense>
+      <Suspense fallback={null}><PromoterTrailMap rows={rows} highlightedStaffId={selectedRow?.staffId ?? null} highlightedPingId={selectedRow?.id ?? null} /></Suspense>
     ),
     columns: [
       { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
       { key: 'outletName', label: 'Outlet' },
       { key: 'capturedAt', label: 'Time', render: (r) => fmtTime(r.capturedAt) },
-      { key: 'latitude', label: 'Latitude' }, { key: 'longitude', label: 'Longitude' },
     ],
     fetchList: ({ campaignId, query }) => trackingApi.promoterHistory(campaignId, query),
   },

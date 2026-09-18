@@ -384,6 +384,12 @@ describe('resources config', () => {
     }
   });
 
+  it('Staff Attendance outlet filter has an "All outlets" clear option', () => {
+    const cfg = RESOURCES.staffAttendance;
+    const outletFilter = cfg.filters.find((f) => f.key === 'outletId');
+    expect(outletFilter.allLabel).toBe('All outlets');
+  });
+
   it('Staff Attendance has separate Promoter (ID + name) and Name columns, and times drop seconds (client doc A)', () => {
     const cfg = RESOURCES.staffAttendance;
     const row = { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu' }, outlet: { name: 'Outlet A' } }, checkInAt: '2026-09-17T08:03:45.000Z' };
@@ -406,8 +412,15 @@ describe('resources config', () => {
     const rows = [{ id: 'p1', staffId: 's1' }];
     const selected = cfg.renderExtra(rows, { id: 'p1', staffId: 's1' });
     expect(selected.props.children.props.highlightedStaffId).toBe('s1');
+    expect(selected.props.children.props.highlightedPingId).toBe('p1');
 
     const none = cfg.renderExtra(rows, null);
     expect(none.props.children.props.highlightedStaffId).toBe(null);
+    expect(none.props.children.props.highlightedPingId).toBe(null);
+  });
+
+  it('Promoter Tracking table has no Latitude/Longitude columns (shown on the map instead)', () => {
+    const cfg = RESOURCES.promoterTracking;
+    expect(cfg.columns.some((c) => c.key === 'latitude' || c.key === 'longitude')).toBe(false);
   });
 });
