@@ -7,6 +7,7 @@ import ErrorState from '../components/ErrorState';
 import Badge from '../components/Badge';
 import SearchableSelect from '../components/SearchableSelect';
 import { staffLabel } from '../lib/staffLabel';
+import { scoreLabel } from '../lib/supervisorResults';
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '—');
 const typeLabel = (t, designationLabel) => applyDesignationLabel(t === 'supervisor' ? 'Supervisor' : 'Promoter', designationLabel);
@@ -166,6 +167,7 @@ export default function StaffProfiles() {
               <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="stat-card" style={{ padding: 13 }}><div className="l">Overall Performance</div><div className="n" style={{ fontSize: 17 }}>{data.overallPerformancePct ?? '—'}%</div></div>
                 <div className="stat-card" style={{ padding: 13 }}><div className="l">Attendance</div><div className="n" style={{ fontSize: 17 }}>{data.attendancePct ?? '—'}%</div></div>
+                <div className="stat-card" style={{ padding: 13 }} title="Average of supervisors' 1–5 ratings from the outlet checklist"><div className="l">Supervisor QA Score</div><div className="n" style={{ fontSize: 17 }}>{scoreLabel(data.qaScore?.average)}</div>{data.qaScore?.ratings ? <div className="hint-note">{data.qaScore.ratings} rating{data.qaScore.ratings === 1 ? '' : 's'}</div> : null}</div>
                 <div className="stat-card" style={{ padding: 13 }}><div className="l">Total Sales</div><div className="n" style={{ fontSize: 17 }}>LKR {(data.totalSales ?? 0).toLocaleString()}</div></div>
                 <div className="stat-card" style={{ padding: 13 }}><div className="l">Total Products</div><div className="n" style={{ fontSize: 17 }}>{data.totalItems ?? 0} units</div></div>
                 <div className="stat-card" style={{ padding: 13 }}><div className="l">Customers Approached</div><div className="n" style={{ fontSize: 17 }}>{(data.customersApproached ?? 0).toLocaleString()}</div></div>

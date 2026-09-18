@@ -14,6 +14,9 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SupervisorRouteStackParamList } from '@/navigation/types';
 import * as supervisorRouteApi from '@/api/supervisorRoute';
 import * as attendanceApi from '@/api/attendance';
 import { useAttendance } from '@/context/AttendanceContext';
@@ -25,6 +28,7 @@ import { getApiErrorMessage, getApiErrorCode } from '@/api/client';
 import { LocationUnavailableError } from '@/lib/checkInLocation';
 import { showAlert } from '@/lib/showAlert';
 import { formatDay } from '@/lib/date';
+import { checklistUnlocked } from '@/lib/supervisorChecklist';
 import type { SupervisorAssignment } from '@/api/types';
 
 const VISITS_KEY = ['supervisor', 'assignments', 'today'];
@@ -35,10 +39,10 @@ function useTodaysVisits() {
     queryFn: async () => {
       const assignments = await supervisorRouteApi.getMyAssignments();
       const withStatus = await Promise.all(
-        assignments.map(async (a) => ({
-          assignment: a,
-          checkedIn: (await attendanceApi.getAttendanceToday(a.assignmentId)).checkedIn,
-        }))
+        assignments.map(async (a) => {
+          const today = await attendanceApi.getAttendanceToday(a.assignmentId);
+          return { assignment: a, checkedIn: today.checkedIn, checkInAt: today.checkInAt };
+        })
       );
       return withStatus;
     },
@@ -91,9 +95,11 @@ export function SupervisorRouteScreen() {
   );
 }
 
-function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn: boolean } }) {
+function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn: boolean; checkInAt: string | null } }) {
   const { assignment, checkedIn } = row;
+  const checklistOpen = checklistUnlocked(row);
   const { checkedIn: anyOpenElsewhere, checkIn, checkOut } = useAttendance();
+  const navigation = useNavigation<NativeStackNavigationProp<SupervisorRouteStackParamList, 'SupervisorRoute'>>();
   const queryClient = useQueryClient();
   const [busy, setBusy] = React.useState(false);
   const [inactive, setInactive] = React.useState(false);
@@ -161,6 +167,20 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
         loading={busy}
         style={{ marginTop: spacing.md }}
       />
+      <Button
+        label="Outlet checklist"
+        variant="secondary"
+        onPress={() =>
+          navigation.navigate('SupervisorChecklist', {
+            assignmentId: assignment.assignmentId,
+            outletName: assignment.outlet.name,
+            campaignName: assignment.campaign.name,
+          })
+        }
+        disabled={!checklistOpen}
+        style={{ marginTop: spacing.sm }}
+      />
+      {!checklistOpen && !inactive ? <Text style={styles.checklistHint}>Check in to fill this outlet's checklist.</Text> : null}
     </Card>
   );
 }
@@ -177,6 +197,7 @@ const styles = StyleSheet.create({
   inactiveText: { color: colors.textMuted },
   visitOutlet: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
   visitCampaign: { fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
+  checklistHint: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xs },
   routeCampaign: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
   routeDates: { fontSize: 12.5, color: colors.textMuted, marginTop: 2, marginBottom: spacing.sm },
   routeOutlet: { fontSize: fontSize.base, color: colors.textPrimary, marginTop: 2 },

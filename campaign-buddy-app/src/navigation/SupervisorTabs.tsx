@@ -10,7 +10,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import type { SupervisorTabParamList } from './types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { buildTabBarStyle } from './tabBarStyle';
-import { SupervisorRouteScreen } from '@/screens/SupervisorRouteScreen';
+import { SupervisorRouteStack } from './SupervisorRouteStack';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { colors } from '@/theme';
 
@@ -49,7 +49,7 @@ export function SupervisorTabs() {
     >
       <Tab.Screen
         name="MyRouteTab"
-        component={SupervisorRouteScreen}
+        component={SupervisorRouteStack}
         options={{ title: 'My Route', tabBarIcon: ({ color }) => <RouteIcon color={color} /> }}
       />
       <Tab.Screen

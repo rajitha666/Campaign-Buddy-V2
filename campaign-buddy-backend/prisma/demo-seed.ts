@@ -191,6 +191,7 @@ async function main() {
   const qa = [
     { category: "Sale", taskType: "range" as const, task: "Shelf pricing matches the campaign sheet" },
     { category: "Outlet PR", taskType: "range" as const, task: "Outlet shelf presence rating (1–5)" },
+    { category: "Outlet PR", taskType: "photo" as const, task: "Photos of the promotion display setup", imageCount: 2 },
     { category: "Competitor Activities", taskType: "feedback" as const, task: "Competitor promotions observed today" },
     { category: "Attire & Grooming", taskType: "feedback" as const, task: "Uniform and grooming standard met" },
   ];
@@ -226,23 +227,24 @@ async function main() {
     activations.push({ id: act.id, prom: a.prom, outlet: outlets[a.outlet], items: aitems });
   }
 
-  // ---- supervisor visit activations (so Outlet Attendance / supervisor tracking have data) ----
+  // ---- supervisor visits (so Outlet Attendance / supervisor tracking have data) ----
+  // A supervisor visits an outlet by checking in on the activation of the promoter
+  // they cover there (Activation.supervisorStaffId); the visit is the supervisor's OWN
+  // attendance row / pings on that activation, separate from the promoter's.
   const supVisits: { id: string; sup: string; outlet: { id: string; lat: number; lng: number } }[] = [];
   for (const [supName, outletName] of [["Dinesh Ranatunga", "Keells Rajagiriya"], ["Ishara Fernando", "Arpico Dehiwala"]] as const) {
-    let sv = await prisma.activation.findFirst({ where: { campaignId: campaign.id, outletId: outlets[outletName].id, staffId: supervisors[supName] } });
-    sv = sv
-      ? await prisma.activation.update({ where: { id: sv.id }, data: { dateFrom: start, dateTo: end } })
-      : await prisma.activation.create({ data: { name: `${outletName.split(" ")[0]} supervisor route`, campaignId: campaign.id, outletId: outlets[outletName].id, staffId: supervisors[supName], dateFrom: start, dateTo: end } });
-    supVisits.push({ id: sv.id, sup: supName, outlet: outlets[outletName] });
+    const covered = activations.find((a) => a.outlet.id === outlets[outletName].id);
+    if (!covered) throw new Error(`no promoter activation at ${outletName} for ${supName} to cover`);
+    supVisits.push({ id: covered.id, sup: supName, outlet: outlets[outletName] });
   }
   for (const sv of supVisits) {
     for (const day of [4, 2, 0]) {
       const date = D(day);
       const isToday = day === 0;
       await prisma.attendanceRecord.upsert({
-        where: { activationId_date: { activationId: sv.id, date } },
+        where: { activationId_staffId_date: { activationId: sv.id, staffId: supervisors[sv.sup], date } },
         create: {
-          activationId: sv.id, date, status: "on_time",
+          activationId: sv.id, staffId: supervisors[sv.sup], date, status: "on_time",
           checkInAt: at(day, isToday ? 10 : 11, rnd(0, 30)), checkInLat: sv.outlet.lat, checkInLng: sv.outlet.lng, checkInLocationVerified: true,
           checkOutAt: isToday ? null : at(day, 12, rnd(10, 40)), checkOutLat: isToday ? null : sv.outlet.lat, checkOutLng: isToday ? null : sv.outlet.lng,
         },
@@ -277,9 +279,9 @@ async function main() {
       const verified = checkInAt != null && !(act.prom === "Tharindu Jayasuriya" && day === 4);
 
       await prisma.attendanceRecord.upsert({
-        where: { activationId_date: { activationId: act.id, date } },
+        where: { activationId_staffId_date: { activationId: act.id, staffId: promoters[act.prom], date } },
         create: {
-          activationId: act.id, date, status: status as any,
+          activationId: act.id, staffId: promoters[act.prom], date, status: status as any,
           checkInAt, checkInLat: checkInAt ? act.outlet.lat + (verified ? 0 : 0.004) : null, checkInLng: checkInAt ? act.outlet.lng : null,
           checkInLocationVerified: verified,
           checkOutAt, checkOutLat: checkOutAt ? act.outlet.lat : null, checkOutLng: checkOutAt ? act.outlet.lng : null,
@@ -352,12 +354,12 @@ async function main() {
   const now = Date.now();
   for (const act of activations) {
     if (!checkedInToday.includes(act.prom)) continue;
-    await prisma.trackingPing.deleteMany({ where: { activationId: act.id } });
+    await prisma.trackingPing.deleteMany({ where: { activationId: act.id, staffId: promoters[act.prom] } });
     const pings = 16; // one per ~6 min over the last ~90 min
     for (let i = pings; i >= 1; i--) {
       const cap = new Date(now - i * 6 * 60000);
       await prisma.trackingPing.create({
-        data: { activationId: act.id, capturedAt: cap, latitude: act.outlet.lat + (Math.random() - 0.5) * 0.0006, longitude: act.outlet.lng + (Math.random() - 0.5) * 0.0006, accuracyMeters: rnd(6, 20), appState: "foreground", batteryPercent: rnd(45, 95) },
+        data: { activationId: act.id, staffId: promoters[act.prom], capturedAt: cap, latitude: act.outlet.lat + (Math.random() - 0.5) * 0.0006, longitude: act.outlet.lng + (Math.random() - 0.5) * 0.0006, accuracyMeters: rnd(6, 20), appState: "foreground", batteryPercent: rnd(45, 95) },
       });
     }
   }
@@ -365,9 +367,9 @@ async function main() {
   // ---- today's tracking pings for supervisors on a visit ----
   for (const sv of supVisits) {
     if (sv.sup !== "Dinesh Ranatunga") continue; // Dinesh is "on a visit" now
-    await prisma.trackingPing.deleteMany({ where: { activationId: sv.id } });
+    await prisma.trackingPing.deleteMany({ where: { activationId: sv.id, staffId: supervisors[sv.sup] } });
     for (let i = 10; i >= 1; i--) {
-      await prisma.trackingPing.create({ data: { activationId: sv.id, capturedAt: new Date(now - i * 6 * 60000), latitude: sv.outlet.lat + (Math.random() - 0.5) * 0.0005, longitude: sv.outlet.lng + (Math.random() - 0.5) * 0.0005, accuracyMeters: rnd(8, 22), appState: "foreground", batteryPercent: rnd(50, 90) } });
+      await prisma.trackingPing.create({ data: { activationId: sv.id, staffId: supervisors[sv.sup], capturedAt: new Date(now - i * 6 * 60000), latitude: sv.outlet.lat + (Math.random() - 0.5) * 0.0005, longitude: sv.outlet.lng + (Math.random() - 0.5) * 0.0005, accuracyMeters: rnd(8, 22), appState: "foreground", batteryPercent: rnd(50, 90) } });
     }
   }
 

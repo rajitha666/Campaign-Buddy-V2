@@ -22,12 +22,10 @@ router.post(
     };
     const capturedIso = capturedAt ?? timestamp;
 
+    // The caller's OWN open shift — a promoter and the supervisor covering the
+    // same activation each have their own record and their own trail.
     const openShift = await prisma.attendanceRecord.findFirst({
-      where: {
-        activation: { OR: [{ staffId: req.staff!.sub }, { supervisorStaffId: req.staff!.sub }] },
-        checkInAt: { not: null },
-        checkOutAt: null,
-      },
+      where: { staffId: req.staff!.sub, checkInAt: { not: null }, checkOutAt: null },
     });
     if (!openShift) {
       throw new ApiError(422, "NOT_CHECKED_IN", "Location pings are only accepted while checked in");
@@ -36,6 +34,7 @@ router.post(
     await prisma.trackingPing.create({
       data: {
         activationId: openShift.activationId,
+        staffId: req.staff!.sub,
         latitude,
         longitude,
         accuracyMeters,

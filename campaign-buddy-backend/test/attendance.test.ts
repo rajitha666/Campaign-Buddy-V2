@@ -86,7 +86,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     expect(reIn.body.error.code).toBe("ALREADY_CHECKED_OUT");
 
     const record = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(record.checkOutAt).not.toBeNull();
   });
@@ -114,7 +114,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     expect(next.body.data.assignmentId).toBe(activation2.id);
 
     const stale = await prisma.attendanceRecord.findUnique({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(stale?.checkOutAt).not.toBeNull();
   });
@@ -135,6 +135,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     await prisma.attendanceRecord.create({
       data: {
         activationId: activation.id,
+        staffId: staff.id,
         date: yesterday,
         checkInAt: new Date(yesterday.getTime() + 9 * 3600000),
         status: "on_time",

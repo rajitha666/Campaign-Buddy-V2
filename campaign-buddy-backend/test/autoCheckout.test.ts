@@ -17,7 +17,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     const today = new Date(new Date().toISOString().slice(0, 10));
     void staff;
     const open = await prisma.attendanceRecord.create({
-      data: { activationId: activation.id, date: today, checkInAt: new Date(today.getTime() + 3.5 * 3600_000) },
+      data: { activationId: activation.id, staffId: activation.staffId, date: today, checkInAt: new Date(today.getTime() + 3.5 * 3600_000) },
     });
 
     const closed = await closeOpenShifts(new Date(today.getTime() + 20 * 3600_000));
@@ -37,7 +37,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     const shiftEnd = new Date(today.getTime() + 10.5 * 3600_000); // 16:00 Colombo
     await prisma.activation.update({ where: { id: activation.id }, data: { shiftEndMinutes: 960 } }); // 16:00
     await prisma.attendanceRecord.create({
-      data: { activationId: activation.id, date: today, checkInAt: new Date(today.getTime() + 3 * 3600_000) },
+      data: { activationId: activation.id, staffId: activation.staffId, date: today, checkInAt: new Date(today.getTime() + 3 * 3600_000) },
     });
 
     await closeOpenShifts(new Date(today.getTime() + 13 * 3600_000));
@@ -55,10 +55,10 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     await prisma.activation.update({ where: { id: activation.id }, data: { shiftEndMinutes: 90 } });
     const now = new Date(today.getTime() + 18 * 3600_000); // 23:30 Colombo-ish
     const open = await prisma.attendanceRecord.create({
-      data: { activationId: activation.id, date: today, checkInAt: new Date(now.getTime() - 3600_000) },
+      data: { activationId: activation.id, staffId: activation.staffId, date: today, checkInAt: new Date(now.getTime() - 3600_000) },
     });
     const done = await prisma.attendanceRecord.create({
-      data: { activationId: activation.id, date: new Date(today.getTime() - 86400_000), checkInAt: new Date(today.getTime() - 12 * 3600_000), checkOutAt: new Date(today.getTime() - 10 * 3600_000) },
+      data: { activationId: activation.id, staffId: activation.staffId, date: new Date(today.getTime() - 86400_000), checkInAt: new Date(today.getTime() - 12 * 3600_000), checkOutAt: new Date(today.getTime() - 10 * 3600_000) },
     });
 
     await closeOpenShifts(now);
@@ -73,7 +73,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     const { staff, activation } = await makeCampaignWithActivation();
     const yesterday = new Date(new Date(Date.now() - 86400_000).toISOString().slice(0, 10));
     const open = await prisma.attendanceRecord.create({
-      data: { activationId: activation.id, date: yesterday, checkInAt: new Date(yesterday.getTime() + 4 * 3600_000) },
+      data: { activationId: activation.id, staffId: activation.staffId, date: yesterday, checkInAt: new Date(yesterday.getTime() + 4 * 3600_000) },
     });
 
     const closed = await closeOpenShifts();
@@ -85,7 +85,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
   it("leaves records without a check-in alone", async () => {
     const { staff, activation } = await makeCampaignWithActivation();
     const today = new Date(new Date().toISOString().slice(0, 10));
-    await prisma.attendanceRecord.create({ data: { activationId: activation.id, date: today, status: "leave" } });
+    await prisma.attendanceRecord.create({ data: { activationId: activation.id, staffId: activation.staffId, date: today, status: "leave" } });
     expect(await closeOpenShifts()).toBe(0);
   });
 });

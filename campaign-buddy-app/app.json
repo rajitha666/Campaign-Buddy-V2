@@ -34,6 +34,14 @@
     },
     "plugins": [
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Campaign Buddy uses the camera so supervisors can photograph the promotion setup at an outlet.",
+          "photosPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Campaign Buddy checks your location when you check in and while you're checked in for a shift."

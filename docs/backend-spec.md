@@ -160,8 +160,9 @@ Relations: `campaign`, `outlet`, `staff`, `supervisor`, `distributorPoint`, and 
 
 ### 2.6 Daily operational data
 
-**AttendanceRecord** (`attendance_records`) — one row per `(activationId, date)`
-`id`, `activationId` (FK, cascade), `date` (DATE), `checkInAt?`, `checkInLat?`, `checkInLng?`, `checkInLocationVerified: Boolean` (default false), `checkOutAt?`, `checkOutLat?`, `checkOutLng?`, `salesSummaryConfirmedAtCheckout: Boolean` (default false), `status: AttendanceStatus` (default `pending`), `leaveRequestId?` (FK), `createdAt`, `updatedAt`. Unique on `(activationId, date)`.
+**AttendanceRecord** (`attendance_records`) — one row per `(activationId, staffId, date)`
+**`staffId` is who checked in** — the activation's promoter, or the supervisor covering it (`Activation.supervisorStaffId`), or a supervisor who is the activation's own staff. A promoter and the supervisor covering the same activation therefore each have their own row for the day (before this, they shared one: the supervisor saw "checked in" when the promoter was, couldn't check in, and their check-out closed the promoter's shift). Everything that means "the promoter's attendance" — sales-entry guard, absence, sales-status, monthly attendance, evaluation — reads only the row where `staffId = Activation.staffId`; supervisor visit logs read rows whose `staff.userType = supervisor`.
+`id`, `activationId` (FK, cascade), `staffId` (FK, cascade), `date` (DATE), `checkInAt?`, `checkInLat?`, `checkInLng?`, `checkInLocationVerified: Boolean` (default false), `checkOutAt?`, `checkOutLat?`, `checkOutLng?`, `salesSummaryConfirmedAtCheckout: Boolean` (default false), `status: AttendanceStatus` (default `pending`), `leaveRequestId?` (FK), `createdAt`, `updatedAt`. Unique on `(activationId, staffId, date)`; indexed on `(staffId, date)`.
 
 **Confirmed v3 — geofencing is a soft flag, never a block.** `checkInLocationVerified` is set to `false` when the check-in coordinates fall outside `Outlet.geofenceRadiusMeters`, but check-in always succeeds regardless. See §5.6.
 
@@ -181,7 +182,7 @@ Relations: `campaign`, `outlet`, `staff`, `supervisor`, `distributorPoint`, and 
 `id`, `definitionId` (FK, cascade), `activationId` (FK, cascade), `activationItemId?` (FK, cascade — null for `day` scope, set for `product`), `date` (DATE), `value: String` (canonical string form, cast per `type` on read), `updatedAt`. Two **partial unique indexes** (in the migration, not the Prisma schema) enforce one row per `(definition, activation, date)` for day-scope and per `(definition, activationItem, date)` for product-scope. Writes replace rows in a transaction (`deleteMany` + `create`).
 
 **TrackingPing** (`tracking_pings`) — high-frequency, foreground-only location log
-`id`, `activationId` (FK, cascade), `latitude: Float`, `longitude: Float`, `accuracyMeters?: Float`, `capturedAt` (device clock), `receivedAt` (server clock, default now), `appState: AppState` (default `foreground`), `batteryPercent?: Int`. Indexed on `(activationId, capturedAt)`.
+`id`, `activationId` (FK, cascade), `staffId` (FK, cascade — **who sent the ping**, so a supervisor's trail on a promoter's activation is never attributed to the promoter), `latitude: Float`, `longitude: Float`, `accuracyMeters?: Float`, `capturedAt` (device clock), `receivedAt` (server clock, default now), `appState: AppState` (default `foreground`), `batteryPercent?: Int`. Indexed on `(activationId, capturedAt)` and `(staffId, capturedAt)`.
 
 **LeaveRequest** (`leave_requests`)
 `id`, `staffId` (FK, cascade), `fromDate`, `toDate` (both DATE), `reason: LeaveReason`, `note?`, `status: LeaveStatus` (default `pending`), `approverId?` (defaults to `Staff.reportsToStaffId` at creation time, set in the route handler — not a DB default), `createdAt`, `decidedAt?`.
@@ -406,7 +407,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 
 ### 5.1 Global one-open-shift lock
 
-A Staff member can only ever have **one open shift at a time, across every campaign they're assigned to** — not just within a single Activation. `POST /v1/attendance/check-in` queries for *any* `AttendanceRecord` across *any* of the staff's Activations where `checkInAt` is set and `checkOutAt` is null; if one exists, the request is rejected with `409 ALREADY_CHECKED_IN` (message differs depending on whether the open shift is on the same Activation or a different one). This blocks moonlighting across concurrent campaigns by policy — note this governs **checking in**, not being *assigned* to concurrent Activations, which is allowed (§2.5). Implemented in `src/modules/mobile/attendance.routes.ts`.
+A Staff member can only ever have **one open shift at a time, across every campaign they're assigned to** — not just within a single Activation. `POST /v1/attendance/check-in` queries for *any* `AttendanceRecord` **of that staff member** (`staffId` = the caller — a covering supervisor's or promoter's own row, never the other's) where `checkInAt` is set and `checkOutAt` is null; if one exists, the request is rejected with `409 ALREADY_CHECKED_IN` (message differs depending on whether the open shift is on the same Activation or a different one). This blocks moonlighting across concurrent campaigns by policy — note this governs **checking in**, not being *assigned* to concurrent Activations, which is allowed (§2.5). Implemented in `src/modules/mobile/attendance.routes.ts`.
 
 Additionally, **a promoter's day ends at check-out**: once a promoter has a checked-out record for today (`checkInAt` and `checkOutAt` both set, any of their Activations), further check-ins that day are rejected with `409 ALREADY_CHECKED_OUT`. Supervisors are exempt — they check out of one route outlet and check into the next (api-spec `/me/assignments`), and each supervisor re-check-in clears the prior `checkOutAt`.
 
@@ -535,8 +536,41 @@ Activation Items screen survives a reload. The items `POST` additionally accepts
 `{ campaignItemIds: [...] }` and is idempotent (upsert).
 
 **SupervisorTask CRUD** (removes it from §8's deferred list):
-`GET`/`POST`/`PATCH`/`DELETE /campaigns/:campaignId/supervisor-tasks`. Portal-only
-config; the mobile app still does not read it.
+`GET`/`POST`/`PATCH`/`DELETE /campaigns/:campaignId/supervisor-tasks` — the
+per-campaign QA checklist template. `taskType` is `range` (1–5 rating of the
+promoter), `feedback` (free text) or `photo`; a `photo` task carries `imageCount`
+(1–10 photos to capture), other types always 0.
+
+A task's `taskType` can't be changed once it has answers (400) — add a new task
+instead — so old results never change meaning.
+
+**Supervisor checklist responses** — `SupervisorTaskResponse` (`supervisor_task_responses`),
+holding `rating` (1–5, `range` tasks only) and `feedback`, plus a denormalised
+`outletId`. `range`/`feedback` rows are one per (task, activation, day) — unique on
+that triple — and the promoter scored is the activation's `staffId`. **`photo` rows
+are outlet-level**: one per (task, supervisor, outlet, day), shared by every promoter
+that supervisor covers at the outlet (the row keeps the first activation that
+touched it). Photos are `SupervisorTaskPhoto` rows (`url`, server-side `createdAt`
+= trusted upload time); files live under `/uploads/visit-photos` (5 MB cap, JPEG/PNG/
+WebP/GIF/HEIC only, extension derived from the verified type — see the same rule on
+item images and staff photos). Written by the supervisor's mobile app via
+`/v1/me/assignments/:assignmentId/supervisor-tasks…` (api-spec §4) — the
+activation must have the caller as `supervisorStaffId` and be live today.
+
+Read back for head office (grant + outlet filtered; `adm`, `usr`, `supervisor`
+and `sponsor` roles alike, read-only):
+- `GET /campaigns/:campaignId/supervisor-task-responses?date=|dateFrom=&dateTo=&outletId=&page=&pageSize=`
+  — one row per answer, newest first: supervisor, promoter (`null` for photo
+  tasks), outlet, category, task, rating, feedback and `photos[{url,uploadedAt}]`.
+- `GET /campaigns/:campaignId/supervisor-task-summary?dateFrom=&dateTo=&outletId=`
+  — average rating overall and per promoter / outlet / category, plus checklist
+  completion: `visits{total,complete,incomplete}` and the `incompleteVisits` list.
+  A *visit* is a (promoter activation, day) the covering supervisor **checked in at**
+  or started a checklist for — so a visit with no answers at all shows up as
+  incomplete ("0 of n"). It is complete when every current task is answered (rated /
+  non-empty feedback / all of the outlet's photos).
+- `GET /staff/:staffId/evaluation` now includes `qaScore{average,ratings}` — the
+  promoter's mean supervisor rating in the evaluation window.
 
 **Computed read endpoints** (all campaign-scoped, grant + outlet filtered,
 nothing stored):
