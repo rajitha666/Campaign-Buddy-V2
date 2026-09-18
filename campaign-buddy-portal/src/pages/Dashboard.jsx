@@ -150,6 +150,7 @@ export default function Dashboard() {
           <div className="bars-row">
             {week.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : week.map((w, i) => (
               <div className="bar-col" key={w.date}>
+                <div className="bar-val">{fmtShort(w.totalSales)}</div>
                 <div className={`bar ${i === week.length - 1 ? 'today' : ''}`} style={{ height: `${Math.max(6, (w.totalSales / maxWeek) * 130)}px` }} />
                 <div className="day">{w.date.slice(5)}</div>
               </div>
@@ -209,6 +210,13 @@ function fmtDate(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
   if (!m) return '';
   return `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+}
+
+// Compact number format, same style as TrendChart's fmtShort: 950 -> "950",
+// 128400 -> "128.4k". Sales values here are LKR totals, so k covers it.
+function fmtShort(n) {
+  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return String(n);
 }
 
 // A SalesRecord row from GET /campaigns/{id}/sales carries the joined
