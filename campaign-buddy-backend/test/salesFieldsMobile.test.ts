@@ -19,6 +19,30 @@ async function fieldsFor(campaignId: string) {
   };
 }
 
+describe("sales summary confirm requires today's stats", () => {
+  it("confirm is blocked until foot fall and approached are logged (> 0), then succeeds", async () => {
+    const { staff, outlet } = await makeCampaignWithActivation();
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
+
+    const noStats = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
+    expect(noStats.status).toBe(422);
+    expect(noStats.body.error.code).toBe("STATS_REQUIRED");
+
+    // Half-filled stats still block — both counts must be > 0.
+    await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 10 });
+    const half = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
+    expect(half.status).toBe(422);
+    expect(half.body.error.code).toBe("STATS_REQUIRED");
+
+    const done = await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 10, approached: 4 });
+    expect(done.status).toBe(200);
+    const okRes = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
+    expect(okRes.status).toBe(200);
+    expect(okRes.body.data.confirmed).toBe(true);
+  });
+});
+
 describe("mobile custom sales fields", () => {
   it("GET /v1/sales-fields returns day + product defs for the current campaign", async () => {
     const { campaign, staff } = await makeCampaignWithActivation();
@@ -64,6 +88,7 @@ describe("mobile custom sales fields", () => {
     const blocked = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
     expect(blocked.status).toBe(422);
     expect(blocked.body.error.code).toBe("MISSING_REQUIRED_FIELD");
+    await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 12, approached: 5 });
     const okRes = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`)
       .send({ customFields: { samples: 5 } });
     expect(okRes.status).toBe(200);
@@ -75,6 +100,7 @@ describe("mobile custom sales fields", () => {
     await fieldsFor(campaign.id);
     const token = await staffToken(staff.mobileUsername, "field-pw");
     await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
+    await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 12, approached: 5 });
     await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({ customFields: { samples: 5 } });
 
     const after = await request(app).patch("/v1/sales-summary/today").set("Authorization", `Bearer ${token}`)

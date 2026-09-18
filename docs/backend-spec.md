@@ -294,7 +294,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/sales-fields` | day + product custom-field definitions (#13) for the staff's current campaign, day values filled in |
 | GET | `/sales-summary/today` | includes `customFields` (day-scope) |
 | PATCH | `/sales-summary/today` | `remarks` and/or `customFields`; `409 SUMMARY_CONFIRMED` once the day is confirmed |
-| POST | `/sales-summary/today/confirm` | idempotent; `422 MISSING_REQUIRED_FIELD` if a required day-scope `customFields` value is empty |
+| POST | `/sales-summary/today/confirm` | idempotent; `422 MISSING_REQUIRED_FIELD` if a required day-scope `customFields` value is empty; `422 STATS_REQUIRED` if today's foot fall / approached counts aren't both > 0 |
 | GET | `/time-off/balance` | |
 | GET | `/time-off/requests` | |
 | POST | `/time-off/requests` | checks for overlapping pending/approved requests → `409` |

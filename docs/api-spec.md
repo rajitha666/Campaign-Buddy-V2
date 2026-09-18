@@ -587,7 +587,7 @@ Updates today's `StockEntry` for this rep. All fields optional — send only wha
 Marks today confirmed — this is the action the "No, confirm sales summary" path in the checkout popup ultimately drives, and also what the **Confirm & submit** button on the Sales page calls directly.
 **Request:** `{}` (or `{ "remarks": "...", "customFields": { ... } }` to save in the same call)
 **Response `200`** → `SalesSummary` with `confirmed: true`, `confirmedAt` set.
-**Errors:** `409` if already confirmed (idempotent — treat as success on the client); `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required day-scope custom field is still empty.
+**Errors:** `409` if already confirmed (idempotent — treat as success on the client); `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required day-scope custom field is still empty; `422 STATS_REQUIRED` if today's `DailyStats` haven't been logged with foot fall and approached both > 0 (the app disables Confirm & submit and points the rep to *Update today's stats*).
 
 ### 6.9 `GET /sales-fields`
 The custom fields configured for the promoter's current campaign (§2.14). Returns `{ "data": { "day": [...], "product": [...] } }`; `day` entries carry today's `value`, `product` entries are definitions only (values come with each product in §6.3). Empty lists when there's no assignment today.

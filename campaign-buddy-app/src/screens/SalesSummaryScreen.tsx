@@ -11,6 +11,7 @@ import { Button } from '@/components/Button';
 import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
 import { useAttendance } from '@/context/AttendanceContext';
+import { canConfirmSales } from '@/lib/salesConfirmGuard';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
@@ -57,6 +58,9 @@ export function SalesSummaryScreen() {
 
   const s = summaryQuery.data;
   const conversionPct = s && s.approached > 0 ? Math.round((s.converted / s.approached) * 100) : 0;
+  const guard = s
+    ? canConfirmSales({ confirmed: !!s.confirmed, checkedIn, footFall: s.footFall, approached: s.approached })
+    : { ok: false, statsMissing: false };
 
   return (
     <SafeAreaView style={styles.frame} edges={['top']}>
@@ -162,11 +166,19 @@ export function SalesSummaryScreen() {
 
         {!checkedIn && !confirmed && <CheckInRequiredNotice />}
 
+        {guard.statsMissing && (
+          <View style={styles.statsRequiredBox}>
+            <Text style={styles.statsRequiredText}>
+              Log today's foot fall and approached counts in "Update footfall & conversions" before confirming.
+            </Text>
+          </View>
+        )}
+
         <Button
           label={s?.confirmed ? 'Confirmed ✓' : 'Confirm & submit'}
           onPress={() => confirmMutation.mutate()}
           loading={confirmMutation.isPending}
-          disabled={s?.confirmed || !checkedIn}
+          disabled={s?.confirmed || !checkedIn || guard.statsMissing}
           style={{ marginTop: spacing.xl }}
         />
 
@@ -282,8 +294,14 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     backgroundColor: colors.surfaceCard,
   },
-  last7Block: { marginTop: spacing.xl },
-  sectionLabel: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm },
+  statsRequiredBox: {
+    backgroundColor: colors.pendingTint,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
+  statsRequiredText: { color: colors.pending, fontSize: fontSize.sm, fontWeight: '600', textAlign: 'center' },
+  last7Block: { marginTop: spacing.xl },  sectionLabel: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm },
   last7Empty: { fontSize: fontSize.sm, color: colors.textMuted },
   dayRow: {
     flexDirection: 'row',
