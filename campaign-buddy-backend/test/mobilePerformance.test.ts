@@ -42,3 +42,24 @@ describe("GET /v1/campaigns/:id/performance — day counters (#53)", () => {
     expect(res.body.data.totalDays).toBe(9);
   });
 });
+
+describe("GET /v1/campaigns/:id/performance — topProducts.imageUrl (#47)", () => {
+  it("includes each top product's imageUrl so the app can resolve the thumbnail", async () => {
+    const { item, activationItem, campaign, outlet, staff } = await makeCampaignWithActivation();
+    await prisma.item.update({ where: { id: item.id }, data: { imageUrl: "/uploads/items/item-1.jpg" } });
+    await prisma.salesRecord.create({
+      data: { activationItemId: activationItem.id, date: new Date(), soldToday: 3 },
+    });
+
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    const res = await request(app)
+      .get(`/v1/campaigns/${campaign.id}/performance`)
+      .query({ outletId: outlet.id })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.topProducts).toEqual([
+      expect.objectContaining({ productId: item.id, imageUrl: "/uploads/items/item-1.jpg" }),
+    ]);
+  });
+});

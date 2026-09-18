@@ -670,9 +670,9 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
       { "date": "2026-09-05", "amount": 86400 }
     ],
     "topProducts": [
-      { "productId": "p_2", "name": "Sulfate Free Shampoo — Tea Tree 320ml", "unitPrice": 3200, "unitsSold": 61 },
-      { "productId": "p_1", "name": "Sulfate Free Shampoo — Lavender 320ml", "unitPrice": 3200, "unitsSold": 47 },
-      { "productId": "p_3", "name": "Sulfate Free Shampoo — Aloe Vera 320ml", "unitPrice": 3200, "unitsSold": 34 }
+      { "productId": "p_2", "name": "Sulfate Free Shampoo — Tea Tree 320ml", "unitPrice": 3200, "imageUrl": "/uploads/items/p_2.jpg", "unitsSold": 61 },
+      { "productId": "p_1", "name": "Sulfate Free Shampoo — Lavender 320ml", "unitPrice": 3200, "imageUrl": null, "unitsSold": 47 },
+      { "productId": "p_3", "name": "Sulfate Free Shampoo — Aloe Vera 320ml", "unitPrice": 3200, "imageUrl": "/uploads/items/p_3.jpg", "unitsSold": 34 }
     ]
   }
 }

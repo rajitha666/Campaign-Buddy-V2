@@ -85,7 +85,7 @@ export function PerformanceScreen() {
                 <View style={styles.rankNum}>
                   <Text style={styles.rankNumText}>{i + 1}</Text>
                 </View>
-                <ProductThumb size={40} bandColor={BAND_COLORS[i % BAND_COLORS.length]} />
+                <ProductThumb size={40} bandColor={BAND_COLORS[i % BAND_COLORS.length]} imageUrl={product.imageUrl} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rankName}>{product.name}</Text>
                   <Text style={styles.rankMeta}>LKR {product.unitPrice.toLocaleString()} per unit</Text>

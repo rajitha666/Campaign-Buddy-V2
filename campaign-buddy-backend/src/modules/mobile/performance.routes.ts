@@ -66,10 +66,10 @@ router.get(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, amount]) => ({ date, amount }));
 
-    const byItem = new Map<string, { productId: string; name: string; unitPrice: number; unitsSold: number }>();
+    const byItem = new Map<string, { productId: string; name: string; unitPrice: number; imageUrl: string | null; unitsSold: number }>();
     for (const rec of salesRecords) {
       const item = rec.activationItem.campaignItem.item;
-      const cur = byItem.get(item.id) ?? { productId: item.id, name: item.name, unitPrice: item.unitPrice, unitsSold: 0 };
+      const cur = byItem.get(item.id) ?? { productId: item.id, name: item.name, unitPrice: item.unitPrice, imageUrl: item.imageUrl, unitsSold: 0 };
       cur.unitsSold += rec.soldToday;
       byItem.set(item.id, cur);
     }

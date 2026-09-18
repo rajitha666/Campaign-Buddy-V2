@@ -269,6 +269,7 @@ export interface PerformanceTopProduct {
   productId: UUID;
   name: string;
   unitPrice: number;
+  imageUrl: string | null;
   unitsSold: number;
 }
 
