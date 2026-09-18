@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ICONS } from './Icons';
-import { sortOptionsWithAllFirst } from '../lib/sortOptions';
+import { sortOptionsWithAllFirstNormalized, normalizeOptions } from '../lib/sortOptions';
 
 // Type-to-filter dropdown for a plain {value,label} option list. Used in the
 // Drawer wherever a `<select>` list can grow too long to scan (staff, outlets,
@@ -18,10 +18,13 @@ export default function SearchableSelect({ options = [], value, onChange, placeh
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef(null);
 
-  const selected = options.find((o) => String(o.value) === String(value));
+  // Normalized once here (strings → {value,label}) so hardcoded string lists
+  // (supervisor-task categories, province/district filters) render correctly.
+  const normalizedOptions = useMemo(() => normalizeOptions(options), [options]);
+  const selected = normalizedOptions.find((o) => String(o.value) === String(value));
   // Alphabetical everywhere (#67) — sorted once here rather than at every
   // options source, so every searchable-select in the portal gets it for free.
-  const sortedOptions = useMemo(() => sortOptionsWithAllFirst(options), [options]);
+  const sortedOptions = useMemo(() => sortOptionsWithAllFirstNormalized(normalizedOptions), [normalizedOptions]);
 
   useEffect(() => {
     function onDocMouseDown(e) {

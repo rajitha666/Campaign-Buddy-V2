@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortOptions, sortOptionsWithAllFirst } from './sortOptions';
+import { sortOptions, sortOptionsWithAllFirst, normalizeOptions } from './sortOptions';
 
 describe('sortOptions', () => {
   it('sorts {value,label} options alphabetically by label', () => {
@@ -44,5 +44,31 @@ describe('sortOptionsWithAllFirst', () => {
   it('sorts normally when there is no "All" option', () => {
     const options = [{ value: 's3', label: 'Zara' }, { value: 's1', label: 'Amal' }];
     expect(sortOptionsWithAllFirst(options).map((o) => o.label)).toEqual(['Amal', 'Zara']);
+  });
+});
+
+describe('normalizeOptions', () => {
+  it('wraps plain-string options as {value,label}', () => {
+    expect(normalizeOptions(['Sale', 'Attitude'])).toEqual([
+      { value: 'Sale', label: 'Sale' },
+      { value: 'Attitude', label: 'Attitude' },
+    ]);
+  });
+
+  it('leaves {value,label} objects untouched', () => {
+    const options = [{ value: 's1', label: 'Amal' }];
+    expect(normalizeOptions(options)).toEqual(options);
+  });
+
+  it('keeps the blank-value "All" sentinel intact for strings', () => {
+    expect(normalizeOptions(['', 'Sale'])).toEqual([
+      { value: '', label: '' },
+      { value: 'Sale', label: 'Sale' },
+    ]);
+  });
+
+  it('returns an empty array for nullish input', () => {
+    expect(normalizeOptions(null)).toEqual([]);
+    expect(normalizeOptions(undefined)).toEqual([]);
   });
 });
