@@ -216,6 +216,33 @@ describe("attendance — supervisor route mode (supervisorStaffId)", () => {
     expect(today.body.data.checkedIn).toBe(true);
   });
 
+  it("bare check-out (no assignmentId) closes the supervisor's OPEN shift, not an arbitrary activation", async () => {
+    // Bug: supersvisor's app sends no assignmentId on the Attendance-screen
+    // checkout; the old bare findFirst picked an arbitrary today-activation
+    // and 422'd with NOT_CHECKED_IN even though a shift was open elsewhere.
+    const { activationA, activationB, outletA, token } = await makeSupervisorWithRoute();
+    const auth = { Authorization: `Bearer ${token}` };
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+
+    const out = await request(app).post("/v1/attendance/check-out").set(auth).send({});
+    expect(out.status).toBe(200);
+    expect(out.body.data.assignmentId).toBe(activationA.id);
+
+    // Route hop then a second bare checkout must hit the NEXT open shift
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationB.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+    const out2 = await request(app).post("/v1/attendance/check-out").set(auth).send({});
+    expect(out2.status).toBe(200);
+    expect(out2.body.data.assignmentId).toBe(activationB.id);
+  });
+
   it("check-out takes an assignmentId and clears the lock so the supervisor can check into the next outlet", async () => {
     const { activationA, activationB, outletA, outletB, token } = await makeSupervisorWithRoute();
     const auth = { Authorization: `Bearer ${token}` };
@@ -238,6 +265,36 @@ describe("attendance — supervisor route mode (supervisorStaffId)", () => {
       .send({ assignmentId: activationB.id, latitude: outletB.latitude, longitude: outletB.longitude });
     expect(next.status).toBe(201);
     expect(next.body.data.assignmentId).toBe(activationB.id);
+  });
+
+  it("assignmentId check-out/in of an outlet NOT active today is a 404", async () => {
+    const { activationA, activationB, outletA, token } = await makeSupervisorWithRoute();
+    const pastEnd = new Date();
+    pastEnd.setDate(pastEnd.getDate() - 2);
+    await prisma.activation.update({ where: { id: activationA.id }, data: { dateTo: pastEnd } });
+
+    const auth = { Authorization: `Bearer ${token}` };
+    const geo = { latitude: outletA.latitude, longitude: outletA.longitude };
+    const out = await request(app)
+      .post("/v1/attendance/check-out")
+      .set(auth)
+      .send({ assignmentId: activationA.id, latitude: geo.latitude, longitude: geo.longitude });
+    expect(out.status).toBe(404);
+    expect(out.body.error.code).toBe("NOT_FOUND");
+
+    const checkIn = await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationA.id, latitude: geo.latitude, longitude: geo.longitude });
+    expect(checkIn.status).toBe(404);
+    expect(checkIn.body.error.code).toBe("NOT_FOUND");
+
+    // Their actual today-assignment is untouched
+    const res = await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationB.id, latitude: geo.latitude, longitude: geo.longitude });
+    expect(res.status).toBe(201);
   });
 
   it("attendance history includes supervised-activation records", async () => {

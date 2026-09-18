@@ -172,6 +172,7 @@ export function AttendanceScreen() {
 
       <CheckoutConfirmSheet
         visible={checkoutSheetVisible}
+        assignmentId={assignmentQuery.data?.assignmentId}
         onClose={() => {
           setCheckoutSheetVisible(false);
           refresh();

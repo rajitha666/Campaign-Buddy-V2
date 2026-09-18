@@ -84,6 +84,23 @@ describe('api adapters — path + verb', () => {
     expect(calls[1].body).toMatchObject({ assignmentId: 'a1', latitude: 1, longitude: 2 });
   });
 
+  it('attendance check-out forwards the assignmentId when one is given', async () => {
+    await attendance.checkOut({
+      assignmentId: 'a1',
+      latitude: 1,
+      longitude: 2,
+      timestamp: '2026-09-06T17:00:00.000Z',
+      salesSummaryConfirmed: true,
+    });
+    await attendance.checkOut({ timestamp: '2026-09-06T17:00:00.000Z', salesSummaryConfirmed: true });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'post /attendance/check-out',
+      'post /attendance/check-out',
+    ]);
+    expect(calls[0].body).toMatchObject({ assignmentId: 'a1' });
+    expect((calls[1].body as Record<string, unknown>).assignmentId).toBeUndefined();
+  });
+
   it('products nests campaign + outlet ids and targets the assignment id for stock', async () => {
     await products.getCampaignProducts('camp1', 'out1', { reorderOnly: true });
     await products.getProductDetails('prod1');

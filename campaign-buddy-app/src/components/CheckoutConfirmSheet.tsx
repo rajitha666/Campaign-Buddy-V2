@@ -21,9 +21,17 @@ import { getApiErrorMessage } from '@/api/client';
 interface CheckoutConfirmSheetProps {
   visible: boolean;
   onClose: () => void;
+  /** The assignment this shift belongs to — a supervisor's check-out must
+   *  target THEIR opened route outlet, not whatever the bare backend lookup
+   *  picks (they can have several activations today). Promoters can omit it. */
+  assignmentId?: string;
 }
 
-export function CheckoutConfirmSheet({ visible, onClose }: CheckoutConfirmSheetProps) {
+export function CheckoutConfirmSheet({
+  visible,
+  onClose,
+  assignmentId,
+}: CheckoutConfirmSheetProps) {
   const { checkOut } = useAttendance();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
@@ -31,7 +39,7 @@ export function CheckoutConfirmSheet({ visible, onClose }: CheckoutConfirmSheetP
   async function handleYes() {
     setLoading(true);
     try {
-      await checkOut();
+      await checkOut(assignmentId);
       onClose();
     } catch (err) {
       Alert.alert('Could not check out', getApiErrorMessage(err));

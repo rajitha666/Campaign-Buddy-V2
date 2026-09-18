@@ -98,8 +98,10 @@ router.post(
     const today = dayDate();
     let activation;
     if (assignmentId) {
+      // Supervisors check in at outlets ACTIVE TODAY only — a route id from
+      // a previous day (e.g. a stale app cache) must not open a shift.
       activation = await prisma.activation.findFirst({
-        where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) },
+        where: { id: assignmentId, dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
         include: { outlet: true, campaign: true },
       });
     } else {
@@ -231,17 +233,34 @@ router.post(
     const today = dayDate();
 
     // Same resolution as check-in: a supervisor checks out of ONE route
-    // outlet, so the client sends that assignment's id — a bare findFirst
-    // over today's activations would pick an arbitrary one and leave the
-    // real shift open (blocking the next check-in via the one-open-shift
-    // lock). Promoters omit it and keep the today-window lookup.
-    const activation = assignmentId
-      ? await prisma.activation.findFirst({
-          where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) },
-        })
-      : await prisma.activation.findFirst({
-          where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
-        });
+    // outlet, so the client sends that assignment's id. When it's missing,
+    // target the staff member's OPEN shift — the bare today-window findFirst
+    // below would otherwise pick an arbitrary activation and 422 with
+    // NOT_CHECKED_IN while a real shift is open on another outlet. Promoters
+    // omit it too and resolve to their single (open) activation the same way,
+    // so their behavior is unchanged.
+    let activation;
+    if (assignmentId) {
+      // Supervisors check in/out of outlets ACTIVE TODAY only — an id from a
+      // route visit on a previous day (or a future one) must not pass.
+      activation = await prisma.activation.findFirst({
+        where: { id: assignmentId, dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
+      });
+    } else {
+      const openElsewhere = await prisma.attendanceRecord.findFirst({
+        where: {
+          checkInAt: { not: null },
+          checkOutAt: null,
+          activation: activationStaffScope(req.staff!.sub),
+        },
+        orderBy: { date: "desc" },
+      });
+      activation = openElsewhere
+        ? await prisma.activation.findUnique({ where: { id: openElsewhere.activationId } })
+        : await prisma.activation.findFirst({
+            where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
+          });
+    }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
     const record = await prisma.attendanceRecord.findUnique({

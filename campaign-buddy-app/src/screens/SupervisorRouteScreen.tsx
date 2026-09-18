@@ -21,7 +21,7 @@ import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
+import { getApiErrorMessage, getApiErrorCode } from '@/api/client';
 import { LocationUnavailableError } from '@/lib/checkInLocation';
 import { showAlert } from '@/lib/showAlert';
 import { formatDay } from '@/lib/date';
@@ -96,6 +96,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
   const { checkedIn: anyOpenElsewhere, checkIn, checkOut } = useAttendance();
   const queryClient = useQueryClient();
   const [busy, setBusy] = React.useState(false);
+  const [inactive, setInactive] = React.useState(false);
 
   async function handleCheckIn() {
     setBusy(true);
@@ -105,6 +106,11 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
     } catch (err) {
       if (err instanceof LocationUnavailableError) {
         showAlert('Location required', err.message);
+      } else if (getApiErrorCode(err) === 'NOT_FOUND') {
+        // NOT_FOUND means the outlet's activation isn't active today (e.g.
+        // the row was loaded before midnight and its visit date passed).
+        // Show it as "Not active" instead of interrupting with an alert.
+        setInactive(true);
       } else {
         showAlert('Could not check in', getApiErrorMessage(err));
       }
@@ -119,23 +125,33 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
       await checkOut(assignment.assignmentId);
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
     } catch (err) {
-      showAlert('Could not check out', getApiErrorMessage(err));
+      if (getApiErrorCode(err) === 'NOT_FOUND') {
+        setInactive(true);
+      } else {
+        showAlert('Could not check out', getApiErrorMessage(err));
+      }
     } finally {
       setBusy(false);
     }
   }
 
   // Global one-open-shift lock: another outlet is open, so this row can only wait.
-  const disabled = !checkedIn && anyOpenElsewhere;
+  const disabled = inactive || (!checkedIn && anyOpenElsewhere);
 
   return (
-    <Card style={{ marginBottom: spacing.md }}>
+    <Card style={{ marginBottom: spacing.md, opacity: inactive ? 0.65 : 1 }}>
       <View style={styles.visitHead}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.visitOutlet}>{assignment.outlet.name}</Text>
+          <Text style={[styles.visitOutlet, inactive ? styles.inactiveText : null]}>{assignment.outlet.name}</Text>
           <Text style={styles.visitCampaign}>{assignment.campaign.name}</Text>
         </View>
-        {checkedIn ? <Chip label="Checked in" tone="success" /> : disabled ? <Chip label="Waiting" tone="pending" /> : null}
+        {checkedIn ? (
+          <Chip label="Checked in" tone="success" />
+        ) : inactive ? (
+          <Chip label="Not active" tone="pending" />
+        ) : disabled ? (
+          <Chip label="Waiting" tone="pending" />
+        ) : null}
       </View>
       <Button
         label={checkedIn ? 'Check out' : 'Check in'}
@@ -158,6 +174,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: fontSize.base, fontWeight: '700', marginBottom: spacing.md, color: colors.textPrimary },
   emptyText: { fontSize: fontSize.base, color: colors.textMuted },
   visitHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  inactiveText: { color: colors.textMuted },
   visitOutlet: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
   visitCampaign: { fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
   routeCampaign: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
