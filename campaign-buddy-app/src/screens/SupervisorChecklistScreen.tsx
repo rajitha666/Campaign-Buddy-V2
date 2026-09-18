@@ -81,6 +81,12 @@ export function SupervisorChecklistScreen() {
       await queryClient.invalidateQueries({ queryKey });
       setDrafts({});
       setSavedNotice(true);
+      // Briefly show the "Saved" confirmation, then land back on Home (My
+      // Route — the supervisor's home tab).
+      window.setTimeout(() => {
+        dirty.current = false;
+        navigation.popToTop();
+      }, 900);
     },
     onError: (err) => showAlert('Could not save', getApiErrorMessage(err)),
   });
@@ -140,15 +146,6 @@ export function SupervisorChecklistScreen() {
             <Text style={styles.progress}>
               {progress.done} of {progress.total} done
             </Text>
-
-            <Card style={{ marginTop: spacing.md }}>
-              <Text style={styles.guideTitle}>Rating guide</Text>
-              {scale.map((r) => (
-                <Text key={r.value} style={styles.guideRow}>
-                  <Text style={styles.guideValue}>{r.value}  {r.label}</Text> — {r.description}
-                </Text>
-              ))}
-            </Card>
 
             {groupTasksByCategory(tasks).map((group) => (
               <View key={group.category}>
@@ -218,9 +215,6 @@ const styles = StyleSheet.create({
   stateText: { padding: spacing.xl, fontSize: fontSize.base, color: colors.textMuted },
   promoter: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
   progress: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
-  guideTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm },
-  guideRow: { fontSize: 12.5, color: colors.textMuted, marginTop: 3, lineHeight: 18 },
-  guideValue: { fontWeight: '700', color: colors.textPrimary },
   category: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginTop: spacing.xl, marginBottom: spacing.md },
   taskText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary, marginBottom: spacing.md },
   feedback: {

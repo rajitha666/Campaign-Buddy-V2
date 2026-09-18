@@ -3,12 +3,14 @@
  * for a `role: "campaign_owner"` login (see SupervisorTabs).
  *
  * Two sections, matching the backend's split (docs/api-spec.md §4):
- *  - "Today's visits" — real, check-in-able Activations (GET /me/assignments).
+ *  - "Planned route" — the SupervisorRoute itinerary (GET /me/supervisor-routes).
+ *    Pinned first on screen so the supervisor sees their itinerary immediately;
+ *    read-only by design: it's planning data only and never drives check-in
+ *    eligibility (Backend Spec v3 §5.9) — don't add a check-in affordance here.
+ *  - "Today's visits" — real, check-in-able Activations (GET /me/assignments),
+ *    sorted by the planned route's outlet order (display only).
  *    A supervisor can have several outlets open the same day, unlike a
  *    promoter's single assignment, so each gets its own row.
- *  - "Planned route" — the SupervisorRoute itinerary (GET /me/supervisor-routes).
- *    Read-only by design: it's planning data only and never drives check-in
- *    eligibility (Backend Spec v3 §5.9) — don't add a check-in affordance here.
  */
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -28,6 +30,7 @@ import { getApiErrorMessage, getApiErrorCode } from '@/api/client';
 import { LocationUnavailableError } from '@/lib/checkInLocation';
 import { showAlert } from '@/lib/showAlert';
 import { formatDay } from '@/lib/date';
+import { sortVisitsByRoute } from '@/lib/supervisorRouteOrder';
 import { checklistUnlocked } from '@/lib/supervisorChecklist';
 import type { SupervisorAssignment } from '@/api/types';
 
@@ -61,16 +64,7 @@ export function SupervisorRouteScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionLabel}>Today's visits</Text>
-        {visitsQuery.isLoading ? (
-          <Text style={styles.emptyText}>Loading…</Text>
-        ) : (visitsQuery.data ?? []).length === 0 ? (
-          <Text style={styles.emptyText}>No outlet visit scheduled for today.</Text>
-        ) : (
-          (visitsQuery.data ?? []).map((row) => <VisitRow key={row.assignment.assignmentId} row={row} />)
-        )}
-
-        <Text style={[styles.sectionLabel, { marginTop: spacing.xxl }]}>Planned route</Text>
+        <Text style={styles.sectionLabel}>Planned route</Text>
         {routesQuery.isLoading ? (
           <Text style={styles.emptyText}>Loading…</Text>
         ) : (routesQuery.data ?? []).length === 0 ? (
@@ -88,6 +82,17 @@ export function SupervisorRouteScreen() {
                 </Text>
               ))}
             </Card>
+          ))
+        )}
+
+        <Text style={[styles.sectionLabel, { marginTop: spacing.xxl }]}>Today's visits</Text>
+        {visitsQuery.isLoading ? (
+          <Text style={styles.emptyText}>Loading…</Text>
+        ) : (visitsQuery.data ?? []).length === 0 ? (
+          <Text style={styles.emptyText}>No outlet visit scheduled for today.</Text>
+        ) : (
+          sortVisitsByRoute(visitsQuery.data ?? [], routesQuery.data ?? []).map((row) => (
+            <VisitRow key={row.assignment.assignmentId} row={row} />
           ))
         )}
       </ScrollView>
@@ -109,6 +114,12 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
     try {
       await checkIn(assignment.assignmentId);
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
+      // Land straight on the checked-in outlet's checklist.
+      navigation.navigate('SupervisorChecklist', {
+        assignmentId: assignment.assignmentId,
+        outletName: assignment.outlet.name,
+        campaignName: assignment.campaign.name,
+      });
     } catch (err) {
       if (err instanceof LocationUnavailableError) {
         showAlert('Location required', err.message);
