@@ -64,7 +64,7 @@ needed unless the step text changed.
   `/my-outlet-attendance`, `/my-leave-requests`, `/promoter-list`,
   `/sales/sku-wise`, `/reports/sku-wise`)
 - `assets/portal-sponsor/` → the `sponsor` persona's routes (`/dashboard`,
-  `/activations/client`, `/staff/attendance`, `/supervisor-attendance`,
+  `/staff/attendance`, `/supervisor-attendance`,
   `/sponsor/sales`, `/tracking/promoter`, `/tracking/supervisor`,
   `/tracking/live`, `/reports/client-sku-wise`, `/reports/client-brand-wise`)
 - `assets/mobile-promoter/` → CB Mobile screens for a promoter (`role: field_rep`) login

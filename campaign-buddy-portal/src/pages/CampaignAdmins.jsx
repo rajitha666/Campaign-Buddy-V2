@@ -6,21 +6,31 @@ import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import SearchableSelect from '../components/SearchableSelect';
+import Badge from '../components/Badge';
 
-const emptyNewAdmin = { username: '', password: '', displayName: '', email: '' };
+const ROLE_OPTIONS = [
+  { value: 'usr', label: 'Campaign Admin' },
+  { value: 'sponsor', label: 'Sponsor' },
+  { value: 'supervisor', label: 'Supervisor' },
+];
+const ROLE_LABELS = { usr: 'Campaign Admin', sponsor: 'Sponsor', supervisor: 'Supervisor' };
+
+const emptyNewAdmin = { username: '', password: '', displayName: '', email: '', roleId: 'usr' };
 
 // Lets a Super Admin OR any existing Campaign Admin of this campaign link
-// another Campaign Admin account to it — either picking an existing "usr"
-// account or creating a brand-new one inline. Linking never removes another
-// admin; a campaign can have any number of admins (backend: one
-// CampaignAccessGrant row per user+campaign).
+// back-office accounts of any role (Campaign Admin, Sponsor or Supervisor) to
+// it — either picking an existing account or creating a brand-new one inline.
+// Linking never removes another campaign's links; a campaign can have any
+// number of them (backend: one CampaignAccessGrant row per user+campaign).
 export default function CampaignAdmins() {
   const { campaignId } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { push } = useToast();
 
+  const [campaign, setCampaign] = useState(null);
   const [grants, setGrants] = useState([]);
+  const [role, setRole] = useState('usr');
   const [candidates, setCandidates] = useState([]);
   const [pickUserId, setPickUserId] = useState('');
   const [linking, setLinking] = useState(false);
@@ -33,19 +43,25 @@ export default function CampaignAdmins() {
   async function load() {
     setLoading(true); setError(null);
     try {
-      const [grantsRes, candidatesRes] = await Promise.all([
+      const [campaignRes, grantsRes, candidatesRes] = await Promise.all([
+        campaignsApi.get(campaignId),
         campaignsApi.admins(campaignId),
-        campaignsApi.adminCandidates(campaignId, ''),
+        campaignsApi.adminCandidates(campaignId, '', { role }),
       ]);
-      setGrants((grantsRes?.data || []).filter((g) => g.user?.roleId === 'usr'));
+      setCampaign(campaignRes?.data || null);
+      setGrants(grantsRes?.data || []);
       setCandidates(candidatesRes?.data || []);
     } catch (e) {
-      setError(e.message || 'Could not load campaign admins.');
+      setError(e.message || 'Could not load campaign access.');
     } finally {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [campaignId]);
+  function changeRole(next) {
+    setRole(next);
+    setPickUserId('');
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [campaignId, role]);
 
   const linkedUserIds = new Set(grants.map((g) => g.userId));
   const availableOptions = candidates
@@ -56,11 +72,11 @@ export default function CampaignAdmins() {
     if (!pickUserId) return;
     setLinking(true);
     try {
-      await campaignsApi.addAdmin(campaignId, { userId: pickUserId });
-      push('Admin linked to campaign');
+      await campaignsApi.addAdmin(campaignId, { userId: pickUserId, roleId: role });
+      push(`${ROLE_LABELS[role]} linked to campaign`);
       setPickUserId('');
       load();
-    } catch (e) { push(e.message || 'Could not link admin', 'error'); }
+    } catch (e) { push(e.message || 'Could not link account', 'error'); }
     finally { setLinking(false); }
   }
 
@@ -71,30 +87,30 @@ export default function CampaignAdmins() {
     }
     setCreating(true);
     try {
-      await campaignsApi.addAdmin(campaignId, { newUser: newAdmin });
-      push('New admin account created and linked');
+      await campaignsApi.addAdmin(campaignId, { newUser: newAdmin, roleId: newAdmin.roleId });
+      push('New account created and linked');
       setNewAdmin(emptyNewAdmin);
       setShowNewForm(false);
       load();
-    } catch (e) { push(e.message || 'Could not create admin account', 'error'); }
+    } catch (e) { push(e.message || 'Could not create account', 'error'); }
     finally { setCreating(false); }
   }
 
   async function unlink(userId) {
-    if (!window.confirm('Remove this admin from the campaign? Their account is not deleted.')) return;
+    if (!window.confirm('Remove this account from the campaign? The account itself is not deleted.')) return;
     try {
       await campaignsApi.removeAdmin(campaignId, userId);
-      push('Admin removed from campaign');
+      push('Account removed from campaign');
       load();
-    } catch (e) { push(e.message || 'Could not remove admin', 'error'); }
+    } catch (e) { push(e.message || 'Could not remove account', 'error'); }
   }
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1>Campaign Admins</h1>
-          <p className="page-sub">Campaign Admin accounts linked to this campaign — a campaign can have any number of admins.</p>
+          <h1>Campaign Team{campaign?.name ? `: ${campaign.name}` : ''}</h1>
+          <p className="page-sub">Back-office accounts with access to this campaign — admins, sponsors and supervisors. A campaign can have any number of each.</p>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => navigate('/campaigns')}>← Back to Campaigns</button>
       </div>
@@ -103,8 +119,12 @@ export default function CampaignAdmins() {
           {isAdmin ? (
             <div className="table-card allow-overflow" style={{ marginBottom: 16, padding: 16 }}>
               <div className="filter-bar">
+                <div className="filter-field">
+                  <label>Role</label>
+                  <SearchableSelect options={ROLE_OPTIONS} value={role} onChange={changeRole} placeholder="Choose a role…" />
+                </div>
                 <div className="filter-field" style={{ minWidth: 320 }}>
-                  <label>Link an existing admin account</label>
+                  <label>Link an existing account</label>
                   <SearchableSelect
                     options={availableOptions}
                     value={pickUserId}
@@ -113,14 +133,23 @@ export default function CampaignAdmins() {
                   />
                 </div>
                 <button className="btn btn-primary btn-sm" onClick={linkExisting} disabled={!pickUserId || linking}>
-                  {linking ? 'Linking…' : 'Link Admin'}
+                  {linking ? 'Linking…' : 'Link To Campaign'}
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowNewForm((v) => !v)}>
-                  {showNewForm ? 'Cancel new account' : '+ New Admin Account'}
+                  {showNewForm ? 'Cancel new account' : '+ New Account'}
                 </button>
               </div>
               {showNewForm ? (
                 <div className="form-two" style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+                  <div className="form-row">
+                    <label>Role <span className="req">*</span></label>
+                    <SearchableSelect
+                      options={ROLE_OPTIONS}
+                      value={newAdmin.roleId}
+                      onChange={(v) => setNewAdmin((f) => ({ ...f, roleId: v }))}
+                      placeholder="Choose a role…"
+                    />
+                  </div>
                   <div className="form-row">
                     <label>Username <span className="req">*</span></label>
                     <input type="text" placeholder="lowercase, no spaces" value={newAdmin.username}
@@ -152,17 +181,18 @@ export default function CampaignAdmins() {
           ) : null}
           <div className="table-card">
             {grants.length === 0 ? (
-              <div className="empty-state"><div className="big">No admins linked yet</div>Link an existing account or create a new one above.</div>
+              <div className="empty-state"><div className="big">No accounts linked yet</div>Link an existing account or create a new one above.</div>
             ) : (
               <div className="table-scroll">
                 <table className="data-table">
-                  <thead><tr><th>Name</th><th>Username</th><th>Email</th>{isAdmin ? <th>Action</th> : null}</tr></thead>
+                  <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th>{isAdmin ? <th>Action</th> : null}</tr></thead>
                   <tbody>
                     {grants.map((g) => (
                       <tr key={g.id}>
                         <td className="cell-strong">{g.user?.displayName || g.userId}</td>
                         <td>{g.user?.username || '—'}</td>
                         <td className="cell-muted">{g.user?.email || '—'}</td>
+                        <td><Badge type={g.user?.roleId === 'sponsor' ? 'info' : 'muted'}>{ROLE_LABELS[g.user?.roleId] || g.user?.roleId || '—'}</Badge></td>
                         {isAdmin ? <td><div className="icon-btn delete" onClick={() => unlink(g.userId)}>✕</div></td> : null}
                       </tr>
                     ))}

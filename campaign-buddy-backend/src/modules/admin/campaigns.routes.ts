@@ -213,18 +213,23 @@ router.get(
 );
 
 // Minimal, permission-safe lookup so a Campaign Admin (who cannot call the
-// [adm]-only GET /users) can still search for an existing Campaign Admin
-// account to link to this campaign. Only ever returns "usr"-role accounts,
-// and only the fields needed to pick one.
+// [adm]-only GET /users) can still search for an existing back-office account
+// (Campaign Admin "usr", Sponsor or Supervisor) to link to this campaign.
+// `?role=` filters by role id, defaulting to "usr" for backward compatibility.
+// Only ever returns the fields needed to pick one.
 router.get(
   "/campaigns/:campaignId/admin-candidates",
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
     const search = String(req.query.search || "").trim();
+    const role = String(req.query.role || "usr");
+    if (!["usr", "sponsor", "supervisor"].includes(role)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Unknown role");
+    }
     const rows = await prisma.user.findMany({
       where: {
-        roleId: "usr",
+        roleId: role,
         ...(search
           ? {
               OR: [
@@ -235,29 +240,33 @@ router.get(
             }
           : {}),
       },
-      select: { id: true, username: true, displayName: true, email: true },
+      select: { id: true, username: true, displayName: true, email: true, roleId: true },
       take: 100,
     });
     res.json(okList(rows, rows.length));
   })
 );
 
-// Link a Campaign Admin (role "usr") to this campaign — Super Admin or any
-// existing Campaign Admin already granted to this campaign can call this
-// (requireCampaignAccess lets "adm" through unconditionally, and requires a
-// grant row for "usr"). Adding an admin never removes another campaign's
-// existing admins — CampaignAccessGrant is one row per (user, campaign).
+// Link a back-office account (Campaign Admin "usr", Sponsor or Supervisor) to
+// this campaign — Super Admin or any existing Campaign Admin already granted to
+// this campaign can call this (requireCampaignAccess lets "adm" through
+// unconditionally, and requires a grant row for "usr"). Adding a user never
+// removes another campaign's existing links — CampaignAccessGrant is one row
+// per (user, campaign). `roleId` picks the role for inline-created accounts
+// (default "usr"); linking an existing account never changes its role.
 router.post(
   "/campaigns/:campaignId/admins",
   requireCampaignAccess,
   requireRole("adm", "usr"),
   validate({ body: s.campaignAdminAdd }),
   asyncHandler(async (req, res) => {
-    const { userId, newUser } = req.body as {
+    const { userId, roleId, newUser } = req.body as {
       userId?: string;
-      newUser?: { username: string; password: string; displayName: string; email?: string };
+      roleId?: "usr" | "sponsor" | "supervisor";
+      newUser?: { username: string; password: string; displayName: string; email?: string; roleId?: "usr" | "sponsor" | "supervisor" };
     };
     const campaignId = req.params.campaignId;
+    const inlineRole = roleId || newUser?.roleId || "usr";
 
     let resolvedUserId = userId;
     if (!resolvedUserId && newUser) {
@@ -270,14 +279,14 @@ router.post(
           displayName: newUser.displayName,
           email: newUser.email,
           passwordHash,
-          roleId: "usr", // this endpoint only ever creates Campaign Admins, never Super Admins
+          roleId: inlineRole,
         },
       });
       resolvedUserId = created.id;
     } else if (resolvedUserId) {
       const target = await prisma.user.findUniqueOrThrow({ where: { id: resolvedUserId } });
-      if (target.roleId !== "usr") {
-        throw new ApiError(400, "VALIDATION_ERROR", "Only Campaign Admin accounts can be linked to a campaign this way");
+      if (!["usr", "sponsor", "supervisor"].includes(target.roleId)) {
+        throw new ApiError(400, "VALIDATION_ERROR", "Only back-office accounts can be linked to a campaign this way");
       }
     }
 

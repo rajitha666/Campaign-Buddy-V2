@@ -255,18 +255,21 @@ export const s = {
       newItem: z.record(z.string(), z.unknown()).optional(),
     })
     .refine((v) => v.itemId || v.itemIds || v.newItem, { message: "itemId, itemIds or newItem required" }),
-  // Link a Campaign Admin (role "usr") account to a campaign — either an
-  // existing user or a brand-new one created inline. Callable by Super Admin
-  // or any existing Campaign Admin of this campaign (see requireCampaignAccess).
+  // Link a back-office account (role "usr", "sponsor" or "supervisor") to a
+  // campaign — either an existing user or a brand-new one created inline.
+  // Callable by Super Admin or any existing Campaign Admin of this campaign
+  // (see requireCampaignAccess).
   campaignAdminAdd: z
     .object({
       userId: id.optional(),
+      roleId: z.enum(["usr", "sponsor", "supervisor"]).optional(),
       newUser: z
         .object({
           username: z.string().min(1),
           password: z.string().min(1),
           displayName: z.string().min(1),
           email: z.string().optional(),
+          roleId: z.enum(["usr", "sponsor", "supervisor"]).optional(),
         })
         .optional(),
     })

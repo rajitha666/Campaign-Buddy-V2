@@ -19,7 +19,6 @@ export const NAV = [
       { path: '/activations', label: 'Activation' },
     ]},
     { path: '/my-campaigns', label: 'My Campaigns', icon: 'campaigns', roles: ['supervisor'] },
-    { path: '/activations/client', label: 'Activation List', icon: 'campaigns', roles: ['sponsor'] },
   ]},
   { section: 'Outlets', roles: ['admin'], items: [
     { label: 'Outlets', icon: 'outlets', roles: ['admin'], children: [

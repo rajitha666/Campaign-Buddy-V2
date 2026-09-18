@@ -45,6 +45,73 @@ describe("supervisor auto-grant on activation assignment (§5.3)", () => {
   });
 });
 
+describe("link any back-office role to a campaign via /campaigns/:id/admins", () => {
+  it("links an existing sponsor account and lists it", async () => {
+    const token = await adminToken();
+    const { campaign } = await makeCampaignWithActivation();
+    const sponsorUser = await prisma.user.create({
+      data: { username: "spon1", passwordHash: "x", displayName: "Sponsor One", roleId: "sponsor" },
+    });
+
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/admins`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ userId: sponsorUser.id });
+    expect(res.status).toBe(201);
+
+    const list = await request(app).get(`/admin/v1/campaigns/${campaign.id}/access`).set("Authorization", `Bearer ${token}`);
+    const linked = list.body.data.find((g: any) => g.userId === sponsorUser.id);
+    expect(linked).toBeTruthy();
+    expect(linked.user.roleId).toBe("sponsor");
+  });
+
+  it("creates a new sponsor account inline and links it", async () => {
+    const token = await adminToken();
+    const { campaign } = await makeCampaignWithActivation();
+
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/admins`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ newUser: { username: "newspon", password: "pw123456", displayName: "New Sponsor", roleId: "sponsor" } });
+    expect(res.status).toBe(201);
+
+    const created = await prisma.user.findUnique({ where: { username: "newspon" } });
+    expect(created?.roleId).toBe("sponsor");
+    expect(await prisma.campaignAccessGrant.findUnique({ where: { userId_campaignId: { userId: created!.id, campaignId: campaign.id } } })).not.toBeNull();
+  });
+
+  it("rejects an unknown roleId on inline creation", async () => {
+    const token = await adminToken();
+    const { campaign } = await makeCampaignWithActivation();
+
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/admins`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ newUser: { username: "badrole", password: "pw123456", displayName: "Bad", roleId: "nope" } });
+    expect(res.status).toBe(400);
+    expect(await prisma.user.findUnique({ where: { username: "badrole" } })).toBeNull();
+  });
+
+  it("admin-candidates returns sponsor accounts when role=sponsor", async () => {
+    const token = await adminToken();
+    const { campaign } = await makeCampaignWithActivation();
+    await prisma.user.createMany({
+      data: [
+        { username: "spon2", passwordHash: "x", displayName: "Sponsor Two", roleId: "sponsor" },
+        { username: "usr2", passwordHash: "x", displayName: "User Two", roleId: "usr" },
+      ],
+    });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/admin-candidates?role=sponsor`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.data.map((u: any) => u.username);
+    expect(ids).toContain("spon2");
+    expect(ids).not.toContain("usr2");
+  });
+});
+
 describe("campaign status manual override (§5.8)", () => {
   it("a manual status survives a subsequent GET; changing dates hands control back", async () => {
     const token = await adminToken();
