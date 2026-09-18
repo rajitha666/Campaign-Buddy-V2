@@ -20,6 +20,11 @@ export default function LiveMap() {
   const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Click a "Currently checked in" row to highlight that person's marker on
+  // the map (same interaction as clicking a Promoter Tracking row highlights
+  // their trail). Keyed by staff label — the live rows have no id.
+  const [selectedKey, setSelectedKey] = useState(null);
+  const rowKey = (p) => `${p.staffName || p.userId || 'Staff'}|${p.outletName || ''}`;
 
   useEffect(() => {
     if (!currentCampaignId) { setLoading(false); return; }
@@ -51,20 +56,27 @@ export default function LiveMap() {
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} /> : (
         <>
-          <div className="panel"><LiveMapView pings={live} outlets={outlets} height={420} /></div>
+          <div className="panel"><LiveMapView pings={live} outlets={outlets} height={420} highlightedStaffKey={selectedKey} /></div>
           <div className="table-card" style={{ marginTop: 16 }}>
             <div className="table-toolbar"><div className="entries-select">Currently checked in ({live.length})</div></div>
             <div className="table-scroll">
               <table className="data-table">
                 <thead><tr><th>{applyDesignationLabel('Promoter', designationLabel)}</th><th>Outlet</th><th>Checked in since</th></tr></thead>
                 <tbody>
-                  {live.map((p, i) => (
-                    <tr key={`${p.staffName || ''}-${p.outletName || ''}-${i}`}>
-                      <td>{p.staffName || p.userId}</td>
-                      <td>{p.outletName || p.outletId}</td>
-                      <td>{p.checkedInSince ? new Date(p.checkedInSince).toLocaleString() : '—'}</td>
-                    </tr>
-                  ))}
+                  {live.map((p, i) => {
+                    const k = rowKey(p);
+                    return (
+                      <tr
+                        key={`${p.staffName || ''}-${p.outletName || ''}-${i}`}
+                        className={'is-clickable' + (k === selectedKey ? ' is-selected' : '')}
+                        onClick={() => setSelectedKey((prev) => (prev === k ? null : k))}
+                      >
+                        <td>{p.staffName || p.userId}</td>
+                        <td>{p.outletName || p.outletId}</td>
+                        <td>{p.checkedInSince ? new Date(p.checkedInSince).toLocaleString() : '—'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
