@@ -137,7 +137,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
         <button className="btn btn-primary btn-sm" onClick={loadSales}>Load sales</button>
         {rows && rows.length > 0 ? <button className="btn btn-secondary btn-sm" onClick={exportCsv}>Export CSV</button> : null}
       </div>
-      {rows && meta.staffName ? (
+      {rows && meta.activationId ? (
         <div className="cell-muted" style={{ fontSize: 12, marginTop: 6 }}>
           Promoter: <strong>{meta.staffName}</strong> · Activation: <strong>{meta.activationName}</strong>
         </div>
