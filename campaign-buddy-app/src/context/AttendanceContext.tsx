@@ -12,6 +12,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import * as Location from 'expo-location';
 import * as attendanceApi from '@/api/attendance';
 import type { AttendanceStatus } from '@/api/types';
+import { getCheckoutCoords } from '@/lib/checkoutLocation';
 
 interface AttendanceContextValue {
   checkedIn: boolean;
@@ -79,10 +80,14 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const checkOut = useCallback(async () => {
-    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    // Best-effort GPS fix — a denied permission or a stalled/failed fix must
+    // not block check-out (#50); the backend accepts check-out without coords.
+    const coords = await getCheckoutCoords({
+      requestPermission: Location.requestForegroundPermissionsAsync,
+      getCurrentPosition: () => Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+    });
     await attendanceApi.checkOut({
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
+      ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
       timestamp: new Date().toISOString(),
       salesSummaryConfirmed: true,
     });

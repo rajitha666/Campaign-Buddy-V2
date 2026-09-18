@@ -27,8 +27,10 @@ export async function checkIn(payload: CheckInRequest): Promise<AttendanceRecord
 }
 
 export interface CheckOutRequest {
-  latitude: number;
-  longitude: number;
+  // Best-effort — omitted when permission was denied or no GPS fix could be
+  // obtained in time; the backend accepts check-out without coords (#50).
+  latitude?: number;
+  longitude?: number;
   timestamp: string;
   /**
    * True only when the rep tapped "Yes, check out" on the confirm popup.
