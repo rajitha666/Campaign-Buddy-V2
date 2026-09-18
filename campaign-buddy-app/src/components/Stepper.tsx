@@ -21,9 +21,11 @@ interface StepperProps {
   min?: number;
   max?: number;
   size?: 'default' | 'large';
+  /** Locks the whole control: no +/- taps, no direct text entry. */
+  disabled?: boolean;
 }
 
-export function Stepper({ value, onChange, min = 0, max, size = 'default' }: StepperProps) {
+export function Stepper({ value, onChange, min = 0, max, size = 'default', disabled = false }: StepperProps) {
   const large = size === 'large';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
@@ -31,6 +33,7 @@ export function Stepper({ value, onChange, min = 0, max, size = 'default' }: Ste
   const inc = () => onChange(max !== undefined ? Math.min(max, value + 1) : value + 1);
 
   const startEditing = () => {
+    if (disabled) return;
     setDraft(String(value));
     setEditing(true);
   };
@@ -43,12 +46,12 @@ export function Stepper({ value, onChange, min = 0, max, size = 'default' }: Ste
     <View style={styles.row}>
       <Pressable
         onPress={dec}
-        disabled={value <= min}
-        style={[styles.btn, large && styles.btnLarge, value <= min && styles.btnDisabled]}
+        disabled={disabled || value <= min}
+        style={[styles.btn, large && styles.btnLarge, (disabled || value <= min) && styles.btnDisabled]}
       >
         <Text style={styles.btnLabel}>–</Text>
       </Pressable>
-      {editing ? (
+      {editing && !disabled ? (
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -61,13 +64,13 @@ export function Stepper({ value, onChange, min = 0, max, size = 'default' }: Ste
         />
       ) : (
         <Pressable onPress={startEditing}>
-          <Text style={[styles.value, large && styles.valueLarge]}>{value}</Text>
+          <Text style={[styles.value, large && styles.valueLarge, disabled && styles.valueDisabled]}>{value}</Text>
         </Pressable>
       )}
       <Pressable
         onPress={inc}
-        disabled={max !== undefined && value >= max}
-        style={[styles.btn, large && styles.btnLarge, max !== undefined && value >= max && styles.btnDisabled]}
+        disabled={disabled || (max !== undefined && value >= max)}
+        style={[styles.btn, large && styles.btnLarge, (disabled || (max !== undefined && value >= max)) && styles.btnDisabled]}
       >
         <Text style={styles.btnLabel}>+</Text>
       </Pressable>
@@ -105,4 +108,5 @@ const styles = StyleSheet.create({
   // that one should still be free to grow for a longer number.
   valueInput: { padding: 0, minWidth: 34, width: 40 },
   valueLarge: { fontSize: 21, minWidth: 34 },
+  valueDisabled: { color: colors.textMuted },
 });

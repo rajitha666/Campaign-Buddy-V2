@@ -106,7 +106,7 @@ export function StatsUpdateScreen() {
           title="Foot fall"
           subtitle="Shoppers who entered the outlet"
         >
-          <Stepper value={footFall} onChange={setFootFall} size="large" />
+          <Stepper value={footFall} onChange={setFootFall} size="large" disabled={!checkedIn} />
         </MetricCard>
 
         <MetricCard
@@ -119,7 +119,7 @@ export function StatsUpdateScreen() {
           title="Approached"
           subtitle="Shoppers engaged by the team"
         >
-          <Stepper value={approached} onChange={setApproached} size="large" />
+          <Stepper value={approached} onChange={setApproached} size="large" disabled={!checkedIn} />
         </MetricCard>
 
         <MetricCard
@@ -132,7 +132,7 @@ export function StatsUpdateScreen() {
           title="Conversion"
           subtitle="Approached shoppers who purchased"
         >
-          <Stepper value={converted} onChange={setConverted} max={approached} size="large" />
+          <Stepper value={converted} onChange={setConverted} max={approached} size="large" disabled={!checkedIn} />
         </MetricCard>
 
         {testerField && tester !== null && (
@@ -152,7 +152,7 @@ export function StatsUpdateScreen() {
             title="Tester"
             subtitle="Units given away as samples"
           >
-            <Stepper value={tester} onChange={setTester} size="large" />
+            <Stepper value={tester} onChange={setTester} size="large" disabled={!checkedIn} />
           </MetricCard>
         )}
 
