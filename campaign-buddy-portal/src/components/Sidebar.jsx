@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { NAV } from '../config/nav';
 import { ICONS } from './Icons';
 import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 export default function Sidebar({ collapsed = false, isPhone = false, onToggleCollapse, onNavigate }) {
-  const { persona } = useAuth();
+  const { persona, designationLabel } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   // Which collapsed nav-group's flyout is pinned open by a tap — hover alone
@@ -56,7 +57,7 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
           if (visibleItems.length === 0) return null;
           return (
             <div key={si}>
-              {sec.section ? <div className="nav-section-label">{sec.section}</div> : null}
+              {sec.section ? <div className="nav-section-label">{applyDesignationLabel(sec.section, designationLabel)}</div> : null}
               {visibleItems.map((it, ii) => (
                 <NavEntry
                   key={ii}
@@ -65,6 +66,7 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
                   go={go}
                   isOpen={openGroup === `${si}-${ii}`}
                   onToggleOpen={() => setOpenGroup((g) => (g === `${si}-${ii}` ? null : `${si}-${ii}`))}
+                  designationLabel={designationLabel}
                 />
               ))}
             </div>
@@ -75,23 +77,24 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
   );
 }
 
-function NavEntry({ item, pathname, go, isOpen, onToggleOpen }) {
+function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel }) {
+  const label = (text) => applyDesignationLabel(text, designationLabel);
   if (item.children) {
     const activeParent = item.children.some((c) => c.path === pathname);
     return (
       <div className={`nav-group ${isOpen ? 'flyout-open' : ''}`}>
         <div className={`nav-item ${activeParent ? 'active' : ''}`} onClick={onToggleOpen}>
-          {ICONS[item.icon]}<span>{item.label}</span>
+          {ICONS[item.icon]}<span>{label(item.label)}</span>
         </div>
         <div className="nav-children">
-          <div className="nav-flyout-title">{item.label}</div>
+          <div className="nav-flyout-title">{label(item.label)}</div>
           {item.children.map((c) => (
             <div
               key={c.path}
               className={`nav-child ${c.path === pathname ? 'active' : ''}`}
               onClick={() => go(c.path)}
             >
-              <span className="dot" />{c.label}
+              <span className="dot" />{label(c.label)}
             </div>
           ))}
         </div>
@@ -103,11 +106,11 @@ function NavEntry({ item, pathname, go, isOpen, onToggleOpen }) {
       <div
         className={`nav-item ${item.path === pathname ? 'active' : ''}`}
         onClick={() => go(item.path)}
-        title={item.label}
+        title={label(item.label)}
       >
-        {ICONS[item.icon]}<span>{item.label}</span>
+        {ICONS[item.icon]}<span>{label(item.label)}</span>
       </div>
-      <div className="nav-flyout-label">{item.label}</div>
+      <div className="nav-flyout-label">{label(item.label)}</div>
     </div>
   );
 }

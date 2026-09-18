@@ -28,7 +28,7 @@ export const NAV = [
       { path: '/cities', label: 'Cities' },
     ]},
   ]},
-  { section: 'People', roles: ['admin', 'supervisor'], items: [
+  { section: 'People', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Staff', icon: 'staff', roles: ['admin'], children: [
       { path: '/staff', label: 'List' },
       { path: '/staff/attendance', label: 'Attendance' },
@@ -44,6 +44,10 @@ export const NAV = [
     ]},
     { path: '/my-outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['supervisor'] },
     { path: '/my-leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['supervisor'] },
+    // Client role (doc G) — read-only visibility into both attendance logs
+    // for their own campaign, same generic outlet-scoping as everyone else.
+    { path: '/staff/attendance', label: 'Attendance', icon: 'staff', roles: ['sponsor'] },
+    { path: '/supervisor-attendance', label: 'Supervisor Attendance', icon: 'supervisors', roles: ['sponsor'] },
   ]},
   { section: 'Sales', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Sales Overview', icon: 'sales', roles: ['admin'], children: [
@@ -63,20 +67,21 @@ export const NAV = [
       { path: '/tracking/supervisor', label: 'Supervisor' },
       { path: '/tracking/live', label: 'Seller Live Locations' },
     ]},
-    { path: '/tracking/promoter', label: 'Promoter Tracking', icon: 'tracking', roles: ['supervisor'] },
+    { path: '/tracking/promoter', label: 'Promoter Tracking', icon: 'tracking', roles: ['supervisor', 'sponsor'] },
+    { path: '/tracking/supervisor', label: 'Supervisor Tracking', icon: 'tracking', roles: ['sponsor'] },
     { path: '/tracking/live', label: 'Seller Live Locations', icon: 'tracking', roles: ['supervisor', 'sponsor'] },
   ]},
   { section: 'Reports', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Reports', icon: 'reports', roles: ['admin'], children: [
       { path: '/reports/sku-wise', label: 'Overall SKU Wise' },
-      { path: '/reports/brand-wise', label: 'Overall Brand Wise' },
+      { path: '/reports/brand-wise', label: 'Brand Wise' },
     ]},
     { label: 'Admin Reports', icon: 'reports', roles: ['admin'], children: [
       { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
     ]},
     { label: 'Client Reports', icon: 'reports', roles: ['admin', 'sponsor'], children: [
       { path: '/reports/client-sku-wise', label: 'Overall SKU wise' },
-      { path: '/reports/client-brand-wise', label: 'Overall Brand Wise' },
+      { path: '/reports/client-brand-wise', label: 'Brand Wise' },
     ]},
     { path: '/reports/sku-wise', label: 'Overall Reports', icon: 'reports', roles: ['supervisor'] },
   ]},

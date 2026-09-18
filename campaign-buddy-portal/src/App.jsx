@@ -4,7 +4,7 @@ import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
 import Login from './pages/Login';
-import DashboardRouter from './pages/DashboardRouter';
+import Dashboard from './pages/Dashboard';
 import ResourcePage from './pages/ResourcePage';
 import CampaignItems from './pages/CampaignItems';
 import CampaignAdmins from './pages/CampaignAdmins';
@@ -37,7 +37,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardRouter />} />
+              <Route path="/dashboard" element={<Dashboard />} />
 
               <Route path="/clients" element={R('clients')()} />
               <Route path="/items" element={R('items')()} />

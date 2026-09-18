@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi, reports as reportsApi, campaigns as campaignsApi } from '../lib/endpoints';
+import { columnText } from '../lib/columnText';
 
 describe('resources config', () => {
   it('every resource has a title, subtitle and fetchList', () => {
@@ -8,7 +9,9 @@ describe('resources config', () => {
       expect(cfg.title, `${key}.title`).toBeTypeOf('string');
       expect(cfg.subtitle, `${key}.subtitle`).toBeTypeOf('string');
       expect(cfg.fetchList, `${key}.fetchList`).toBeTypeOf('function');
-      expect(Array.isArray(cfg.columns), `${key}.columns`).toBe(true);
+      // Usually a static array; a resource whose columns depend on the
+      // campaign (e.g. per-campaign custom fields) may pass (meta) => columns[].
+      expect(Array.isArray(cfg.columns) || typeof cfg.columns === 'function', `${key}.columns`).toBe(true);
     }
   });
 
@@ -268,5 +271,143 @@ describe('resources config', () => {
     expect(unitPrice.validate('1200')).toBeNull();
     expect(reorder.validate('5')).toBeNull();
     expect(reorder.validate('1.5')).toBeTypeOf('string');
+  });
+
+  it('SKU Wise Sales shows and exports the promoter who logged the sale (portal item 3)', () => {
+    const col = RESOURCES.skuSales.columns.find((c) => c.key === 'staffName');
+    expect(col).toBeDefined();
+    expect(col.label).toBe('Promoter');
+    const row = { activationItem: { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya' } } } };
+    expect(columnText(col, row)).toBe('EMP-0004 - Tharindu Jayasuriya');
+    expect(columnText(col, { activationItem: {} })).toBe('—');
+  });
+
+  it('SKU Wise Sales has an Amount column (sold qty × unit price) alongside Promoter (client doc D)', () => {
+    const cfg = RESOURCES.skuSales;
+    expect(cfg.columns.map((c) => c.key)).toEqual(
+      expect.arrayContaining(['itemName', 'amount', 'outletName', 'staffName', 'date', 'openingStock', 'soldToday', 'remainingStock'])
+    );
+    const amountCol = cfg.columns.find((c) => c.key === 'amount');
+    const row = { soldToday: 5, activationItem: { campaignItem: { item: { unitPrice: 3200 } } } };
+    expect(columnText(amountCol, row)).toBe(16000);
+  });
+
+  it('Campaign form has a Tester Field toggle that round-trips through create/edit (client doc D)', async () => {
+    const field = RESOURCES.campaigns.formFields.find((f) => f.key === 'testerFieldEnabled');
+    expect(field).toBeDefined();
+    expect(field.type).toBe('radio');
+    expect(RESOURCES.campaigns.editValues({ testerFieldEnabled: true }).testerFieldEnabled).toBe(true);
+    expect(RESOURCES.campaigns.editValues({}).testerFieldEnabled).toBe(false);
+
+    const createSpy = vi.spyOn(campaignsApi, 'create').mockResolvedValue({ data: {} });
+    const updateSpy = vi.spyOn(campaignsApi, 'update').mockResolvedValue({ data: {} });
+    try {
+      await RESOURCES.campaigns.createItem({ values: { testerFieldEnabled: true } });
+      expect(createSpy.mock.calls[0][0].testerFieldEnabled).toBe(true);
+      await RESOURCES.campaigns.updateItem({ id: 'c1', values: { testerFieldEnabled: false } });
+      expect(updateSpy.mock.calls[0][1].testerFieldEnabled).toBe(false);
+    } finally {
+      createSpy.mockRestore();
+      updateSpy.mockRestore();
+    }
+  });
+
+  it('Sales Update Status lists every activation for the day with a three-way completed/pending/absent Status, no Foot Fall (client doc D)', async () => {
+    const spy = vi.spyOn(reportsApi, 'salesStatus').mockResolvedValue({
+      data: [
+        { activationId: 'a1', outletName: 'Outlet A', staffName: 'Kasun', status: 'completed' },
+        { activationId: 'a2', outletName: 'Outlet B', staffName: 'Ishara', status: 'pending' },
+        { activationId: 'a3', outletName: 'Outlet C', staffName: 'Nadeesha', status: 'absent' },
+      ],
+    });
+    try {
+      const cfg = RESOURCES.salesStatus;
+      expect(cfg.excel).toBe(true);
+      expect(cfg.columns.map((c) => c.key)).toEqual(['outletName', 'staffName', 'status']);
+
+      const statusCol = cfg.columns.find((c) => c.key === 'status');
+      expect(columnText(statusCol, { status: 'completed' })).toBe('Completed');
+      expect(columnText(statusCol, { status: 'pending' })).toBe('Pending');
+      expect(columnText(statusCol, { status: 'absent' })).toBe('Absent');
+
+      const res = await cfg.fetchList({ campaignId: 'c1', query: { date: '2026-09-17' } });
+      expect(spy).toHaveBeenCalledWith('c1', { date: '2026-09-17' });
+      expect(res.data).toHaveLength(3);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('Outlet Wise filters by Outlet + From/To (both defaulting to today) and builds columns from meta.customFieldDefs, one row per outlet (client doc D)', async () => {
+    const cfg = RESOURCES.outletWise;
+    expect(cfg.excel).toBe(true);
+    expect(cfg.filters.map((f) => f.key)).toEqual(['outletId', 'dateFrom', 'dateTo']);
+    expect(cfg.filters.find((f) => f.key === 'dateFrom').defaultToday).toBe(true);
+    expect(cfg.filters.find((f) => f.key === 'dateTo').defaultToday).toBe(true);
+    expect(typeof cfg.columns).toBe('function');
+
+    const baseCols = cfg.columns({});
+    expect(baseCols.map((c) => c.key)).toEqual(['outletName', 'footFall', 'approached', 'converted', 'totalSales', 'target', 'achievementPct']);
+    expect(baseCols.find((c) => c.key === 'outletName').label).toBe('Outlet');
+    const conversionCol = baseCols.find((c) => c.key === 'converted');
+    expect(columnText(conversionCol, { approached: 40, converted: 10 })).toBe(25);
+    expect(columnText(conversionCol, { approached: 0, converted: 0 })).toBe(0);
+
+    // number-type custom field: summed as-is, plain label
+    const withNumber = cfg.columns({ customFieldDefs: [{ key: 'samples_given', label: 'Samples Given', type: 'number' }] });
+    const numberCol = withNumber.find((c) => c.key === 'samples_given');
+    expect(numberCol.label).toBe('Samples Given');
+    expect(columnText(numberCol, { samples_given: 7 })).toBe(7);
+
+    // non-number custom field: latest-value-only, label flagged "(current)"
+    const withSelect = cfg.columns({ customFieldDefs: [{ key: 'weather', label: 'Weather', type: 'select' }] });
+    const selectCol = withSelect.find((c) => c.key === 'weather');
+    expect(selectCol.label).toBe('Weather (current)');
+    expect(columnText(selectCol, { weather: 'Sunny' })).toBe('Sunny');
+
+    const withBoolean = cfg.columns({ customFieldDefs: [{ key: 'promo', label: 'Promo running?', type: 'boolean' }] });
+    const boolCol = withBoolean.find((c) => c.key === 'promo');
+    expect(columnText(boolCol, { promo: true })).toBe('Yes');
+    expect(columnText(boolCol, { promo: false })).toBe('No');
+    expect(columnText(boolCol, {})).toBe('—');
+
+    const spy = vi.spyOn(reportsApi, 'outletWise').mockResolvedValue({
+      data: [{ outletId: 'o1', outletName: 'Outlet A', footFall: 10, approached: 4, converted: 1, totalSales: 5000, target: 20, achievementPct: 50 }],
+      meta: { customFieldDefs: [] },
+    });
+    try {
+      const res = await cfg.fetchList({ campaignId: 'c1', query: { dateFrom: '2026-09-17', dateTo: '2026-09-17' } });
+      expect(spy).toHaveBeenCalledWith('c1', { dateFrom: '2026-09-17', dateTo: '2026-09-17' });
+      expect(res.data[0].outletName).toBe('Outlet A');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('Staff Attendance has separate Promoter (ID + name) and Name columns, and times drop seconds (client doc A)', () => {
+    const cfg = RESOURCES.staffAttendance;
+    const row = { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu' }, outlet: { name: 'Outlet A' } }, checkInAt: '2026-09-17T08:03:45.000Z' };
+    const promoterCol = cfg.columns.find((c) => c.key === 'promoterLabel');
+    const nameCol = cfg.columns.find((c) => c.key === 'staffName');
+    expect(promoterCol.label).toBe('Promoter');
+    expect(columnText(promoterCol, row)).toBe('EMP-0004 - Tharindu Jayasuriya');
+    expect(nameCol.label).toBe('Name');
+    expect(columnText(nameCol, row)).toBe('Tharindu');
+
+    const checkInCol = cfg.columns.find((c) => c.key === 'checkInAt');
+    expect(columnText(checkInCol, row)).not.toMatch(/\d{1,2}:\d{2}:\d{2}/); // HH:MM only, no :SS
+  });
+
+  it('Promoter Tracking has an "All Promoters" filter option and highlights the clicked row on the map (client doc E)', () => {
+    const cfg = RESOURCES.promoterTracking;
+    const staffFilter = cfg.filters.find((f) => f.key === 'staffId');
+    expect(staffFilter.allLabel).toBe('All Promoters');
+
+    const rows = [{ id: 'p1', staffId: 's1' }];
+    const selected = cfg.renderExtra(rows, { id: 'p1', staffId: 's1' });
+    expect(selected.props.children.props.highlightedStaffId).toBe('s1');
+
+    const none = cfg.renderExtra(rows, null);
+    expect(none.props.children.props.highlightedStaffId).toBe(null);
   });
 });

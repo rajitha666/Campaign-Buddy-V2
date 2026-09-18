@@ -3,9 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { reports as reportsApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import { exportFilename } from '../lib/exportFilename';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 export default function MonthlyAttendance() {
-  const { currentCampaignId } = useAuth();
+  const { currentCampaignId, designationLabel } = useAuth();
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [rows, setRows] = useState([]);
   const [days, setDays] = useState([]);
@@ -28,10 +30,10 @@ export default function MonthlyAttendance() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentCampaignId, month]);
 
   function exportCsv() {
-    const header = ['Promoter', 'Outlet', ...days].join(',');
+    const header = [applyDesignationLabel('Promoter', designationLabel), 'Outlet', ...days].join(',');
     const lines = rows.map((r) => [r.staffName, r.outletName, ...days.map((d) => r.days?.[d] ?? '')].join(','));
     const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `attendance-${month}.csv`; a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = exportFilename('Monthly Attendance', 'csv'); a.click();
   }
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
@@ -48,7 +50,7 @@ export default function MonthlyAttendance() {
         <div className="table-card">
           <div className="table-scroll">
             <table className="data-table">
-              <thead><tr><th>Promoter</th><th>Outlet</th>{days.map((d) => <th key={d} style={{ textAlign: 'center', padding: '11px 8px' }}>{d}</th>)}</tr></thead>
+              <thead><tr><th>{applyDesignationLabel('Promoter', designationLabel)}</th><th>Outlet</th>{days.map((d) => <th key={d} style={{ textAlign: 'center', padding: '11px 8px' }}>{d}</th>)}</tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i}>

@@ -128,6 +128,7 @@ export const reports = {
   brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise`, { query }),
   outletWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/outlet-wise`, { query }),
   reorder: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/reorder`, { query }),
+  salesStatus: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sales-status`, { query }),
   attendanceMonthly: (campaignId, month) => api.get(`/campaigns/${campaignId}/reports/attendance-monthly`, { query: { month } }),
 };
 

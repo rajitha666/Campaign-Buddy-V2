@@ -1,4 +1,6 @@
 import { ICONS } from './Icons';
+import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 const ACTION_TITLES = {
   view: 'View', edit: 'Edit', delete: 'Delete', target: 'Targets',
@@ -15,7 +17,12 @@ export default function DataTable({
   page = 1, pageSize = 25, total = 0, onPageChange, onPageSizeChange,
   search, onSearchChange,
   emptyTitle = 'Nothing to show yet', emptyHint = 'No data available in table.',
+  // Optional row selection (e.g. Promoter Tracking: click a row to highlight
+  // that promoter's trail on the map above). Unused unless a page passes it.
+  onRowClick, selectedRow,
 }) {
+  const { designationLabel } = useAuth();
+  const label = (c) => applyDesignationLabel(c.label, designationLabel);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = Math.min(page * pageSize, total);
@@ -49,19 +56,23 @@ export default function DataTable({
             <table className="data-table">
               <thead>
                 <tr>
-                  {columns.map((c) => <th key={c.key} className={c.className}>{c.label}</th>)}
+                  {columns.map((c) => <th key={c.key} className={c.className}>{label(c)}</th>)}
                   {actions.length > 0 ? <th>Action</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row[rowKey] ?? JSON.stringify(row)}>
+                  <tr
+                    key={row[rowKey] ?? JSON.stringify(row)}
+                    className={onRowClick ? `is-clickable${row === selectedRow ? ' is-selected' : ''}` : undefined}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  >
                     {columns.map((c) => <td key={c.key} className={c.className}>{c.render ? c.render(row) : row[c.key]}</td>)}
                     {actions.length > 0 ? (
                       <td>
                         <div className="row-actions">
                           {actions.map((a) => (
-                            <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
+                            <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={(e) => { e.stopPropagation(); onAction?.(a, row); }}>
                               {ICONS[a]}
                             </div>
                           ))}
@@ -80,17 +91,21 @@ export default function DataTable({
               are presentational-only, page-capped lists. */}
           <div className="table-cards">
             {rows.map((row) => (
-              <div className="data-card" key={row[rowKey] ?? JSON.stringify(row)}>
+              <div
+                className={`data-card${onRowClick ? ' is-clickable' : ''}${row === selectedRow ? ' is-selected' : ''}`}
+                key={row[rowKey] ?? JSON.stringify(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+              >
                 {columns.map((c) => (
                   <div className="data-card-field" key={c.key}>
-                    <span className="data-card-label">{c.label}</span>
+                    <span className="data-card-label">{label(c)}</span>
                     <span className="data-card-value">{c.render ? c.render(row) : row[c.key]}</span>
                   </div>
                 ))}
                 {actions.length > 0 ? (
                   <div className="data-card-actions row-actions">
                     {actions.map((a) => (
-                      <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={() => onAction?.(a, row)}>
+                      <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={(e) => { e.stopPropagation(); onAction?.(a, row); }}>
                         {ICONS[a]}
                       </div>
                     ))}

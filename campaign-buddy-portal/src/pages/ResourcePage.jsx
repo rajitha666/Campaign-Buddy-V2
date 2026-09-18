@@ -10,24 +10,33 @@ import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError } from '../lib/apiClient';
+import { exportFilename } from '../lib/exportFilename';
+import { columnText } from '../lib/columnText';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 export default function ResourcePage({ resourceKey }) {
   const config = RESOURCES[resourceKey];
-  const { currentCampaignId, currentCampaign, isAdmin } = useAuth();
+  const { currentCampaignId, currentCampaign, isAdmin, designationLabel } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
+  // `config.columns` is usually a static array, but a resource whose column
+  // set depends on the campaign (e.g. Outlet Wise's per-campaign custom
+  // fields) can instead pass a `(meta) => columns[]` function, resolved
+  // against the just-fetched list envelope's meta.
+  const [columns, setColumns] = useState(typeof config?.columns === 'function' ? [] : (config?.columns || []));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState('');
   // Single-date filters (convention: key === 'date') default to today so the
-  // picker never shows an empty "YYYY-MM-DD". Date ranges stay open.
+  // picker never shows an empty "YYYY-MM-DD". Date ranges stay open, unless a
+  // resource opts a dateFrom/dateTo pair into the same default (defaultToday: true).
   const [filterValues, setFilterValues] = useState(() => {
     const init = {};
     (config?.filters || []).forEach((f) => {
-      if (f.type === 'date' && f.key === 'date' && f.defaultToday !== false) {
+      if (f.type === 'date' && f.defaultToday !== false && (f.key === 'date' || f.defaultToday === true)) {
         init[f.key] = new Date().toISOString().slice(0, 10);
       }
     });
@@ -46,6 +55,10 @@ export default function ResourcePage({ resourceKey }) {
   const [resolvedFields, setResolvedFields] = useState([]);
   const [resolvedFilters, setResolvedFilters] = useState(config?.filters || []);
   const [productsRow, setProductsRow] = useState(null);
+  // Row selection for `renderExtra` (e.g. clicking a Promoter Tracking row
+  // highlights that promoter's trail on the map). Clicking the same row again
+  // clears it. Unused by resources without a renderExtra.
+  const [selectedRow, setSelectedRow] = useState(null);
 
   const needsCampaign = !!config?.scopeToCampaign;
 
@@ -78,6 +91,8 @@ export default function ResourcePage({ resourceKey }) {
       if (config.hydrate) data = await config.hydrate(data);
       setRows(data);
       setTotal(res?.meta?.total ?? data.length);
+      setSelectedRow(null);
+      if (typeof config.columns === 'function') setColumns(config.columns(res?.meta || {}));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load this data.');
       setRows([]);
@@ -154,13 +169,13 @@ export default function ResourcePage({ resourceKey }) {
 
   function exportCsv() {
     if (rows.length === 0) return;
-    const headers = config.columns.map((c) => c.label);
-    const lines = rows.map((r) => config.columns.map((c) => JSON.stringify(String(r[c.key] ?? ''))).join(','));
+    const headers = columns.map((c) => applyDesignationLabel(c.label, designationLabel));
+    const lines = rows.map((r) => columns.map((c) => JSON.stringify(String(columnText(c, r) ?? ''))).join(','));
     const csv = [headers.join(','), ...lines].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `${resourceKey}.csv`; a.click();
+    a.href = url; a.download = exportFilename(applyDesignationLabel(config.title, designationLabel) || resourceKey, 'csv'); a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -173,8 +188,8 @@ export default function ResourcePage({ resourceKey }) {
     <div>
       <div className="page-head">
         <div>
-          <h1>{config.title}</h1>
-          <p className="page-sub">{config.subtitle}</p>
+          <h1>{applyDesignationLabel(config.title, designationLabel)}</h1>
+          <p className="page-sub">{applyDesignationLabel(config.subtitle, designationLabel)}</p>
         </div>
         {!config.noAdd && !readOnly ? (
           <button className="btn btn-primary" onClick={() => openDrawer('add', null)}>+ {config.addLabel || 'Add New'}</button>
@@ -194,9 +209,9 @@ export default function ResourcePage({ resourceKey }) {
           {!hasLoaded && loading ? <Loader /> : (
             <>
               {error ? <ErrorState message={error} onRetry={load} /> : null}
-              {config.renderExtra ? <div className="panel" style={{ marginBottom: 16 }}>{config.renderExtra(rows)}</div> : null}
+              {config.renderExtra ? <div className="panel" style={{ marginBottom: 16 }}>{config.renderExtra(rows, selectedRow)}</div> : null}
               <DataTable
-                columns={config.columns}
+                columns={columns}
                 rows={rows}
                 actions={visibleActions}
                 onAction={handleAction}
@@ -206,6 +221,8 @@ export default function ResourcePage({ resourceKey }) {
                 onPageChange={setPage} onPageSizeChange={setPageSize}
                 search={config.noSearch ? undefined : search}
                 onSearchChange={config.noSearch ? undefined : setSearch}
+                onRowClick={config.renderExtra ? (row) => setSelectedRow((prev) => (prev === row ? null : row)) : undefined}
+                selectedRow={config.renderExtra ? selectedRow : undefined}
                 emptyHint={config.emptyHint}
               />
             </>
@@ -215,8 +232,8 @@ export default function ResourcePage({ resourceKey }) {
 
       <Drawer
         open={drawerOpen}
-        title={(drawerMode === 'edit' ? 'Edit ' : '') + (config.addLabel || 'Add New')}
-        subtitle={config.title}
+        title={(drawerMode === 'edit' ? 'Edit ' : '') + applyDesignationLabel(config.addLabel || 'Add New', designationLabel)}
+        subtitle={applyDesignationLabel(config.title, designationLabel)}
         fields={resolvedFields}
         initialValues={drawerRow || {}}
         mode={drawerMode}

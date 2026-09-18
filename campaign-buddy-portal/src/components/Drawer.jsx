@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ICONS } from './Icons';
 import SearchableSelect from './SearchableSelect';
+import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 // Stable identities for optional props: literal defaults ({}, []) inside the
 // destructure would be re-created on every render and re-trigger the reset
@@ -136,7 +138,11 @@ export default function Drawer({
   );
 }
 
-function Field({ field: f, value, onChange, error, builderRows, onBuilderChange, preview, edit, revealed, onReveal }) {
+function Field({ field: rawField, value, onChange, error, builderRows, onBuilderChange, preview, edit, revealed, onReveal }) {
+  const { designationLabel } = useAuth();
+  // Substituted once here (client doc F) — every f.label/f.hint reference
+  // below picks it up automatically, no need to touch each call site.
+  const f = { ...rawField, label: applyDesignationLabel(rawField.label, designationLabel), hint: applyDesignationLabel(rawField.hint, designationLabel) };
   const reqMark = f.required ? <span className="req">*</span> : null;
 
   if (f.type === 'section') {

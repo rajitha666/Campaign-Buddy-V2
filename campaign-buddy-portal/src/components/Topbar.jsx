@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import ReportIssueModal from './ReportIssueModal';
 import { ICONS } from './Icons';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 function findLabel(pathname) {
   for (const sec of NAV) {
@@ -20,11 +21,13 @@ function findLabel(pathname) {
 }
 
 export default function Topbar({ onOpenMobileNav }) {
-  const { user, persona, campaignList, currentCampaignId, setCurrentCampaignId, logout } = useAuth();
+  const { user, persona, campaignList, currentCampaignId, currentCampaign, setCurrentCampaignId, logout, designationLabel } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const { title, crumb } = findLabel(location.pathname);
+  const { title: rawTitle, crumb: rawCrumb } = findLabel(location.pathname);
+  const title = applyDesignationLabel(rawTitle, designationLabel);
+  const crumb = applyDesignationLabel(rawCrumb, designationLabel);
 
   const initials = (user?.displayName || 'U').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -73,17 +76,25 @@ export default function Topbar({ onOpenMobileNav }) {
             🐞 <span className="btn-label-text">Report issue</span>
           </button>
         ) : null}
-        <div className="switcher campaign-switcher">
-          🗂️
-          <select
-            value={currentCampaignId || ''}
-            onChange={(e) => setCurrentCampaignId(e.target.value)}
-            disabled={campaignList.length === 0}
-          >
-            {campaignList.length === 0 ? <option value="">No campaigns</option> : null}
-            {campaignList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
+        {persona === 'sponsor' ? (
+          // Locked to their one granted campaign — no selector to switch away
+          // from it (client doc G).
+          <div className="switcher campaign-switcher campaign-switcher-locked">
+            🗂️ <span>{currentCampaign?.name || 'No campaign'}</span>
+          </div>
+        ) : (
+          <div className="switcher campaign-switcher">
+            🗂️
+            <select
+              value={currentCampaignId || ''}
+              onChange={(e) => setCurrentCampaignId(e.target.value)}
+              disabled={campaignList.length === 0}
+            >
+              {campaignList.length === 0 ? <option value="">No campaigns</option> : null}
+              {campaignList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
         <div className="switcher persona-switcher">
           <span className={`badge ${persona === 'admin' ? 'success' : persona === 'supervisor' ? 'info' : 'muted'}`}>
             {persona}
@@ -124,7 +135,7 @@ export default function Topbar({ onOpenMobileNav }) {
                   onClick={() => setMenuOpen(false)}
                   style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
                 >
-                  📖 {GUIDE_LABELS[g]}
+                  📖 {applyDesignationLabel(GUIDE_LABELS[g], designationLabel)}
                 </a>
               ))}
               <div className="item" onClick={logout}>Log out</div>

@@ -2,24 +2,33 @@ import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// GPS breadcrumb trail for a single promoter/date (issue #39) — a path
-// connecting the ordered pings plus a pin at each, so the walked route is
-// visible instead of just a raw lat/lng table. Rows already come back
+// GPS breadcrumb trail — one promoter/date (issue #39), or several at once
+// when the Promoter filter is set to "All" (client doc E). Each promoter gets
+// their own coloured trail; clicking their row in the table below sets
+// `highlightedStaffId`, which brings their trail to full strength, dims the
+// rest, and zooms the map to just their points. Rows already come back
 // ordered by capturedAt ascending (see operations.routes.ts trackingHistory).
-const START_ICON = L.divIcon({ className: 'trail-endpoint-icon trail-start', html: '<span></span>', iconSize: [14, 14], iconAnchor: [7, 7] });
-const END_ICON = L.divIcon({ className: 'trail-endpoint-icon trail-end', html: '<span></span>', iconSize: [14, 14], iconAnchor: [7, 7] });
+const TRAIL_COLORS = ['#E5762B', '#2E7D32', '#1565C0', '#8E24AA', '#C62828', '#00838F', '#6D4C41', '#AD1457'];
+const DIM_OPACITY = 0.25;
 
-export default function PromoterTrailMap({ rows = [], height = 360 }) {
+export default function PromoterTrailMap({ rows = [], height = 360, highlightedStaffId = null }) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
 
-  const points = useMemo(
-    () => (rows || []).filter((r) => isNum(r.latitude) && isNum(r.longitude)).map((r) => ({
-      lat: r.latitude, lng: r.longitude, capturedAt: r.capturedAt, outletName: r.outletName || '',
-    })),
-    [rows]
-  );
+  // One group per promoter so "All" doesn't draw one line zig-zagging between
+  // different people's positions.
+  const trails = useMemo(() => {
+    const byStaff = new Map();
+    (rows || []).filter((r) => isNum(r.latitude) && isNum(r.longitude)).forEach((r) => {
+      const key = r.staffId ?? '—';
+      if (!byStaff.has(key)) byStaff.set(key, { staffId: r.staffId, staffName: r.staffName || '', points: [] });
+      byStaff.get(key).points.push({ lat: r.latitude, lng: r.longitude, capturedAt: r.capturedAt, outletName: r.outletName || '' });
+    });
+    return Array.from(byStaff.values()).map((t, i) => ({ ...t, color: TRAIL_COLORS[i % TRAIL_COLORS.length] }));
+  }, [rows]);
+
+  const allPoints = useMemo(() => trails.flatMap((t) => t.points), [trails]);
 
   useEffect(() => {
     if (!elRef.current || mapRef.current) return undefined;
@@ -52,25 +61,27 @@ export default function PromoterTrailMap({ rows = [], height = 360 }) {
     if (!map || !layer) return undefined;
     layer.clearLayers();
 
-    if (points.length > 0) {
+    for (const trail of trails) {
+      const dimmed = highlightedStaffId != null && trail.staffId !== highlightedStaffId;
+      const opacity = dimmed ? DIM_OPACITY : 0.9;
+      const { points, color } = trail;
+      if (points.length === 0) continue;
       const latlngs = points.map((p) => [p.lat, p.lng]);
-      L.polyline(latlngs, { color: '#E5762B', weight: 3, opacity: 0.8 }).addTo(layer);
+      L.polyline(latlngs, { color, weight: dimmed ? 2 : 3, opacity }).addTo(layer);
       points.forEach((p, i) => {
         const isEndpoint = i === 0 || i === points.length - 1;
         const time = p.capturedAt ? new Date(p.capturedAt).toLocaleTimeString() : '';
-        if (isEndpoint) {
-          L.marker([p.lat, p.lng], { icon: i === 0 ? START_ICON : END_ICON })
-            .bindTooltip(`<b>${i === 0 ? 'Start' : 'Last seen'}</b>${time ? `<br>${time}` : ''}${p.outletName ? `<br>${esc(p.outletName)}` : ''}`, { direction: 'top' })
-            .addTo(layer);
-        } else {
-          L.circleMarker([p.lat, p.lng], { radius: 4, color: '#fff', weight: 1.5, fillColor: '#E5762B', fillOpacity: 1 })
-            .bindTooltip(time, { direction: 'top' })
-            .addTo(layer);
-        }
+        const tooltip = `${trail.staffName ? `<b>${esc(trail.staffName)}</b><br>` : ''}${isEndpoint ? `<b>${i === 0 ? 'Start' : 'Last seen'}</b><br>` : ''}${time}${p.outletName ? `<br>${esc(p.outletName)}` : ''}`;
+        L.circleMarker([p.lat, p.lng], { radius: isEndpoint ? 7 : 4, color: '#fff', weight: isEndpoint ? 2 : 1.5, fillColor: color, fillOpacity: opacity })
+          .bindTooltip(tooltip, { direction: 'top' })
+          .addTo(layer);
       });
     }
 
-    const pts = points.map((p) => [p.lat, p.lng]);
+    // Zoom to the highlighted promoter's own points when one is selected,
+    // otherwise fit everything currently drawn.
+    const highlighted = highlightedStaffId != null ? trails.find((t) => t.staffId === highlightedStaffId) : null;
+    const pts = (highlighted ? highlighted.points : allPoints).map((p) => [p.lat, p.lng]);
     const fit = () => {
       if (pts.length === 0) return;
       map.invalidateSize();
@@ -82,12 +93,12 @@ export default function PromoterTrailMap({ rows = [], height = 360 }) {
     fit();
     const t = setTimeout(fit, 350);
     return () => clearTimeout(t);
-  }, [points]);
+  }, [trails, allPoints, highlightedStaffId]);
 
   return (
     <div className="map-shell" style={{ height, position: 'relative' }}>
       <div ref={elRef} className="leaflet-host" style={{ height: '100%' }} />
-      {points.length === 0 ? (
+      {allPoints.length === 0 ? (
         <div className="map-overlay-note">No GPS pings for this selection yet.</div>
       ) : null}
     </div>

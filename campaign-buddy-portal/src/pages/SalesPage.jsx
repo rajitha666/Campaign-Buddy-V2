@@ -1,9 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  activations as activationsApi,
-  outlets as outletsApi,
-  staff as staffApi,
   salesRecords as salesRecordsApi,
   dailyStats as dailyStatsApi,
   attendance as attendanceApi,
@@ -13,9 +10,6 @@ import { useToast } from '../context/ToastContext';
 import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
-import SalesCorrectionGrid from '../components/SalesCorrectionGrid';
-import SearchableSelect from '../components/SearchableSelect';
-import { staffLabel } from '../lib/staffLabel';
 
 function todayISO(offsetDays = 0) {
   const d = new Date();
@@ -39,23 +33,11 @@ export default function SalesPage() {
   const { currentCampaignId } = useAuth();
   const { push } = useToast();
 
-  const [outlets, setOutlets] = useState([]);
-  const [staffList, setStaffList] = useState([]);
-  const [activationsList, setActivationsList] = useState([]);
-  const [form, setForm] = useState({ outletId: '', staffId: '', activationId: '', date: todayISO() });
-
   const [recentSales, setRecentSales] = useState(null);
   const [recentLoading, setRecentLoading] = useState(false);
   const [today, setToday] = useState({ totalSales: 0, outletCount: 0, footFall: 0, approached: 0 });
   const [week, setWeek] = useState([]);
   const [dayFieldValues, setDayFieldValues] = useState([]);
-
-  useEffect(() => {
-    if (!currentCampaignId) return;
-    Promise.all([outletsApi.list(), staffApi.search(''), activationsApi.list(currentCampaignId)])
-      .then(([o, s, a]) => { setOutlets(o?.data || []); setStaffList(s?.data || []); setActivationsList(a?.data || []); })
-      .catch(() => {});
-  }, [currentCampaignId]);
 
   function loadRecent() {
     if (!currentCampaignId) return;
@@ -124,30 +106,9 @@ export default function SalesPage() {
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;
 
-  const outletOptions = outlets.map((o) => ({ value: o.id, label: o.name }));
-  const staffOptions = staffList.map((s) => ({ value: s.id, label: staffLabel(s) }));
-  const activationOptions = activationsList.map((a) => ({ value: a.id, label: a.name }));
-
-  const filterSlot = (
-    <div className="filter-bar">
-      <div className="filter-field"><label>Outlet</label>
-        <SearchableSelect options={outletOptions} value={form.outletId} onChange={(v) => setForm((f) => ({ ...f, outletId: v }))} placeholder="Search outlets…" />
-      </div>
-      <div className="filter-field"><label>Promoter</label>
-        <SearchableSelect options={staffOptions} value={form.staffId} onChange={(v) => setForm((f) => ({ ...f, staffId: v }))} placeholder="Search promoters…" />
-      </div>
-      <div className="filter-field"><label>Activation</label>
-        <SearchableSelect options={activationOptions} value={form.activationId} onChange={(v) => setForm((f) => ({ ...f, activationId: v }))} placeholder="Search activations…" />
-      </div>
-      <div className="filter-field"><label>Date</label>
-        <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
-      </div>
-    </div>
-  );
-
   return (
     <div>
-      <div className="page-head"><div><h1>Sales</h1><p className="page-sub">Update daily sales and review the last 7 days.</p></div></div>
+      <div className="page-head"><div><h1>Sales</h1><p className="page-sub">Review today's sales and the last 7 days.</p></div></div>
 
       <div className="stat-grid cols-4">
         <StatCard label="Sales Today" value={`LKR ${today.totalSales.toLocaleString()}`} />
@@ -171,12 +132,6 @@ export default function SalesPage() {
             );
           })}
         </div>
-      </div>
-
-      <div className="panel" style={{ marginBottom: 16 }}>
-        <div className="panel-title">Update Sales</div>
-        <div className="panel-sub">Select outlet, promoter, activation and date to correct sales and record custom fields.</div>
-        <SalesCorrectionGrid campaignId={currentCampaignId} form={form} filterSlot={filterSlot} onSaved={loadRecent} />
       </div>
 
       <div className="panel">

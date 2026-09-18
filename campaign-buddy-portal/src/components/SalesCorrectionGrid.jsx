@@ -3,6 +3,7 @@ import { salesLookup, salesRecords as salesRecordsApi, salesFields as salesField
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import { exportFilename } from '../lib/exportFilename';
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -125,7 +126,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `sales-${form.date || todayISO()}.csv`; a.click();
+    a.href = url; a.download = exportFilename('Sales Correction', 'csv'); a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -136,6 +137,11 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
         <button className="btn btn-primary btn-sm" onClick={loadSales}>Load sales</button>
         {rows && rows.length > 0 ? <button className="btn btn-secondary btn-sm" onClick={exportCsv}>Export CSV</button> : null}
       </div>
+      {rows && meta.staffName ? (
+        <div className="cell-muted" style={{ fontSize: 12, marginTop: 6 }}>
+          Promoter: <strong>{meta.staffName}</strong> · Activation: <strong>{meta.activationName}</strong>
+        </div>
+      ) : null}
 
       {loading ? <Loader /> : error ? <ErrorState message={error} /> : rows ? (
         <>

@@ -19,7 +19,7 @@ import {
   clients as clientsApi, brands as brandsApi, items as itemsApi, outlets as outletsApi,
   distributorPoints as distributorPointsApi, cities as citiesApi, campaigns as campaignsApi,
   staff as staffApi, activations as activationsApi, attendance as attendanceApi,
-  salesRecords as salesRecordsApi, dailyStats as dailyStatsApi, leaveRequests as leaveRequestsApi,
+  salesRecords as salesRecordsApi, leaveRequests as leaveRequestsApi,
   reports as reportsApi, users as usersApi, roles as rolesApi,
   supervisorTasks as supervisorTasksApi, staffAbsence as staffAbsenceApi,
   outletAttendance as outletAttendanceApi, tracking as trackingApi,
@@ -31,7 +31,9 @@ import { staffLabel } from '../lib/staffLabel';
 // negative-offset browser doesn't show the previous day. Timestamps (checkInAt,
 // capturedAt, …) are real instants and render in local time.
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '');
-const fmtTime = (v) => (v ? new Date(v).toLocaleString() : '—');
+// Explicit format (no `second`) so check-in/check-out times never show
+// seconds, on screen or in exports (client doc A).
+const fmtTime = (v) => (v ? new Date(v).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const fmtISO = (v) => (v ? new Date(v).toISOString().slice(0, 10) : ''); // for <input type="date">
 const nameOf = (s) => s?.displayName || s?.fullName || '';
 
@@ -43,6 +45,10 @@ const hhmmToMinutes = (v) => {
   const [h, m] = v.split(':').map(Number);
   return h * 60 + m;
 };
+
+// Sales Update Status's three-way compliance state (client doc D).
+const STATUS_LABELS = { completed: 'Completed', pending: 'Pending', absent: 'Absent' };
+const STATUS_BADGE_TYPES = { completed: 'success', pending: 'pending', absent: 'alert' };
 
 const PROVINCES = ['Western', 'Eastern', 'Central', 'Southern', 'Sabaragamuwa', 'North Western', 'Northern', 'Uva', 'North Central'];
 const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota',
@@ -329,12 +335,16 @@ export const RESOURCES = {
       campaignNo: row.campaignNo, name: row.name, clientId: row.clientId,
       description: row.description, dateRange: [fmtISO(row.startDate), fmtISO(row.endDate)],
       shiftStart: minutesToHHMM(row.shiftStartMinutes), shiftEnd: minutesToHHMM(row.shiftEndMinutes),
+      promoterLabel: row.promoterLabel || '',
+      testerFieldEnabled: row.testerFieldEnabled ?? false,
     }),
     createItem: ({ values }) => campaignsApi.create({
       campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
       description: values.description, startDate: values.dateRange?.[0], endDate: values.dateRange?.[1],
       ...(values.shiftStart ? { shiftStartMinutes: hhmmToMinutes(values.shiftStart) } : {}),
       ...(values.shiftEnd ? { shiftEndMinutes: hhmmToMinutes(values.shiftEnd) } : {}),
+      ...(values.promoterLabel ? { promoterLabel: values.promoterLabel } : {}),
+      testerFieldEnabled: !!values.testerFieldEnabled,
     }),
     updateItem: ({ id, values }) => campaignsApi.update(id, {
       campaignNo: values.campaignNo, name: values.name, clientId: values.clientId,
@@ -342,6 +352,8 @@ export const RESOURCES = {
       ...(values.dateRange?.[0] ? { startDate: values.dateRange[0] } : {}),
       ...(values.dateRange?.[1] ? { endDate: values.dateRange[1] } : {}),
       shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
+      promoterLabel: values.promoterLabel || null,
+      testerFieldEnabled: !!values.testerFieldEnabled,
     }),
     deleteItem: ({ id }) => campaignsApi.remove(id),
     formFields: [
@@ -352,6 +364,12 @@ export const RESOURCES = {
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
       { key: 'shiftStart', label: 'Shift start', type: 'time', defaultValue: '09:00', hint: 'Default check-in time for every activation in this campaign — used for late/on-time flagging.' },
       { key: 'shiftEnd', label: 'Shift end', type: 'time', defaultValue: '18:00', hint: 'Default check-out time — used for the end-of-day auto check-out.' },
+      { key: 'promoterLabel', label: 'Designation Label', type: 'text', placeholder: 'Promoter', hint: 'Swaps "Promoter" for this word everywhere in the portal for this campaign, e.g. "Beauty Advisor". Leave blank to keep "Promoter".' },
+      {
+        key: 'testerFieldEnabled', label: 'Tester Field', type: 'radio', defaultValue: false,
+        hint: 'Adds a "Tester" count (how many testers a customer tried) to the Update Sales page and Outlet Wise report.',
+        options: [{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }],
+      },
     ],
     itemsRoute: (row) => `/campaigns/${row.id}/items`,
     adminsRoute: (row) => `/campaigns/${row.id}/admins`,
@@ -365,6 +383,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet', render: (r) => r.outletName || r.outletId },
       { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
       { key: 'supervisorName', label: 'Supervisor', render: (r) => r.supervisorName || r.supervisorStaffId || '—' },
+      { key: 'activationType', label: 'Type', render: (r) => <Badge type={r.activationType === 'weekend' ? 'info' : 'muted'}>{r.activationType === 'weekend' ? 'Weekend' : 'Monthly'}</Badge> },
       { key: 'dateFrom', label: 'From', render: (r) => fmtDate(r.dateFrom) },
       { key: 'dateTo', label: 'To', render: (r) => fmtDate(r.dateTo) },
     ],
@@ -376,18 +395,21 @@ export const RESOURCES = {
       supervisorStaffId: row.supervisorStaffId, distributorPointId: row.distributorPointId,
       dateRange: [fmtISO(row.dateFrom), fmtISO(row.dateTo)],
       targetType: row.targetType, targetCategorization: row.targetCategorization, targetUnit: row.targetUnit,
+      activationType: row.activationType,
       shiftStart: minutesToHHMM(row.shiftStartMinutes), shiftEnd: minutesToHHMM(row.shiftEndMinutes),
     }),
     // Prefills the new activation's date range from the parent campaign's
     // dates — still freely editable, not constrained to that range.
     addDefaults: (campaign) => ({
       dateRange: campaign ? [fmtISO(campaign.startDate), fmtISO(campaign.endDate)] : undefined,
+      activationType: 'monthly',
     }),
     createItem: ({ campaignId, values }) => activationsApi.create(campaignId, {
       name: values.name, outletId: values.outletId, staffId: values.staffId,
       supervisorStaffId: values.supervisorStaffId, distributorPointId: values.distributorPointId || null,
       dateFrom: values.dateRange?.[0], dateTo: values.dateRange?.[1],
       targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
+      activationType: values.activationType,
       shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     updateItem: ({ campaignId, id, values }) => activationsApi.update(campaignId, id, {
@@ -396,6 +418,7 @@ export const RESOURCES = {
       ...(values.dateRange?.[0] ? { dateFrom: values.dateRange[0] } : {}),
       ...(values.dateRange?.[1] ? { dateTo: values.dateRange[1] } : {}),
       targetType: values.targetType, targetCategorization: values.targetCategorization, targetUnit: values.targetUnit,
+      activationType: values.activationType,
       shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
@@ -406,6 +429,11 @@ export const RESOURCES = {
       { key: 'supervisorStaffId', label: 'Supervisor', type: 'searchable-select', required: true, optionsLoader: staffOptions },
       { key: 'distributorPointId', label: 'Distributor Point', type: 'searchable-select', optionsLoader: () => optionsFrom(distributorPointsApi.list) },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
+      {
+        key: 'activationType', label: 'Activation Type', type: 'radio', required: true,
+        hint: 'Governs day-counting and target pacing on the Overall Performance view — weekend runs Sat/Sun (÷8 working days/month), monthly runs Mon-Fri (÷25).',
+        options: [{ value: 'weekend', label: 'Weekend' }, { value: 'monthly', label: 'Monthly' }],
+      },
       { key: 'targetType', label: 'Target Type', type: 'radio', options: [{ value: 'item_wise', label: 'Product Wise' }, { value: 'brand_wise', label: 'Brand Wise' }] },
       { key: 'targetCategorization', label: 'Target Categorization', type: 'radio', options: [{ value: 'daily', label: 'Daily' }, { value: 'monthly', label: 'Monthly' }] },
       { key: 'targetUnit', label: 'Target Unit', type: 'radio', options: [{ value: 'unit_wise', label: 'Unit Wise' }, { value: 'sales_wise', label: 'Sales Wise' }] },
@@ -501,7 +529,8 @@ export const RESOURCES = {
       { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' },
     ],
     columns: [
-      { key: 'staffName', label: 'Promoter', render: (r) => nameOf(r.activation?.staff) || r.activation?.staff?.fullName || '—' },
+      { key: 'promoterLabel', label: 'Promoter', render: (r) => (r.activation?.staff ? staffLabel(r.activation.staff) : '—') },
+      { key: 'staffName', label: 'Name', render: (r) => nameOf(r.activation?.staff) || r.activation?.staff?.fullName || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
@@ -609,7 +638,13 @@ export const RESOURCES = {
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
+      {
+        key: 'amount', label: 'Amount',
+        render: (r) => `LKR ${Number((r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0)).toLocaleString()}`,
+        csvValue: (r) => (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0),
+      },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
+      { key: 'staffName', label: 'Promoter', render: (r) => r.activationItem?.activation?.staff ? staffLabel(r.activationItem.activation.staff) : '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
       { key: 'remainingStock', label: 'Remaining', render: (r) => (r.openingStock ?? 0) - (r.soldToday ?? 0) },
@@ -618,19 +653,19 @@ export const RESOURCES = {
   },
 
   salesStatus: {
-    title: 'Sales Update Status', subtitle: "Daily submission-compliance — did each promoter submit today's sales.", noAdd: true,
+    title: 'Sales Update Status', subtitle: "Daily submission-compliance — did each promoter submit today's sales.", excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'date', label: 'Date', type: 'date' }],
     columns: [
-      { key: 'activationName', label: 'Activation' }, { key: 'outletName', label: 'Outlet' },
-      { key: 'footFall', label: 'Foot Fall' },
-      { key: 'updatedAt', label: 'Status', render: (r) => <Badge type={r.updatedAt ? 'success' : 'alert'}>{r.updatedAt ? 'Completed' : 'Missing'}</Badge> },
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'staffName', label: 'Promoter' },
+      {
+        key: 'status', label: 'Status',
+        csvValue: (r) => STATUS_LABELS[r.status] || r.status,
+        render: (r) => <Badge type={STATUS_BADGE_TYPES[r.status] || 'muted'}>{STATUS_LABELS[r.status] || r.status}</Badge>,
+      },
     ],
-    fetchList: clientPaged(async ({ campaignId, query }) => {
-      const res = await dailyStatsApi.list(campaignId, query);
-      const rows = res?.data?.byDay || [];
-      return { data: rows, meta: { total: rows.length } };
-    }),
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.salesStatus(campaignId, query)),
   },
 
   reportSkuWise: {
@@ -642,9 +677,14 @@ export const RESOURCES = {
   },
 
   reportBrandWise: {
-    title: 'Overall Brand Wise', subtitle: 'Aggregated sales by brand.', excel: true, noAdd: true,
+    title: 'Brand Wise', subtitle: 'Aggregated sales by outlet and brand.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'brandName', label: 'Brand' },
+      { key: 'itemCount', label: 'Product Count' },
+      { key: 'totalSales', label: 'Total', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+    ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
 
@@ -657,9 +697,14 @@ export const RESOURCES = {
   },
 
   brandWiseClient: {
-    title: 'Overall Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
+    title: 'Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
-    columns: [{ key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'brandName', label: 'Brand' },
+      { key: 'itemCount', label: 'Product Count' },
+      { key: 'totalSales', label: 'Total', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+    ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
 
@@ -708,13 +753,35 @@ export const RESOURCES = {
   },
 
   outletWise: {
-    title: 'Outlet Wise', subtitle: 'Sales rollup by outlet.', noAdd: true,
+    title: 'Outlet Wise', subtitle: 'Sales rollup by outlet, for the selected date range.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
       { key: 'outletId', label: 'Outlet', type: 'searchable-select', optionsLoader: () => optionsFrom(outletsApi.list) },
-      { key: 'duration', label: 'Duration', type: 'searchable-select', options: ['Daily', 'Weekly', 'Monthly'] },
+      { key: 'dateFrom', label: 'From', type: 'date', defaultToday: true },
+      { key: 'dateTo', label: 'To', type: 'date', defaultToday: true },
     ],
-    columns: [{ key: 'outletName', label: 'Outlet' }, { key: 'footFall', label: 'Foot Fall' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    // Columns depend on the campaign's own day-scope custom sales fields
+    // (meta.customFieldDefs), so this is resolved per-load rather than static.
+    // Non-number custom fields show the latest value in the range, not a sum —
+    // labeled "(current)" so that's not mistaken for a range total.
+    columns: (meta) => [
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'footFall', label: 'Footfall' },
+      { key: 'approached', label: 'Approach' },
+      {
+        key: 'converted', label: 'Conversion',
+        render: (r) => (r.approached > 0 ? `${Math.round((r.converted / r.approached) * 1000) / 10}%` : '—'),
+        csvValue: (r) => (r.approached > 0 ? Math.round((r.converted / r.approached) * 1000) / 10 : 0),
+      },
+      ...(meta.customFieldDefs || []).map((d) => ({
+        key: d.key,
+        label: d.type === 'number' ? d.label : `${d.label} (current)`,
+        render: d.type === 'boolean' ? (r) => (r[d.key] === true ? 'Yes' : r[d.key] === false ? 'No' : '—') : undefined,
+      })),
+      { key: 'totalSales', label: 'Total Sale', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      { key: 'target', label: 'Target' },
+      { key: 'achievementPct', label: 'Achievement %', render: (r) => `${r.achievementPct ?? 0}%` },
+    ],
     emptyHint: 'No sales or footfall recorded for the selected scope yet.',
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.outletWise(campaignId, query)),
   },
@@ -723,10 +790,12 @@ export const RESOURCES = {
     title: 'Promoter Tracking', subtitle: 'GPS breadcrumb trail while checked in.', noAdd: true,
     scopeToCampaign: true,
     filters: [
-      { key: 'staffId', label: 'Promoter', type: 'searchable-select', optionsLoader: staffOptions },
+      { key: 'staffId', label: 'Promoter', type: 'searchable-select', allLabel: 'All Promoters', optionsLoader: staffOptions },
       { key: 'date', label: 'Date', type: 'date' },
     ],
-    renderExtra: (rows) => <Suspense fallback={null}><PromoterTrailMap rows={rows} /></Suspense>,
+    renderExtra: (rows, selectedRow) => (
+      <Suspense fallback={null}><PromoterTrailMap rows={rows} highlightedStaffId={selectedRow?.staffId ?? null} /></Suspense>
+    ),
     columns: [
       { key: 'staffName', label: 'Promoter', render: (r) => r.staffName || r.staffId },
       { key: 'outletName', label: 'Outlet' },

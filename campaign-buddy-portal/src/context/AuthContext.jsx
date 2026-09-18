@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { auth, campaigns as campaignsApi } from '../lib/endpoints';
 import { setAccessToken, loadStoredToken, registerUnauthorizedHandler, ApiError } from '../lib/apiClient';
+import { sortOptions } from '../lib/sortOptions';
 
 const AuthCtx = createContext(null);
 
@@ -26,7 +27,7 @@ export function AuthProvider({ children }) {
   const loadCampaigns = useCallback(async () => {
     try {
       const res = await campaignsApi.list();
-      const list = res?.data || [];
+      const list = sortOptions(res?.data, (c) => c.name); // alphabetical campaign switcher (#67)
       setCampaignList(list);
       setCurrentCampaignId((prev) => prev || list[0]?.id || null);
     } catch (e) {
@@ -108,6 +109,10 @@ export function AuthProvider({ children }) {
     isAdmin: persona === 'admin',
     isReadOnly: persona !== 'admin',
     isSuperAdmin: user?.roleId === 'adm', // adm only — distinct from the 'usr' Campaign Admin
+    // Configurable per-campaign designation label (client doc F) — e.g.
+    // "Beauty Advisor" instead of "Promoter". Falls back to the default word
+    // when no campaign is selected or none is configured for it.
+    designationLabel: currentCampaign?.promoterLabel || 'Promoter',
   };
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

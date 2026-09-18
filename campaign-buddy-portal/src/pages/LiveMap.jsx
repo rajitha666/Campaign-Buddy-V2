@@ -4,6 +4,7 @@ import { tracking as trackingApi, activations as activationsApi } from '../lib/e
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import LiveMapView from '../components/LiveMapView';
+import { applyDesignationLabel } from '../lib/designationLabel';
 
 function uniqueOutlets(activationRows) {
   const map = new Map();
@@ -14,7 +15,7 @@ function uniqueOutlets(activationRows) {
 }
 
 export default function LiveMap() {
-  const { currentCampaignId, currentCampaign } = useAuth();
+  const { currentCampaignId, currentCampaign, designationLabel } = useAuth();
   const [live, setLive] = useState([]);
   const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function LiveMap() {
             <div className="table-toolbar"><div className="entries-select">Currently checked in ({live.length})</div></div>
             <div className="table-scroll">
               <table className="data-table">
-                <thead><tr><th>Promoter</th><th>Outlet</th><th>Checked in since</th></tr></thead>
+                <thead><tr><th>{applyDesignationLabel('Promoter', designationLabel)}</th><th>Outlet</th><th>Checked in since</th></tr></thead>
                 <tbody>
                   {live.map((p, i) => (
                     <tr key={`${p.staffName || ''}-${p.outletName || ''}-${i}`}>
