@@ -7,12 +7,20 @@ import { ICONS } from './Icons';
 // markers. Staff use their last GPS ping; when none exists we fall back to the
 // outlet they're checked in at (flagged "approx." in the popup).
 // `highlightedStaffKey` (staffName/userId of a row clicked in a table below
-// the map) rings that person's marker, opens its tooltip and pans to them.
+// the map) rings that person's marker, recolors its dot and opens its tooltip
+// — the map view itself is never moved.
 const INK = '#12241F';
 
 const staffIcon = L.divIcon({
   className: 'geo-staff-icon',
   html: '<span class="geo-staff-pulse-el"></span><span class="geo-staff-dot"></span>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+const staffIconSelected = L.divIcon({
+  className: 'geo-staff-icon',
+  html: '<span class="geo-staff-pulse-el"></span><span class="geo-staff-dot geo-staff-dot--selected"></span>',
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });
@@ -31,9 +39,6 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380, hi
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
-  // Pan to the highlighted staff only when the selection *changes* — the 15s
-  // live poll re-renders markers and must not yank the map back every time.
-  const lastHighlightRef = useRef(null);
   // Auto-fit only the first time points show up — after that, periodic data
   // refreshes (e.g. the 15s live-position poll) must not override the user's
   // own pan/zoom (issue #40). "Recenter" below lets them opt back in.
@@ -84,29 +89,23 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380, hi
     });
 
     model.staffPts.forEach((s) => {
-      const marker = L.marker([s.lat, s.lng], { icon: staffIcon })
+      const selected = highlightedStaffKey != null && s.key === highlightedStaffKey;
+      const marker = L.marker([s.lat, s.lng], { icon: selected ? staffIconSelected : staffIcon })
         .bindTooltip(
           `<b>${esc(s.staffName)}</b>${s.outletName ? `<br>${esc(s.outletName)}` : ''}${s.approx ? '<br><i>approx. — last GPS unavailable</i>' : ''}`,
           { direction: 'top' }
         )
         .addTo(layer);
-      if (highlightedStaffKey != null && s.key === highlightedStaffKey) marker.openTooltip();
+      if (selected) marker.openTooltip();
     });
 
-    // Ring around the marker a table row was clicked for (issue: match
-    // /tracking/promoter's row-click highlight there too).
+    // Ring + recolored dot around the marker a table row was clicked for
+    // (issue: match /tracking/promoter's row-click highlight there too).
+    // The map view itself is never moved — highlight in place only.
     const hi = highlightedStaffKey != null ? model.staffPts.find((s) => s.key === highlightedStaffKey) : null;
     if (hi) {
       L.circleMarker([hi.lat, hi.lng], { radius: 18, color: '#111', weight: 2, opacity: 0.7, fill: false, interactive: false }).addTo(layer);
-      // Pan to them only when the selection *changes* — the 15s live poll must
-      // not yank the map back every refresh.
-      if (lastHighlightRef.current !== highlightedStaffKey) {
-        lastHighlightRef.current = highlightedStaffKey;
-        map.setView([hi.lat, hi.lng], Math.max(map.getZoom(), 15));
-        map.invalidateSize();
-      }
     }
-    if (highlightedStaffKey == null) lastHighlightRef.current = null;
 
     const pts = [...model.outletPts, ...model.staffPts].map((p) => [p.lat, p.lng]);
     if (didInitialFitRef.current || pts.length === 0) return undefined;

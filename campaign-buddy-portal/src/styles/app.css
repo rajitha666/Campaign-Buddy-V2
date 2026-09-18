@@ -244,6 +244,7 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
   position:absolute; left:50%; top:50%; width:13px; height:13px; margin:-6.5px 0 0 -6.5px;
   border-radius:50%; background:var(--mango); border:2.5px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.35);
 }
+.geo-staff-icon .geo-staff-dot.geo-staff-dot--selected { background:var(--ink); }
 .geo-staff-icon .geo-staff-pulse-el {
   position:absolute; left:50%; top:50%; width:13px; height:13px; margin:-6.5px 0 0 -6.5px;
   border-radius:50%; background:rgba(255,122,51,0.35); animation:geo-pulse 1.9s ease-out infinite;

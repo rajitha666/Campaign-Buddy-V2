@@ -19,10 +19,13 @@ describe('Seller Live Locations row click highlights the marker on the map', () 
     expect(map).toMatch(/highlightedStaffKey/);
   });
 
-  it('CampaignMap draws a selection ring on and centres the map on the selected staff', () => {
-    // ring around the marker + open its tooltip, and pan once when the selection changes
+  it('CampaignMap draws a selection ring on the selected staff without moving the map', () => {
+    // ring around the marker + open its tooltip; the map view must be left alone
     expect(map).toMatch(/L\.circleMarker\(\[hi\.lat, hi\.lng\]/);
     expect(map).toMatch(/openTooltip/);
-    expect(map).toMatch(/lastHighlightRef/);
+    // no pan/zoom on selection — clicking a row must not change the map view
+    expect(map).not.toMatch(/setView\(\[hi\.lat/);
+    // the selected marker's dot is recolored, not just ringed
+    expect(map).toMatch(/geo-staff-dot--selected/);
   });
 });
