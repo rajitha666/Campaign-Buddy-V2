@@ -9,6 +9,7 @@
 #
 # Routes (.localhost resolves to 127.0.0.1 automatically, no /etc/hosts edits):
 #   office.campaignbuddy.localhost     -> portal
+#   app.campaignbuddy.localhost        -> app (CB Mobile web build)
 #   api.campaignbuddy.localhost        -> backend
 #   marketing.campaignbuddy.localhost  -> marketing
 #   studio.campaignbuddy.localhost     -> db-studio (Prisma Studio)
@@ -36,6 +37,17 @@ services:
       - "traefik.http.routers.cb-portal.entrypoints=web"
       - "traefik.http.routers.cb-portal.service=cb-portal"
       - "traefik.http.services.cb-portal.loadbalancer.server.port=5173"
+
+  app:
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cb-app.rule=Host(`app.campaignbuddy.localhost`)"
+      - "traefik.http.routers.cb-app.entrypoints=web"
+      - "traefik.http.routers.cb-app.service=cb-app"
+      - "traefik.http.services.cb-app.loadbalancer.server.port=80"
 
   marketing:
     networks:

@@ -158,6 +158,7 @@ dev stack through it with `./dev.sh` (dev-only, no teardown):
 With the proxy mode the stack is reachable at:
 
 - `office.campaignbuddy.localhost` → portal
+- `app.campaignbuddy.localhost` → CB Mobile web build
 - `api.campaignbuddy.localhost` → backend
 - `marketing.campaignbuddy.localhost` → marketing
 - `studio.campaignbuddy.localhost` → Prisma Studio
