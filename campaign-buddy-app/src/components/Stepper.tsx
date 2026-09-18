@@ -97,6 +97,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textPrimary,
   },
-  valueInput: { padding: 0, minWidth: 34 },
+  // Explicit width, not just minWidth — react-native-web renders TextInput as
+  // a plain <input>, which defaults to a much wider intrinsic size than the
+  // Text it replaces. Left unconstrained, that width wins inside a flex row
+  // that doesn't grow/shrink its children, crushing the label next to it.
+  // Only applied to the editing TextInput, not the static Text (valueLarge) —
+  // that one should still be free to grow for a longer number.
+  valueInput: { padding: 0, minWidth: 34, width: 40 },
   valueLarge: { fontSize: 21, minWidth: 34 },
 });
