@@ -66,7 +66,7 @@ async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
 }
 
 // Staff dropdowns (Promoter/Supervisor) — see lib/staffLabel.js for the
-// "EMP-0004 - Tharindu Perera" format shared across every such dropdown.
+// "Tharindu Jayasuriya" (name only) format shared across every such dropdown.
 async function staffOptions() {
   const res = await staffApi.search('', { pageSize: 1000 });
   return (res?.data || []).map((r) => ({ value: r.id, label: staffLabel(r) }));

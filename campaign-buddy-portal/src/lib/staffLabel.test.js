@@ -2,16 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { staffLabel } from './staffLabel';
 
 describe('staffLabel', () => {
-  it('formats as "ID - Full Name"', () => {
-    expect(staffLabel({ employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya' })).toBe('EMP-0004 - Tharindu Jayasuriya');
+  it('shows the full name only — no employee ID (dropdowns/tables show names, not codes)', () => {
+    expect(staffLabel({ employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya' })).toBe('Tharindu Jayasuriya');
   });
 
   it('falls back to displayName when fullName is missing', () => {
-    expect(staffLabel({ employeeId: 'SUP-0001', displayName: 'Dinesh' })).toBe('SUP-0001 - Dinesh');
-  });
-
-  it('drops the ID prefix when there is no employeeId', () => {
-    expect(staffLabel({ fullName: 'No ID Here' })).toBe('No ID Here');
+    expect(staffLabel({ employeeId: 'SUP-0001', displayName: 'Dinesh' })).toBe('Dinesh');
   });
 
   it('falls back to id when there is no name at all', () => {

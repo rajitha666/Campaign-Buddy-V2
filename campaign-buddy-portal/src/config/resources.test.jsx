@@ -202,7 +202,7 @@ describe('resources config', () => {
     }
   });
 
-  it('every Promoter/Supervisor dropdown shows "ID - Full Name" — issue #7', async () => {
+  it('every Promoter/Supervisor dropdown shows the name only, no employee ID (issue #7 / label change)', async () => {
     const spy = vi.spyOn(staffApi, 'search').mockResolvedValue({
       data: [{ id: 's1', employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya', displayName: 'Tharindu', userType: 'promoter' }],
     });
@@ -213,7 +213,7 @@ describe('resources config', () => {
       const supervisorTrackingField = RESOURCES.supervisorTracking.filters.find((f) => f.key === 'staffId');
       for (const f of [activationStaffField, activationSupervisorField, promoterTrackingField, supervisorTrackingField]) {
         const options = await f.optionsLoader();
-        expect(options[0].label).toBe('EMP-0004 - Tharindu Jayasuriya');
+        expect(options[0].label).toBe('Tharindu Jayasuriya');
       }
     } finally {
       spy.mockRestore();
@@ -278,7 +278,7 @@ describe('resources config', () => {
     expect(col).toBeDefined();
     expect(col.label).toBe('Promoter');
     const row = { activationItem: { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya' } } } };
-    expect(columnText(col, row)).toBe('EMP-0004 - Tharindu Jayasuriya');
+    expect(columnText(col, row)).toBe('Tharindu Jayasuriya');
     expect(columnText(col, { activationItem: {} })).toBe('—');
   });
 
