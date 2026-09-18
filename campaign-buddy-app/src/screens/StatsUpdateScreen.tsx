@@ -8,6 +8,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
 import * as statsApi from '@/api/stats';
+import * as salesFieldsApi from '@/api/salesFields';
+import * as salesSummaryApi from '@/api/salesSummary';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
@@ -19,6 +21,12 @@ export function StatsUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const statsQuery = useQuery({ queryKey: ['stats', 'today'], queryFn: statsApi.getTodayStats });
+  // Tester count (client doc D) — a campaign-toggled day-scope custom field,
+  // not a DailyStats column, but reps enter it the same way as footfall/
+  // approached/conversion, so it gets the same Stepper UI here rather than a
+  // plain text box buried in the Daily Sales screen's "Additional details".
+  const salesFieldsQuery = useQuery({ queryKey: ['sales-fields'], queryFn: salesFieldsApi.getSalesFields });
+  const testerField = salesFieldsQuery.data?.day.find((f) => f.key === 'tester');
 
   // Local editable copies — seeded from the fetched values once loaded.
   // (Not using useState(statsQuery.data) directly since that data may
@@ -26,11 +34,15 @@ export function StatsUpdateScreen() {
   const [footFall, setFootFall] = useState<number | null>(null);
   const [approached, setApproached] = useState<number | null>(null);
   const [converted, setConverted] = useState<number | null>(null);
+  const [tester, setTester] = useState<number | null>(null);
 
   if (statsQuery.data && footFall === null) {
     setFootFall(statsQuery.data.footFall);
     setApproached(statsQuery.data.approached);
     setConverted(statsQuery.data.converted);
+  }
+  if (testerField && tester === null) {
+    setTester(typeof testerField.value === 'number' ? testerField.value : 0);
   }
 
   const conversionRate =
@@ -38,13 +50,18 @@ export function StatsUpdateScreen() {
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      statsApi.updateTodayStats({
-        footFall: footFall ?? undefined,
-        approached: approached ?? undefined,
-        converted: converted ?? undefined,
-      }),
+      Promise.all([
+        statsApi.updateTodayStats({
+          footFall: footFall ?? undefined,
+          approached: approached ?? undefined,
+          converted: converted ?? undefined,
+        }),
+        testerField ? salesSummaryApi.updateSalesSummary({ customFields: { tester: tester ?? 0 } }) : null,
+      ]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stats', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
       navigation.goBack();
     },
     onError: (err) => Alert.alert('Could not save', getApiErrorMessage(err)),
@@ -114,6 +131,27 @@ export function StatsUpdateScreen() {
         >
           <Stepper value={converted} onChange={setConverted} max={approached} size="large" />
         </MetricCard>
+
+        {testerField && tester !== null && (
+          <MetricCard
+            iconBg={colors.pendingTint}
+            icon={
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"
+                  stroke={colors.pending}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            }
+            title="Tester"
+            subtitle="Units given away as samples"
+          >
+            <Stepper value={tester} onChange={setTester} size="large" />
+          </MetricCard>
+        )}
 
         <View style={styles.convSummary}>
           <Text style={styles.convLabel}>Conversion rate</Text>
