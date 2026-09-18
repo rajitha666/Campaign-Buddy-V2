@@ -93,6 +93,7 @@ enum LeaveStatus {
 enum SupervisorTaskType {
   range
   feedback
+  photo
 }
 
 enum OutletScopeType {
@@ -233,8 +234,9 @@ model Outlet {
   deletedAt            DateTime?
   updatedAt            DateTime  @updatedAt
 
-  city        City         @relation(fields: [cityId], references: [id])
-  activations Activation[]
+  city                    City                     @relation(fields: [cityId], references: [id])
+  activations             Activation[]
+  supervisorTaskResponses SupervisorTaskResponse[]
 
   @@index([cityId])
   @@map("outlets")
@@ -300,15 +302,18 @@ model Staff {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  city             City?               @relation(fields: [cityId], references: [id])
-  reportsTo        Staff?              @relation("StaffReportsTo", fields: [reportsToStaffId], references: [id])
-  reports          Staff[]             @relation("StaffReportsTo")
-  linkedUser       User?               @relation(fields: [linkedUserId], references: [id])
-  activations      Activation[]        @relation("ActivationStaff")
-  supervising      Activation[]        @relation("ActivationSupervisor")
-  refreshTokens    StaffRefreshToken[]
-  leaveRequests    LeaveRequest[]
-  supervisorRoutes SupervisorRoute[]
+  city                    City?                    @relation(fields: [cityId], references: [id])
+  reportsTo               Staff?                   @relation("StaffReportsTo", fields: [reportsToStaffId], references: [id])
+  reports                 Staff[]                  @relation("StaffReportsTo")
+  linkedUser              User?                    @relation(fields: [linkedUserId], references: [id])
+  activations             Activation[]             @relation("ActivationStaff")
+  supervising             Activation[]             @relation("ActivationSupervisor")
+  refreshTokens           StaffRefreshToken[]
+  leaveRequests           LeaveRequest[]
+  supervisorRoutes        SupervisorRoute[]
+  supervisorTaskResponses SupervisorTaskResponse[]
+  attendanceRecords       AttendanceRecord[]
+  trackingPings           TrackingPing[]
 
   @@index([cityId])
   @@index([reportsToStaffId])
@@ -481,13 +486,14 @@ model Activation {
   supervisor       Staff?            @relation("ActivationSupervisor", fields: [supervisorStaffId], references: [id])
   distributorPoint DistributorPoint? @relation(fields: [distributorPointId], references: [id])
 
-  activationItems   ActivationItem[]
-  activationTargets ActivationTarget[]
-  attendanceRecords AttendanceRecord[]
-  dailyStats        DailyStats[]
-  salesSummaries    SalesSummary[]
-  trackingPings     TrackingPing[]
-  salesFieldValues  SalesFieldValue[]
+  activationItems         ActivationItem[]
+  activationTargets       ActivationTarget[]
+  attendanceRecords       AttendanceRecord[]
+  supervisorTaskResponses SupervisorTaskResponse[]
+  dailyStats              DailyStats[]
+  salesSummaries          SalesSummary[]
+  trackingPings           TrackingPing[]
+  salesFieldValues        SalesFieldValue[]
 
   @@index([campaignId])
   @@index([outletId])
@@ -537,9 +543,14 @@ model ActivationTarget {
 // is set to false when the check-in falls outside geofenceRadiusMeters, but
 // check-in is NEVER rejected on that basis. See Backend Spec v3 §5.6.
 
+// One row per (activation, person, day). `staffId` is WHO checked in — the
+// activation's promoter, or the supervisor covering it (supervisorStaffId), or a
+// supervisor who is the activation's own staff (legacy). Without it a promoter
+// and their supervisor shared one row per activation-day.
 model AttendanceRecord {
   id                              String           @id @default(uuid())
   activationId                    String
+  staffId                         String
   date                            DateTime         @db.Date
   checkInAt                       DateTime?
   checkInLat                      Float?
@@ -555,10 +566,12 @@ model AttendanceRecord {
   updatedAt                       DateTime         @updatedAt
 
   activation   Activation    @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  staff        Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
   leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
 
-  @@unique([activationId, date])
+  @@unique([activationId, staffId, date])
   @@index([activationId])
+  @@index([staffId, date])
   @@map("attendance_records")
 }
 
@@ -659,9 +672,12 @@ model SalesFieldValue {
   @@map("sales_field_values")
 }
 
+// `staffId` is who sent the ping (promoter or the supervisor covering the same
+// activation) so trails are never attributed to the wrong person.
 model TrackingPing {
   id             String   @id @default(uuid())
   activationId   String
+  staffId        String
   latitude       Float
   longitude      Float
   accuracyMeters Float?
@@ -671,8 +687,10 @@ model TrackingPing {
   batteryPercent Int?
 
   activation Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  staff      Staff      @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@index([activationId, capturedAt])
+  @@index([staffId, capturedAt])
   @@map("tracking_pings")
 }
 
@@ -701,13 +719,60 @@ model SupervisorTask {
   category   String
   taskType   SupervisorTaskType
   task       String
+  // Photos the supervisor must capture for a `photo` task; 0 for range/feedback.
+  imageCount Int                @default(0)
   createdAt  DateTime           @default(now())
   deletedAt  DateTime?
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign  Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  responses SupervisorTaskResponse[]
 
   @@index([campaignId])
   @@map("supervisor_tasks")
+}
+
+// One supervisor's answer to one checklist task on one day. Ratings/feedback
+// score the promoter of `activationId` (1-5). `photo` tasks are outlet-level:
+// one row per (task, supervisor, outlet, day) shared by every promoter that
+// supervisor covers at the outlet, keeping the first activation that touched
+// it. Photos live in SupervisorTaskPhoto (files under /uploads/visit-photos).
+model SupervisorTaskResponse {
+  id                String   @id @default(uuid())
+  taskId            String
+  activationId      String
+  outletId          String
+  supervisorStaffId String
+  date              DateTime @db.Date
+  rating            Int?
+  feedback          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  task       SupervisorTask        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  activation Activation            @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  outlet     Outlet                @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  supervisor Staff                 @relation(fields: [supervisorStaffId], references: [id], onDelete: Cascade)
+  photos     SupervisorTaskPhoto[]
+
+  @@unique([taskId, activationId, date])
+  @@index([activationId, date])
+  @@index([outletId, date])
+  @@index([supervisorStaffId])
+  @@map("supervisor_task_responses")
+}
+
+// createdAt is the server-side upload time — the trusted "when was this taken"
+// stamp (the phone's clock isn't).
+model SupervisorTaskPhoto {
+  id         String   @id @default(uuid())
+  responseId String
+  url        String
+  createdAt  DateTime @default(now())
+
+  response SupervisorTaskResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+  @@map("supervisor_task_photos")
 }
 
 // SupervisorRoute — Assign Routes (supervisor route planning) — NEW in v3.

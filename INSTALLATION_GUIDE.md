@@ -291,6 +291,31 @@ docker compose -f docker-compose.yml --profile production up -d
 | **New env vars** | None. |
 | **Downtime** | ~10–30 s while the backend container restarts. The migration is additive plus one data backfill on `activations` — fast at this scale. |
 
+### 4.5 What the supervisor outlet checklist touches at deploy time
+
+| Concern | Detail |
+|---|---|
+| **Migration** | `20260918050000_add_supervisor_task_responses` — adds a `photo` value to the `SupervisorTaskType` enum, an `imageCount` column on `supervisor_tasks` (default 0), and the `supervisor_task_responses` + `supervisor_task_photos` tables. Additive; applied automatically by the entrypoint. |
+| **New volume — do this before restarting** | `docker-compose.yml` now mounts `./campaign-buddy-backend/uploads/visit-photos` into the backend. **Run `mkdir -p campaign-buddy-backend/uploads/visit-photos` on the host first** and make it writable by the container user (same as `uploads/staff`). Without the mount, supervisors' outlet photos exist only inside the container and are **lost on the next rebuild**. |
+| **Proxy limit** | `campaign-buddy-portal/nginx.conf` raises `client_max_body_size` from 6m to **10m** (rebuild/restart the `portal` container). The API itself refuses photos over 5 MB with a `413`; the app shrinks photos before upload, so this is only a safety margin. If a separate reverse proxy or Cloudflare rule fronts `api.` in front of this nginx, make sure its body limit is also ≥ 10 MB. |
+| **Mobile app** | The app now uses the camera (`expo-image-picker`, `expo-image-manipulator`) — a **new native build** is required (App Store / Play Store); it cannot be delivered over the air. Older builds keep working, they just don't show the checklist. |
+| **Security fix included** | Uploaded image filenames now take their extension from the verified image type, not the client's filename, and SVG uploads are refused — this applies to item images and staff photos too. Files already on disk are unaffected. |
+| **New env vars** | None. |
+| **Downtime** | ~10–30 s while the backend container restarts. |
+
+### 4.6 What the per-person attendance fix touches at deploy time
+
+A promoter and the supervisor covering their activation used to share one attendance row per day (the supervisor appeared "checked in" when the promoter was, couldn't check in themselves, and their check-out closed the promoter's shift), and location pings had no owner. Both are now recorded per person.
+
+| Concern | Detail |
+|---|---|
+| **Migration** | `20260918060000_attendance_and_tracking_per_staff` — adds a `staffId` column to `attendance_records` and `tracking_pings`, back-fills **every existing row to the activation's own staff member** (the promoter; or the supervisor on a legacy supervisor-route activation), then makes it `NOT NULL`, replaces the `(activationId, date)` unique index with `(activationId, staffId, date)`, and adds indexes + foreign keys. Applied automatically by the entrypoint; verified on old-shape data. Not reversible without a backup — **take the `pg_dump` in §4 first.** |
+| **Existing data** | No history is lost or rewritten. A supervisor visit that was previously stored on a promoter's shared row can't be told apart from the promoter's own check-in, so it stays attributed to the promoter (that path only existed for a few days). Supervisor visit logs before this release are therefore only the legacy supervisor-route rows. |
+| **Behaviour change** | Supervisors can now check in at an outlet whose promoter is already checked in, and a supervisor's check-out no longer closes the promoter's shift. Promoter-facing reports (absence, sales status, monthly attendance, evaluation, sales-entry guard) count only the promoter's own check-in; **Outlet Attendance** and **Supervisor Attendance** now list supervisors' own check-ins. |
+| **Mobile app** | No new build needed for this fix — the API contract is unchanged. |
+| **New env vars** | None. |
+| **Downtime** | ~10–30 s while the backend container restarts; the migration touches two tables and is fast at this scale. |
+
 ---
 
 ## 5. Environment variable reference
@@ -368,6 +393,8 @@ docker exec campaign-buddy-v2-postgres-1 \
 
 Automate via cron on the host, e.g. nightly, keep 14 days.
 
+Uploaded photos are **not** in the database — the DB only stores their paths. Back up the host directory `campaign-buddy-backend/uploads/` (`items/`, `staff/`, `visit-photos/`) alongside `pg_dump`, e.g. `tar czf uploads_$(date +%Y%m%d).tgz campaign-buddy-backend/uploads`. Supervisor outlet photos are evidence of execution, so treat them like the database. Nothing prunes them; expect roughly a few hundred KB per photo.
+
 ### Restore
 
 ```bash
@@ -426,6 +453,7 @@ Bundle identifiers are already set in `app.json`
 - [ ] Tunnel hostname resolves and `/health` returns `ok` over HTTPS
 - [ ] `prisma migrate status` shows all migrations applied
 - [ ] Nightly `pg_dump` backup cron in place, retention set
+- [ ] `campaign-buddy-backend/uploads/` (incl. `visit-photos/`) included in the backup
 - [ ] Docker log rotation configured (`/etc/docker/daemon.json` → `log-opts`)
 - [ ] Disk-space alert on the VPS (Postgres volume + image layers)
 - [ ] Backend runs as a **single** instance, or the snapshot job is disabled on

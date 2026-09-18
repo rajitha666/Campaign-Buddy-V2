@@ -33,6 +33,10 @@ services:
       # Staff profile photos — same scheme; without this mount, /uploads/staff
       # 404s inside the container for anything uploaded before it started (#48).
       - ./campaign-buddy-backend/uploads/staff:/app/uploads/staff
+      # Supervisor outlet-checklist photos (evidence of the outlet setup) —
+      # without this mount they live only in the container and are lost the
+      # next time it is rebuilt/redeployed.
+      - ./campaign-buddy-backend/uploads/visit-photos:/app/uploads/visit-photos
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000

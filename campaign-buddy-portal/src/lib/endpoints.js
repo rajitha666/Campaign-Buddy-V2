@@ -196,6 +196,10 @@ export const supervisorTasks = {
   update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-tasks/${id}`, body),
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-tasks/${id}`),
 };
+export const supervisorTaskResults = {
+  list: (campaignId, query) => api.get(`/campaigns/${campaignId}/supervisor-task-responses`, { query }), // {date, outletId, page, pageSize}
+  summary: (campaignId, query) => api.get(`/campaigns/${campaignId}/supervisor-task-summary`, { query }), // {dateFrom, dateTo, outletId}
+};
 export const staffAbsence = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/absence`, { query }), // {date, outletId}
 };

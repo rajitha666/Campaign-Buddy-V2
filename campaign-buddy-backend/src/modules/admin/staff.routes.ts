@@ -11,6 +11,8 @@ import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { normalizeLkPhone } from "../../utils/phone";
+import { imageExtension, imageFileFilter } from "../../utils/imageUpload";
+import { average } from "../../utils/supervisorChecklist";
 import { dayDate } from "../../utils/dates";
 import { computeTargetProgress } from "./targetProgress";
 import { countActivationWorkingDays, workingDaysPerMonth } from "../../utils/activationPerformance";
@@ -25,15 +27,11 @@ const staffPhotoUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, staffPhotosDir),
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-      cb(null, `${req.params.id}-${Date.now()}${ext}`);
+      cb(null, `${req.params.id}-${Date.now()}${imageExtension(file.mimetype)}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
-    cb(null, true);
-  },
+  fileFilter: imageFileFilter,
 });
 
 // The Staff HR field set is fixed for v3 (schema comment / Changelog v3 "Staff HR
@@ -190,13 +188,20 @@ router.get(
     const activationIds = activations.map((a) => a.id);
 
     const [attendanceRecords, salesRecords, dailyStats] = await Promise.all([
-      prisma.attendanceRecord.findMany({ where: { activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
+      // Their OWN check-ins only — a supervisor covering the same activation has separate records on it.
+      prisma.attendanceRecord.findMany({ where: { staffId, activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
       prisma.salesRecord.findMany({
         where: { activationItem: { activationId: { in: activationIds } }, date: { gte: from, lte: to } },
         include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
       }),
       prisma.dailyStats.findMany({ where: { activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
     ]);
+
+    // Supervisors' 1-5 QA ratings of this promoter (mobile outlet checklist) in the same window.
+    const qaRatings = await prisma.supervisorTaskResponse.findMany({
+      where: { activationId: { in: activationIds }, rating: { not: null }, date: { gte: from, lte: to } },
+      select: { rating: true },
+    });
 
     const daysPresent = attendanceRecords.filter((r) => r.status === "on_time" || r.status === "late").length;
     const attendancePct = attendanceRecords.length ? Math.round((daysPresent / attendanceRecords.length) * 100) : 0;
@@ -314,6 +319,10 @@ router.get(
       overallPerformancePct, attendancePct, totalSales, totalItems,
       avgSalesPerMonth, highestDailySales, highestPerformingDate, brandContribution,
       topProducts, customersApproached, activations: activationsOut, currentActivationId,
+      qaScore: {
+        average: average(qaRatings.map((r) => r.rating as number)),
+        ratings: qaRatings.length,
+      },
     }));
   })
 );

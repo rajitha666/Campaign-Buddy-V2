@@ -7,6 +7,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound } from "../../utils/apiResponse";
 import { dayDate } from "../../utils/dates";
 import { resolveShiftStart, resolveShiftEnd } from "../../utils/attendanceWindow";
+import { imageExtension, imageFileFilter } from "../../utils/imageUpload";
 
 const router = Router();
 
@@ -18,15 +19,11 @@ const staffPhotoUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, staffPhotosDir),
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-      cb(null, `${req.staff!.sub}-${Date.now()}${ext}`);
+      cb(null, `${req.staff!.sub}-${Date.now()}${imageExtension(file.mimetype)}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
-    cb(null, true);
-  },
+  fileFilter: imageFileFilter,
 });
 
 // The mobile app is built to docs/api-spec.md, whose data models

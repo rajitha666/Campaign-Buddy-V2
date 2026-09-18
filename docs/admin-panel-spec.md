@@ -35,13 +35,13 @@ sponsor    → "sponsor" persona (read-only, campaign-scoped)
 
 - **Client** → has many **Brands**, **Distributor Points**, **Campaigns**
 - **Brand** → belongs to Client; has many **Items**
-- **Campaign** → belongs to a Client; has a date range (From/To); has many **Campaign Items** (Brand+Item pairs); has many **Activations**; has many **Supervisor Tasks** (schema only — no CRUD yet, §3.7.1); has many **Campaign Access Grants**; has many **Supervisor Routes** *(new in v3 — see §3.7.4)*
+- **Campaign** → belongs to a Client; has a date range (From/To); has many **Campaign Items** (Brand+Item pairs); has many **Activations**; has many **Supervisor Tasks** (§3.7.1); has many **Campaign Access Grants**; has many **Supervisor Routes** *(new in v3 — see §3.7.4)*
 - **Activation** → belongs to a Campaign; assigned to one **Outlet**, one **Promoter**, one **Supervisor**, optionally a **Distributor Point**; has a date range; has Target Type (Item Wise/Brand Wise), Target Categorization (Daily/Monthly), Target Unit (Unit Wise/Sales Wise); has many **Activation Items**; has many **Targets**. **Setting the Supervisor field has a side effect** — see §3.3.2.
 - **Outlet** → belongs to a City; has geocoordinates (lat/long), contact info
 - **Distributor Point** → belongs to a City and a Client
 - **City** → belongs to a Province and District (fixed lookup list, Sri Lanka)
 - **Staff (Promoter/Supervisor)** → a single "Staff" entity typed as Promoter or Supervisor; HR profile (personal, bank, emergency contact — the confirmed reduced set, §3.5.1); linked to a City; has a mobile app username/login; may optionally also be linked to a back-office `User` account (`Staff.linkedUserId`).
-- **Supervisor Task** → belongs to a Campaign; has Category and Task Type (Range/Feedback) — backend table exists, no endpoints implemented yet; this module cannot be built against a real API until that's scheduled (§3.7.1 and §8).
+- **Supervisor Task** → belongs to a Campaign; has Category and Task Type (Range/Feedback/Photo, with a photo count for Photo tasks); supervisors' answers are stored as **Supervisor Task Responses** per activation per day (§3.7.1).
 - **Supervisor Route** *(new entity, v3)* → belongs to a Campaign and a Supervisor (Staff); has a planned outlet list and a date range. Backs §3.7.4.
 - **Item** → belongs to a Brand; has price and reorder level
 - **User (system/back-office account)** → has a Role; scoped to specific Campaigns via `CampaignAccessGrant`, each optionally narrowed to a subset of Outlets
@@ -77,7 +77,7 @@ Sidebar sections, with which roles see them:
 4. Outlets ▾ — List, Distributor Point, Cities — `adm`, `usr`
 5. Staff ▾ — List, Attendance, Absence, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
 6. Sales ▾ — SKU Wise Sales, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
-7. Supervisors ▾ — Tasks *(not buildable yet, §3.7.1)*, Outlet Attendance, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
+7. Supervisors ▾ — Tasks, Task Results *(§3.7.1)*, Outlet Attendance, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
 8. Items ▾ — List, Brands, Reorder — `adm`, `usr`
 9. Tracking ▾ — Promoter, Supervisor — `adm`, `usr` (full); `supervisor`/`sponsor` see a **live map** view (backed by `GET /campaigns/:id/tracking/live`) scoped to their granted outlets
 10. Reports ▾ — Overall SKU Wise, Overall Brand Wise — `adm`, `usr`; `sponsor` sees the same reports, same endpoints, automatically scoped to their grant (§3.11)
@@ -147,8 +147,10 @@ All sub-sections campaign-scoped and outlet-filtered per the caller's grant. **U
 Per-campaign definitions of extra fields promoters record on the daily sales update. Each field has a label, an "applies to" scope (**Whole day** → one value per promoter/day, or **Each product** → one value per SKU/day), a type (Number / Text / Yes-No / Dropdown, with an options list for Dropdown), a Required flag and a sort order. Type and scope are frozen once the field has recorded values; a used field is archived (soft-delete) rather than deleted. Backed by `GET/POST/PATCH/DELETE /admin/v1/campaigns/:campaignId/sales-fields`. On the Update Sales / Sales page, day fields render above the product grid and product fields as extra columns, saved via `PUT /admin/v1/campaigns/:campaignId/sales/custom-values`; day values also show in the "Last 7 Days" panel and CSV export.
 
 ### 3.7 Supervisors
-#### 3.7.1 Supervisor Tasks (`/supervisor/all`) — still blocked
-Fields as originally audited are still the intended design, but the backend has no endpoints for `SupervisorTask` yet — only the table exists. Treat as a placeholder/mock in any interim build.
+#### 3.7.1 Supervisor Tasks (`/supervisor-tasks`) and Task Results (`/supervisor-task-results`)
+**Tasks** is the per-campaign QA checklist template supervisors fill in on the mobile app during outlet visits. Fields: Category (the nine QA categories), Task Type — **Range** (1–5 rating of the promoter on a fixed scale: Poor, Needs improvement, Meets standard, Good, Excellent), **Feedback** (free text) or **Photo** — and the Task text. A Photo task also takes **Photos to capture** (1–10; blank = 1). List columns: Task, Category, Task Type, Photos. `adm`/`usr` write; endpoints are `/campaigns/:campaignId/supervisor-tasks` (Backend Spec §4.2).
+
+**Task Results** (Supervisors → Task Results; also in the `supervisor` and `sponsor` menus, read-only) is a bespoke page (`SupervisorTaskResults.jsx`), not a generic table. For a From/To range (default last 30 days) it shows: stat cards (Average score, Ratings given, Checklists complete, Checklists incomplete); an **Incomplete checklists** table (visits where not every task was answered, with "n of m"); three score tables (by promoter, by outlet, by category); and the **Answers** log — Date, Outlet, Promoter, Supervisor, Category, Task, Result (`n / 5`, the feedback text, or photo thumbnails that open in a viewer showing the server upload time). Photo tasks are outlet-level, so their Promoter cell is "—". **Excel** exports the whole range with absolute photo links and upload times. Outlet-scoped users see only their granted outlets. Backed by `GET /campaigns/:campaignId/supervisor-task-summary` and `…/supervisor-task-responses`. The promoter's mean rating also shows as **Supervisor QA Score** on Staff Profiles.
 
 #### 3.7.2 Outlet Attendance
 Naturally outlet-filtered for `supervisor` via `CampaignAccessGrant`.
@@ -226,7 +228,7 @@ This list tracks `CampaignBuddy_Backend_Spec_v3.md` §2 exactly — that documen
 - Dashboard's rightmost "Monthly summary" tiles were cut off in the original audit viewport.
 - "Total Units Sold" showing an "Rs." currency prefix in the original app is a labeling bug — don't carry over.
 - Activation Target's "Repeat" recurrence options and Target Type dropdown values should be confirmed against an existing target's edit view.
-- **Supervisor Tasks module (§3.7.1) has no backend endpoints** — cannot be built against a real API yet.
+- ~~Supervisor Tasks module (§3.7.1) has no backend endpoints~~ — **resolved**: CRUD, mobile checklist and the Task Results log are all built (§3.7.1).
 - **No historical Tracking table endpoint** — only the live snapshot exists; a full breadcrumb-history view would need a new endpoint (not built this pass).
 - **No Distributor- or Brand-level access scoping** — campaign/outlet only, by design.
 - Staff password reset and User portal refresh-token flow remain backend stubs — any "Forgot password" UI on this portal's login screen currently hits a no-op.

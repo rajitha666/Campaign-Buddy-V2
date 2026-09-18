@@ -10,6 +10,7 @@ import salesSummaryRoutes from "./salesSummary.routes";
 import salesFieldsRoutes from "./salesFields.routes";
 import timeOffRoutes from "./timeOff.routes";
 import performanceRoutes from "./performance.routes";
+import supervisorChecklistRoutes from "./supervisorChecklist.routes";
 
 // Mobile app — /v1/*. Auth + health routes are public; everything else requires staffAuth.
 const router = Router();
@@ -28,5 +29,6 @@ router.use(salesSummaryRoutes);
 router.use(salesFieldsRoutes);
 router.use(timeOffRoutes);
 router.use(performanceRoutes);
+router.use(supervisorChecklistRoutes);
 
 export default router;

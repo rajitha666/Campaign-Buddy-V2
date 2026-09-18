@@ -5,10 +5,14 @@ import { dayDate } from "./dates";
 import { prisma } from "./prisma";
 import { ApiError } from "./apiResponse";
 
-/** Throws 422 NOT_CHECKED_IN unless this activation has an open shift today. */
-export async function requireOpenShift(activation: { id: string }) {
+/**
+ * Throws 422 NOT_CHECKED_IN unless the activation's own promoter has an open
+ * shift today. Sales entry is the promoter's, so a covering supervisor's
+ * check-in on the same activation must not unlock it.
+ */
+export async function requireOpenShift(activation: { id: string; staffId: string }) {
   const record = await prisma.attendanceRecord.findUnique({
-    where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    where: { activationId_staffId_date: { activationId: activation.id, staffId: activation.staffId, date: dayDate() } },
   });
   if (!record?.checkInAt || record.checkOutAt) {
     throw new ApiError(422, "NOT_CHECKED_IN", "You need to check in before entering sales data");

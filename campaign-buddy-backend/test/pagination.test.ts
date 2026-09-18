@@ -26,7 +26,7 @@ describe("campaign-scoped list pagination", () => {
     const { campaign, outlet, staff } = await makeCampaignWithActivation();
     const activationIds = await makeActivationRows(campaign.id, outlet.id, staff.id, 5);
     for (let i = 0; i < 5; i++) {
-      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], date: day(i), checkInAt: new Date(), status: "on_time" } });
+      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], staffId: staff.id, date: day(i), checkInAt: new Date(), status: "on_time" } });
     }
     const res = await request(app)
       .get(`/admin/v1/campaigns/${campaign.id}/attendance`)
@@ -41,7 +41,7 @@ describe("campaign-scoped list pagination", () => {
     const { campaign, outlet, staff } = await makeCampaignWithActivation();
     const activationIds = await makeActivationRows(campaign.id, outlet.id, staff.id, 3);
     for (let i = 0; i < 3; i++) {
-      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], date: day(i), checkInAt: new Date(), status: "on_time" } });
+      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], staffId: staff.id, date: day(i), checkInAt: new Date(), status: "on_time" } });
     }
     const res = await request(app)
       .get(`/admin/v1/campaigns/${campaign.id}/attendance`)
@@ -70,7 +70,7 @@ describe("campaign-scoped list pagination", () => {
     const { campaign, activation } = await makeCampaignWithActivation();
     for (let i = 0; i < 5; i++) {
       await prisma.trackingPing.create({
-        data: { activationId: activation.id, latitude: 6.9 + i * 0.01, longitude: 79.9, capturedAt: new Date(Date.now() + i * 60_000) },
+        data: { activationId: activation.id, staffId: activation.staffId, latitude: 6.9 + i * 0.01, longitude: 79.9, capturedAt: new Date(Date.now() + i * 60_000) },
       });
     }
     const res = await request(app)
@@ -103,7 +103,7 @@ describe("campaign-scoped list pagination", () => {
     await prisma.staff.update({ where: { id: staff.id }, data: { userType: "supervisor" } });
     const activationIds = await makeActivationRows(campaign.id, outlet.id, staff.id, 3);
     for (let i = 0; i < 3; i++) {
-      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], date: day(i), checkInAt: new Date(), status: "on_time" } });
+      await prisma.attendanceRecord.create({ data: { activationId: activationIds[i], staffId: staff.id, date: day(i), checkInAt: new Date(), status: "on_time" } });
     }
     const res = await request(app)
       .get(`/admin/v1/campaigns/${campaign.id}/outlet-attendance`)

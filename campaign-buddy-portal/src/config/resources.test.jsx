@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi, reports as reportsApi, campaigns as campaignsApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi, reports as reportsApi, campaigns as campaignsApi, supervisorTasks as supervisorTasksApi } from '../lib/endpoints';
 import { columnText } from '../lib/columnText';
 
 describe('resources config', () => {
@@ -467,5 +467,40 @@ describe('resources config', () => {
     expect(supervisor.allLabel).toBe('All Supervisors');
     expect(clientOutlet.allLabel).toBe('All outlets');
     expect(outletWiseOutlet.allLabel).toBe('All outlets');
+  });
+});
+
+// Supervisor outlet checklist — tasks are defined per campaign here and filled
+// in by supervisors on the mobile app (1-5 rating / feedback / setup photos).
+describe('supervisor checklist tasks', () => {
+  it('offers Photo as a task type', () => {
+    const type = RESOURCES.supervisorTasks.formFields.find((f) => f.key === 'taskType');
+    expect(type.options.map((o) => o.value)).toEqual(['range', 'feedback', 'photo']);
+  });
+
+  it('sends the photo count as a number, defaulting to 1 when left blank', async () => {
+    const spy = vi.spyOn(supervisorTasksApi, 'create').mockResolvedValue({ data: {} });
+    try {
+      const base = { campaignId: 'c1', values: { category: 'Outlet PR', taskType: 'photo', task: 'Shelf photo' } };
+      await RESOURCES.supervisorTasks.createItem({ ...base, values: { ...base.values, imageCount: '3' } });
+      await RESOURCES.supervisorTasks.createItem(base);
+      expect(spy.mock.calls[0][1]).toMatchObject({ taskType: 'photo', imageCount: 3 });
+      expect(spy.mock.calls[1][1]).toMatchObject({ taskType: 'photo', imageCount: 1 });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('does not send a photo count for rating or feedback tasks', async () => {
+    const spy = vi.spyOn(supervisorTasksApi, 'create').mockResolvedValue({ data: {} });
+    try {
+      await RESOURCES.supervisorTasks.createItem({
+        campaignId: 'c1',
+        values: { category: 'Sale', taskType: 'range', task: 'Pricing', imageCount: '4' },
+      });
+      expect(spy.mock.calls[0][1]).not.toHaveProperty('imageCount');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

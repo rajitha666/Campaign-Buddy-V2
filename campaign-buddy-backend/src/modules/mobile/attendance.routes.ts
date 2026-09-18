@@ -37,9 +37,16 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
 // or the app gets "No assignment for today" with an id /me/assignments just
 // returned. A supervisor is never Activation.staffId; a promoter is never
 // supervisorStaffId, so the OR is safe for both.
+//
+// This only RESOLVES which activations someone may act on. Attendance rows are
+// keyed per person (AttendanceRecord.staffId): a promoter and the supervisor
+// covering the same activation each have their own row, so every record lookup
+// below is by `staffId`, never by "records on my activations".
 function activationStaffScope(staffId: string) {
   return { OR: [{ staffId }, { supervisorStaffId: staffId }] };
 }
+
+const dayKey = (activationId: string, staffId: string, date: Date) => ({ activationId_staffId_date: { activationId, staffId, date } });
 
 router.get(
   "/attendance/today",
@@ -61,9 +68,7 @@ router.get(
       shiftDurationSeconds: 0, locationVerified: false, status: "pending" as const,
     };
     if (!activation) return res.json(ok(empty));
-    const record = await prisma.attendanceRecord.findUnique({
-      where: { activationId_date: { activationId: activation.id, date: today } },
-    });
+    const record = await prisma.attendanceRecord.findUnique({ where: dayKey(activation.id, req.staff!.sub, today) });
     if (!record) return res.json(ok(empty));
 
     // docs/api-spec.md §5 GET /attendance/today — the slim view.
@@ -119,10 +124,10 @@ router.post(
     // them as not checked in. Close these out before evaluating the lock.
     const staleOpenShifts = await prisma.attendanceRecord.findMany({
       where: {
+        staffId: req.staff!.sub,
         checkInAt: { not: null },
         checkOutAt: null,
         date: { lt: today },
-        activation: activationStaffScope(req.staff!.sub),
       },
     });
     for (const stale of staleOpenShifts) {
@@ -138,10 +143,10 @@ router.post(
     if (req.staff!.userType !== "supervisor") {
       const checkedOutToday = await prisma.attendanceRecord.findFirst({
         where: {
+          staffId: req.staff!.sub,
           checkInAt: { not: null },
           checkOutAt: { not: null },
           date: today,
-          activation: activationStaffScope(req.staff!.sub),
         },
       });
       if (checkedOutToday) {
@@ -153,11 +158,7 @@ router.post(
     // member has, not just this one. Confirmed: concurrent Activation assignment is
     // fine, concurrent open check-ins are not.
     const openElsewhere = await prisma.attendanceRecord.findFirst({
-      where: {
-        checkInAt: { not: null },
-        checkOutAt: null,
-        activation: activationStaffScope(req.staff!.sub),
-      },
+      where: { staffId: req.staff!.sub, checkInAt: { not: null }, checkOutAt: null },
       include: { activation: true },
     });
     if (openElsewhere) {
@@ -191,9 +192,10 @@ router.post(
     );
 
     const record = await prisma.attendanceRecord.upsert({
-      where: { activationId_date: { activationId: activation.id, date: today } },
+      where: dayKey(activation.id, req.staff!.sub, today),
       create: {
         activationId: activation.id,
+        staffId: req.staff!.sub,
         date: today,
         checkInAt: now,
         checkInLat: latitude,
@@ -248,11 +250,7 @@ router.post(
       });
     } else {
       const openElsewhere = await prisma.attendanceRecord.findFirst({
-        where: {
-          checkInAt: { not: null },
-          checkOutAt: null,
-          activation: activationStaffScope(req.staff!.sub),
-        },
+        where: { staffId: req.staff!.sub, checkInAt: { not: null }, checkOutAt: null },
         orderBy: { date: "desc" },
       });
       activation = openElsewhere
@@ -263,9 +261,7 @@ router.post(
     }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
-    const record = await prisma.attendanceRecord.findUnique({
-      where: { activationId_date: { activationId: activation.id, date: today } },
-    });
+    const record = await prisma.attendanceRecord.findUnique({ where: dayKey(activation.id, req.staff!.sub, today) });
     if (!record || !record.checkInAt || record.checkOutAt) {
       throw new ApiError(422, "NOT_CHECKED_IN", "You are not currently checked in");
     }
@@ -296,7 +292,7 @@ router.get(
     const since = new Date(Date.now() - days * 86400000);
 
     const records = await prisma.attendanceRecord.findMany({
-      where: { activation: activationStaffScope(req.staff!.sub), date: { gte: since } },
+      where: { staffId: req.staff!.sub, date: { gte: since } },
       orderBy: { date: "desc" },
       include: { leaveRequest: true },
     });

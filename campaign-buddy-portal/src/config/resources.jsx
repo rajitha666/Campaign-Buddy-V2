@@ -56,6 +56,13 @@ const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara 
   'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala',
   'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle'];
 
+// Checklist task form → API body. The number input yields a string; only a
+// Photo task carries a photo count (blank = 1), the others must not send one.
+function supervisorTaskPayload(values) {
+  const { imageCount, ...rest } = values;
+  return rest.taskType === 'photo' ? { ...rest, imageCount: Number(imageCount) || 1 } : rest;
+}
+
 async function optionsFrom(listFn, labelKey = 'name', valueKey = 'id') {
   // Explicit large pageSize — most list() endpoints default to a 25-per-page
   // cap server-side; a bare call would silently truncate any dropdown (or a
@@ -531,7 +538,7 @@ export const RESOURCES = {
     ],
     columns: [
       { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
-      { key: 'staffName', label: 'Promoter', render: (r) => r.activation?.staff?.fullName || nameOf(r.activation?.staff) || '—' },
+      { key: 'staffName', label: 'Promoter', render: (r) => r.staff?.fullName || nameOf(r.staff) || r.activation?.staff?.fullName || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'checkInAt', label: 'Check-in', render: (r) => fmtClockTime(r.checkInAt) },
       { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtClockTime(r.checkOutAt) },
@@ -577,21 +584,23 @@ export const RESOURCES = {
   },
 
   supervisorTasks: {
-    title: 'Supervisor Tasks', subtitle: 'QA checklist supervisors fill out during outlet visits.', addLabel: 'Add New Task',
+    title: 'Supervisor Tasks', subtitle: 'QA checklist supervisors fill out during outlet visits on the mobile app. Range = 1–5 rating of the promoter, Feedback = free text, Photo = outlet setup photos.', addLabel: 'Add New Task',
     scopeToCampaign: true,
     columns: [
       { key: 'task', label: 'Task' }, { key: 'category', label: 'Category' },
       { key: 'taskType', label: 'Task Type', render: (r) => <Badge type={r.taskType === 'range' ? 'info' : 'muted'}>{r.taskType}</Badge> },
+      { key: 'imageCount', label: 'Photos', render: (r) => (r.taskType === 'photo' ? r.imageCount : '—'), csvValue: (r) => (r.taskType === 'photo' ? r.imageCount : '') },
     ],
     actions: ['edit', 'delete'],
     fetchList: clientPaged(({ campaignId, query }) => supervisorTasksApi.list(campaignId, query)),
-    createItem: ({ campaignId, values }) => supervisorTasksApi.create(campaignId, values),
-    updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, values),
+    createItem: ({ campaignId, values }) => supervisorTasksApi.create(campaignId, supervisorTaskPayload(values)),
+    updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, supervisorTaskPayload(values)),
     deleteItem: ({ campaignId, id }) => supervisorTasksApi.remove(campaignId, id),
     formFields: [
       { key: 'category', label: 'Category', type: 'searchable-select', required: true, options: ['Sale', 'Outlet PR', 'Documentation', 'Discipline', 'Competitor Activities', 'Communication', 'Capability / Knowledge', 'Attitude', 'Attire & Grooming'] },
-      { key: 'taskType', label: 'Task Type', type: 'radio', options: [{ value: 'range', label: 'Range' }, { value: 'feedback', label: 'Feedback' }] },
+      { key: 'taskType', label: 'Task Type', type: 'radio', options: [{ value: 'range', label: 'Range' }, { value: 'feedback', label: 'Feedback' }, { value: 'photo', label: 'Photo' }] },
       { key: 'task', label: 'Task', type: 'textarea', required: true, placeholder: 'The question or instruction shown to the supervisor' },
+      { key: 'imageCount', label: 'Photos to capture (Photo tasks only)', type: 'number', step: 1, placeholder: '1', validate: validators.integer() },
     ],
   },
 
@@ -612,7 +621,7 @@ export const RESOURCES = {
     title: 'Supervisor Attendance', subtitle: "Supervisors' own check-in log.", excel: true, noAdd: true,
     scopeToCampaign: true,
     columns: [
-      { key: 'staffName', label: 'Supervisor', render: (r) => r.activation?.staff?.fullName || '—' },
+      { key: 'staffName', label: 'Supervisor', render: (r) => r.staff?.fullName || r.activation?.staff?.fullName || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
