@@ -69,6 +69,9 @@ export const s = {
     timestamp: z.string().optional(),
   }),
   checkOut: z.object({
+    // Which route outlet to check out of (supervisors have several
+    // activations today); promoters omit it.
+    assignmentId: id.optional(),
     latitude: lat.optional(),
     longitude: lng.optional(),
     timestamp: z.string().optional(),

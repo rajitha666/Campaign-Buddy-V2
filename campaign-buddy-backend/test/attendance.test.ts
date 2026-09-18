@@ -152,6 +152,123 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
   });
 });
 
+// Regression — the attendance routes still scoped every lookup to
+// Activation.staffId (the promoter). A supervisor on a route is recorded as
+// supervisorStaffId (fixed in /me/assignments #63 but never carried over
+// here), so checking in with an assignment id from /me/assignments 404'd with
+// "No assignment for today", and /attendance/today, check-out and history
+// were equally blind to their records.
+describe("attendance — supervisor route mode (supervisorStaffId)", () => {
+  async function makeSupervisorWithRoute() {
+    const promoter = await makeStaff();
+    const supervisor = await makeStaff({ userType: "supervisor" });
+    const client = await prisma.client.create({ data: { companyName: "Co", clientName: "C" } });
+    const city = await prisma.city.create({ data: { name: "City", province: "P", district: "D" } });
+    const outletA = await prisma.outlet.create({
+      data: { outletNo: `OA-${Math.random().toString(36).slice(2, 7)}`, name: "Outlet A", cityId: city.id, latitude: 6.9, longitude: 79.9 },
+    });
+    const outletB = await prisma.outlet.create({
+      data: { outletNo: `OB-${Math.random().toString(36).slice(2, 7)}`, name: "Outlet B", cityId: city.id, latitude: 7.1, longitude: 80.1 },
+    });
+    const campaign = await prisma.campaign.create({
+      data: {
+        campaignNo: `CMP-${Math.random().toString(36).slice(2, 7)}`,
+        name: "Campaign",
+        clientId: client.id,
+        startDate: new Date(Date.now() - 3 * 86400000),
+        endDate: new Date(Date.now() + 5 * 86400000),
+      },
+    });
+    const today = dayDate();
+    const activationA = await prisma.activation.create({
+      data: { name: "Visit A", campaignId: campaign.id, outletId: outletA.id, staffId: promoter.id, supervisorStaffId: supervisor.id, dateFrom: today, dateTo: today },
+    });
+    const activationB = await prisma.activation.create({
+      data: { name: "Visit B", campaignId: campaign.id, outletId: outletB.id, staffId: promoter.id, supervisorStaffId: supervisor.id, dateFrom: today, dateTo: today },
+    });
+    const token = await staffToken(supervisor.mobileUsername, "field-pw");
+    return { supervisor, activationA, activationB, outletA, outletB, token };
+  }
+
+  it("check-in accepts an assignment from /me/assignments (supervised, not staffed)", async () => {
+    const { activationA, outletA, token } = await makeSupervisorWithRoute();
+    const res = await request(app)
+      .post("/v1/attendance/check-in")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude });
+    expect(res.status).toBe(201);
+    expect(res.body.data.assignmentId).toBe(activationA.id);
+  });
+
+  it("GET /attendance/today resolves a supervised assignment by id", async () => {
+    const { activationA, outletA, token } = await makeSupervisorWithRoute();
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+
+    const today = await request(app)
+      .get("/v1/attendance/today")
+      .query({ assignmentId: activationA.id })
+      .set("Authorization", `Bearer ${token}`);
+    expect(today.status).toBe(200);
+    expect(today.body.data.checkedIn).toBe(true);
+  });
+
+  it("check-out takes an assignmentId and clears the lock so the supervisor can check into the next outlet", async () => {
+    const { activationA, activationB, outletA, outletB, token } = await makeSupervisorWithRoute();
+    const auth = { Authorization: `Bearer ${token}` };
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+
+    const out = await request(app)
+      .post("/v1/attendance/check-out")
+      .set(auth)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude });
+    expect(out.status).toBe(200);
+    expect(out.body.data.assignmentId).toBe(activationA.id);
+
+    const next = await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ assignmentId: activationB.id, latitude: outletB.latitude, longitude: outletB.longitude });
+    expect(next.status).toBe(201);
+    expect(next.body.data.assignmentId).toBe(activationB.id);
+  });
+
+  it("attendance history includes supervised-activation records", async () => {
+    const { activationA, outletA, token } = await makeSupervisorWithRoute();
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+
+    const history = await request(app).get("/v1/attendance/history").set("Authorization", `Bearer ${token}`);
+    expect(history.status).toBe(200);
+    expect(history.body.data).toHaveLength(1);
+  });
+
+  it("location ping is accepted while checked in on a supervised activation", async () => {
+    const { activationA, outletA, token } = await makeSupervisorWithRoute();
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ assignmentId: activationA.id, latitude: outletA.latitude, longitude: outletA.longitude })
+      .expect(201);
+
+    const ping = await request(app)
+      .post("/v1/location/ping")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ latitude: outletA.latitude, longitude: outletA.longitude, timestamp: new Date().toISOString() });
+    expect(ping.status).toBe(204);
+  });
+});
+
 describe("attendance — mobile response shapes", () => {
   it("GET /v1/attendance/today returns the slim view", async () => {
     const { staff, outlet } = await makeCampaignWithActivation();

@@ -27,6 +27,14 @@ export async function checkIn(payload: CheckInRequest): Promise<AttendanceRecord
 }
 
 export interface CheckOutRequest {
+  /**
+   * Which route outlet to check out of — a supervisor has several
+   * activations today, so the server needs the id to close the right
+   * open shift (otherwise the next check-in 409s on the one-open-shift
+   * lock). Promoters omit it; the server falls back to today's single
+   * assignment.
+   */
+  assignmentId?: string;
   // Best-effort — omitted when permission was denied or no GPS fix could be
   // obtained in time; the backend accepts check-out without coords (#50).
   latitude?: number;

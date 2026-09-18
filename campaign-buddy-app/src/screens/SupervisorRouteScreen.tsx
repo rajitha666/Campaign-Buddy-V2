@@ -116,7 +116,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
   async function handleCheckOut() {
     setBusy(true);
     try {
-      await checkOut();
+      await checkOut(assignment.assignmentId);
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
     } catch (err) {
       showAlert('Could not check out', getApiErrorMessage(err));

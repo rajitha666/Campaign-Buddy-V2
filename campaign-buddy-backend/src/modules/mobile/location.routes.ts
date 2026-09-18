@@ -23,7 +23,11 @@ router.post(
     const capturedIso = capturedAt ?? timestamp;
 
     const openShift = await prisma.attendanceRecord.findFirst({
-      where: { activation: { staffId: req.staff!.sub }, checkInAt: { not: null }, checkOutAt: null },
+      where: {
+        activation: { OR: [{ staffId: req.staff!.sub }, { supervisorStaffId: req.staff!.sub }] },
+        checkInAt: { not: null },
+        checkOutAt: null,
+      },
     });
     if (!openShift) {
       throw new ApiError(422, "NOT_CHECKED_IN", "Location pings are only accepted while checked in");

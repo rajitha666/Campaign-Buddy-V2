@@ -39,8 +39,10 @@ interface AttendanceContextValue {
    * `salesSummaryConfirmed` must be true — the checkout confirmation sheet
    * only calls this after the rep has actually confirmed (directly, or via
    * the sales-summary detour). See CheckoutConfirmSheet.tsx.
+   * `assignmentId` targets one of a supervisor's several route outlets;
+   * promoters omit it.
    */
-  checkOut: () => Promise<void>;
+  checkOut: (assignmentId?: string) => Promise<void>;
 }
 
 const AttendanceContext = createContext<AttendanceContextValue | undefined>(undefined);
@@ -88,7 +90,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
     setLocationVerified(record.checkInLocationVerified);
   }, []);
 
-  const checkOut = useCallback(async () => {
+  const checkOut = useCallback(async (assignmentId?: string) => {
     // Best-effort GPS fix — a denied permission or a stalled/failed fix must
     // not block check-out (#50); the backend accepts check-out without coords.
     const coords = await getCheckoutCoords({
@@ -96,6 +98,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       getCurrentPosition: () => Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
     });
     await attendanceApi.checkOut({
+      ...(assignmentId ? { assignmentId } : {}),
       ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
       timestamp: new Date().toISOString(),
       salesSummaryConfirmed: true,

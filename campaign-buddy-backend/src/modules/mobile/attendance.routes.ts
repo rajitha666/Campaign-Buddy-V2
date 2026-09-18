@@ -32,6 +32,15 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
   };
 }
 
+// #63 fixed /me/assignments to surface a supervisor's route visits via
+// supervisorStaffId — the attendance routes must resolve the same Activations
+// or the app gets "No assignment for today" with an id /me/assignments just
+// returned. A supervisor is never Activation.staffId; a promoter is never
+// supervisorStaffId, so the OR is safe for both.
+function activationStaffScope(staffId: string) {
+  return { OR: [{ staffId }, { supervisorStaffId: staffId }] };
+}
+
 router.get(
   "/attendance/today",
   asyncHandler(async (req, res) => {
@@ -43,9 +52,9 @@ router.get(
     // is unchanged.
     const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
     const activation = assignmentId
-      ? await prisma.activation.findFirst({ where: { id: assignmentId, staffId: req.staff!.sub } })
+      ? await prisma.activation.findFirst({ where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) } })
       : await prisma.activation.findFirst({
-          where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+          where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
         });
     const empty = {
       checkedIn: false, checkInAt: null, checkOutAt: null,
@@ -90,12 +99,12 @@ router.post(
     let activation;
     if (assignmentId) {
       activation = await prisma.activation.findFirst({
-        where: { id: assignmentId, staffId: req.staff!.sub },
+        where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) },
         include: { outlet: true, campaign: true },
       });
     } else {
       activation = await prisma.activation.findFirst({
-        where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+        where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
         include: { outlet: true, campaign: true },
       });
     }
@@ -111,7 +120,7 @@ router.post(
         checkInAt: { not: null },
         checkOutAt: null,
         date: { lt: today },
-        activation: { staffId: req.staff!.sub },
+        activation: activationStaffScope(req.staff!.sub),
       },
     });
     for (const stale of staleOpenShifts) {
@@ -130,7 +139,7 @@ router.post(
           checkInAt: { not: null },
           checkOutAt: { not: null },
           date: today,
-          activation: { staffId: req.staff!.sub },
+          activation: activationStaffScope(req.staff!.sub),
         },
       });
       if (checkedOutToday) {
@@ -145,7 +154,7 @@ router.post(
       where: {
         checkInAt: { not: null },
         checkOutAt: null,
-        activation: { staffId: req.staff!.sub },
+        activation: activationStaffScope(req.staff!.sub),
       },
       include: { activation: true },
     });
@@ -214,12 +223,25 @@ router.post(
   "/attendance/check-out",
   validate({ body: s.checkOut }),
   asyncHandler(async (req, res) => {
-    const { latitude, longitude } = req.body as { latitude?: number; longitude?: number };
+    const { assignmentId, latitude, longitude } = req.body as {
+      assignmentId?: string;
+      latitude?: number;
+      longitude?: number;
+    };
     const today = dayDate();
 
-    const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
-    });
+    // Same resolution as check-in: a supervisor checks out of ONE route
+    // outlet, so the client sends that assignment's id — a bare findFirst
+    // over today's activations would pick an arbitrary one and leave the
+    // real shift open (blocking the next check-in via the one-open-shift
+    // lock). Promoters omit it and keep the today-window lookup.
+    const activation = assignmentId
+      ? await prisma.activation.findFirst({
+          where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) },
+        })
+      : await prisma.activation.findFirst({
+          where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
+        });
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
     const record = await prisma.attendanceRecord.findUnique({
@@ -255,7 +277,7 @@ router.get(
     const since = new Date(Date.now() - days * 86400000);
 
     const records = await prisma.attendanceRecord.findMany({
-      where: { activation: { staffId: req.staff!.sub }, date: { gte: since } },
+      where: { activation: activationStaffScope(req.staff!.sub), date: { gte: since } },
       orderBy: { date: "desc" },
       include: { leaveRequest: true },
     });
