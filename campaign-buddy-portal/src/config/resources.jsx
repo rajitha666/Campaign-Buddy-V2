@@ -637,15 +637,15 @@ export const RESOURCES = {
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
     columns: [
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
+      { key: 'staffName', label: 'Promoter', render: (r) => r.activationItem?.activation?.staff ? staffLabel(r.activationItem.activation.staff) : '—' },
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
       {
         key: 'amount', label: 'Amount',
         render: (r) => `LKR ${Number((r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0)).toLocaleString()}`,
         csvValue: (r) => (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0),
       },
-      { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
-      { key: 'staffName', label: 'Promoter', render: (r) => r.activationItem?.activation?.staff ? staffLabel(r.activationItem.activation.staff) : '—' },
-      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
       { key: 'remainingStock', label: 'Remaining', render: (r) => (r.openingStock ?? 0) - (r.soldToday ?? 0) },
     ],
