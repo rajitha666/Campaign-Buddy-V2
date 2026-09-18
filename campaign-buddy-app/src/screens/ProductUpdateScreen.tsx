@@ -14,6 +14,8 @@ import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { Button } from '@/components/Button';
 import { ProductDetailsSheet } from '@/components/ProductDetailsSheet';
+import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
@@ -24,6 +26,7 @@ export function ProductUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Route>();
   const queryClient = useQueryClient();
+  const { checkedIn } = useAttendance();
 
   const [openingStock, setOpeningStock] = useState(params.openingStock);
   const [soldToday, setSoldToday] = useState(params.soldToday);
@@ -150,10 +153,13 @@ export function ProductUpdateScreen() {
           <Text style={styles.remainingValue}>{remaining} units</Text>
         </View>
 
+        {!checkedIn && <CheckInRequiredNotice />}
+
         <Button
           label="Save update"
           onPress={() => saveMutation.mutate()}
           loading={saveMutation.isPending}
+          disabled={!checkedIn}
           style={{ marginTop: spacing.xl }}
         />
       </KeyboardAwareScrollView>

@@ -12,6 +12,8 @@ import * as salesFieldsApi from '@/api/salesFields';
 import * as salesSummaryApi from '@/api/salesSummary';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/Button';
+import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
@@ -20,6 +22,7 @@ type Nav = NativeStackNavigationProp<HomeStackParamList, 'StatsUpdate'>;
 export function StatsUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
+  const { checkedIn } = useAttendance();
   const statsQuery = useQuery({ queryKey: ['stats', 'today'], queryFn: statsApi.getTodayStats });
   // Tester count (client doc D) — a campaign-toggled day-scope custom field,
   // not a DailyStats column, but reps enter it the same way as footfall/
@@ -158,10 +161,13 @@ export function StatsUpdateScreen() {
           <Text style={styles.convValue}>{conversionRate}% of approached</Text>
         </View>
 
+        {!checkedIn && <CheckInRequiredNotice />}
+
         <Button
           label="Update"
           onPress={() => saveMutation.mutate()}
           loading={saveMutation.isPending}
+          disabled={!checkedIn}
           style={{ marginTop: spacing.xl }}
         />
       </KeyboardAwareScrollView>

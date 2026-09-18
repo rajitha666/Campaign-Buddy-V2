@@ -9,12 +9,15 @@ import * as salesSummaryApi from '@/api/salesSummary';
 import * as statsApi from '@/api/stats';
 import { Button } from '@/components/Button';
 import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
+import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 import { getApiErrorMessage } from '@/api/client';
 
 export function SalesSummaryScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const { checkedIn } = useAttendance();
   const summaryQuery = useQuery({ queryKey: ['sales-summary', 'today'], queryFn: salesSummaryApi.getTodaySalesSummary });
   const last7Query = useQuery({ queryKey: ['stats', 'range-7d'], queryFn: () => statsApi.getLast7Days() });
   const [remarks, setRemarks] = useState<string | null>(null);
@@ -157,11 +160,13 @@ export function SalesSummaryScreen() {
           </View>
         )}
 
+        {!checkedIn && !confirmed && <CheckInRequiredNotice />}
+
         <Button
           label={s?.confirmed ? 'Confirmed ✓' : 'Confirm & submit'}
           onPress={() => confirmMutation.mutate()}
           loading={confirmMutation.isPending}
-          disabled={s?.confirmed}
+          disabled={s?.confirmed || !checkedIn}
           style={{ marginTop: spacing.xl }}
         />
 
