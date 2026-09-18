@@ -472,9 +472,10 @@ Staff and User JWTs use **separate secrets** by design.
 
 Running `npm run prisma:seed` provisions:
 - All four `Role`s (`adm`, `usr`, `supervisor`, `sponsor`).
-- A Super Admin `User`: `admin` / `ChangeMe123!`.
+- A Super Admin `User` login (credentials are printed to the terminal when the
+  seed runs — see AGENTS.md "Logins are not in the repo"; not documented here).
 - A sample `Client` (Prisha Naturals), `Brand`, `Item` (Tea Tree Shampoo 320ml), `City` (Nawala), `Outlet` (Nawala Retail Outlet), `Campaign` ("Sktest Activation", `CMP-0001`), with an `"all"`-scope `CampaignAccessGrant` for the admin user.
-- A sample `Staff` mobile login: `sktest` **or** `0770000001` / `Field123!`, with an `Activation` on the seeded campaign/outlet and a linked `ActivationItem`/`CampaignItem`.
+- A sample `Staff` mobile login, with an `Activation` on the seeded campaign/outlet and a linked `ActivationItem`/`CampaignItem`.
 - **No `SupervisorRoute` seed row** — new entity, left empty by default.
 
 This is enough to exercise every mobile endpoint and every admin read endpoint against real data immediately after seeding.

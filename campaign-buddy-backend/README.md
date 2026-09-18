@@ -17,8 +17,8 @@ npm run dev
 Server starts on `http://localhost:4000`. `GET /health` is a quick liveness check.
 
 ## Seeded logins (after `npm run prisma:seed`)
-- **Admin portal:** `admin` / `ChangeMe123!`
-- **Mobile app:** `0770000001` (or the legacy username `sktest`) / `Field123!`
+- Running the seed prints the admin-portal and mobile-app login pairs to the
+  terminal (not documented here — see AGENTS.md "Logins are not in the repo").
 
 ## Demo data (`prisma/demo-seed.ts`)
 
@@ -36,9 +36,9 @@ Builds the **"Radiance Q3 Push"** sample campaign — 4 Colombo outlets, 4 promo
 2 supervisors, 3 SKUs, 4 custom fields, ~7 days of attendance / sales / footfall /
 custom-field / tracking data, supervisor visit activations and routes, and 3
 leave requests. Re-runnable (upserts, keyed on stable codes); does **not** touch
-the base seed's "Sktest Activation". Adds portal logins `supervisor` / `Portal123!`
-and `sponsor` / `Portal123!` (with campaign grants), and mobile logins for the
-new promoters (`0762223344` … / `Field123!`). Timestamps are written to
+the base seed's "Sktest Activation". Adds portal logins for a supervisor
+and a sponsor (with campaign grants), and mobile logins for the
+new promoters. Timestamps are written to
 Asia/Colombo wall-clock.
 
 ## System Status (portal page, `GET /admin/v1/system/status`)

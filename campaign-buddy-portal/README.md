@@ -33,7 +33,8 @@ The dev proxy forwards `/admin/v1/*` to `http://localhost:4000`. Override with
 `VITE_API_PROXY_TARGET=http://your-host:port npm run dev`, or set
 `VITE_API_BASE_URL` directly for a production build (`npm run build`).
 
-Sign in with the seeded Super Admin: `admin` / `ChangeMe123!`.
+Sign in with the seeded Super Admin login (created by `npm run prisma:seed`
+in the backend; it prints credentials to the terminal).
 
 ## Training guides
 

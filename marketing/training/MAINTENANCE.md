@@ -69,7 +69,7 @@ needed unless the step text changed.
   `/tracking/live`, `/reports/client-sku-wise`, `/reports/client-brand-wise`)
 - `assets/mobile-promoter/` → CB Mobile screens for a promoter (`role: field_rep`) login
 - `assets/mobile-supervisor/` → CB Mobile screens for a supervisor (`role: campaign_owner`)
-  login — My Route, Profile. Log in as `dinesh` / `Field123!` after the demo seed
+  login — My Route, Profile. Log in as one of the seeded promoters after the demo seed
   (Staff `userType: "supervisor"` — see `prisma/demo-seed.ts`), not a promoter login;
   the app renders a completely different 2-tab layout for this role
   (`campaign-buddy-app/src/navigation/SupervisorTabs.tsx`).
@@ -83,7 +83,8 @@ needed unless the step text changed.
    (builds the "Radiance Q3 Push" sample campaign — a week of activity)
 2. Run the portal (`campaign-buddy-portal`, `npm run dev`) or the app
    (`campaign-buddy-app`, `npm run start -- --web`) and sign in as the role.
-   Portal logins: `admin` / `ChangeMe123!`. Mobile: `sktest` / `Field123!`.
+   Logins are printed to the terminal by the seed scripts; if you don't have
+   them, ask the maintainer (see AGENTS.md "Logins are not in the repo").
 3. Capture the screen at the **same viewport width** as the existing shots
    (portal shots are desktop width; promoter shots are phone width).
 4. Export to WebP, keep the filename identical, drop it in `assets/<role>/`.

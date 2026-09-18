@@ -112,12 +112,11 @@ swap in place, same filename. Full procedure and the screen↔guide map:
 - Batch tool calls where possible to reduce round-trips.
 - Skip verbose explanations unless asked.
 
-## Demo credentials (seed data)
+## Logins are not in the repo
 
-| Surface | Username | Password |
-|---|---|---|
-| CB Office | `admin` | `ChangeMe123!` |
-| CB Mobile | `sktest` | `Field123!` |
+Do not put seed/demo credentials in docs, issue text, PRs or chat — ask the
+user for any login details you need for testing or running the app locally.
+The seeds create their own logins and print them to the terminal when run.
 
 ## Key docs
 

@@ -95,7 +95,8 @@ npm install
 npm run dev                       # Vite dev proxy forwards /admin/v1/* → :4000
 ```
 
-Open http://localhost:5173, sign in as `admin` / `ChangeMe123!`.
+Open http://localhost:5173 and sign in with the seeded Super Admin login
+(see below).
 The **License Usage** page is under **Admin → License Usage** (`/license`).
 
 ### 2.4 CB Mobile app
@@ -107,7 +108,7 @@ cp .env.example .env              # EXPO_PUBLIC_API_BASE_URL=http://localhost:40
 npm run start -- --web           # browser preview; or npm run android / npm run ios
 ```
 
-Sign in as `sktest` / `Field123!`. For a physical device over Expo Go, set
+Sign in with the seeded mobile login. For a physical device over Expo Go, set
 `EXPO_PUBLIC_API_BASE_URL` to your machine's LAN IP (not `localhost`) and open
 inbound TCP 4000 + 8081.
 
@@ -421,7 +422,7 @@ Bundle identifiers are already set in `app.json`
 - [ ] **Rotate the Cloudflare tunnel token** — a real token was committed to
       `.env.example` in git history; revoke it in the Cloudflare dashboard and
       issue a fresh one for `.env` only
-- [ ] Default `admin` / `sktest` passwords changed after first login
+- [ ] Seeded portal / mobile login passwords changed after first login
 - [ ] Tunnel hostname resolves and `/health` returns `ok` over HTTPS
 - [ ] `prisma migrate status` shows all migrations applied
 - [ ] Nightly `pg_dump` backup cron in place, retention set

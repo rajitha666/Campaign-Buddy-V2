@@ -59,7 +59,8 @@ npm install
 npm run dev                     # dev proxy forwards /admin/v1/* to :4000
 ```
 
-Open http://localhost:5173 and sign in as `admin` / `ChangeMe123!`.
+Open http://localhost:5173 and sign in with the seeded Super Admin login
+(created by the base seed).
 
 ### 3. CB Mobile app
 
@@ -70,7 +71,7 @@ cp .env.example .env            # EXPO_PUBLIC_API_BASE_URL=http://localhost:4000
 npm run start -- --web          # browser preview; or: npm run android / npm run ios
 ```
 
-Sign in as `sktest` / `Field123!`.
+Sign in with the seeded mobile login (created by the base seed).
 
 ## Tests
 
@@ -117,20 +118,10 @@ every pull request:
 | `docs/archive/` | Superseded specs — historical context only, not a build target |
 | [`marketing/README.md`](marketing/README.md) | Landing site, evaluation brief, and per-role user-training guides |
 
-## Demo credentials (seed data)
+## Demo logins (seed data)
 
-Base seed (`npm run prisma:seed`):
-
-| Surface | Username | Password |
-|---|---|---|
-| CB Office | `admin` | `ChangeMe123!` |
-| CB Mobile | `sktest` | `Field123!` |
-
-Demo seed (`npm run prisma:seed:demo`, adds "Radiance Q3 Push"):
-
-| Surface | Username | Password |
-|---|---|---|
-| CB Office (supervisor) | `supervisor` | `Portal123!` |
-| CB Office (sponsor) | `sponsor` | `Portal123!` |
-| CB Mobile (Sanduni Kumari, Nawala) | `0771234567` | `Field123!` |
-| CB Mobile (Kasun Perera, Rajagiriya) | `0762223344` | `Field123!` |
+The base seed (`npm run prisma:seed`) and demo seed
+(`npm run prisma:seed:demo`, adds "Radiance Q3 Push") create their own portal
+and mobile login accounts and print the username/password pairs to the
+terminal when they run. No credentials are documented in this repo — ask the
+maintainer if you need them.

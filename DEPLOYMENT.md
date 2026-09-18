@@ -89,12 +89,10 @@ curl http://localhost:4000/health
 
 ### Default Credentials (seeded automatically)
 
-| Surface | Username | Password |
-|---------|----------|----------|
-| Portal | `admin` | `ChangeMe123!` |
-| Mobile | `sktest` | `Field123!` |
-
-**Change these immediately after first login!**
+The base seed creates the portal and mobile login accounts and prints the
+username/password pairs to the terminal when it runs. Do not document them
+here — change any seeded passwords immediately after first login in a real
+deployment.
 
 ## Cloudflare Tunnel (Recommended for Production)
 

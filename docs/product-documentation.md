@@ -599,12 +599,11 @@ granted — no configuration on their side.
 
 ## 9. Appendix — reference
 
-### 9.1 Demo / seed credentials (local build)
+### 9.1 Seeded data (local build)
 
-| Surface | Login | Password | Role |
-|---|---|---|---|
-| CB Office | `admin` | `ChangeMe123!` | Super Admin |
-| CB Mobile | `0770000001` (or the legacy username `sktest`) | `Field123!` | Promoter |
+Running `npm run prisma:seed` provisions role and login accounts for CB Office
+and CB Mobile and prints the username/password pairs to the terminal when it
+runs (no credentials are documented in this repo — see AGENTS.md).
 
 Seed data includes one client (Prisha Naturals), one brand, one item, one city, one
 outlet, one campaign, one activation linking `sktest` to it, and **four sample
