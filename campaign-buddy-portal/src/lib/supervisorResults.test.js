@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resultText, scoreLabel, resultsCsv, absoluteUrl, toCsv } from './supervisorResults';
+import { resultText, scoreLabel, resultsCsv, absoluteUrl, toCsv, groupByOutlet } from './supervisorResults';
 
 describe('toCsv', () => {
   it('quotes fields that contain commas, quotes or newlines', () => {
@@ -34,6 +34,26 @@ describe('absoluteUrl', () => {
   it('turns an /uploads path into a full link so it still works from an exported file', () => {
     expect(absoluteUrl('/uploads/visit-photos/a.jpg', 'https://office.example.lk')).toBe('https://office.example.lk/uploads/visit-photos/a.jpg');
     expect(absoluteUrl('https://cdn.example/x.jpg', 'https://office.example.lk')).toBe('https://cdn.example/x.jpg');
+  });
+});
+
+describe('groupByOutlet', () => {
+  it('groups answers by outlet in order of first appearance, recording counts', () => {
+    const rows = [
+      { id: 1, outletName: 'Keells' },
+      { id: 2, outletName: 'Arpico' },
+      { id: 3, outletName: 'Keells' },
+      { id: 4, outletName: null },
+    ];
+    expect(groupByOutlet(rows)).toEqual([
+      { outletName: 'Keells', rows: [rows[0], rows[2]] },
+      { outletName: 'Arpico', rows: [rows[1]] },
+      { outletName: '—', rows: [rows[3]] },
+    ]);
+  });
+
+  it('returns no groups for empty input', () => {
+    expect(groupByOutlet([])).toEqual([]);
   });
 });
 

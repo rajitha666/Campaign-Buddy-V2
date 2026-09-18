@@ -9,7 +9,7 @@ import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import { exportFilename } from '../lib/exportFilename';
 import { applyDesignationLabel } from '../lib/designationLabel';
-import { resultText, scoreLabel, resultsCsv, toCsv } from '../lib/supervisorResults';
+import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet } from '../lib/supervisorResults';
 
 const PAGE_SIZE = 25;
 const isoDay = (d) => d.toISOString().slice(0, 10);
@@ -142,23 +142,8 @@ export default function SupervisorTaskResults() {
                 <table className="data-table">
                   <thead><tr><th>Date</th><th>Outlet</th><th>{promoter}</th><th>Supervisor</th><th>Category</th><th>Task</th><th>Result</th></tr></thead>
                   <tbody>
-                    {shown.map((r) => (
-                      <tr key={r.id}>
-                        <td>{String(r.date).slice(0, 10)}</td><td className="cell-strong">{r.outletName}</td>
-                        <td>{r.promoterName ?? <span title="Outlet-level task, shared by every promoter at the outlet">—</span>}</td>
-                        <td>{r.supervisorName}</td><td>{r.category}</td><td>{r.task}</td>
-                        <td>
-                          {r.taskType === 'photo' && r.photos.length ? (
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {r.photos.map((p) => (
-                                <img key={p.url} src={p.url} alt="Outlet setup" title={`Uploaded ${fmtTime(p.uploadedAt)}`}
-                                  onClick={() => setViewing({ photo: p, row: r })}
-                                  style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in', border: '1px solid var(--line)' }} />
-                              ))}
-                            </div>
-                          ) : resultText(r)}
-                        </td>
-                      </tr>
+                    {groupByOutlet(shown).map((g) => (
+                      <Group key={g.outletName} group={g} promoter={promoter} onView={setViewing} />
                     ))}
                   </tbody>
                 </table>
@@ -181,6 +166,36 @@ export default function SupervisorTaskResults() {
         {viewing ? <img src={viewing.photo.url} alt="Outlet setup" style={{ width: '100%', borderRadius: 10 }} /> : null}
       </Modal>
     </div>
+  );
+}
+
+function Group({ group, promoter, onView }) {
+  return (
+    <>
+      <tr>
+        <td className="cell-strong" colSpan={7} style={{ background: 'var(--bg-soft, #fafafa)', borderTop: '2px solid var(--line)' }}>
+          {group.outletName} <span className="hint-note" style={{ marginLeft: 6 }}>{group.rows.length} answer{group.rows.length === 1 ? '' : 's'}</span>
+        </td>
+      </tr>
+      {group.rows.map((r) => (
+        <tr key={r.id}>
+          <td>{String(r.date).slice(0, 10)}</td><td className="cell-strong">{r.outletName}</td>
+          <td>{r.promoterName ?? <span title="Outlet-level task, shared by every promoter at the outlet">—</span>}</td>
+          <td>{r.supervisorName}</td><td>{r.category}</td><td>{r.task}</td>
+          <td>
+            {r.taskType === 'photo' && r.photos.length ? (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {r.photos.map((p) => (
+                  <img key={p.url} src={p.url} alt="Outlet setup" title={`Uploaded ${fmtTime(p.uploadedAt)}`}
+                    onClick={() => onView({ photo: p, row: r })}
+                    style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in', border: '1px solid var(--line)' }} />
+                ))}
+              </div>
+            ) : resultText(r)}
+          </td>
+        </tr>
+      ))}
+    </>
   );
 }
 

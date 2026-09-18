@@ -28,6 +28,24 @@ export function toCsv(lines) {
   return lines.map((l) => l.map(cell).join(',')).join('\n');
 }
 
+// Split answer rows into per-outlet blocks for the grouped results table,
+// keeping each outlet's rows in server order (date). A dash covers rows
+// whose outlet is missing (shouldn't normally happen).
+export function groupByOutlet(rows) {
+  const groups = [];
+  const byName = new Map();
+  for (const r of rows) {
+    const name = r.outletName || '—';
+    if (!byName.has(name)) {
+      const g = { outletName: name, rows: [] };
+      byName.set(name, g);
+      groups.push(g);
+    }
+    byName.get(name).rows.push(r);
+  }
+  return groups;
+}
+
 // Export-friendly timestamps: date-only for the visit day, `YYYY-MM-DD HH:MM`
 // for photo upload times so Excel doesn't show raw ISO strings.
 export function exportDate(d) {
