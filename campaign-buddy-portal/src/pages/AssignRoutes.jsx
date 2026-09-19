@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { staff as staffApi, outlets as outletsApi, activations as activationsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
+import { campaigns as campaignsApi, outlets as outletsApi, activations as activationsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loader from '../components/Loader';
@@ -24,16 +24,20 @@ export default function AssignRoutes() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState(null);
 
+  // Supervisors scoped to the CURRENT campaign (routes ∪ activation
+  // assignments) — not the global staff pool. Empty list ⇒ dropdown shows the
+  // hint instead of silently offering all supervisors.
   useEffect(() => {
-    staffApi.search('', { pageSize: 1000 }).then((res) => {
-      const sup = (res?.data || []).filter((s) => s.userType === 'supervisor');
+    if (!currentCampaignId) { setSupervisors([]); setSupervisorId(''); return; }
+    campaignsApi.supervisors(currentCampaignId).then((res) => {
+      const sup = res?.data || [];
       setSupervisors(sup);
-      if (sup[0]) setSupervisorId(sup[0].id);
+      setSupervisorId(sup[0]?.id || '');
     }).catch(() => {});
     outletsApi.list({ pageSize: 1000 }).then((res) => {
       setOutletNames(Object.fromEntries((res?.data || []).map((o) => [o.id, o.name])));
     }).catch(() => {});
-  }, []);
+  }, [currentCampaignId]);
 
   useEffect(() => {
     if (!currentCampaignId) return;
@@ -151,6 +155,11 @@ export default function AssignRoutes() {
       <div className="filter-bar">
         <div className="filter-field"><label>Supervisor</label>
           <SearchableSelect options={supervisorOptions} value={supervisorId} onChange={setSupervisorId} placeholder="Search supervisors…" />
+          {currentCampaignId && supervisors.length === 0 && (
+            <p className="page-sub">
+              No supervisors assigned to this campaign yet — add one to an activation or assign them a route.
+            </p>
+          )}
         </div>
         <button className="btn btn-secondary btn-sm" onClick={load}>Load</button>
       </div>
