@@ -13,7 +13,7 @@ export default function UpdateSales() {
 
   useEffect(() => {
     if (!currentCampaignId) return;
-    outletsApi.list().then((o) => setOutlets(o?.data || [])).catch(() => {});
+    outletsApi.list({ pageSize: 1000 }).then((o) => setOutlets(o?.data || [])).catch(() => {});
   }, [currentCampaignId]);
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;

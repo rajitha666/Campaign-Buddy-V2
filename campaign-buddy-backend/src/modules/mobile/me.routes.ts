@@ -128,6 +128,8 @@ router.get(
         dateFrom: { lte: date },
         dateTo: { gte: date },
         deletedAt: null,
+        outlet: { deletedAt: null },
+        campaign: { deletedAt: null },
       },
       include: { campaign: true, outlet: true },
     });

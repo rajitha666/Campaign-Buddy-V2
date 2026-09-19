@@ -65,11 +65,14 @@ export const campaigns = {
   items: (id) => api.get(`/campaigns/${id}/items`),
   addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} | {itemIds:[...]} | {newItem:{...}}
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
-  // Back-office accounts (Campaign Admin "usr", Sponsor, Supervisor) linked to
+   // Back-office accounts (Campaign Admin "usr", Sponsor, Supervisor) linked to
   // this campaign — callable by Super Admin or any existing admin already
   // granted access to the campaign. `admins()` returns every grant; pass
   // `role` when you need to filter by role client-side.
   admins: (id) => api.get(`/campaigns/${id}/access`),
+  // Active supervisors on the campaign (routes ∪ activation assignments) —
+  // Assign Routes dropdown; deliberately campaign-scoped, unlike global /staff.
+  supervisors: (id) => api.get(`/campaigns/${id}/supervisors`),
   adminCandidates: (id, search, query = {}) => api.get(`/campaigns/${id}/admin-candidates`, { query: { search, role: 'usr', ...query } }),
   addAdmin: (id, body) => api.post(`/campaigns/${id}/admins`, body), // {userId} | {userId, roleId} | {newUser:{username,password,displayName,email?,roleId?}}
   removeAdmin: (id, userId) => api.delete(`/campaigns/${id}/admins/${userId}`),
