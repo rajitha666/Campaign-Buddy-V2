@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetDb, makeCampaignWithActivation } from "./helpers";
 import { prisma } from "../src/utils/prisma";
-import { closeOpenShifts } from "../src/jobs/autoCheckout";
+import { closeOpenShifts, closeAbandonedShifts } from "../src/jobs/autoCheckout";
 import { idealShiftEnd, resolveShiftEnd } from "../src/utils/attendanceWindow";
 
 // Issue #32 — every staff member left checked in at end of day must get a
@@ -80,6 +80,24 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     expect(closed).toBe(1);
     const rec = await prisma.attendanceRecord.findUniqueOrThrow({ where: { id: open.id } });
     expect(rec.checkOutAt).toBeTruthy();
+  });
+
+  // Issue #83 — the boot catch-up must not check out people who are working right now.
+  it("closeAbandonedShifts (the boot catch-up) closes earlier days' open shifts but leaves today's live shift open", async () => {
+    const { activation } = await makeCampaignWithActivation();
+    const today = new Date(new Date().toISOString().slice(0, 10));
+    const yesterday = new Date(today.getTime() - 86400_000);
+    const stale = await prisma.attendanceRecord.create({
+      data: { activationId: activation.id, staffId: activation.staffId, date: yesterday, checkInAt: new Date(yesterday.getTime() + 4 * 3600_000) },
+    });
+    const live = await prisma.attendanceRecord.create({
+      data: { activationId: activation.id, staffId: activation.staffId, date: today, checkInAt: new Date(Date.now() - 60_000) },
+    });
+
+    expect(await closeAbandonedShifts()).toBe(1);
+
+    expect((await prisma.attendanceRecord.findUniqueOrThrow({ where: { id: stale.id } })).checkOutAt).toBeTruthy();
+    expect((await prisma.attendanceRecord.findUniqueOrThrow({ where: { id: live.id } })).checkOutAt).toBeNull();
   });
 
   it("leaves records without a check-in alone", async () => {
