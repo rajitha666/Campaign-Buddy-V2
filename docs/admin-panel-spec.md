@@ -75,9 +75,9 @@ Sidebar sections, with which roles see them:
 2. Clients — `adm`, `usr` (catalog, not campaign-scoped)
 3. Campaigns ▾ — List, Activation — `adm`, `usr` (write); read-only variant reachable by `supervisor`/`sponsor` for their granted campaign(s) only
 4. Outlets ▾ — List, Distributor Point, Cities — `adm`, `usr`
-5. Staff ▾ — List, Attendance, Absence, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
+5. Staff ▾ — List, Attendance, Absence, Monthly Attendance, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
 6. Sales ▾ — SKU Wise Sales, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
-7. Supervisors ▾ — Tasks, Task Results *(§3.7.1)*, Outlet Attendance, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
+7. Supervisors ▾ — Tasks, Task Results *(§3.7.1)*, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
 8. Items ▾ — List, Brands, Reorder — `adm`, `usr`
 9. Tracking ▾ — Promoter, Supervisor — `adm`, `usr` (full); `supervisor`/`sponsor` see a **live map** view (backed by `GET /campaigns/:id/tracking/live`) scoped to their granted outlets
 10. Reports ▾ — Overall SKU Wise, Overall Brand Wise — `adm`, `usr`; `sponsor` sees the same reports, same endpoints, automatically scoped to their grant (§3.11)
@@ -85,7 +85,8 @@ Sidebar sections, with which roles see them:
 12. Promoter list — `adm`, `usr`, `supervisor` (read-only variant)
 13. Reports for Sponsor — same screen as item 10, not a separate section (§3.11)
 14. Activation list — see item 3
-15. Admin Reports ▾ — Monthly Attendance — `adm`, `usr`
+15. ~~Admin Reports ▾ — Monthly Attendance~~ — now under Staff ▾ (item 5)
+18. Archive — Sales Overview, Outlet Attendance, Client: Outlet & SKU Wise, Client: Brand Wise, Promoter List (duplicates of other pages; kept reachable pending review) — `adm`
 16. Roles — `adm` only
 17. Update sales — `adm`, `usr`
 
