@@ -64,6 +64,21 @@ describe('supervisor checklist api', () => {
     }
   });
 
+  // expo/fetch guesses the Blob's MIME from the temp file's extension; when the
+  // manipulator's cache path has no ext it comes back empty/octet-stream and the
+  // backend rejects the upload. The picker-provided type is the source of truth.
+  it('falls back to the picked photo type when the fetched Blob has no usable MIME type', async () => {
+    const untyped = new Blob(['jpeg-bytes'], { type: 'application/octet-stream' });
+    vi.stubGlobal('fetch', () => Promise.resolve({ blob: () => Promise.resolve(untyped) }));
+    try {
+      await checklist.uploadPhoto('a1', 't1', { uri: 'file:///cache/abc', name: 'outlet-1.jpg', type: 'image/jpeg' });
+      const part = (calls[0].body as FormData).get('image') as { type?: string };
+      expect(part.type).toBe('image/jpeg');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('removes a photo by url', async () => {
     await checklist.deletePhoto('a1', 't1', '/uploads/visit-photos/x.jpg');
     expect(calls[0]).toMatchObject({ method: 'delete', path: '/me/assignments/a1/supervisor-tasks/t1/photos' });
