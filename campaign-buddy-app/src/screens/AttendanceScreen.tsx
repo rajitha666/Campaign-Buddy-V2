@@ -7,8 +7,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import type { AttendanceStackParamList } from '@/navigation/types';
 import { useAttendance } from '@/context/AttendanceContext';
-import * as profileApi from '@/api/profile';
-import * as attendanceApi from '@/api/attendance';
+import { useAssignment } from '@/context/AssignmentContext';
+import * as offlineQueries from '@/offline/queries';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { CheckoutConfirmSheet } from '@/components/CheckoutConfirmSheet';
@@ -28,8 +29,10 @@ export function AttendanceScreen() {
   const [checkoutSheetVisible, setCheckoutSheetVisible] = useState(false);
   const [elapsed, setElapsed] = useState('');
 
-  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: profileApi.getTodayAssignment });
-  const historyQuery = useQuery({ queryKey: ['attendance', 'history'], queryFn: () => attendanceApi.getAttendanceHistory('week') });
+  // Multi-outlet promoters check in against the outlet chosen on Home.
+  const { assignment, hasMultiple, assignments, select } = useAssignment();
+
+  const historyQuery = useQuery({ queryKey: ['attendance', 'history'], queryFn: offlineQueries.getAttendanceHistory });
 
   // Live "on shift for Xh Ym" ticker, matching the mockup's `.timer` text.
   useEffect(() => {
@@ -46,10 +49,10 @@ export function AttendanceScreen() {
   }, [checkedIn, checkInAt]);
 
   async function handleCheckIn() {
-    if (!assignmentQuery.data) return;
+    if (!assignment) return;
     setCheckingIn(true);
     try {
-      await checkIn(assignmentQuery.data.assignmentId);
+      await checkIn(assignment.assignmentId);
     } catch (err) {
       if (err instanceof LocationUnavailableError) {
         showAlert('Location required', err.message);
@@ -69,11 +72,35 @@ export function AttendanceScreen() {
       <View style={styles.topnav}>
         <Text style={styles.title}>Attendance</Text>
         <Text style={styles.subtitle}>
-          {assignmentQuery.data ? `${assignmentQuery.data.campaign.name} · ${assignmentQuery.data.outlet.name}` : ' '}
+          {assignment ? `${assignment.campaign.name} · ${assignment.outlet.name}` : ' '}
         </Text>
+        <View style={{ marginTop: spacing.sm }}>
+          <SyncStatusBadge />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {hasMultiple && assignment && (
+          <View style={styles.outletPickRow}>
+            {assignments.map((a) => {
+              const active = a.assignmentId === assignment.assignmentId;
+              return (
+                <Pressable
+                  key={a.assignmentId}
+                  onPress={() => select(a.assignmentId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use outlet ${a.outlet.name}`}
+                  style={[styles.outletChip, active && styles.outletChipActive]}
+                >
+                  <Text numberOfLines={1} style={[styles.outletChipText, active && styles.outletChipTextActive]}>
+                    {a.outlet.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
         {checkedIn ? (
           <View style={styles.hero}>
             <View style={[styles.ring, { backgroundColor: colors.successTint }]}>
@@ -89,6 +116,8 @@ export function AttendanceScreen() {
             </Text>
             {locationVerified === false ? (
               <LocationRow label="You checked in away from the outlet — your supervisor can see this" warn />
+            ) : locationVerified === null ? (
+              <LocationRow label="Location will be verified once you are back online" />
             ) : (
               <LocationRow label="Location verified at check-in" />
             )}
@@ -172,7 +201,7 @@ export function AttendanceScreen() {
 
       <CheckoutConfirmSheet
         visible={checkoutSheetVisible}
-        assignmentId={assignmentQuery.data?.assignmentId}
+        assignmentId={assignment?.assignmentId}
         onClose={() => {
           setCheckoutSheetVisible(false);
           refresh();
@@ -264,4 +293,18 @@ const styles = StyleSheet.create({
   },
   histDay: { fontSize: 13.5, fontWeight: '600', color: colors.textPrimary },
   histTime: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 1 },
+  // Outlet picker for multi-outlet promoters (multi-assignment days).
+  outletPickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  outletChip: {
+    maxWidth: '100%',
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm - 1,
+    paddingHorizontal: spacing.lg,
+  },
+  outletChipActive: { borderColor: colors.success, backgroundColor: colors.successTint },
+  outletChipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
+  outletChipTextActive: { color: colors.success },
 });

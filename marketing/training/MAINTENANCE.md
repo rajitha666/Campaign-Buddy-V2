@@ -41,7 +41,7 @@ only" from "needs a re-shoot," so use judgment same as always.
 | `admin.html` | `adm`, `usr`, `super` (persona `admin`) | CB Office | catalog, outlets, campaigns, activations, staff, attendance, leave, sales + corrections, custom fields, tracking, reports, users, roles, licence usage |
 | `supervisor.html` | `supervisor` | CB Office **and** CB Mobile | supervisor dashboard, my campaigns, staff attendance/absence, my outlet attendance, my leave requests, promoter list, SKU-wise sales, reports — **plus** the app's My Route (today's visits + planned route) and Profile tabs |
 | `sponsor.html` | `sponsor`, `client` | CB Office | sponsor dashboard, activation list, sales & footfall, promoter/supervisor attendance, promoter/supervisor tracking history, live locations, client reports (SKU / brand) |
-| `promoter.html` | Staff logins | CB Mobile, **and** the `admin` + `supervisor` menus in CB Office | login, shift check-in/out, products, sales & stats entry, performance, time-off, profile |
+| `promoter.html` | Staff logins | CB Mobile, **and** the `admin` + `supervisor` menus in CB Office | login, shift check-in/out, products, sales & stats entry, offline mode + Sync status, performance, time-off, profile |
 
 Persona mapping lives in `campaign-buddy-portal/src/context/AuthContext.jsx`
 (`roleToPersona`). Portal nav lives in `campaign-buddy-portal/src/config/nav.js`

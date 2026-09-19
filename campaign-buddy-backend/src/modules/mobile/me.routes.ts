@@ -81,7 +81,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const today = dayDate();
     const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+      where: { staffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null },
       include: { campaign: true, outlet: true },
     });
     if (!activation) throw notFound("An assignment for today");
@@ -111,18 +111,26 @@ router.get(
 );
 
 // A supervisor can have several concurrent outlet Activations (one per outlet
-// on their route) unlike a promoter's single daily assignment, so this returns
-// a list rather than `/me/assignments/today`'s single object. That endpoint is
-// left untouched so the promoter flow doesn't change.
+// on their route) and a promoter can also hold multiple same-day outlet
+// Activations (multi-outlet promoters pick freely), so this returns a list
+// rather than `/me/assignments/today`'s single object, which is left untouched.
 router.get(
   "/me/assignments",
   asyncHandler(async (req, res) => {
     const date = dayDate(typeof req.query.date === "string" ? req.query.date : undefined);
     const activations = await prisma.activation.findMany({
-      // Supervisor mode (#63): a supervisor is recorded as supervisorStaffId on
-      // the promoter's Activation, never as staffId — matching staffId here (the
-      // original bug) meant this always returned empty for a real supervisor.
-      where: { supervisorStaffId: req.staff!.sub, dateFrom: { lte: date }, dateTo: { gte: date } },
+      // Supervisor mode (#63) matched supervisorStaffId only, so a promoter's own
+      // activations were never listed here. Multi-outlet promoters (#promoter-choose)
+      // need this list to pick between same-day outlets, so match both staffId
+      // (promoter's own) and supervisorStaffId (supervisor's route).
+      where: {
+        OR: [{ staffId: req.staff!.sub }, { supervisorStaffId: req.staff!.sub }],
+        dateFrom: { lte: date },
+        dateTo: { gte: date },
+        deletedAt: null,
+        outlet: { deletedAt: null },
+        campaign: { deletedAt: null },
+      },
       include: { campaign: true, outlet: true },
     });
     activations.sort((a, b) => a.outlet.name.localeCompare(b.outlet.name));

@@ -1,0 +1,35 @@
+{
+  "name": "campaign-buddy-mcp",
+  "version": "0.1.0",
+  "description": "Campaign Buddy MCP server + Intelligence client — lets LLMs read campaign data and act on a user's behalf through the existing /admin/v1 API.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "campaign-buddy-mcp": "dist/src/stdio.js",
+    "campaign-buddy-intel": "dist/src/client/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start:stdio": "node dist/src/stdio.js",
+    "start:http": "node dist/src/http.js",
+    "dev:stdio": "tsx src/stdio.ts",
+    "dev:http": "tsx src/http.ts",
+    "intel": "tsx src/client/cli.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "sync-report": "tsx scripts/sync-report.ts",
+    "test": "vitest run"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^5.0.0"
+  }
+}

@@ -7,7 +7,6 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
-import * as productsApi from '@/api/products';
 import { ProductThumb } from '@/components/ProductThumb';
 import { Stepper } from '@/components/Stepper';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
@@ -15,9 +14,13 @@ import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFiel
 import { Button } from '@/components/Button';
 import { ProductDetailsSheet } from '@/components/ProductDetailsSheet';
 import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useToast } from '@/components/Toast';
+import { useOfflineSave, savedMessage, saveErrorMessage } from '@/offline/useOfflineSave';
+import * as offlineQueries from '@/offline/queries';
 import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
+import type { StockUpdateRequest } from '@/api/types';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'ProductUpdate'>;
 type Route = RouteProp<HomeStackParamList, 'ProductUpdate'>;
@@ -27,6 +30,8 @@ export function ProductUpdateScreen() {
   const { params } = useRoute<Route>();
   const queryClient = useQueryClient();
   const { checkedIn } = useAttendance();
+  const { save } = useOfflineSave();
+  const { showToast } = useToast();
 
   const [openingStock, setOpeningStock] = useState(params.openingStock);
   const [soldToday, setSoldToday] = useState(params.soldToday);
@@ -41,7 +46,7 @@ export function ProductUpdateScreen() {
   useEffect(() => {
     queryClient.prefetchQuery({
       queryKey: ['product', params.productId],
-      queryFn: () => productsApi.getProductDetails(params.productId),
+      queryFn: () => offlineQueries.getProductDetails(params.productId),
     });
   }, [queryClient, params.productId]);
 
@@ -53,23 +58,26 @@ export function ProductUpdateScreen() {
   const remaining = Math.max(openingStock - soldToday, 0);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      productsApi.updateStock(params.campaignProductAssignmentId, {
+    mutationFn: async () => {
+      const body: StockUpdateRequest = {
         openingStock,
         soldToday,
         otherInterestedCustomers: otherInterested,
         reorderFlag,
         customFields: customFields.length ? customValues : undefined,
-      }),
-    onSuccess: () => {
+      };
+      return save('productStock', params.campaignProductAssignmentId, body);
+    },
+    onSuccess: (outcome) => {
       // Invalidate so Home/Products/Stats refetch with the new numbers —
       // soldToday changing here is also what moves DailyStats.totalSales
       // (server-computed, see spec §6.5 note).
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['stats', 'today'] });
+      showToast(savedMessage(outcome));
       navigation.goBack();
     },
-    onError: (err) => Alert.alert('Could not save', getApiErrorMessage(err)),
+    onError: (err) => Alert.alert('Could not save', saveErrorMessage(err)),
   });
 
   return (
@@ -83,6 +91,9 @@ export function ProductUpdateScreen() {
             <Text style={styles.title}>Update stock</Text>
           </View>
         </Pressable>
+        <View style={styles.badgeRow}>
+          <SyncStatusBadge onPress={() => navigation.navigate('SyncStatus')} />
+        </View>
       </View>
 
       <KeyboardAwareScrollView
@@ -202,6 +213,7 @@ const styles = StyleSheet.create({
   frame: { flex: 1, backgroundColor: colors.surface },
   topnav: { backgroundColor: colors.ink, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  badgeRow: { marginTop: spacing.sm },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.white },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },
   heroImg: {

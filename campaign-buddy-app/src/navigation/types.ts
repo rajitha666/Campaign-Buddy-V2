@@ -28,6 +28,7 @@ export type HomeStackParamList = {
   };
   StatsUpdate: undefined;
   Profile: undefined;
+  SyncStatus: undefined;
 };
 
 export type AttendanceStackParamList = {

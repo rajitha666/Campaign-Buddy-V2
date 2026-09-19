@@ -128,11 +128,16 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 // One in-flight refresh shared by every 401 that lands while it runs.
-let refreshInFlight: Promise<string | null> | null = null;
+interface RefreshResult {
+  token: string | null;
+  /** The refresh call never reached the server — the session may still be fine, so don't wipe it. */
+  networkFailure: boolean;
+}
+let refreshInFlight: Promise<RefreshResult> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(): Promise<RefreshResult> {
   const refreshToken = await getItem(REFRESH_TOKEN_KEY);
-  if (!refreshToken) return null;
+  if (!refreshToken) return { token: null, networkFailure: false };
   try {
     // Bare axios (not apiClient) so this request skips the interceptors and
     // never carries the stale access token.
@@ -143,9 +148,9 @@ async function refreshAccessToken(): Promise<string | null> {
     );
     const next = data?.data?.accessToken ?? null;
     if (next) await setItem(ACCESS_TOKEN_KEY, next);
-    return next;
-  } catch {
-    return null;
+    return { token: next, networkFailure: false };
+  } catch (err) {
+    return { token: null, networkFailure: !(err as AxiosError).response };
   }
 }
 
@@ -184,9 +189,17 @@ apiClient.interceptors.response.use(
 
     original._retried = true;
     if (!refreshInFlight) refreshInFlight = refreshAccessToken().finally(() => { refreshInFlight = null; });
-    const newToken = await refreshInFlight;
+    const { token: newToken, networkFailure } = await refreshInFlight;
 
     if (!newToken) {
+      // Lost the connection mid-refresh: keep the session and fail as a plain
+      // network error (no `response`) so callers queue/retry instead of treating
+      // it as an auth rejection.
+      if (networkFailure) {
+        return Promise.reject(
+          new AxiosError('Network Error', AxiosError.ERR_NETWORK, original as InternalAxiosRequestConfig)
+        );
+      }
       await deleteItem(ACCESS_TOKEN_KEY);
       await deleteItem(REFRESH_TOKEN_KEY);
       onAuthFailure?.();
@@ -209,6 +222,8 @@ export function getApiErrorMessage(error: unknown): string {
       message: axiosError?.message,
     });
   }
+  const userMessage = (error as { userMessage?: string } | null)?.userMessage;
+  if (userMessage) return userMessage;
   const axiosError = error as AxiosError<ApiErrorBody>;
   return axiosError.response?.data?.error?.message ?? 'Something went wrong. Please try again.';
 }

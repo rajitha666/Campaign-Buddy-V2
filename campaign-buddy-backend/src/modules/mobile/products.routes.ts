@@ -115,9 +115,9 @@ router.patch(
   asyncHandler(async (req, res) => {
     // :campaignProductAssignmentId = ActivationItem.id (Spec v3 §4.1 naming note)
     const activationItemId = req.params.campaignProductAssignmentId;
-    const { openingStock, soldToday, otherInterestedCustomers, reorderFlag, customFields } = req.body as {
+    const { openingStock, soldToday, otherInterestedCustomers, reorderFlag, customFields, capturedAt } = req.body as {
       openingStock?: number; soldToday?: number; otherInterestedCustomers?: number; reorderFlag?: boolean;
-      customFields?: Record<string, unknown>;
+      customFields?: Record<string, unknown>; capturedAt?: string;
     };
     const today = dayDate();
 
@@ -126,7 +126,7 @@ router.patch(
       include: { activation: true },
     });
     if (!activationItem) throw notFound("Activation product");
-    await requireOpenShift(activationItem.activation);
+    await requireOpenShift(activationItem.activation, capturedAt);
 
     const existing = await prisma.salesRecord.findUnique({
       where: { activationItemId_date: { activationItemId, date: today } },

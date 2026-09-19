@@ -176,9 +176,20 @@ an endpoint's response shape.
 
 1. **`BottomSheetModal` on web** — layout is imperfect; native is fine, or swap
    in `@gorhom/bottom-sheet` (contained change, same call signature).
-2. **No offline write queue.** Check-in, stock saves and sales-summary confirm
-   need a live connection — there's no local queue / replay. Reads are cached
-   (TanStack Query) and refetch on reconnect.
+2. **Offline (promoters).** Check-in/out, stock, stats and sales-summary edit/confirm
+   are local-first: written to the phone, then replayed in order on reconnect
+   (`src/offline/`). Edits are absolute values, so a repeat edit replaces the queued
+   one in place; edits older than a minute are checked against the server first and
+   parked as a conflict if someone else changed the same field
+   (`offline/conflict.ts`). Transient server errors retry with backoff; only 4xx
+   refusals become "failed". Offline check-in/out send `capturedAt` so the server
+   records the real time. GPS points buffer while offline
+   (`offline/pingBuffer.ts`); `offline/backgroundSync.ts` runs a sync in the
+   background (needs a native build that includes `expo-background-task`).
+   A cold start with no network resumes the session only on a day with an unfinished
+   shift (`lib/offlineSession.ts`); there is no offline password login, and
+   supervisors' route check-ins stay online-only. Reads fall back to today's cached
+   copy (`offline/localApply.ts`).
 3. **Native run** — post-SDK-57, the app has been exercised on Expo web against the
    live backend (login, all tabs, native-stack push, bottom sheet). Running in
    Expo Go on a physical device follows the steps above; an iOS **Simulator** /

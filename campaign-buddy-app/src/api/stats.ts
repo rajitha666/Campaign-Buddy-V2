@@ -2,8 +2,15 @@
 import { apiClient } from './client';
 import type { DailyStats, StatsRangeResult } from './types';
 
-export async function getTodayStats(): Promise<DailyStats> {
-  const { data } = await apiClient.get<{ data: DailyStats }>('/stats/today');
+/**
+ * `assignmentId` targets one specific assignment when the rep is on more than
+ * one outlet today (multi-outlet promoters pick freely); omit it for the
+ * single-assignment flow — same param as /attendance/today.
+ */
+export async function getTodayStats(assignmentId?: string): Promise<DailyStats> {
+  const { data } = await apiClient.get<{ data: DailyStats }>('/stats/today', {
+    params: assignmentId ? { assignmentId } : undefined,
+  });
   return data.data;
 }
 
@@ -36,9 +43,13 @@ export interface StatsUpdateRequest {
   footFall?: number;
   approached?: number;
   converted?: number;
+  /** Only for a write queued offline and delivered late: when it was really made (server accepts it if inside the shift). */
+  capturedAt?: string;
 }
 
-export async function updateTodayStats(payload: StatsUpdateRequest): Promise<DailyStats> {
-  const { data } = await apiClient.patch<{ data: DailyStats }>('/stats/today', payload);
+export async function updateTodayStats(payload: StatsUpdateRequest, assignmentId?: string): Promise<DailyStats> {
+  const { data } = await apiClient.patch<{ data: DailyStats }>('/stats/today', payload, {
+    params: assignmentId ? { assignmentId } : undefined,
+  });
   return data.data;
 }

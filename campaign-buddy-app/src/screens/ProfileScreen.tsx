@@ -3,7 +3,15 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
+import { useNetwork } from '@/offline/NetworkContext';
+import { useSyncEngine } from '@/offline/SyncContext';
+import { formatSyncedAgo, syncStatusLabel } from '@/lib/syncLabel';
+import { confirmAction } from '@/lib/showAlert';
+import { pingCount } from '@/offline/pingBuffer';
+import * as queue from '@/offline/queue';
 import { openPromoterGuide, openSupervisorGuide } from '@/lib/trainingGuide';
 import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
@@ -11,8 +19,13 @@ import { Button } from '@/components/Button';
 import { colors, fontFamily, fontSize, spacing } from '@/theme';
 
 export function ProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { user, logout } = useAuth();
+  const { isOnline } = useNetwork();
+  const { isSyncing, pendingCount, failedItems, conflictItems, lastSyncedAt, syncNow } = useSyncEngine();
+  // Offline entry (stats/stock/sales) is a promoter flow; supervisors mount
+  // Profile as a root tab with no Sync status route.
+  const showSyncStatus = user?.role !== 'campaign_owner';
   // Supervisor mode mounts this as a root tab (no back history) instead of
   // pushing it from Home/Attendance, so only show the back chevron when
   // there's actually somewhere to go back to.
@@ -20,6 +33,18 @@ export function ProfileScreen() {
 
   async function handleLogout() {
     try {
+      // Give anything unsynced a chance to reach the server first; if some still can't,
+      // say so — those changes stay on this phone and go out at the next sign-in.
+      if (isOnline) await syncNow();
+      const unsynced = (await queue.list()).length + (await pingCount());
+      if (unsynced > 0) {
+        const proceed = await confirmAction(
+          'Unsynced changes',
+          `${unsynced} change${unsynced === 1 ? ' is' : 's are'} still on this phone and not sent yet. They will be kept and sent the next time you sign in on this phone. Log out anyway?`,
+          'Log out'
+        );
+        if (!proceed) return;
+      }
       await logout();
       // No manual nav needed — RootNavigator swaps back to AuthStack once
       // AuthContext's `user` becomes null.
@@ -56,6 +81,27 @@ export function ProfileScreen() {
           <InfoRow k="Phone" v={user?.phone ?? '—'} />
           <InfoRow k="Reports to" v={user?.reportsToName ?? '—'} last />
         </Card>
+
+        {showSyncStatus && (
+          <Pressable style={styles.guideRow} onPress={() => navigation.navigate('SyncStatus')}>
+            <View style={styles.guideIcon}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path d="M4 12a8 8 0 0113.7-5.6L20 8.7M20 4v4.7h-4.7" stroke={colors.ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                <Path d="M20 12a8 8 0 01-13.7 5.6L4 15.3M4 20v-4.7h4.7" stroke={colors.ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.guideTitle}>Sync status</Text>
+              <Text style={styles.guideSub}>
+                {syncStatusLabel({ isOnline, isSyncing, pendingCount, attentionCount: failedItems.length + conflictItems.length })} ·
+                Updated {formatSyncedAgo(lastSyncedAt)}
+              </Text>
+            </View>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Path d="M9 6l6 6-6 6" stroke="#647169" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </Pressable>
+        )}
 
         <Pressable style={styles.guideRow} onPress={user?.role === 'campaign_owner' ? openSupervisorGuide : openPromoterGuide}>
           <View style={styles.guideIcon}>

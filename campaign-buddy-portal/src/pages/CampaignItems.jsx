@@ -23,7 +23,7 @@ export default function CampaignItems() {
   async function load() {
     setLoading(true); setError(null);
     try {
-      const [ciRes, itemsRes] = await Promise.all([campaignsApi.items(campaignId), itemsApi.list()]);
+      const [ciRes, itemsRes] = await Promise.all([campaignsApi.items(campaignId), itemsApi.list({ pageSize: 1000 })]);
       setCampaignItems(ciRes?.data || []);
       setAllItems(itemsRes?.data || []);
     } catch (e) {

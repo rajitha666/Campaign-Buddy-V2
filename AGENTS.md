@@ -11,6 +11,7 @@ Field-marketing execution platform for in-store product activations. One backend
 | `campaign-buddy-app/` | CB Mobile (field-rep app) | React Native · Expo SDK 57 | Expo |
 | `docs/` | specs & product docs | — | — |
 | `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides, shipped in-product) | static HTML, no build | — |
+| `campaign-buddy-mcp/` | MCP server (LLM access to campaign data + admin actions, via `/admin/v1`) and the CampaignBuddy Intelligence client — see its `README.md` | Node · TypeScript · MCP SDK | `:4300` (http mode) |
 | `triage-agent/` | scheduled GitHub issue triage bot (3x/day via `.github/workflows/triage-agent.yml`) | Node, zero deps | — |
 
 ## Prerequisites
@@ -61,6 +62,7 @@ portal/app UI source without a matching `marketing/training/` change — see
 cd campaign-buddy-backend && npm test   # vitest + supertest (needs *_test DB)
 cd campaign-buddy-portal  && npm test   # vitest unit
 cd campaign-buddy-app     && npm test   # vitest unit
+cd campaign-buddy-mcp     && npm test   # vitest, in-memory MCP + fake backend (no DB needed)
 ```
 
 ## Follow minimal TDD for all changes
@@ -126,4 +128,5 @@ The seeds create their own logins and print them to the terminal when run.
 - `docs/product-documentation.md` — feature reference
 - `docs/archive/` — superseded specs, do NOT build against
 - `marketing/README.md` — the landing site, evaluation brief and user-training guides
+- `docs/mcp-sync-agent.md` — the agent that keeps `campaign-buddy-mcp/` in step with backend changes (and the CI gate it relies on)
 - `docs/triage-agent-spec.md` — the scheduled issue-triage bot; setup in `triage-agent/README.md`

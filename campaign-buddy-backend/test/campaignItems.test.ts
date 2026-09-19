@@ -35,3 +35,42 @@ describe("POST /admin/v1/campaigns/:id/items — bulk itemIds activation backfil
     expect(skus).toContain("SKU-B2");
   });
 });
+
+// Soft-deleted items must not come back attached to a campaign or activation —
+// GET items feeds the profile/attach pickers in CB Office, so a deleted record
+// would appear selectable in those dropdowns.
+describe("GET campaign/activation items — soft-deleted items hidden", () => {
+  it("GET /campaigns/:id/items excludes a soft-deleted item", async () => {
+    const { campaign, item } = await makeCampaignWithActivation();
+    await prisma.item.update({ where: { id: item.id }, data: { deletedAt: new Date() } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/items`)
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("GET activations/:id/items excludes a soft-deleted item", async () => {
+    const { campaign, activation, item } = await makeCampaignWithActivation();
+    await prisma.item.update({ where: { id: item.id }, data: { deletedAt: new Date() } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/activations/${activation.id}/items`)
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("keeps live items alongside the deleted one", async () => {
+    const { campaign, brand, item } = await makeCampaignWithActivation();
+    await addItems(campaign.id, brand.id, ["SKU-LIVE"]);
+    await prisma.item.update({ where: { id: item.id }, data: { deletedAt: new Date() } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/items`)
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((r: any) => r.item.sku)).toEqual(["SKU-LIVE"]);
+  });
+});
