@@ -263,7 +263,7 @@ see a read-only **My Campaigns** card view.
   member over a date range: overall performance %, attendance %, total sales, total
   items, average sales per month, highest daily sales, highest-performing date, and
   a brand-contribution breakdown.
-- **Promoter List** — a read-only staff directory (also visible to supervisors).
+- **Promoter List** — a read-only staff directory (also visible to supervisors). For admins it duplicates Staff → List, so it sits in the sidebar's **Archive** section.
 
 ### 4.6 Sales  *(Admin write; Supervisor/Sponsor read-only, scoped)*
 
@@ -303,10 +303,10 @@ see a read-only **My Campaigns** card view.
   supervisor, a set of outlets (only outlets that already have an activation on
   this campaign), and a date range. A month calendar shows the planned routes.
   This is **planning data only** — it doesn't drive check-in or attendance.
-- **Supervisors → Outlet Attendance** — the supervisor visit log: attendance rows
-  for activations whose assigned staff is a supervisor, so head office can see
-  which outlets a supervisor actually visited and when.
-- **Supervisors → Attendance** — supervisors' own check-in log.
+- **Supervisors → Attendance** — supervisors' own check-in log: attendance rows for
+  activations whose assigned staff is a supervisor, so head office can see which
+  outlets a supervisor actually visited and when. (**Outlet Attendance** runs the
+  same query and now sits in the sidebar's **Archive** section.)
 - **Supervisors → Tasks** — a QA checklist template per campaign (category + task
   type Range/Feedback/Photo + the question text; a Photo task also sets how many
   photos to capture). Categories include Sale, Outlet PR, Documentation,
@@ -340,10 +340,10 @@ see a read-only **My Campaigns** card view.
 - **Reports → Overall SKU Wise** — sales aggregated by item across the campaign:
   item, brand, item count, total sales, plus a grand total. Filter by date range.
 - **Reports → Overall Brand Wise** — the same, aggregated by brand.
-- **Client Reports / Statistic Reports** — the *same* SKU-wise and brand-wise
+- **Client Reports / Statistic Reports** (sponsor menu; admins see them under **Archive**) — the *same* SKU-wise and brand-wise
   endpoints, presented for sponsors and automatically filtered to their grant.
   There is deliberately no separate "client report" data path.
-- **Admin Reports → Monthly Attendance** — a per-promoter day grid for a chosen
+- **Staff → Monthly Attendance** — a per-promoter day grid for a chosen
   month: a tick / A (absent) / L (leave) / · per day, exportable to CSV.
 
 ### 4.10 Administration  *(Super Admin only)*
