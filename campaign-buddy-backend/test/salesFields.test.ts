@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { colomboYmd } from "../src/utils/dates";
 import request from "supertest";
 import { app, resetDb, adminToken, makeCampaignWithActivation, makeStaff } from "./helpers";
 import { prisma } from "../src/utils/prisma";
 
 beforeEach(resetDb);
 
-const today = new Date().toISOString().slice(0, 10);
+const today = colomboYmd();
 
 async function setup() {
   const ctx = await makeCampaignWithActivation();

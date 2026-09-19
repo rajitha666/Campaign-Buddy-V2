@@ -11,12 +11,16 @@ beforeEach(resetDb);
 // — when it was really made — and is accepted only if that falls inside the shift.
 describe("sales writes delivered after the shift closed (offline sync)", () => {
   const mid = (a: number, b: number) => new Date((a + b) / 2);
+  // Start of the Colombo day (dayDate() minus the +5:30 offset) — the anchor
+  // for "sometime in the shift earlier today". A plain dayDate() midpoint
+  // lands in the future in the 18:30–24:00 UTC window and gets distrusted.
+  const colomboDayStart = () => dayDate().getTime() - (5 * 3600 + 30 * 60) * 1000;
 
   async function closedShift() {
     const { staff, outlet, activation, activationItem } = await makeCampaignWithActivation();
     const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
     const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
-    const inAt = mid(dayDate().getTime(), Date.now());
+    const inAt = mid(colomboDayStart(), Date.now());
     await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo, capturedAt: inAt.toISOString() }).expect(201);
     await confirmSales(activation.id);
     await request(app).post("/v1/attendance/check-out").set(auth).send(geo).expect(200);

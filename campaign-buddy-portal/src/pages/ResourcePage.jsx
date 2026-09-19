@@ -13,6 +13,7 @@ import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { colomboYmd } from '../lib/colomboDay';
 
 export default function ResourcePage({ resourceKey }) {
   const config = RESOURCES[resourceKey];
@@ -37,7 +38,7 @@ export default function ResourcePage({ resourceKey }) {
     const init = {};
     (config?.filters || []).forEach((f) => {
       if (f.type === 'date' && f.defaultToday !== false && (f.key === 'date' || f.defaultToday === true)) {
-        init[f.key] = new Date().toISOString().slice(0, 10);
+        init[f.key] = colomboYmd();
       }
     });
     return init;

@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { colomboYmd } from "../src/utils/dates";
 import request from "supertest";
 import { app } from "../src/app";
 import { resetDb, adminToken, makeCampaignWithActivation, staffToken } from "./helpers";
@@ -22,7 +23,7 @@ describe("GET /admin/v1/campaigns/:id/absence (issue #33)", () => {
       .expect(201);
 
     const res = await request(app).get(`/admin/v1/campaigns/${campaign.id}/absence`)
-      .query({ date: new Date().toISOString().slice(0, 10) })
+      .query({ date: colomboYmd() })
       .set("Authorization", `Bearer ${await adminToken()}`);
     expect(res.status).toBe(200);
     expect(res.body.data.some((r: { staffId: string }) => r.staffId === staff.id)).toBe(false);
@@ -31,7 +32,7 @@ describe("GET /admin/v1/campaigns/:id/absence (issue #33)", () => {
   it("still lists a staff absent when none of their activations for the day has a check-in", async () => {
     const { campaign, staff } = await makeCampaignWithActivation();
     const res = await request(app).get(`/admin/v1/campaigns/${campaign.id}/absence`)
-      .query({ date: new Date().toISOString().slice(0, 10) })
+      .query({ date: colomboYmd() })
       .set("Authorization", `Bearer ${await adminToken()}`);
     expect(res.status).toBe(200);
     const row = res.body.data.find((r: { staffId: string }) => r.staffId === staff.id);

@@ -25,7 +25,7 @@ describe("attendance — activation lookup day boundary (issue #42)", () => {
       tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
       await prisma.activation.update({
         where: { id: (await prisma.activation.findFirstOrThrow({ where: { staffId: staff.id } })).id },
-        data: { dateFrom: new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`) },
+        data: { dateFrom: dayDate() },
       });
 
       const checkIn = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);
@@ -385,8 +385,12 @@ describe("attendance — mobile response shapes", () => {
 });
 
 describe("attendance — offline-captured times (capturedAt)", () => {
-  // Midpoint between UTC midnight and now: always earlier than now, always the same UTC day.
-  const earlierToday = () => new Date((dayDate().getTime() + Date.now()) / 2);
+  // A point between the START of the Colombo day (dayDate() minus the +5:30
+  // offset) and now — always earlier than now and on the same Colombo day.
+  // A plain midpoint with dayDate() lands in the FUTURE in the 18:30–24:00
+  // UTC window (colombo next day already begun), which resolveCapturedAt
+  // correctly distrusts.
+  const earlierToday = () => new Date((dayDate().getTime() - (5 * 3600 + 30 * 60) * 1000 + Date.now()) / 2);
 
   it("a queued check-in / check-out is recorded at the time the promoter actually did it", async () => {
     const { staff, outlet, activation } = await makeCampaignWithActivation();

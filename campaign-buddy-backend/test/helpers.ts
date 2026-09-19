@@ -78,8 +78,8 @@ export async function makeCampaignWithActivation() {
       campaignNo: `CMP-${Math.random().toString(36).slice(2, 7)}`,
       name: "Campaign",
       clientId: client.id,
-      startDate: new Date(Date.now() - 3 * 86400000),
-      endDate: new Date(Date.now() + 20 * 86400000),
+      startDate: new Date(dayDate().getTime() - 3 * 86400000),
+      endDate: new Date(dayDate().getTime() + 20 * 86400000),
     },
   });
   await prisma.campaignAccessGrant.create({

@@ -5,11 +5,12 @@ import ErrorState from '../components/ErrorState';
 import SalesCorrectionGrid from '../components/SalesCorrectionGrid';
 import SearchableSelect from '../components/SearchableSelect';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { colomboYmd } from '../lib/colomboDay';
 
 export default function UpdateSales() {
   const { currentCampaignId, designationLabel } = useAuth();
   const [outlets, setOutlets] = useState([]);
-  const [form, setForm] = useState({ outletId: '', date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ outletId: '', date: colomboYmd() });
 
   useEffect(() => {
     if (!currentCampaignId) return;

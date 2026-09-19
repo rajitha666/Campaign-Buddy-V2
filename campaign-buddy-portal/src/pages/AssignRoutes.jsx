@@ -64,8 +64,11 @@ export default function AssignRoutes() {
     if (!supervisorId || !currentCampaignId) return;
     setLoading(true); setError(null);
     try {
-      const from = new Date(cursor.getFullYear(), cursor.getMonth(), 1).toISOString().slice(0, 10);
-      const to = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).toISOString().slice(0, 10);
+      // Fixed UTC-midnight month bounds (not `new Date(y, m, 1)`, which bakes
+      // in the container timezone and can slip a day).
+      const ym = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+      const from = `${ym}-01`;
+      const to = `${ym}-${String(new Date(Date.UTC(cursor.getFullYear(), cursor.getMonth() + 1, 0)).getUTCDate()).padStart(2, '0')}`;
       const res = await routesApi.list(currentCampaignId, { supervisorId, dateFrom: from, dateTo: to });
       setRoutes(res?.data || []);
     } catch (e) {

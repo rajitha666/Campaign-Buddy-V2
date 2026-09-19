@@ -10,11 +10,12 @@ import { useToast } from '../context/ToastContext';
 import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
+import { dayDateColombo } from '../lib/colomboDay';
 
 function todayISO(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  // Anchor on the Colombo calendar day (backend convention) so UTC 18:30–24:00
+  // doesn't land these keys a calendar day behind.
+  return new Date(dayDateColombo().getTime() + offsetDays * 86400000).toISOString().slice(0, 10);
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

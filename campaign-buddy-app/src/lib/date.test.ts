@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { formatDay, dayOfMonth, ymd, localDayKey } from './date';
 
 describe('formatDay', () => {
@@ -25,12 +25,24 @@ describe('dayOfMonth', () => {
 });
 
 describe('ymd', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('formats a Date as YYYY-MM-DD', () => {
     expect(ymd(new Date('2026-09-06T12:34:56.000Z'))).toBe('2026-09-06');
   });
 
   it('defaults to today', () => {
     expect(ymd()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('rolls over to the next Colombo day before the UTC date does', () => {
+    // 18:30–24:00 UTC is already the next Colombo calendar day (UTC+5:30,
+    // no DST) — same convention as the backend's dayDate()/colomboYmd().
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-18T20:00:00.000Z')); // 01:30 Colombo Sep 19
+    expect(ymd()).toBe('2026-09-19');
   });
 });
 

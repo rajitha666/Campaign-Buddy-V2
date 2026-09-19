@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { colomboYmd } from "../src/utils/dates";
 import request from "supertest";
 import { app, resetDb, adminToken, makeCampaignWithActivation } from "./helpers";
 import { prisma } from "../src/utils/prisma";
@@ -32,7 +33,7 @@ describe("Campaign testerFieldEnabled toggle", () => {
     const token = await adminToken();
 
     await request(app).patch(`/admin/v1/campaigns/${campaign.id}`).set("Authorization", `Bearer ${token}`).send({ testerFieldEnabled: true });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = colomboYmd();
     await request(app).put(`/admin/v1/campaigns/${campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
       .send({ activationId: activation.id, date: today, day: { tester: 5 } });
 

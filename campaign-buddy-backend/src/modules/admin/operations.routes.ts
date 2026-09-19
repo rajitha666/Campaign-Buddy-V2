@@ -224,7 +224,7 @@ router.patch(
   requireRole("adm", "usr"),
   validate({ body: s.statsUpdate }),
   asyncHandler(async (req, res) => {
-    const today = dayDate(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     const { footFall, approached, converted } = req.body as { footFall?: number; approached?: number; converted?: number };
 
     const activation = await prisma.activation.findFirst({

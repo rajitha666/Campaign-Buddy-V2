@@ -8,12 +8,13 @@ import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import { exportFilename } from '../lib/exportFilename';
+import { dayDateColombo } from '../lib/colomboDay';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet, visitLabel } from '../lib/supervisorResults';
 
 const PAGE_SIZE = 25;
-const isoDay = (d) => d.toISOString().slice(0, 10);
-const daysAgo = (n) => isoDay(new Date(Date.now() - n * 86400000));
+const daysAgo = (n) =>
+  new Date(dayDateColombo().getTime() - n * 86400000).toISOString().slice(0, 10);
 const fmtTime = (iso) => new Date(iso).toLocaleString();
 
 // Supervisors' outlet-checklist submissions: score summary, visits whose

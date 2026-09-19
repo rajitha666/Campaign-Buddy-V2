@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
 import { app, resetDb, adminToken, makeCampaignWithActivation } from "./helpers";
+import { colomboMonth, colomboYmd, dayDate, lastDayOfMonth } from "../src/utils/dates";
 
 beforeEach(resetDb);
 
@@ -52,7 +53,7 @@ async function buildReportsFixture() {
     data: { activationId: activation2.id, campaignItemId: base.campaignItem.id },
   });
 
-  const d = (n: number) => new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime() - n * 86400000;
+  const d = (n: number) => dayDate().getTime() - n * 86400000;
 
   await Promise.all([
     // outlet 1: item 1, day 0
@@ -90,7 +91,7 @@ describe("GET /admin/v1/campaigns/:id/reports/sku-wise", () => {
 
   it("filters by date range", async () => {
     const f = await buildReportsFixture();
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const yesterday = new Date(dayDate().getTime() - 86400000).toISOString().slice(0, 10);
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sku-wise`)
       .query({ dateFrom: yesterday, dateTo: yesterday })
@@ -156,7 +157,7 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
     const activation3 = await prisma.activation.create({
       data: { name: "Activation 3", campaignId: f.campaign.id, outletId: f.outlet.id, staffId: staff3.id, dateFrom: f.campaign.startDate, dateTo: f.campaign.endDate },
     });
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     await prisma.dailyStats.create({ data: { activationId: activation3.id, date: today, footFall: 15, approached: 6, converted: 2 } });
 
     const res = await request(app)
@@ -171,7 +172,7 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
 
   it("sums achievement across every target overlapping the range, and target value", async () => {
     const f = await buildReportsFixture();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = colomboYmd();
     await prisma.activationTarget.create({
       data: {
         activationId: f.activation.id, dateFrom: new Date(today), dateTo: new Date(today),
@@ -194,8 +195,8 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
     const token = await adminToken();
     await request(app).post(fieldsBase).set("Authorization", `Bearer ${token}`)
       .send({ label: "Samples Given", type: "number", scope: "day" });
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const today = colomboYmd();
+    const yesterday = new Date(dayDate().getTime() - 86400000).toISOString().slice(0, 10);
     await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
       .send({ activationId: f.activation.id, date: today, day: { samples_given: 4 } });
     await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
@@ -218,8 +219,8 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
     const token = await adminToken();
     await request(app).post(fieldsBase).set("Authorization", `Bearer ${token}`)
       .send({ label: "Weather", type: "select", scope: "day", options: ["Sunny", "Rain"] });
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const today = colomboYmd();
+    const yesterday = new Date(dayDate().getTime() - 86400000).toISOString().slice(0, 10);
     await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
       .send({ activationId: f.activation.id, date: yesterday, day: { weather: "Rain" } });
     await request(app).put(`/admin/v1/campaigns/${f.campaign.id}/sales/custom-values`).set("Authorization", `Bearer ${token}`)
@@ -239,7 +240,7 @@ describe("GET /admin/v1/campaigns/:id/reports/outlet-wise", () => {
 describe("GET /admin/v1/campaigns/:id/reports/reorder", () => {
   it("returns only records flagged for reorder on the requested day", async () => {
     const f = await buildReportsFixture();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = colomboYmd();
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/reorder`)
       .query({ date: today })
@@ -257,7 +258,7 @@ describe("GET /admin/v1/campaigns/:id/reports/reorder", () => {
 
   it("returns nothing when nothing is flagged", async () => {
     const f = await buildReportsFixture();
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const yesterday = new Date(dayDate().getTime() - 86400000).toISOString().slice(0, 10);
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/reorder`)
       .query({ date: yesterday })
@@ -270,7 +271,7 @@ describe("GET /admin/v1/campaigns/:id/reports/reorder", () => {
 describe("GET /admin/v1/campaigns/:id/reports/sales-status", () => {
   it("lists every activation running today: absent (no check-in), pending (checked in, unconfirmed), or completed (confirmed)", async () => {
     const f = await buildReportsFixture();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = colomboYmd();
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sales-status`)
       .query({ date: today })
@@ -302,7 +303,7 @@ describe("GET /admin/v1/campaigns/:id/reports/sales-status", () => {
 
   it("omits an activation whose date range doesn't cover the requested day", async () => {
     const f = await buildReportsFixture();
-    const pastDay = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+    const pastDay = new Date(dayDate().getTime() - 90 * 86400000).toISOString().slice(0, 10);
     const res = await request(app)
       .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sales-status`)
       .query({ date: pastDay })
@@ -315,17 +316,21 @@ describe("GET /admin/v1/campaigns/:id/reports/sales-status", () => {
 describe("GET /admin/v1/campaigns/:id/reports/attendance-monthly", () => {
   it("maps attendance statuses into the day grid", async () => {
     const f = await buildReportsFixture();
-    const month = new Date().toISOString().slice(0, 7);
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const beforeYesterday = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+    // Use the same Colombo-calendar convention dayDate() uses, so the test
+    // matches whatever the route treats as "this month" no matter the clock.
+    const month = colomboMonth();
+    const ymd = (d: Date) => d.toISOString().slice(0, 10);
+    const base = dayDate();
+    const today = ymd(base);
+    const yesterday = ymd(new Date(base.getTime() - 86400000));
+    const beforeYesterday = ymd(new Date(base.getTime() - 2 * 86400000));
     // If the month rolled over mid-fixture, these dates are in the previous month — skip rather than flake
-    if (!today.startsWith(month)) return;
+    if (![today, yesterday, beforeYesterday].every((d) => d.startsWith(month))) return;
     await prisma.attendanceRecord.createMany({
       data: [
-        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(today), checkInAt: new Date(), status: "on_time" },
-        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(yesterday), status: "absent" },
-        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(beforeYesterday), status: "leave" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: dayDate(today), checkInAt: new Date(), status: "on_time" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: dayDate(yesterday), status: "absent" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: dayDate(beforeYesterday), status: "leave" },
       ],
     });
     const res = await request(app)
@@ -340,6 +345,6 @@ describe("GET /admin/v1/campaigns/:id/reports/attendance-monthly", () => {
     expect(mine.days[Number(today.slice(8))]).toBe("✓");
     expect(mine.days[Number(yesterday.slice(8))]).toBe("A");
     expect(mine.days[Number(beforeYesterday.slice(8))]).toBe("L");
-    expect(res.body.data.days).toHaveLength(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate());
+    expect(res.body.data.days).toHaveLength(lastDayOfMonth(month).getUTCDate());
   });
 });
