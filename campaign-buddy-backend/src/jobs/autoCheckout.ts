@@ -2,6 +2,7 @@ import cron, { ScheduledTask } from "node-cron";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { resolveShiftEnd } from "../utils/attendanceWindow";
+import { dayDate } from "../utils/dates";
 
 // Issue #32 — automatic check-out at end of day.
 //
@@ -15,9 +16,18 @@ import { resolveShiftEnd } from "../utils/attendanceWindow";
 // configured end-time would produce a future checkOutAt is checked out at the
 // run time instead.
 
-export async function closeOpenShifts(now: Date = new Date(), client: PrismaClient | Prisma.TransactionClient = prisma): Promise<number> {
+export async function closeOpenShifts(
+  now: Date = new Date(),
+  client: PrismaClient | Prisma.TransactionClient = prisma,
+  opts: { beforeToday?: boolean } = {}
+): Promise<number> {
   const open = await client.attendanceRecord.findMany({
-    where: { checkInAt: { not: null }, checkOutAt: null },
+    where: {
+      checkInAt: { not: null },
+      checkOutAt: null,
+      // Boot catch-up: only shifts from earlier days. Today's may be live (issue #83).
+      ...(opts.beforeToday ? { date: { lt: dayDate(now.toISOString()) } } : {}),
+    },
     include: { activation: { select: { shiftEndMinutes: true, campaign: { select: { shiftEndMinutes: true } } } } },
   });
 
@@ -31,6 +41,9 @@ export async function closeOpenShifts(now: Date = new Date(), client: PrismaClie
   return closed;
 }
 
+/** Boot catch-up: backfill earlier days' missed check-outs without touching shifts open right now. */
+export const closeAbandonedShifts = (now: Date = new Date()) => closeOpenShifts(now, prisma, { beforeToday: true });
+
 let task: ScheduledTask | null = null;
 
 // Wired from server.ts only (never app.ts) so importing the Express app in
@@ -39,8 +52,9 @@ export function startAutoCheckoutJob(): void {
   if (process.env.AUTO_CHECKOUT_DISABLED === "1") return;
   if (task) return;
 
-  // Catch-up run on boot so a restarted server backfills yesterday's misses.
-  closeOpenShifts().catch((err) => console.error("[auto-checkout] boot run failed:", err));
+  // Catch-up run on boot so a restarted server backfills yesterday's misses —
+  // previous days only: a restart mid-shift must not check anyone out (#83).
+  closeAbandonedShifts().catch((err) => console.error("[auto-checkout] boot run failed:", err));
 
   // 23:55 every day, Asia/Colombo — end of day, before the calendar rolls over.
   task = cron.schedule(
