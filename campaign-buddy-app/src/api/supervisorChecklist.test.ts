@@ -35,13 +35,33 @@ describe('supervisor checklist api', () => {
 
   // The app's fetch adapter passes the body straight to fetch, so axios must
   // not stamp a urlencoded Content-Type on it or the multipart boundary is lost.
-  it('uploads a photo as multipart with Content-Type suppressed, and returns the new url list', async () => {
-    const urls = await checklist.uploadPhoto('a1', 't1', { uri: 'file:///p.jpg', name: 'p.jpg', type: 'image/jpeg' });
-    expect(calls[0].method).toBe('post');
-    expect(calls[0].path).toBe('/me/assignments/a1/supervisor-tasks/t1/photos');
-    expect(calls[0].body).toBeInstanceOf(FormData);
-    expect(calls[0].config.headers['Content-Type']).toBe(false);
-    expect(urls).toEqual([{ url: '/uploads/visit-photos/x.jpg', uploadedAt: '2026-09-18T09:00:00.000Z' }]);
+  // The device fetch (expo/fetch on SDK 57) rejects React Native's {uri} FormData
+  // parts with "Unsupported FormDataPart implementation" (#? android upload bug),
+  // so the photo must be materialized into a real Blob before appending.
+  it('uploads the photo as a Blob part, multipart with Content-Type suppressed, and returns the new url list', async () => {
+    const blob = new Blob(['jpeg-bytes'], { type: 'image/jpeg' });
+    const fetchCalls: string[] = [];
+    vi.stubGlobal('fetch', (uri: string) => {
+      fetchCalls.push(uri);
+      return Promise.resolve({ blob: () => Promise.resolve(blob) });
+    });
+    try {
+      const urls = await checklist.uploadPhoto('a1', 't1', { uri: 'file:///p.jpg', name: 'p.jpg', type: 'image/jpeg' });
+      expect(fetchCalls).toEqual(['file:///p.jpg']);
+      expect(calls[0].method).toBe('post');
+      expect(calls[0].path).toBe('/me/assignments/a1/supervisor-tasks/t1/photos');
+      expect(calls[0].body).toBeInstanceOf(FormData);
+      const part = (calls[0].body as FormData).get('image') as { type?: string; size?: number; name?: string };
+      expect(part.type).toBe('image/jpeg');
+      expect(part.size).toBe(10);
+      // A filename on the part is what the multipart boundary encodes — the
+      // rejected {uri} part never carried one through the fetch layer.
+      expect(part.name).toBe('p.jpg');
+      expect(calls[0].config.headers['Content-Type']).toBe(false);
+      expect(urls).toEqual([{ url: '/uploads/visit-photos/x.jpg', uploadedAt: '2026-09-18T09:00:00.000Z' }]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('removes a photo by url', async () => {

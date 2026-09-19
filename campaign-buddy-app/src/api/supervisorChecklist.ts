@@ -22,14 +22,13 @@ export interface PickedPhoto {
 /** Uploads one outlet-setup photo; resolves to the task's full photo list. */
 export async function uploadPhoto(assignmentId: string, taskId: string, photo: PickedPhoto): Promise<ChecklistPhoto[]> {
   const form = new FormData();
-  if (typeof document !== 'undefined') {
-    // Web (Expo web build): the picked uri is a blob/data url, not a native file.
-    const blob = await (await fetch(photo.uri)).blob();
-    form.append('image', blob, photo.name);
-  } else {
-    // React Native's FormData reads {uri, name, type} straight off the device.
-    form.append('image', { uri: photo.uri, name: photo.name, type: photo.type } as unknown as Blob);
-  }
+  // Read the local file into a real Blob first. React Native's {uri, name, type}
+  // FormData part only works with the old XHR-backed fetch, but the app's fetch
+  // adapter hands the body to the global fetch — expo/fetch on SDK 57 — which
+  // rejects it with "Unsupported FormDataPart implementation" (android upload bug).
+  // expo/fetch reads file:// content URIs on both web (blob url) and native.
+  const blob = await (await fetch(photo.uri)).blob();
+  form.append('image', blob, photo.name);
   const { data } = await apiClient.post<{ data: { photos: ChecklistPhoto[] } }>(`${base(assignmentId)}/${taskId}/photos`, form, {
     // The custom fetch adapter hands the body to fetch untouched, so axios must
     // not stamp a urlencoded Content-Type on it — fetch has to set the multipart boundary.
