@@ -15,7 +15,7 @@ router.get(
     const { outletId } = req.query as { outletId?: string };
 
     const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, campaignId, ...(outletId ? { outletId } : {}) },
+      where: { staffId: req.staff!.sub, campaignId, deletedAt: null, ...(outletId ? { outletId } : {}) },
     });
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
 

@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { NAV } from '../config/nav';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ReportIssueModal from './ReportIssueModal';
 import { ICONS } from './Icons';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { useFavorites } from '../context/PreferencesContext';
+import { navEntriesFor } from '../lib/favorites';
 
 function findLabel(pathname) {
+  if (pathname === '/personalization') return { title: 'Personalization', crumb: 'Account' };
   for (const sec of NAV) {
     for (const item of sec.items) {
       if (item.path === pathname) return { title: item.label, crumb: sec.section || 'Home' };
@@ -23,6 +26,9 @@ function findLabel(pathname) {
 export default function Topbar({ onOpenMobileNav }) {
   const { user, persona, campaignList, currentCampaignId, currentCampaign, setCurrentCampaignId, logout, designationLabel } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const favorites = useFavorites();
+  const canFavorite = navEntriesFor(NAV, persona).some((e) => e.path === location.pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const { title: rawTitle, crumb: rawCrumb } = findLabel(location.pathname);
@@ -62,7 +68,21 @@ export default function Topbar({ onOpenMobileNav }) {
         </button>
         <div>
           <div className="crumb">{crumb}</div>
-          <div className="page-title-mini">{title}</div>
+          <div className="page-title-row">
+            <div className="page-title-mini">{title}</div>
+            {canFavorite ? (
+              <button
+                type="button"
+                className={`topbar-star${favorites.isFavorite(location.pathname) ? ' is-on' : ''}`}
+                aria-pressed={favorites.isFavorite(location.pathname)}
+                aria-label={favorites.isFavorite(location.pathname) ? 'Remove this page from favorites' : 'Add this page to favorites'}
+                title={favorites.isFavorite(location.pathname) ? 'Remove from favorites' : 'Add to favorites'}
+                onClick={() => favorites.toggle(location.pathname)}
+              >
+                {favorites.isFavorite(location.pathname) ? ICONS.starFilled : ICONS.star}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="topbar-right">
@@ -138,6 +158,7 @@ export default function Topbar({ onOpenMobileNav }) {
                   📖 {applyDesignationLabel(GUIDE_LABELS[g], designationLabel)}
                 </a>
               ))}
+              <div className="item" onClick={() => { setMenuOpen(false); navigate('/personalization'); }}>⭐ Personalization</div>
               <div className="item" onClick={logout}>Log out</div>
             </div>
           ) : null}

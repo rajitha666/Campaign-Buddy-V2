@@ -320,6 +320,15 @@
     },
     "GET /system/status": {
       "tool": "api_get"
+    },
+    "GET /me/preferences": {
+      "excluded": "A portal user's own UI settings (sidebar favorites) — not campaign data."
+    },
+    "PUT /me/preferences": {
+      "excluded": "A portal user's own UI settings — not something an LLM should change."
+    },
+    "GET /campaigns/:campaignId/supervisors": {
+      "tool": "api_get"
     }
   },
   "reviewedFields": {

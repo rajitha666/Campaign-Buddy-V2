@@ -12,13 +12,14 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 
 describe('promoter outlet chooser wiring', () => {
-  const context = read(join(__dirname, '..', 'context', 'AssignmentContext.tsx'));
-  const home = read(join(__dirname, 'HomeScreen.tsx'));
-  const attendance = read(join(__dirname, 'AttendanceScreen.tsx'));
-  const stats = read(join(__dirname, 'StatsUpdateScreen.tsx'));
-  const summary = read(join(__dirname, 'SalesSummaryScreen.tsx'));
-  const products = read(join(__dirname, 'ProductsScreen.tsx'));
-  const performance = read(join(__dirname, 'PerformanceScreen.tsx'));
+  const context = readFileSync(join(__dirname, '..', 'context', 'AssignmentContext.tsx'), 'utf8');
+  // Matched across line breaks below; normalise so a Windows (autocrlf) checkout behaves like CI.
+  const home = readFileSync(join(__dirname, 'HomeScreen.tsx'), 'utf8').replace(/\r\n/g, '\n');
+  const attendance = readFileSync(join(__dirname, 'AttendanceScreen.tsx'), 'utf8');
+  const stats = readFileSync(join(__dirname, 'StatsUpdateScreen.tsx'), 'utf8');
+  const summary = readFileSync(join(__dirname, 'SalesSummaryScreen.tsx'), 'utf8');
+  const products = readFileSync(join(__dirname, 'ProductsScreen.tsx'), 'utf8');
+  const performance = readFileSync(join(__dirname, 'PerformanceScreen.tsx'), 'utf8');
 
   it('the provider sources the list from /me/assignments and falls back to /today', () => {
     expect(context).toContain("queryFn: offlineQueries.getMyAssignments");

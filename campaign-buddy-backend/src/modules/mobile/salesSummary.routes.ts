@@ -20,11 +20,12 @@ const router = Router();
 
 async function currentActivationOrThrow(staffId: string, assignmentId?: string) {
   const today = dayDate();
-  const activation = assignmentId
-    ? await prisma.activation.findFirst({ where: { id: assignmentId, staffId } })
-    : await prisma.activation.findFirst({
-        where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
-      });
+  const activation = await prisma.activation.findFirst({
+    where: {
+      ...(assignmentId ? { id: assignmentId } : {}),
+      staffId, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null,
+    },
+  });
   if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
   return activation;
 }

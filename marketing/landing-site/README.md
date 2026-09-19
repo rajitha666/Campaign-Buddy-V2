@@ -65,5 +65,5 @@ handler if you want submissions captured server-side.
 - The **live-locations map** uses a hand-drawn schematic street basemap (inline SVG). You
   can replace it with a real Leaflet + OpenStreetMap map (the CB Office portal already uses
   Leaflet) or a static Mapbox / MapTiler image if you prefer.
-- The **AI section** is deliberately framed as direction, not shipping features.
+- The **CB Intelligence section** (`#intelligence`, `#agents`) is deliberately framed as direction, not shipping features. The chat demos are scripted HTML replays on sample data (no video or GIF files): the conversations live as plain markup in `.ci-convo` blocks and a small script types them out on scroll, so edit the copy there. With JS off or reduced motion, everything shows at once.
 - All figures are illustrative and labelled as such.

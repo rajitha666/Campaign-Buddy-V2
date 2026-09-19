@@ -9,14 +9,14 @@ external request is the Poppins webfont, with a system-font fallback.
 | Path | Piece | Audience | Format |
 |---|---|---|---|
 | `landing-site/` | One-page website | Agencies and their sponsors | Responsive web page |
-| `capability-brief.html` | 12-page evaluation brief | Decision makers doing due diligence | Print-ready A4, screen-viewable |
+| `capability-brief.html` | 14-page evaluation brief | Decision makers doing due diligence | Print-ready A4, screen-viewable |
 | `training/` | Step-by-step user guides, one per login | Admin, supervisor, sponsor, promoter | Responsive web guides with real screenshots |
 | `store/` | App Store / Play Store submission assets for CB Mobile | Apple / Google review, store visitors | Listing copy (`app-store-listing.md`) + icons + framed screenshots |
 | `campaign-setup-kit/` | New-campaign data collection kit | A new client's team, before their first campaign is created | Guide: print-ready HTML explainer. Workbook: fillable `.xlsx` |
 
 ## capability-brief.html
 
-Functional specification, three day-to-day operational scenarios, the data model,
+Functional specification, three day-to-day operational scenarios, a two-page CB Intelligence (AI assistant + agents) outlook, the data model,
 and the commercial model, for buyers who want the detail before deciding. Open it
 in a browser; on screen the pages render as a stack of A4 cards with a "Save as
 PDF" button (or use the browser's print dialog) to produce the shareable PDF.

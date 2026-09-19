@@ -45,7 +45,7 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
 // covering the same activation each have their own row, so every record lookup
 // below is by `staffId`, never by "records on my activations".
 function activationStaffScope(staffId: string) {
-  return { OR: [{ staffId }, { supervisorStaffId: staffId }] };
+  return { OR: [{ staffId }, { supervisorStaffId: staffId }], deletedAt: null };
 }
 
 // A supervisor can visit one outlet several times a day (AttendanceRecord.visitNo),

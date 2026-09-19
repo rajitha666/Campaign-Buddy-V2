@@ -26,11 +26,11 @@ function toDailyStats(s: { footFall: number; approached: number; converted: numb
 // legacy findFirst pick applies, so single-assignment callers are unchanged.
 async function currentActivation(staffId: string, assignmentId?: string) {
   const today = dayDate();
-  if (assignmentId) {
-    return prisma.activation.findFirst({ where: { id: assignmentId, staffId } });
-  }
   return prisma.activation.findFirst({
-    where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
+    where: {
+      ...(assignmentId ? { id: assignmentId } : {}),
+      staffId, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null,
+    },
   });
 }
 
@@ -96,7 +96,7 @@ router.get(
     }
 
     const activations = await prisma.activation.findMany({
-      where: { staffId: req.staff!.sub, dateFrom: { lte: hi }, dateTo: { gte: lo } },
+      where: { staffId: req.staff!.sub, dateFrom: { lte: hi }, dateTo: { gte: lo }, deletedAt: null },
       select: { id: true },
     });
     const activationIds = activations.map((a) => a.id);
