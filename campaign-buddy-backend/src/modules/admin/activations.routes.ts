@@ -146,7 +146,7 @@ router.get(
     if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationItem.findMany({
-      where: { activationId: req.params.activationId },
+      where: { activationId: req.params.activationId, campaignItem: { item: { deletedAt: null } } },
       include: { campaignItem: { include: { item: { include: { brand: true } } } } },
     });
     res.json(okList(rows, rows.length));

@@ -37,12 +37,14 @@ describe('endpoints — path construction', () => {
     await api.activations.list('camp1', { page: 1 });
     await api.activations.items('camp1', 'act1');
     await api.supervisorRoutes.create('camp1', { supervisorStaffId: 's' });
+    await api.campaigns.supervisors('camp1');
     await api.salesLookup.load('camp1', { date: '2026-09-06' });
     await api.reports.outletWise('camp1', {});
     expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
       'get /campaigns/camp1/activations',
       'get /campaigns/camp1/activations/act1/items',
       'post /campaigns/camp1/supervisor-routes',
+      'get /campaigns/camp1/supervisors',
       'get /campaigns/camp1/sales/lookup',
       'get /campaigns/camp1/reports/outlet-wise',
     ]);

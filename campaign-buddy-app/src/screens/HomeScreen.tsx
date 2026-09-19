@@ -9,10 +9,13 @@ import { useQuery } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendance } from '@/context/AttendanceContext';
+import { useAssignment } from '@/context/AssignmentContext';
 import { openPromoterGuide } from '@/lib/trainingGuide';
-import * as profileApi from '@/api/profile';
-import * as statsApi from '@/api/stats';
-import * as productsApi from '@/api/products';
+import * as offlineQueries from '@/offline/queries';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useNetwork } from '@/offline/NetworkContext';
+import { useSyncEngine } from '@/offline/SyncContext';
+import { formatSyncedAgo } from '@/lib/syncLabel';
 import { Avatar } from '@/components/Avatar';
 import { StatTile } from '@/components/StatTile';
 import { ProductListItem } from '@/components/ProductListItem';
@@ -28,26 +31,28 @@ export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const { checkedIn, checkInAt } = useAttendance();
+  const { isOnline } = useNetwork();
+  const { lastSyncedAt } = useSyncEngine();
   const [statsExpanded, setStatsExpanded] = useState(false);
 
-  const assignmentQuery = useQuery({
-    queryKey: ['assignment', 'today'],
-    queryFn: profileApi.getTodayAssignment,
-  });
+  // Multi-outlet promoters pick their live outlet here; everything on Home
+  // (campaign card, stats, products) reads the chosen assignment.
+  const { assignments, assignment, hasMultiple, select } = useAssignment();
 
   const statsQuery = useQuery({
-    queryKey: ['stats', 'today'],
-    queryFn: statsApi.getTodayStats,
+    queryKey: ['stats', 'today', assignment?.assignmentId],
+    queryFn: () => offlineQueries.getTodayStats(assignment!.assignmentId),
+    enabled: !!assignment,
   });
 
   const productsQuery = useQuery({
-    queryKey: ['products', assignmentQuery.data?.campaign.id, assignmentQuery.data?.outlet.id],
+    queryKey: ['products', assignment?.campaign.id, assignment?.outlet.id],
     queryFn: () =>
-      productsApi.getCampaignProducts(
-        assignmentQuery.data!.campaign.id,
-        assignmentQuery.data!.outlet.id
+      offlineQueries.getCampaignProducts(
+        assignment!.campaign.id,
+        assignment!.outlet.id
       ),
-    enabled: !!assignmentQuery.data,
+    enabled: !!assignment,
   });
 
   const checkInTime = checkInAt
@@ -71,6 +76,12 @@ export function HomeScreen() {
             <Text style={styles.greetSub}>
               {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
+            <View style={{ marginTop: spacing.sm }}>
+              <SyncStatusBadge onLight onPress={() => navigation.navigate('SyncStatus')} />
+            </View>
+            {!isOnline && (
+              <Text style={styles.staleNote}>Showing what was saved {formatSyncedAgo(lastSyncedAt).toLowerCase()}</Text>
+            )}
           </View>
           <View style={styles.greetActions}>
             <Pressable
@@ -88,13 +99,34 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {assignmentQuery.data && (
+        {hasMultiple && assignment && (
+          <View style={ styles.outletPickerRow}>
+            {assignments.map((a) => {
+              const active = a.assignmentId === assignment.assignmentId;
+              return (
+                <Pressable
+                  key={a.assignmentId}
+                  onPress={() => select(a.assignmentId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use outlet ${a.outlet.name}`}
+                  style={[styles.outletChip, active && styles.outletChipActive]}
+                >
+                  <Text numberOfLines={1} style={[styles.outletChipText, active && styles.outletChipTextActive]}>
+                    {a.outlet.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {assignment && (
           <View style={styles.campaignCard}>
             <View style={styles.locRow}>
               <PinIcon color="#A9BDB4" />
-              <Text style={styles.locText}>{assignmentQuery.data.outlet.name}</Text>
+              <Text style={styles.locText}>{assignment.outlet.name}</Text>
             </View>
-            <Text style={styles.campaignName}>{assignmentQuery.data.campaign.name}</Text>
+            <Text style={styles.campaignName}>{assignment.campaign.name}</Text>
             <Pressable
               style={styles.checkinChip}
               onPress={() => navigation.getParent()?.navigate('AttendanceTab' as never)}
@@ -278,6 +310,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   greetSub: { fontSize: fontSize.base, color: colors.textMuted, marginTop: 2 },
+  staleNote: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
   campaignCard: { backgroundColor: colors.ink, borderRadius: radius.xxl, padding: spacing.lg, marginTop: spacing.lg },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   locText: { color: '#A9BDB4', fontSize: 12.5 },
@@ -345,4 +378,26 @@ const styles = StyleSheet.create({
   },
   listHeadLabel: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary },
   listHeadCount: { fontSize: fontSize.sm, color: colors.textMuted },
+  // Outlet picker for multi-outlet promoters (multi-assignment days).
+  outletPickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  outletChip: {
+    maxWidth: '100%',
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm - 1,
+    paddingHorizontal: spacing.lg,
+  },
+  outletChipActive: {
+    borderColor: colors.success,
+    backgroundColor: colors.successTint,
+  },
+  outletChipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
+  outletChipTextActive: { color: colors.success },
 });

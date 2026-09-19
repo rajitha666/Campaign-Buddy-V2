@@ -110,6 +110,26 @@ describe("link any back-office role to a campaign via /campaigns/:id/admins", ()
     expect(ids).toContain("spon2");
     expect(ids).not.toContain("usr2");
   });
+
+  // Deactivated back-office accounts must not be selectable as campaign admins.
+  it("admin-candidates excludes deactivated users", async () => {
+    const token = await adminToken();
+    const { campaign } = await makeCampaignWithActivation();
+    await prisma.user.createMany({
+      data: [
+        { username: "spon3", passwordHash: "x", displayName: "Active Sponsor", roleId: "sponsor" },
+        { username: "spon4", passwordHash: "x", displayName: "Deactivated Sponsor", roleId: "sponsor", isActive: false },
+      ],
+    });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${campaign.id}/admin-candidates?role=sponsor`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.data.map((u: any) => u.username);
+    expect(ids).toContain("spon3");
+    expect(ids).not.toContain("spon4");
+  });
 });
 
 describe("campaign status manual override (§5.8)", () => {

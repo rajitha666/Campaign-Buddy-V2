@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDay, dayOfMonth, ymd } from './date';
+import { formatDay, dayOfMonth, ymd, localDayKey } from './date';
 
 describe('formatDay', () => {
   it('pins a midnight-UTC date-only string to the calendar day (no off-by-one)', () => {
@@ -31,5 +31,14 @@ describe('ymd', () => {
 
   it('defaults to today', () => {
     expect(ymd()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('localDayKey', () => {
+  it('uses the device-local calendar day, not the UTC day', () => {
+    // Built from local components so it holds in any timezone the tests run in.
+    expect(localDayKey(new Date(2026, 8, 6, 1, 30))).toBe('2026-09-06');
+    expect(localDayKey(new Date(2026, 8, 6, 23, 59))).toBe('2026-09-06');
+    expect(localDayKey(new Date(2026, 0, 5, 12, 0))).toBe('2026-01-05');
   });
 });

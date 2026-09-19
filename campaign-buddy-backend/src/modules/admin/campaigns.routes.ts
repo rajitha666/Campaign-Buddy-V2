@@ -136,7 +136,7 @@ router.get(
   "/campaigns/:campaignId/items",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId }, include: { item: true } });
+    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, item: { deletedAt: null } }, include: { item: true } });
     res.json(okList(rows, rows.length));
   })
 );
@@ -230,6 +230,7 @@ router.get(
     const rows = await prisma.user.findMany({
       where: {
         roleId: role,
+        isActive: true,
         ...(search
           ? {
               OR: [

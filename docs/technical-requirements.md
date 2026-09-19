@@ -138,8 +138,13 @@ Bundle identifiers are set: iOS & Android `lk.campaignbuddy.app`.
 - **Location services** (foreground only) — `ACCESS_FINE_LOCATION` /
   `ACCESS_COARSE_LOCATION` (Android), `NSLocationWhenInUseUsageDescription` (iOS);
   both declared in `app.json`.
-- **A network connection to the backend at all times** — there is no offline
-  mode; check-in, stock saves and summary-confirm need connectivity.
+- **A network connection to sign in** (and for supervisors' route check-in/out).
+  Promoters can check in/out and record stock, stats and sales offline; it syncs on
+  reconnect. Local storage via `@react-native-async-storage/async-storage`
+  (profile/shift snapshot in `expo-secure-store`), connectivity via
+  `@react-native-community/netinfo`, background sync via `expo-background-task` +
+  `expo-task-manager` — **these are native modules, so the installable app must be
+  rebuilt** to include them (Expo Go already does).
 - Secure token storage: Keychain / Keystore on native (`expo-secure-store`),
   `localStorage` on web.
 - `expo-battery` (optional — reports battery % with location pings).

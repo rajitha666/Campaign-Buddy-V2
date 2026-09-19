@@ -18,6 +18,12 @@ export function dayOfMonth(iso: string): number {
   return new Date(iso).getUTCDate();
 }
 
+/** "YYYY-MM-DD" in the device's local timezone — for "is this cached data from today" checks. */
+export function localDayKey(d: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** "YYYY-MM-DD" for today (or a given Date), for date-input state and API bodies. */
 export function ymd(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10);

@@ -1,0 +1,344 @@
+{
+  "routes": {
+    "GET /campaigns/:campaignId/activations": {
+      "tool": "list_activations"
+    },
+    "POST /campaigns/:campaignId/activations": {
+      "tool": "create_activation"
+    },
+    "GET /campaigns/:campaignId/activations/:activationId": {
+      "tool": "get_activation"
+    },
+    "PATCH /campaigns/:campaignId/activations/:activationId": {
+      "tool": "update_activation"
+    },
+    "DELETE /campaigns/:campaignId/activations/:activationId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/activations/:activationId/items": {
+      "tool": "get_activation"
+    },
+    "POST /campaigns/:campaignId/activations/:activationId/items": {
+      "excluded": "Activation item assignment is not exposed yet."
+    },
+    "DELETE /campaigns/:campaignId/activations/:activationId/items/:activationItemId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/activations/:activationId/targets": {
+      "tool": "get_activation"
+    },
+    "POST /campaigns/:campaignId/activations/:activationId/targets": {
+      "tool": "add_activation_target"
+    },
+    "POST /auth/login": {
+      "excluded": "Authentication surface; the MCP server logs in itself."
+    },
+    "POST /auth/logout": {
+      "excluded": "Authentication surface; the MCP server logs in itself."
+    },
+    "GET /campaigns": {
+      "tool": "list_campaigns"
+    },
+    "POST /campaigns": {
+      "excluded": "Campaign creation is not exposed yet (needs a product decision)."
+    },
+    "GET /campaigns/:campaignId": {
+      "tool": "get_campaign"
+    },
+    "PATCH /campaigns/:campaignId": {
+      "tool": "update_campaign"
+    },
+    "DELETE /campaigns/:campaignId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/items": {
+      "tool": "get_campaign"
+    },
+    "POST /campaigns/:campaignId/items": {
+      "excluded": "Campaign item/admin assignment is not exposed yet."
+    },
+    "DELETE /campaigns/:campaignId/items/:campaignItemId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/access": {
+      "excluded": "Access-grant listings are not exposed."
+    },
+    "GET /campaigns/:campaignId/admin-candidates": {
+      "excluded": "Access-grant listings are not exposed."
+    },
+    "POST /campaigns/:campaignId/admins": {
+      "excluded": "Campaign item/admin assignment is not exposed yet."
+    },
+    "DELETE /campaigns/:campaignId/admins/:userId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /clients": {
+      "tool": "lookup_catalog"
+    },
+    "POST /clients": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /clients/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /clients/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /brands": {
+      "tool": "lookup_catalog"
+    },
+    "POST /brands": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /brands/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /brands/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /items": {
+      "tool": "lookup_catalog"
+    },
+    "POST /items": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /items/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /items/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "POST /items/:id/image": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "GET /cities": {
+      "tool": "lookup_catalog"
+    },
+    "POST /cities": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /cities/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /cities/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /outlets": {
+      "tool": "lookup_catalog"
+    },
+    "POST /outlets": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /outlets/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /outlets/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /distributor-points": {
+      "tool": "lookup_catalog"
+    },
+    "POST /distributor-points": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /distributor-points/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /distributor-points/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "POST /issue-reports": {
+      "excluded": "Filing issues on the user's behalf is not exposed."
+    },
+    "GET /issue-reports": {
+      "tool": "api_get"
+    },
+    "POST /issue-reports/:id/retry": {
+      "excluded": "Filing issues on the user's behalf is not exposed."
+    },
+    "GET /campaigns/:campaignId/license": {
+      "tool": "get_license_usage"
+    },
+    "PATCH /campaigns/:campaignId/license": {
+      "excluded": "License caps are admin-only configuration; never exposed."
+    },
+    "GET /campaigns/:campaignId/license/history": {
+      "tool": "api_get"
+    },
+    "GET /license/usage": {
+      "tool": "get_license_usage"
+    },
+    "GET /campaigns/:campaignId/attendance": {
+      "tool": "get_attendance"
+    },
+    "GET /campaigns/:campaignId/sales": {
+      "tool": "get_sales_records"
+    },
+    "PATCH /campaigns/:campaignId/sales/:salesRecordId": {
+      "tool": "correct_sales_record"
+    },
+    "GET /campaigns/:campaignId/sales/lookup": {
+      "tool": "api_get"
+    },
+    "GET /campaigns/:campaignId/stats": {
+      "tool": "get_daily_stats"
+    },
+    "PATCH /campaigns/:campaignId/stats/today": {
+      "excluded": "Targets 'the first activation covering today' — ambiguous for an LLM."
+    },
+    "GET /campaigns/:campaignId/tracking/live": {
+      "tool": "get_live_tracking"
+    },
+    "GET /campaigns/:campaignId/leave-requests": {
+      "tool": "list_leave_requests"
+    },
+    "PATCH /campaigns/:campaignId/leave-requests/:id": {
+      "tool": "decide_leave_request"
+    },
+    "GET /campaigns/:campaignId/supervisor-routes": {
+      "tool": "api_get"
+    },
+    "POST /campaigns/:campaignId/supervisor-routes": {
+      "tool": "assign_supervisor_route"
+    },
+    "PATCH /campaigns/:campaignId/supervisor-routes/:id": {
+      "excluded": "Not exposed yet."
+    },
+    "DELETE /campaigns/:campaignId/supervisor-routes/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/supervisor-tasks": {
+      "tool": "api_get"
+    },
+    "POST /campaigns/:campaignId/supervisor-tasks": {
+      "tool": "create_supervisor_task"
+    },
+    "PATCH /campaigns/:campaignId/supervisor-tasks/:id": {
+      "excluded": "Not exposed yet."
+    },
+    "GET /campaigns/:campaignId/supervisor-task-responses": {
+      "tool": "get_supervisor_checklist_results"
+    },
+    "GET /campaigns/:campaignId/supervisor-task-summary": {
+      "tool": "get_supervisor_checklist_results"
+    },
+    "DELETE /campaigns/:campaignId/supervisor-tasks/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/absence": {
+      "tool": "get_absence"
+    },
+    "GET /campaigns/:campaignId/outlet-attendance": {
+      "tool": "get_outlet_attendance"
+    },
+    "GET /campaigns/:campaignId/tracking/promoter-history": {
+      "tool": "api_get"
+    },
+    "GET /campaigns/:campaignId/tracking/supervisor-history": {
+      "tool": "api_get"
+    },
+    "GET /users": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "POST /users": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "PATCH /users/:id": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "GET /users/:id/campaign-access": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "POST /users/:id/campaign-access": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "DELETE /users/:id/campaign-access/:campaignId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /roles": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "POST /roles": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "PATCH /roles/:id": {
+      "excluded": "User / role / access-grant management is never exposed."
+    },
+    "GET /campaigns/:campaignId/reports/sku-wise": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/reports/brand-wise": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/reports/outlet-wise": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/reports/sales-status": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/reports/reorder": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/reports/attendance-monthly": {
+      "tool": "get_report"
+    },
+    "GET /campaigns/:campaignId/sales-fields": {
+      "tool": "api_get"
+    },
+    "POST /campaigns/:campaignId/sales-fields": {
+      "excluded": "Not exposed yet."
+    },
+    "PATCH /campaigns/:campaignId/sales-fields/:id": {
+      "excluded": "Not exposed yet."
+    },
+    "DELETE /campaigns/:campaignId/sales-fields/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/sales-field-values": {
+      "tool": "api_get"
+    },
+    "PUT /campaigns/:campaignId/sales/custom-values": {
+      "excluded": "Not exposed yet."
+    },
+    "GET /staff": {
+      "tool": "list_staff"
+    },
+    "POST /staff": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "PATCH /staff/:id": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "DELETE /staff/:id": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "POST /staff/:id/photo": {
+      "excluded": "Master-data and staff writes are not exposed yet (staff rows carry HR/banking data; the rest needs a product decision)."
+    },
+    "GET /staff/:staffId/evaluation": {
+      "tool": "get_staff_evaluation"
+    },
+    "GET /system/status": {
+      "tool": "api_get"
+    },
+    "GET /me/preferences": {
+      "excluded": "A portal user's own UI settings (sidebar favorites) — not campaign data."
+    },
+    "PUT /me/preferences": {
+      "excluded": "A portal user's own UI settings — not something an LLM should change."
+    },
+    "GET /campaigns/:campaignId/supervisors": {
+      "tool": "api_get"
+    }
+  },
+  "reviewedFields": {
+    "Client.email": "Business contact of a client company, not personal data.",
+    "Client.address": "Business address of a client company.",
+    "Outlet.address": "Public business address of a retail outlet.",
+    "Outlet.phone": "Business phone of a retail outlet.",
+    "Outlet.mobile": "Business contact number of a retail outlet.",
+    "DistributorPoint.address": "Business address of a distributor.",
+    "Staff.phone": "Personal number — dropped by the staff-row rule in shape.ts (slim), not by name.",
+    "User.email": "User rows are only reachable via /users, which the MCP blocks."
+  }
+}

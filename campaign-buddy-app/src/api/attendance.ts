@@ -19,6 +19,12 @@ export interface CheckInRequest {
   latitude: number;
   longitude: number;
   timestamp: string; // ISODateTime
+  /**
+   * Set ONLY for a check-in queued while offline and sent later: the moment the
+   * rep really did it. The server then records/judges it at that time instead of
+   * sync time (ordinary requests keep server time — a wrong phone clock can't skew attendance).
+   */
+  capturedAt?: string;
 }
 
 export async function checkIn(payload: CheckInRequest): Promise<AttendanceRecord> {
@@ -40,6 +46,8 @@ export interface CheckOutRequest {
   latitude?: number;
   longitude?: number;
   timestamp: string;
+  /** Same as CheckInRequest.capturedAt — only for a check-out queued while offline. */
+  capturedAt?: string;
   /**
    * True only when the rep tapped "Yes, check out" on the confirm popup.
    * If they tap "No, confirm sales summary" instead, DO NOT call this yet —

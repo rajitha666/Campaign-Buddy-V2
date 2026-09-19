@@ -11,6 +11,21 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, registerAuthFailureHandler } from 
 import * as authApi from '@/api/auth';
 import * as profileApi from '@/api/profile';
 import type { User } from '@/api/types';
+import { canResumeOffline } from '@/lib/offlineSession';
+import { isNetworkError } from '@/offline/networkError';
+import { setStorageScope } from '@/offline/storage';
+import { readCache } from '@/offline/cache';
+import { cacheKeys } from '@/offline/localApply';
+import { clearCachedDataIfIdle } from '@/offline/cleanup';
+import { localDayKey } from '@/lib/date';
+import {
+  clearSessionSnapshots,
+  loadAttendanceSnapshot,
+  loadUserSnapshot,
+  saveUserSnapshot,
+} from '@/offline/sessionSnapshot';
+
+const OFFLINE_RESUME_WAIT_MS = 8_000;
 
 interface AuthContextValue {
   user: User | null;
@@ -39,11 +54,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = await getItem(ACCESS_TOKEN_KEY);
         if (token) {
-          const me = await profileApi.getMe();
-          setUser(me);
+          // Mid-shift resume is only possible when we already know the rep is
+          // checked in today; without that we wait on the server as before.
+          const cached = await loadUserSnapshot();
+          if (cached) setStorageScope(cached.id); // needed to read this rep's cache below
+          const shift = cached ? await loadAttendanceSnapshot(cached.id) : null;
+          const assignment = cached ? await readCache(cacheKeys.assignment(localDayKey())).catch(() => null) : null;
+          const resumable = canResumeOffline({
+            hasCachedUser: !!cached,
+            checkedInToday: !!shift?.checkedIn,
+            checkedOutToday: !!shift?.checkedOutToday,
+            hasTodayAssignment: !!assignment,
+          });
+          try {
+            const meRequest = profileApi.getMe();
+            // On a "connected but no internet" network the request can hang for
+            // over a minute — bound it so a rep mid-shift isn't stuck on the splash.
+            const me = await (resumable
+              ? Promise.race([meRequest, new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), OFFLINE_RESUME_WAIT_MS))])
+              : meRequest);
+            setStorageScope(me.id);
+            saveUserSnapshot(me);
+            setUser(me);
+          } catch (err) {
+            if (!isNetworkError(err)) throw err;
+            // Couldn't reach the server — that says nothing about the token, so
+            // keep it. Resume the open shift from the cached profile if we can;
+            // otherwise the rep lands on Login (which needs a network anyway).
+            if (cached && resumable) {
+              setStorageScope(cached.id);
+              setUser(cached);
+            }
+          }
         }
       } catch {
-        // Token expired/invalid — fall through to the login screen.
+        // The server answered and rejected the token — fall through to the login screen.
         await deleteItem(ACCESS_TOKEN_KEY);
         await deleteItem(REFRESH_TOKEN_KEY);
       } finally {
@@ -58,7 +103,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setItem(REFRESH_TOKEN_KEY, result.refreshToken);
     // The v3 backend's /auth/login returns only tokens, so pull the profile
     // separately (same call the cold-start path uses).
-    setUser(result.user ?? (await profileApi.getMe()));
+    const me = result.user ?? (await profileApi.getMe());
+    setStorageScope(me.id);
+    saveUserSnapshot(me);
+    setUser(me);
   }, []);
 
   const logout = useCallback(async () => {
@@ -70,11 +118,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await deleteItem(ACCESS_TOKEN_KEY);
     await deleteItem(REFRESH_TOKEN_KEY);
+    await clearSessionSnapshots();
+    await clearCachedDataIfIdle();
     setUser(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
-    setUser(await profileApi.getMe());
+    const me = await profileApi.getMe();
+    saveUserSnapshot(me);
+    setUser(me);
   }, []);
 
   return (

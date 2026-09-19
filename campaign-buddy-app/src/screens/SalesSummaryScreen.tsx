@@ -5,22 +5,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as salesSummaryApi from '@/api/salesSummary';
-import * as statsApi from '@/api/stats';
+import * as offlineQueries from '@/offline/queries';
+import { useOfflineSave, savedMessage, saveErrorMessage } from '@/offline/useOfflineSave';
 import { Button } from '@/components/Button';
 import { CustomFieldInput, type CustomFieldValue } from '@/components/CustomFieldInput';
 import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
+import { useAssignment } from '@/context/AssignmentContext';
 import { canConfirmSales } from '@/lib/salesConfirmGuard';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
 
 export function SalesSummaryScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { checkedIn } = useAttendance();
-  const summaryQuery = useQuery({ queryKey: ['sales-summary', 'today'], queryFn: salesSummaryApi.getTodaySalesSummary });
-  const last7Query = useQuery({ queryKey: ['stats', 'range-7d'], queryFn: () => statsApi.getLast7Days() });
+  // Multi-outlet promoters confirm the outlet chosen on Home.
+  const { assignment } = useAssignment();
+  const assignmentId = assignment?.assignmentId;
+  const { save } = useOfflineSave();
+  const { showToast } = useToast();
+  const summaryQuery = useQuery({
+    queryKey: ['sales-summary', 'today', assignmentId],
+    queryFn: () => offlineQueries.getTodaySalesSummary(assignmentId),
+    enabled: !!assignmentId,
+  });
+  const last7Query = useQuery({ queryKey: ['stats', 'range-7d'], queryFn: offlineQueries.getLast7Days });
   const [remarks, setRemarks] = useState<string | null>(null);
   const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>({});
 
@@ -41,19 +52,22 @@ export function SalesSummaryScreen() {
   }, [summaryQuery.data]);
 
   const confirmMutation = useMutation({
-    mutationFn: () =>
-      salesSummaryApi.confirmSalesSummary({
+    mutationFn: async () => {
+      return save('salesConfirm', assignmentId!, {
         remarks: displayedRemarks || undefined,
         customFields: customFields.length ? customValues : undefined,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
+        assignmentId,
+      });
+    },
+    onSuccess: (outcome) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-summary'] });
       queryClient.invalidateQueries({ queryKey: ['stats', 'range-7d'] });
+      showToast(savedMessage(outcome));
       // Land back on Home after confirming — matches the prototype's
       // "Confirm & submit" behavior.
       navigation.getParent()?.navigate('HomeTab' as never);
     },
-    onError: (err) => Alert.alert('Could not confirm', getApiErrorMessage(err)),
+    onError: (err) => Alert.alert('Could not confirm', saveErrorMessage(err)),
   });
 
   const s = summaryQuery.data;
@@ -69,6 +83,9 @@ export function SalesSummaryScreen() {
         <Text style={styles.subtitle}>
           {new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
         </Text>
+        <View style={{ marginTop: spacing.sm }}>
+          <SyncStatusBadge />
+        </View>
       </View>
 
       <KeyboardAwareScrollView

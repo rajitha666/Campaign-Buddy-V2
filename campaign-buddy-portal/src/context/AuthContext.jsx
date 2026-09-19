@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
 
   const loadCampaigns = useCallback(async () => {
     try {
-      const res = await campaignsApi.list();
+      const res = await campaignsApi.list({ pageSize: 1000 });
       const list = sortOptions(res?.data, (c) => c.name); // alphabetical campaign switcher (#67)
       setCampaignList(list);
       setCurrentCampaignId((prev) => prev || list[0]?.id || null);

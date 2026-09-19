@@ -7,8 +7,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
-import * as profileApi from '@/api/profile';
-import * as productsApi from '@/api/products';
+import * as offlineQueries from '@/offline/queries';
+import { useAssignment } from '@/context/AssignmentContext';
 import { ProductListItem } from '@/components/ProductListItem';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
@@ -22,14 +22,15 @@ export function ProductsScreen() {
   const [reorderOnly, setReorderOnly] = useState(false);
   const [search, setSearch] = useState('');
 
-  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: profileApi.getTodayAssignment });
+  // Multi-outlet promoters see the chosen outlet's catalogue; switch on Home.
+  const { assignment } = useAssignment();
   const productsQuery = useQuery({
-    queryKey: ['products', assignmentQuery.data?.campaign.id, assignmentQuery.data?.outlet.id, reorderOnly],
+    queryKey: ['products', assignment?.campaign.id, assignment?.outlet.id, reorderOnly],
     queryFn: () =>
-      productsApi.getCampaignProducts(assignmentQuery.data!.campaign.id, assignmentQuery.data!.outlet.id, {
+      offlineQueries.getCampaignProducts(assignment!.campaign.id, assignment!.outlet.id, {
         reorderOnly,
       }),
-    enabled: !!assignmentQuery.data,
+    enabled: !!assignment,
   });
 
   const filtered = productsQuery.data?.filter((p) =>
@@ -44,8 +45,8 @@ export function ProductsScreen() {
             <Path d="M15 5l-7 7 7 7" stroke="#F4F6F3" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
           <View>
-            <Text style={styles.title}>{assignmentQuery.data?.campaign.name ?? 'Campaign products'}</Text>
-            <Text style={styles.subtitle}>{assignmentQuery.data?.outlet.name}</Text>
+            <Text style={styles.title}>{assignment?.campaign.name ?? 'Campaign products'}</Text>
+            <Text style={styles.subtitle}>{assignment?.outlet.name}</Text>
           </View>
         </Pressable>
       </View>

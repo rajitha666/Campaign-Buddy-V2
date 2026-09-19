@@ -340,6 +340,30 @@ router.get(
   })
 );
 
+// Supervisors ON this campaign — union of "has a SupervisorRoute here" or
+// "assigned to one of its activations" (Activation.supervisorStaffId). Backs
+// the Assign Routes supervisor dropdown, which must scope to the campaign
+// rather than offering the global staff pool.
+router.get(
+  "/campaigns/:campaignId/supervisors",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const where = {
+      status: "active" as const,
+      userType: "supervisor" as const,
+      OR: [
+        { supervisorRoutes: { some: { campaignId: req.params.campaignId, deletedAt: null } } },
+        { supervising: { some: { campaignId: req.params.campaignId } } },
+      ],
+    };
+    const [rows, total] = await Promise.all([
+      prisma.staff.findMany({ where, include: { city: true }, orderBy: { fullName: "asc" } }),
+      prisma.staff.count({ where }),
+    ]);
+    res.json(okList(rows, total)); // passwordHash omitted globally (src/utils/prisma.ts)
+  })
+);
+
 router.post(
   "/campaigns/:campaignId/supervisor-routes",
   requireCampaignAccess,

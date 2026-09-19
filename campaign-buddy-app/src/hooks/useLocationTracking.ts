@@ -11,6 +11,8 @@
  *    shift; it just pauses pings until foregrounded again.
  *  - Never sends a ping outside a check-in/check-out window, even if the
  *    app is open (e.g. before a shift starts).
+ *  - With no signal, pings are kept on the phone with their capture time and
+ *    uploaded by the sync engine later (offline/pingBuffer.ts).
  *
  * Mount this ONCE near the root of the authenticated app (see App.tsx) —
  * not per-screen — so it keeps running correctly as the user navigates.
@@ -23,6 +25,10 @@ import * as Location from 'expo-location';
 import * as Battery from 'expo-battery'; // optional — remove if you don't want the battery dependency
 import { useAttendance } from '@/context/AttendanceContext';
 import { sendLocationPing } from '@/api/location';
+import { useNetwork } from '@/offline/NetworkContext';
+import { addPing } from '@/offline/pingBuffer';
+import { isRetryable } from '@/offline/networkError';
+import * as queue from '@/offline/queue';
 
 const PING_INTERVAL_MS = 60_000; // 60s heartbeat — see spec §5 recommendation
 const MIN_DISTANCE_METERS = 10; // skip a ping if we haven't moved much since the last one
@@ -42,6 +48,9 @@ function distanceMeters(a: { latitude: number; longitude: number }, b: { latitud
 
 export function useLocationTracking() {
   const { checkedIn } = useAttendance();
+  const { isOnline } = useNetwork();
+  const onlineRef = useRef(isOnline);
+  onlineRef.current = isOnline;
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSentRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -67,17 +76,31 @@ export function useLocationTracking() {
         // Battery API can be unavailable on some devices/emulators — optional field, just omit it.
       }
 
-      try {
-        await sendLocationPing({
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          accuracyMeters: position.coords.accuracy ?? undefined,
-          timestamp: new Date().toISOString(),
-          batteryPercent,
-        });
+      const ping = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracyMeters: position.coords.accuracy ?? undefined,
+        timestamp: new Date().toISOString(),
+        batteryPercent,
+      };
+      // No signal — or a check-in still queued (the server refuses pings until it has one): keep
+      // the ping, with its capture time, and the sync engine uploads it later. No hole in the trail.
+      const checkInQueued = () => queue.list().then((items) => items.some((i) => i.kind === 'checkIn' && i.status === 'pending'));
+      if (!onlineRef.current || (await checkInQueued().catch(() => false))) {
+        await addPing(ping).catch(() => {});
         lastSentRef.current = coords;
-      } catch {
-        // Fire-and-forget per spec §5 — just retry on the next tick, don't surface to the user.
+        return;
+      }
+      try {
+        await sendLocationPing(ping);
+        lastSentRef.current = coords;
+      } catch (err) {
+        // Fire-and-forget per spec §5 — don't surface to the user. A dropped connection
+        // is kept for the sync engine; anything else is retried on the next tick.
+        if (isRetryable(err)) {
+          await addPing(ping).catch(() => {});
+          lastSentRef.current = coords;
+        }
       }
     }
 

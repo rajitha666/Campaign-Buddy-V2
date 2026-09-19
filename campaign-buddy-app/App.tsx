@@ -15,15 +15,21 @@ import { useFonts, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fon
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import '@/offline/backgroundSync'; // defines the background sync task at startup
 import { AuthProvider } from '@/context/AuthContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+// networkMode 'always': offline handling lives in src/offline (cached reads, queued
+// writes). React Query's default would pause mutations/queries while it thinks the
+// device is offline, leaving a save spinning instead of queueing.
 const queryClient = new QueryClient({
   defaultOptions: {
+    mutations: { networkMode: 'always' },
     queries: {
+      networkMode: 'always',
       retry: 1,
       staleTime: 30_000, // stats/attendance change often enough that a long stale time would show old numbers
     },

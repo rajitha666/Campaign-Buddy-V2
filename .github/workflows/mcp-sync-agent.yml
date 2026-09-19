@@ -1,0 +1,102 @@
+name: MCP Sync Agent
+
+# Keeps campaign-buddy-mcp/ in step with backend changes. Opens a PR; never pushes to main.
+# Design + agent instructions: docs/mcp-sync-agent.md
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'campaign-buddy-backend/src/modules/**'
+      - 'campaign-buddy-backend/src/schemas.ts'
+      - 'campaign-buddy-backend/src/utils/**'
+      - 'campaign-buddy-backend/src/middleware/**'
+      - 'campaign-buddy-backend/prisma/schema.prisma'
+      - 'campaign-buddy-backend/prisma/migrations/**'
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'Review backend commits since this git ref (default: the previous commit)'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run (plan only — no branch, no push, no PR)'
+        type: boolean
+        default: true
+
+# One review at a time, queued not cancelled, so no backend commit is skipped.
+concurrency:
+  group: mcp-sync-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  sync:
+    name: Review backend changes for MCP impact
+    # The agent's own PRs only touch campaign-buddy-mcp/, which is outside `paths` above; this also stops any bot loop.
+    if: github.actor != 'github-actions[bot]' && github.actor != 'claude[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: campaign-buddy-mcp/package-lock.json
+
+      - name: Install MCP package
+        run: npm ci
+        working-directory: campaign-buddy-mcp
+
+      - name: Work out what to review
+        id: scope
+        env:
+          BEFORE: ${{ github.event.before }}
+          INPUT_SINCE: ${{ inputs.since }}
+        run: |
+          if [ -n "$INPUT_SINCE" ]; then SINCE="$INPUT_SINCE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE" 2>/dev/null; then SINCE="$BEFORE"
+          else SINCE="HEAD~1"; fi
+          echo "since=$SINCE" >> "$GITHUB_OUTPUT"
+          npm --prefix campaign-buddy-mcp run --silent sync-report -- --since "$SINCE" > campaign-buddy-mcp/.sync-report.json
+          cat campaign-buddy-mcp/.sync-report.json
+          CHANGED=$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(r.changedBackendFiles.length + r.drift)' campaign-buddy-mcp/.sync-report.json)
+          if [ "$CHANGED" -gt 0 ]; then echo "work=true" >> "$GITHUB_OUTPUT"; else echo "work=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Nothing to review
+        if: steps.scope.outputs.work != 'true'
+        run: echo "No backend API-surface changes since ${{ steps.scope.outputs.since }} — nothing for the MCP to do." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Choose agent tools
+        id: tools
+        env:
+          DRY: ${{ inputs.dry_run == true && 'true' || 'false' }}
+        run: |
+          READ='Read,Glob,Grep,Edit,Write,Bash(npm --prefix campaign-buddy-mcp:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git rev-parse:*)'
+          WRITE='Bash(git checkout -b:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin mcp-sync/*),Bash(gh pr create:*),Bash(gh pr list:*)'
+          # A dry run gets no way to push or open a PR at all.
+          if [ "$DRY" = "true" ]; then echo "allowed=$READ" >> "$GITHUB_OUTPUT"; else echo "allowed=$READ,$WRITE" >> "$GITHUB_OUTPUT"; fi
+
+      - name: MCP sync agent
+        if: steps.scope.outputs.work == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the MCP sync agent. Read docs/mcp-sync-agent.md (section "Agent instructions") and follow it exactly.
+            RANGE=${{ steps.scope.outputs.since }}..HEAD
+            DRY_RUN=${{ inputs.dry_run == true && 'true' || 'false' }}
+            The drift report from `npm run sync-report` is in campaign-buddy-mcp/.sync-report.json (untracked; do not commit it).
+            Write your summary to the job summary file ($GITHUB_STEP_SUMMARY) as well as replying.
+          claude_args: |
+            --model claude-opus-5
+            --max-turns 60
+            --allowedTools "${{ steps.tools.outputs.allowed }}"
