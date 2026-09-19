@@ -11,6 +11,12 @@ export const auth = {
   logout: () => api.post('/auth/logout', {}),
 };
 
+// ---------- Personalization (per-account portal preferences) ----------
+export const preferences = {
+  get: () => api.get('/me/preferences'),
+  update: (patch) => api.put('/me/preferences', patch), // { key: value | null }
+};
+
 // ---------- Catalog ----------
 export const clients = {
   list: (query) => api.get('/clients', { query }),
