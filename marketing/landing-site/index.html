@@ -328,14 +328,113 @@
   .rule h3 { font-size: 1rem; }
   .rule p { margin-top: 8px; color: var(--text-muted); font-size: 0.89rem; }
 
-  /* ---------- vision ---------- */
+  /* ---------- CB Intelligence ---------- */
   .vision-note { margin-top: 14px; display: inline-flex; align-items: center; gap: 9px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #FFB98C; border: 1px solid var(--ink-line); border-radius: 999px; padding: 6px 14px; }
-  .vision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 36px; }
-  .vision-card { background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: 13px; padding: 22px; }
-  .vision-card .n { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFB98C; }
-  .vision-card h3 { color: #fff; font-size: 1.06rem; margin-top: 9px; }
-  .vision-card p { margin-top: 8px; color: var(--muted-on-ink); font-size: 0.89rem; }
-  .vision-card .q { margin-top: 11px; font-size: 0.82rem; color: #FFCBA8; background: rgba(255,122,51,0.12); border-radius: 8px; padding: 8px 11px; }
+  .ci-band .wrap { padding-block: clamp(3.75rem, 8vw, 6.5rem); }
+  .ci-head { max-width: 46em; }
+  .ci-head h2 { font-size: clamp(1.9rem, 3.8vw, 2.9rem); margin-top: 14px; }
+  .ci-head .lede { margin-top: 16px; font-size: 1.06rem; }
+  .ci-demo { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); gap: clamp(1.5rem, 4vw, 3rem); margin-top: 44px; align-items: start; }
+  .ci-tabs { display: grid; gap: 10px; }
+  .ci-tab { text-align: left; font: inherit; color: var(--text-on-ink); background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: 14px; padding: 16px 18px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .ci-tab:hover { border-color: #46695D; }
+  .ci-tab .who { display: block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #FFB98C; }
+  .ci-tab .ttl { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; margin-top: 6px; color: #fff; }
+  .ci-tab .dsc { display: block; font-size: 0.86rem; color: var(--muted-on-ink); margin-top: 5px; line-height: 1.5; }
+  .ci-tab[aria-selected="true"] { background: rgba(255,122,51,0.12); border-color: var(--mango); }
+  .ci-tab[aria-selected="true"] .dsc { color: #D7E2DC; }
+
+  .ci-window { background: var(--card); border-radius: 16px; box-shadow: var(--shadow-float); overflow: hidden; color: var(--text); border: 1px solid rgba(255,255,255,0.08); }
+  .ci-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #EDF0EC; border-bottom: 1px solid var(--line); }
+  .ci-bar .l { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 600; font-size: 0.86rem; }
+  .ci-bar .l .brand-mark { width: 24px; height: 24px; border-radius: 7px; }
+  .ci-bar .l .brand-mark svg { width: 13px; height: 13px; }
+  .ci-conn { display: inline-flex; align-items: center; gap: 7px; font-size: 0.7rem; font-weight: 600; color: var(--success); background: var(--success-tint); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+  .ci-conn::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .ci-body { height: 540px; overflow-y: auto; padding: 18px 18px 8px; background: var(--surface); scroll-behavior: smooth; }
+  .ci-convo { display: none; flex-direction: column; gap: 14px; }
+  .ci-convo.on { display: flex; }
+  .ci-msg { display: flex; }
+  .ci-msg.user { justify-content: flex-end; }
+  .ci-msg.user .bub { background: var(--ink); color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 15px; max-width: 82%; font-size: 0.92rem; line-height: 1.5; }
+  .ci-msg.ai { gap: 10px; align-items: flex-start; }
+  .ci-msg.ai .av { width: 26px; height: 26px; border-radius: 8px; background: var(--mango); display: grid; place-items: center; flex: none; margin-top: 2px; }
+  .ci-msg.ai .av svg { width: 14px; height: 14px; }
+  .ci-msg.ai .bub { background: var(--card); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: 13px 15px; max-width: 92%; font-size: 0.9rem; line-height: 1.55; min-width: 0; }
+  .ci-msg.ai .bub > * + * { margin-top: 11px; }
+  .ci-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.72rem; color: var(--text-muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px 3px 9px; }
+  .ci-chip svg { width: 12px; height: 12px; color: var(--success); flex: none; }
+  .ci-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ci-stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .ci-stat .l { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+  .ci-stat .n { font-family: var(--font-display); font-weight: 600; font-size: 1.08rem; margin-top: 2px; }
+  .ci-stat .d { font-size: 0.7rem; color: var(--success); font-weight: 600; }
+  .ci-bars { display: grid; gap: 9px; }
+  .ci-bar-row { display: grid; grid-template-columns: minmax(96px, 138px) 1fr auto; gap: 10px; align-items: center; font-size: 0.8rem; }
+  .ci-track { height: 9px; background: var(--line); border-radius: 6px; overflow: hidden; }
+  .ci-fill { display: block; height: 100%; border-radius: 6px; background: var(--success); }
+  .ci-fill.low { background: var(--pending); }
+  .ci-bar-row b { font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; white-space: nowrap; }
+  .ci-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  .ci-list li { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+  .ci-list .h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; font-size: 0.86rem; }
+  .ci-list p { margin-top: 3px; font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; }
+  .ci-tag { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; }
+  .ci-tag.alert { color: var(--alert); background: var(--alert-tint); }
+  .ci-tag.pending { color: var(--pending); background: var(--pending-tint); }
+  .ci-tag.info { color: var(--info); background: var(--info-tint); }
+  .ci-tag.success { color: var(--success); background: var(--success-tint); }
+  .ci-card { border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .ci-card .ch { background: var(--surface); padding: 9px 13px; font-family: var(--font-display); font-weight: 600; font-size: 0.86rem; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .ci-card .ch span { font-family: var(--font-body); font-weight: 500; font-size: 0.74rem; color: var(--text-muted); }
+  .ci-card dl { margin: 0; padding: 10px 13px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 0.82rem; }
+  .ci-card dt { color: var(--text-muted); }
+  .ci-card dd { margin: 0; }
+  .ci-card .acts { display: flex; gap: 8px; padding: 0 13px 12px; flex-wrap: wrap; }
+  .ci-fake-btn { font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; border-radius: 8px; padding: 6px 12px; border: 1.5px solid var(--line); color: var(--text); background: var(--card); }
+  .ci-fake-btn.go { background: var(--mango); border-color: var(--mango); color: #fff; }
+  .ci-note { font-size: 0.72rem; color: var(--text-muted); }
+  .ci-input { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--card); font-size: 0.86rem; color: #93A098; }
+  .ci-input .send { width: 30px; height: 30px; border-radius: 9px; background: var(--mango-tint); color: var(--mango-dark); display: grid; place-items: center; flex: none; }
+  .ci-input .send svg { width: 14px; height: 14px; }
+  .ci-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 0.76rem; color: var(--muted-on-ink); }
+  .ci-replay { font: inherit; font-weight: 600; font-size: 0.78rem; color: #FFB98C; background: none; border: 1px solid var(--ink-line); border-radius: 999px; padding: 5px 13px; cursor: pointer; }
+  .ci-replay:hover { background: rgba(255,255,255,0.08); }
+  .ci-dots { display: inline-flex; gap: 4px; padding: 5px 2px; }
+  .ci-dots i { width: 6px; height: 6px; border-radius: 50%; background: #B4C0B9; animation: ci-blink 1s infinite ease-in-out; }
+  .ci-dots i:nth-child(2) { animation-delay: 0.15s; }
+  .ci-dots i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes ci-blink { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  .ci-enter { animation: ci-in 0.35s ease both; }
+  @keyframes ci-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .ci-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 52px; }
+  .ci-mode { background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: 14px; padding: 22px; }
+  .ci-mode .n { font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; color: #FFB98C; }
+  .ci-mode h3 { color: #fff; font-size: 1.15rem; margin-top: 8px; }
+  .ci-mode p { margin-top: 8px; color: var(--muted-on-ink); font-size: 0.9rem; }
+  .ci-mode .q { margin-top: 12px; font-size: 0.82rem; color: #FFCBA8; background: rgba(255,122,51,0.12); border-radius: 8px; padding: 8px 11px; }
+
+  .agents-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .agents-grid h2 { font-size: clamp(1.75rem, 3.4vw, 2.6rem); margin-top: 14px; }
+  .agents-grid .lede { margin-top: 14px; color: var(--text-muted); font-size: 1.04rem; }
+  .agent-panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-card); overflow: hidden; }
+  .agent-panel .ph { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .agent-panel .ph b { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; }
+  .agent-panel .ph span { font-size: 0.72rem; color: var(--text-muted); }
+  .agent-row { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .agent-row:last-child { border-bottom: 0; }
+  .agent-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--success); margin-top: 7px; position: relative; }
+  .agent-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--success); opacity: 0; animation: ci-pulse 2.4s infinite; }
+  .agent-dot.warn { background: var(--pending); }
+  .agent-dot.warn::after { border-color: var(--pending); }
+  @keyframes ci-pulse { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.5); } }
+  .agent-row .t { font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; }
+  .agent-row .s { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+  .agent-row .when { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; margin-top: 4px; }
+  .agents-trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px 30px; margin-top: clamp(2.5rem, 5vw, 3.75rem); padding-top: 30px; border-top: 1px solid var(--line); }
+
+  .ci-hide { display: none !important; }
 
   /* ---------- proven ---------- */
   .stat-band { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 38px; }
@@ -387,7 +486,7 @@
 
   /* ---------- responsive ---------- */
   @media (max-width: 940px) {
-    .hero-grid, .stage, .strip-grid, .surfaces, .sponsor-grid, .pilot-grid { grid-template-columns: minmax(0, 1fr); }
+    .hero-grid, .stage, .strip-grid, .surfaces, .sponsor-grid, .pilot-grid, .ci-demo, .agents-grid { grid-template-columns: minmax(0, 1fr); }
     .surface-col, .stage-body { min-width: 0; }
     .stage-side { position: static; }
     .pm-stat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -419,6 +518,14 @@
   @media (max-width: 560px) {
     .wrap { padding: 0 18px; }
     .sponsor-stats { grid-template-columns: 1fr; }
+    .ci-body { height: 500px; padding: 14px 12px 6px; }
+    .ci-msg.user .bub { max-width: 92%; }
+    .ci-msg.ai .bub { max-width: 100%; padding: 12px; }
+    .ci-msg.ai .av { display: none; }
+    .ci-conn { display: none; }
+    .ci-bar-row { grid-template-columns: minmax(84px, 110px) 1fr auto; }
+    .agent-row { grid-template-columns: auto 1fr; }
+    .agent-row .when { grid-column: 2; margin-top: 0; }
   }
 </style>
 </head>
@@ -434,7 +541,7 @@
       <a href="#platform">Platform</a>
       <a href="#lifecycle">Lifecycle</a>
       <a href="#sponsors">For sponsors</a>
-      <a href="#vision">Vision</a>
+      <a href="#intelligence">Intelligence</a>
       <a href="#pilot">Pilot</a>
       <a href="#pilot" class="menu-cta">Start a pilot</a>
     </nav>
@@ -535,8 +642,8 @@
       <div class="now">
         <h3>How it runs on Campaign Buddy</h3>
         <ul>
-          <li>GPS verified check-in against the outlet geofence</li>
-          <li>Stock and units sold updated per SKU through the day</li>
+          <li>Check-in confirmed on site, by location</li>
+          <li>Stock and sales updated through the day</li>
           <li>Sales, footfall and location visible as they happen</li>
           <li>The sponsor logs in and sees today for themselves</li>
         </ul>
@@ -556,7 +663,7 @@
           <div>
             <span class="tag">CB Mobile, the field app</span>
             <h3>What the promoter carries</h3>
-            <p>Runs on the phone every promoter and field supervisor already has. Check in and out with a GPS fix, update stock and units sold per SKU, log footfall, and confirm the day's summary before checkout.</p>
+            <p>Runs on the phone every promoter and supervisor already has. Check in at the outlet, update stock and sales, record footfall, and wrap up the day, all from one app.</p>
           </div>
           <div class="frame-phone surface-frame" aria-label="CB Mobile promoter home screen, sample data">
             <div class="fp-screen mmock">
@@ -610,7 +717,7 @@
           <div>
             <span class="tag">CB Office, the portal</span>
             <h3>What head office runs</h3>
-            <p>Set up clients, catalogs, campaigns, outlets and staff; build activations; watch attendance, live location and sales as they land; correct data; and pull reports by SKU or brand. Supervisors and sponsors get read-only views scoped to their outlets.</p>
+            <p>Set up campaigns, outlets and staff, then watch attendance, live locations and sales as they happen. Pull the reports your sponsors ask for. Supervisors and sponsors see only their own outlets, and can't change anything.</p>
           </div>
           <div class="frame-browser surface-frame" aria-label="CB Office activations list, sample data">
             <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/campaigns/activations</span></div>
@@ -650,21 +757,21 @@
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">The campaign lifecycle</span>
-        <h2>Five stages, end to end, and Campaign Buddy carries all of them.</h2>
-        <p class="lede">From the first client record to the final brand report, the whole activation programme lives in one place.</p>
+        <h2>Every stage of the campaign, in one place.</h2>
+        <p class="lede">From setting up the campaign to the final report for the brand.</p>
       </div>
 
       <div class="stage">
         <div class="stage-side">
           <span class="stage-num">01 &middot; Plan</span>
           <h3>Build the campaign</h3>
-          <p>Clients, brands and a client wide SKU catalog. Campaigns with a date range and a status that tracks it.</p>
+          <p>Add the client, their products and the campaign dates.</p>
         </div>
         <div class="stage-body">
           <ul class="feat-list">
-            <li>Outlets carry <strong>GPS coordinates and a geofence radius</strong> (150&nbsp;m default) that drive check-in verification</li>
-            <li>An <strong>activation</strong> is the unit of work: one promoter, one outlet, one campaign, one date range</li>
-            <li>Targets set <strong>by item or by brand</strong>, daily or monthly, by units or by sales value</li>
+            <li>Every outlet has a <strong>location on the map</strong>, so check-ins can be confirmed on site</li>
+            <li>An <strong>activation</strong> is one promoter at one outlet for a set period</li>
+            <li><strong>Daily or monthly targets</strong> by product or by brand</li>
           </ul>
           <div class="frame-browser" aria-label="CB Office new activation form, sample data">
             <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/campaigns/activations/new</span></div>
@@ -700,12 +807,12 @@
         <div class="stage-side">
           <span class="stage-num">02 &middot; Deploy</span>
           <h3>Staff the outlets</h3>
-          <p>Create promoters and supervisors with a mobile number login, then assign them to outlets with a shift window and targets.</p>
+          <p>Add your promoters and supervisors, then assign them to outlets with shift times and targets.</p>
         </div>
         <div class="stage-body">
           <ul class="feat-list">
-            <li>Promoters sign in with <strong>their mobile number</strong> in whatever format they already write it</li>
-            <li>Name a field supervisor on an activation and Campaign Buddy <strong>gives them portal access</strong> to that outlet, automatically</li>
+            <li>Promoters sign in with <strong>their mobile number</strong>, however they usually write it</li>
+            <li>Name a supervisor on an activation and they <strong>get access</strong> to that outlet automatically</li>
           </ul>
           <div class="frame-browser" aria-label="CB Office staff list, sample data">
             <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/staff</span></div>
@@ -735,13 +842,13 @@
         <div class="stage-side">
           <span class="stage-num">03 &middot; In the field</span>
           <h3>The promoter's day</h3>
-          <p>Everything that used to be a photo, a paper count or a memory becomes structured data, captured on the shift.</p>
+          <p>What used to be a photo, a paper count or a memory is now recorded properly, during the shift.</p>
         </div>
         <div class="stage-body">
           <ul class="feat-list">
-            <li><strong>Check-in</strong> takes a GPS fix and flags it against the outlet geofence for review</li>
-            <li>Stock, units sold and "other interested customers" updated per SKU, with a live remaining readout</li>
-            <li>Re-order flags, footfall counts, and the campaign's custom fields, all recorded on the shift</li>
+            <li><strong>Check-in</strong> confirms the promoter is at the outlet, and flags it for review if not</li>
+            <li>Stock, sales and <strong>shoppers who wanted an out of stock item</strong>, updated through the day</li>
+            <li>Restock flags, footfall counts and campaign notes, all recorded on the shift</li>
           </ul>
           <div class="frame-phone" aria-label="CB Mobile product update screen, sample data">
             <div class="fp-screen mmock">
@@ -773,10 +880,10 @@
         </div>
         <div class="stage-body">
           <ul class="feat-list">
-            <li>A <strong>live map</strong> of every checked-in promoter's latest position, refreshing every 15 seconds or so</li>
+            <li>A <strong>live map</strong> showing where every promoter is right now</li>
             <li>Attendance with <strong>on time and late</strong> badges</li>
             <li>A daily view of <strong>who has submitted their sales</strong> and who has not</li>
-            <li>A correction tool for head office to fix opening stock or sold quantity without the promoter</li>
+            <li>Head office can <strong>correct an entry</strong> without chasing the promoter</li>
           </ul>
           <div class="frame-browser" aria-label="CB Office seller live locations, sample data">
             <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/tracking/live</span></div>
@@ -841,14 +948,13 @@
         <div class="stage-side">
           <span class="stage-num">05 &middot; Prove the outcome</span>
           <h3>Turn the shift data into the report</h3>
-          <p>The numbers the sponsor signed up for, built from the raw daily counters.</p>
+          <p>The numbers your sponsor signed up for, ready to share.</p>
         </div>
         <div class="stage-body">
           <ul class="feat-list">
-            <li>Overall sales <strong>by SKU and by brand</strong> across the campaign, with grand totals</li>
-            <li>Per promoter <strong>performance scoreboards</strong> covering overall percentage, attendance, best day and brand contribution</li>
-            <li>Monthly attendance grid, exportable to CSV</li>
-            <li><strong>Per campaign licence metering</strong> so each activation's seat usage is accounted for</li>
+            <li>Sales <strong>by product and by brand</strong> across the campaign, with totals</li>
+            <li><strong>Promoter scoreboards</strong> showing sales, attendance and best day</li>
+            <li>A monthly attendance sheet, exportable to Excel</li>
           </ul>
           <div class="frame-browser" aria-label="CB Office overall SKU report, sample data">
             <div class="fb-bar"><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-dot"></span><span class="fb-url">office.campaignbuddy.lk/reports/sku-wise</span></div>
@@ -881,13 +987,13 @@
       <div class="section-head">
         <span class="eyebrow">Field insight</span>
         <h2>The things a spreadsheet never captured.</h2>
-        <p class="lede">Every promoter is a sensor on the shelf. Campaign Buddy captures what they see, not just what they sold, and hands it to the brand team as structured, dated, location tagged data.</p>
+        <p class="lede">Promoters see things a sales figure never shows. Campaign Buddy captures what they see, not just what they sold, and gives it to the brand team in a form they can use.</p>
       </div>
       <div class="cards-grid">
-        <div class="mini-card"><span class="m">Demand you could not fill</span><h3>Other interested customers</h3><p>A per SKU count of shoppers who wanted the product when it was out of stock. The sales you lost, quantified.</p></div>
-        <div class="mini-card"><span class="m">Why a day moved</span><h3>Custom sales fields</h3><p>Defined by an admin per campaign: weather, competitor promo, samples given, damaged units. Day level or per product, required or optional.</p></div>
-        <div class="mini-card"><span class="m">Restock signals</span><h3>Re-order flags</h3><p>Raised by the promoter the moment stock runs low, rolled up per outlet per day for the supply team.</p></div>
-        <div class="mini-card"><span class="m">Where the day went</span><h3>GPS breadcrumb</h3><p>A timestamped location trail for every shift. Proof that a promoter was where the plan said, when it said.</p></div>
+        <div class="mini-card"><span class="m">Demand you could not fill</span><h3>Other interested customers</h3><p>A count of shoppers who wanted a product that was out of stock. The sales you missed, in numbers.</p></div>
+        <div class="mini-card"><span class="m">Why a day moved</span><h3>Your own fields</h3><p>Your own notes for each campaign, such as weather, competitor promotions, samples given or damaged units.</p></div>
+        <div class="mini-card"><span class="m">Restock signals</span><h3>Re-order flags</h3><p>Raised by the promoter the moment stock runs low, and gathered each day for the supply team.</p></div>
+        <div class="mini-card"><span class="m">Where the day went</span><h3>Location trail</h3><p>A record of where each promoter was during the shift. Proof they were where the plan said.</p></div>
       </div>
     </div>
   </section>
@@ -897,7 +1003,7 @@
       <div class="section-head">
         <span class="eyebrow">For your sponsors</span>
         <h2>A window into the campaign, not a weekly deck.</h2>
-        <p class="lede">Give every sponsor a read-only login, automatically limited to the campaign and outlets they are granted. They stop emailing for updates because they can see today for themselves &mdash; from a phone in a taxi as easily as a desk &mdash; and that visibility is something your agency can now offer that others cannot.</p>
+        <p class="lede">Give every sponsor a view-only login, limited to their own campaign and outlets. They stop emailing for updates because they can see today for themselves, on a phone or at a desk, and it gives your agency something others can't offer.</p>
       </div>
       <div class="sponsor-grid">
         <div>
@@ -912,23 +1018,23 @@
         <ul class="sponsor-list">
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
-            <span><strong>Sponsor dashboard</strong> shows today's outlet count, sales, footfall, top products and a live promoter map</span>
+            <span><strong>Sponsor dashboard</strong> shows today's live outlets, sales, footfall, top products and a live map</span>
           </li>
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 9h12M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg>
-            <span><strong>Self serve reports</strong> for sales by SKU or brand across any date range, exported to Excel</span>
+            <span><strong>Self serve reports</strong> for sales by product or brand over any dates, exported to Excel</span>
           </li>
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9.5l3.5 3.5L14 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span><strong>Access is scoped automatically</strong> with nothing to configure on the sponsor's side, and there is nothing they can accidentally change &mdash; their login simply cannot edit anything</span>
+            <span><strong>Access is limited automatically.</strong> Nothing to set up, and nothing a sponsor can accidentally change</span>
           </li>
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="5" y="2" width="8" height="14" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M8 13.2h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span><strong>Works on a phone or tablet, not just a desk</strong> &mdash; the whole portal is responsive, so checking a campaign on the go is opening a browser, not booting a laptop</span>
+            <span><strong>Works on a phone or tablet</strong>, so checking a campaign on the go is as easy as opening a browser</span>
           </li>
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.8v2.2M9 14v2.2M16.2 9H14M4 9H1.8M14 4l-1.6 1.6M5.6 12.4L4 14M14 14l-1.6-1.6M5.6 5.6L4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span><strong>Sees more than sales now</strong> &mdash; attendance and GPS tracking history for both promoters and supervisors are visible read-only too, not just the dashboard and reports</span>
+            <span><strong>Sees the field, not just sales.</strong> Attendance and location history for promoters and supervisors are visible too</span>
           </li>
         </ul>
       </div>
@@ -940,47 +1046,231 @@
       <div class="section-head">
         <span class="eyebrow">Staff management</span>
         <h2>Keep the field honest, and keep promoters informed.</h2>
-        <p class="lede">The rules that stop shifts being gamed, and the workflows that keep a team of promoters and supervisors running without a phone call.</p>
+        <p class="lede">Simple rules that stop shifts being gamed, and workflows that keep the team running without a phone call.</p>
       </div>
       <div class="rules">
-        <div class="rule"><h3>One open shift at a time</h3><p>A promoter can be assigned to concurrent activations, but checked in to only one, anywhere. No double claimed shifts.</p></div>
-        <div class="rule"><h3>On time versus late</h3><p>Every check-in is timed against the planned shift start plus a 10 minute grace, and recorded as on time or late.</p></div>
-        <div class="rule"><h3>Leave, requested from the shift</h3><p>Promoters submit time off from the app, the "reports to" person approves it in the portal, and the decision shows back up on the phone.</p></div>
-        <div class="rule"><h3>Supervisor routes and QA</h3><p>Plan a supervisor's outlet visits on a calendar, and hold them to a per campaign QA checklist across nine categories.</p></div>
-        <div class="rule"><h3>Performance per promoter</h3><p>Overall performance, attendance, total sales, best day and brand contribution over any date range.</p></div>
-        <div class="rule"><h3>Geofence is a soft flag</h3><p>A check-in outside the radius is never blocked. It is marked "location unverified" for a human to review.</p></div>
+        <div class="rule"><h3>One open shift at a time</h3><p>A promoter can be assigned to several activations, but checked in to only one at a time. No double claimed shifts.</p></div>
+        <div class="rule"><h3>On time versus late</h3><p>Every check-in is compared with the shift start, allowing a short grace period, and marked on time or late.</p></div>
+        <div class="rule"><h3>Leave, requested from the shift</h3><p>Promoters ask for time off in the app, their manager approves it in the portal, and the answer shows up on the phone.</p></div>
+        <div class="rule"><h3>Supervisor routes and QA</h3><p>Plan a supervisor's outlet visits on a calendar, and hold them to a quality checklist for each campaign.</p></div>
+        <div class="rule"><h3>Performance per promoter</h3><p>Sales, attendance and best day for each promoter, over any dates.</p></div>
+        <div class="rule"><h3>Location checks flag, never block</h3><p>A check-in away from the outlet is never blocked. It is marked "location unverified" for a person to review.</p></div>
       </div>
     </div>
   </section>
 
-  <div class="band-ink" id="vision">
-    <div class="wrap" style="padding-block:clamp(3.75rem,8vw,6.5rem)">
-      <span class="eyebrow on-ink">Where Campaign Buddy is going</span>
-      <h2 style="font-size:clamp(1.75rem,3.4vw,2.6rem);margin-top:14px">Intelligence on top of clean field data.</h2>
-      <p class="lede" style="margin-top:14px;max-width:44em">Campaign Buddy already captures structured, dated, geo verified data from every outlet every day. That is the hard part, and it is the foundation for a layer of intelligence built for the sponsor's sales and marketing teams.</p>
-      <span class="vision-note">Directional. Shared so you know where a pilot is heading</span>
-      <div class="vision-grid">
-        <div class="vision-card"><span class="n">Forecasting</span><h3>Sales and demand forecasting</h3><p>Project SKU and outlet sales from the campaign's own history, flag outlets drifting off target early, and suggest where to move stock.</p></div>
-        <div class="vision-card"><span class="n">Summarisation</span><h3>Field insight summaries</h3><p>Turn a week of promoter remarks, competitor notes and custom field values into a written briefing for the brand team.</p></div>
-        <div class="vision-card"><span class="n">Integrity</span><h3>Anomaly and fraud signals</h3><p>Surface implausible sales, suspicious check-in patterns and attendance gaming before they reach a report.</p></div>
-        <div class="vision-card"><span class="n">Analytics</span><h3>Ask in plain language</h3><p>Put a question to the campaign in plain English and get the answer, not a pivot table to build.</p><div class="q">"Which outlets beat their target last week, and which are trending down?"</div></div>
+  <div class="band-ink ci-band" id="intelligence">
+    <div class="wrap">
+      <div class="ci-head">
+        <span class="eyebrow on-ink">CB Intelligence</span>
+        <h2>Ask your campaign anything. Or let AI run the rounds.</h2>
+        <p class="lede">CB Intelligence is AI native from the ground up. Admins and sponsors connect the AI chat assistant they already use to their live campaigns, then ask questions, keep digging with follow ups, or hand the daily monitoring and reviews to AI agents that report back.</p>
+        <span class="vision-note">Future focused. Shared so you know where a pilot is heading</span>
+      </div>
+
+      <div class="ci-demo">
+        <div class="ci-tabs" role="tablist" aria-label="Example conversations">
+          <button class="ci-tab" role="tab" id="ci-tab-sponsor" aria-controls="ci-panel" aria-selected="true" data-scn="sponsor">
+            <span class="who">Sponsor</span>
+            <span class="ttl">How is my campaign going?</span>
+            <span class="dsc">Live outlets, sales against target, and where to focus the brand next.</span>
+          </button>
+          <button class="ci-tab" role="tab" id="ci-tab-admin" aria-controls="ci-panel" aria-selected="false" data-scn="admin">
+            <span class="who">Admin</span>
+            <span class="ttl">Set it up. Then watch it for me.</span>
+            <span class="dsc">Plan a new activation in a sentence, approve it, and put an agent on the monitoring.</span>
+          </button>
+          <button class="ci-tab" role="tab" id="ci-tab-anomaly" aria-controls="ci-panel" aria-selected="false" data-scn="anomaly">
+            <span class="who">Admin</span>
+            <span class="ttl">Does anything look off?</span>
+            <span class="dsc">Odd sales, check-in patterns and stock gaps, surfaced and followed up.</span>
+          </button>
+        </div>
+
+        <div>
+          <div class="ci-window" role="tabpanel" id="ci-panel" aria-live="off">
+            <div class="ci-bar">
+              <div class="l"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8H20V14" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Your AI assistant</div>
+              <span class="ci-conn">Connected to Radiance Q3 Push</span>
+            </div>
+
+            <div class="ci-body" id="ci-body">
+
+              <!-- Sponsor -->
+              <div class="ci-convo on" data-scn="sponsor">
+                <div class="ci-msg user"><div class="bub">How is my campaign going?</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Checked live outlets and today's sales</span>
+                    <p>Radiance Q3 Push is on track. <b>24 outlets are live today</b>, up from 21 yesterday, and sales so far are <b>LKR 1.94M</b>, up 8.4% on yesterday.</p>
+                    <div class="ci-stats">
+                      <div class="ci-stat"><div class="l">Outlets live</div><div class="n">24</div><div class="d">Up 3</div></div>
+                      <div class="ci-stat"><div class="l">Sales today</div><div class="n">1.94M</div><div class="d">Up 8.4%</div></div>
+                      <div class="ci-stat"><div class="l">Weekly target</div><div class="n">106%</div><div class="d">Ahead</div></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">What do sales look like so far, outlet by outlet?</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Compared every outlet with its target</span>
+                    <p>Week to date you are at <b>LKR 8.7M against an LKR 8.2M target</b>. Strongest and weakest outlets:</p>
+                    <div class="ci-bars">
+                      <div class="ci-bar-row"><span>Keells Rajagiriya</span><span class="ci-track"><span class="ci-fill" style="width:100%"></span></span><b>128%</b></div>
+                      <div class="ci-bar-row"><span>CCC Food Hall</span><span class="ci-track"><span class="ci-fill" style="width:88%"></span></span><b>112%</b></div>
+                      <div class="ci-bar-row"><span>Nawala Retail Outlet</span><span class="ci-track"><span class="ci-fill low" style="width:69%"></span></span><b>88%</b></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">Based on what the team has collected, where should I focus my brand strategy?</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Read 312 promoter remarks, sales and footfall</span>
+                    <p>Three things stand out:</p>
+                    <ul class="ci-list">
+                      <li><div class="h"><span class="ci-tag success">Opportunity</span>Evenings carry the campaign</div><p>5 to 8 pm delivers 41% of sales, yet 6 outlets have a single promoter in that window.</p></li>
+                      <li><div class="h"><span class="ci-tag info">Shopper voice</span>People keep asking for a trial size</div><p>It came up in 64 remarks, mostly at supermarkets. Worth testing a sampling offer.</p></li>
+                      <li><div class="h"><span class="ci-tag pending">Competitor</span>A rival discount at Nawala</div><p>Promoters flagged it 4 times, and it is your only outlet below target.</p></li>
+                    </ul>
+                    <p class="ci-note">Want a one page briefing on this for your brand team?</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin: set up and monitor -->
+              <div class="ci-convo" data-scn="admin">
+                <div class="ci-msg user"><div class="bub">Set up a four weekend activation across our Kandy outlets starting Saturday 3 October, using whoever is free.</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Checked Kandy outlets, promoter availability and leave</span>
+                    <p>Here is the plan. <b>Nothing is saved until you approve it.</b></p>
+                    <div class="ci-card">
+                      <div class="ch">Kandy Weekend Push<span>3 to 25 Oct, Saturdays and Sundays</span></div>
+                      <dl>
+                        <dt>Outlets</dt><dd>8 in Kandy</dd>
+                        <dt>Promoters</dt><dd>6 available, 2 on leave the first Sunday</dd>
+                        <dt>Supervisor</dt><dd>Ishara Fernando</dd>
+                        <dt>Gaps</dt><dd>2 outlets have no Sunday cover</dd>
+                      </dl>
+                      <div class="acts"><span class="ci-fake-btn go">Approve and create</span><span class="ci-fake-btn">Change something</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">Approve it. Cover the Sunday gaps with promoters from Ishara's team.</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Created the activation and assigned the shifts</span>
+                    <p>Done. <b>Kandy Weekend Push is set up</b>, with all 8 outlets covered on both days. The shifts are on the promoters' phones.</p>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">Keep an eye on it for me. Tell me if anything slips.</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <p>On it. Each weekend morning I will check who has checked in and how sales are pacing, and I will only message you when something needs a decision.</p>
+                    <ul class="ci-list">
+                      <li><div class="h"><span class="ci-tag success">Agent scheduled</span>Kandy weekend watch</div><p>Saturdays and Sundays, 8:30 am. Reports exceptions only.</p></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin: anomalies -->
+              <div class="ci-convo" data-scn="anomaly">
+                <div class="ci-msg user"><div class="bub">Does anything look off this week?</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Compared sales, check-ins and stock across 24 outlets</span>
+                    <p>Three things are worth a look:</p>
+                    <ul class="ci-list">
+                      <li><div class="h"><span class="ci-tag alert">Sales spike</span>Nugegoda Superstore</div><p>Tuesday sales were LKR 480K, about four times a normal day, while footfall stayed flat.</p></li>
+                      <li><div class="h"><span class="ci-tag pending">Check-in pattern</span>Nawala Retail Outlet</div><p>Two promoters checked in from the same spot, 380 m from the outlet, six mornings running.</p></li>
+                      <li><div class="h"><span class="ci-tag pending">Stock gap</span>Kohuwala Mini Mart</div><p>60 units reported sold, but only 12 units of stock movement recorded.</p></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">Tell me more about the first one.</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Opened Tuesday's entries for Nugegoda Superstore</span>
+                    <p>Three entries of about LKR 150K each were logged within 10 minutes, all after 9 pm. The outlet's usual day is around LKR 115K. It could be a late bulk entry or a typing error, but it is worth a person checking.</p>
+                    <p class="ci-note">Suggested next step: ask the supervisor to verify it tomorrow morning.</p>
+                  </div>
+                </div>
+                <div class="ci-msg user"><div class="bub">Ask Ishara to verify it.</div></div>
+                <div class="ci-msg ai"><span class="av"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                  <div class="bub">
+                    <span class="ci-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Task sent to Ishara Fernando</span>
+                    <p>Done. Ishara will check the Nugegoda entries first thing tomorrow, and I will tell you what comes back.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <div class="ci-input" aria-hidden="true"><span>Ask about your campaign</span><span class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+          </div>
+          <div class="ci-foot">
+            <span>Illustrative conversations on sample campaign data.</span>
+            <button class="ci-replay" id="ci-replay" type="button">Replay</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ci-modes">
+        <div class="ci-mode"><span class="n">01</span><h3>Ask</h3><p>Put any question to the campaign in plain English, then keep going with follow ups. No dashboard to build, no export to wrangle.</p><div class="q">"Which outlets are trending down this week?"</div></div>
+        <div class="ci-mode"><span class="n">02</span><h3>Direct</h3><p>Set up, adjust and schedule campaign work by saying what you want. You see the plan first and nothing changes until you approve it.</p><div class="q">"Move Sunday cover to Ishara's team."</div></div>
+        <div class="ci-mode"><span class="n">03</span><h3>Delegate</h3><p>Hand the daily rounds to AI agents that review, monitor and flag. You hear about the exceptions, not the routine.</p><div class="q">"Watch attendance and sales pace every morning."</div></div>
       </div>
     </div>
   </div>
+
+  <section id="agents" style="background:var(--card);border-block:1px solid var(--line)">
+    <div class="wrap">
+      <div class="agents-grid">
+        <div>
+          <span class="eyebrow">Agents on shift</span>
+          <h2>A team member that never misses the morning check.</h2>
+          <p class="lede">Agents work through the same campaign data your office team sees. They review attendance, watch sales pace, look for anything unusual and write the weekly briefing. When something needs a person, they tell you, with the detail to act on it.</p>
+        </div>
+        <div>
+          <div class="agent-panel">
+            <div class="ph"><b>Agents on Radiance Q3 Push</b><span>Illustrative</span></div>
+            <div class="agent-row"><span class="agent-dot"></span><div><div class="t">Attendance watch</div><div class="s">21 of 24 promoters are in. 3 are late and their supervisors have been asked to follow up.</div></div><span class="when">Daily, 8:30 am</span></div>
+            <div class="agent-row"><span class="agent-dot"></span><div><div class="t">Sales pace monitor</div><div class="s">22 outlets are on pace. Nawala Retail Outlet is behind and has been flagged.</div></div><span class="when">Hourly, 10 am to 9 pm</span></div>
+            <div class="agent-row"><span class="agent-dot warn"></span><div><div class="t">Anomaly watch</div><div class="s">1 unusual sales entry is waiting for your review.</div></div><span class="when">Always on</span></div>
+            <div class="agent-row"><span class="agent-dot"></span><div><div class="t">Weekly brand review</div><div class="s">The briefing for the Radiance brand team is drafted and ready to send.</div></div><span class="when">Mondays, 9 am</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="agents-trust">
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 9a7 7 0 1014 0A7 7 0 002 9z" stroke="currentColor" stroke-width="1.4"/><path d="M6 9.2l2 2 4-4.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div><strong>You stay in control</strong><span>Changes are shown to you first and only happen after you approve them. Nothing is done quietly in the background.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 2l6 2v4c0 4-2.7 6.7-6 8-3.3-1.3-6-4-6-8V4l6-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <div><strong>Same permissions as CB Office</strong><span>Sponsors can look. Admins can act. Personal details like ID and bank information stay hidden from the assistant.</span></div>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v8H8l-3 3v-3H3V4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <div><strong>Bring your own AI</strong><span>Use the chat assistant your team already works in. There is no new tool to learn and no new login for your sponsors to manage.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section id="proven">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Proven in the field</span>
         <h2>Shaped by real activations, not generic field-service software.</h2>
-        <p class="lede">The model, the defaults and the workflows come from how in-store activation programmes actually run: a promoter on a shelf, a supervisor on a route, a brand team that wants yesterday's numbers this morning.</p>
+        <p class="lede">It works the way in-store activations actually run: a promoter on a shelf, a supervisor on a route, a brand team that wants yesterday's numbers this morning.</p>
       </div>
       <div class="stat-band">
-        <div class="s"><div class="v">40+</div><div class="k">outlets on a single activation</div></div>
-        <div class="s"><div class="v">300+</div><div class="k">GPS verified check-ins a week</div></div>
         <div class="s"><div class="v">Same day</div><div class="k">sales visible from every outlet</div></div>
+        <div class="s"><div class="v">Live</div><div class="k">attendance and location as they happen</div></div>
+        <div class="s"><div class="v">One place</div><div class="k">for promoters, supervisors and sponsors</div></div>
       </div>
-      <p class="disclaimer">Aggregate figures shown for illustration.</p>
     </div>
   </section>
 
@@ -989,32 +1279,24 @@
       <div class="section-head">
         <span class="eyebrow">Why the numbers hold up</span>
         <h2>Modern where it helps. Boring where it counts.</h2>
-        <p class="lede">A field platform is only as good as the numbers it produces. These are the guarantees that keep them trustworthy.</p>
+        <p class="lede">Numbers only help if people trust them. These are the guarantees behind ours.</p>
       </div>
       <div class="trust-grid">
         <div class="trust-item">
           <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 2l6 2v4c0 4-2.7 6.7-6 8-3.3-1.3-6-4-6-8V4l6-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-          <div><strong>Permissions you can actually rely on</strong><span>A supervisor or sponsor login stays read-only everywhere, not just on the screens built to show it that way.</span></div>
+          <div><strong>Permissions you can actually rely on</strong><span>Sponsor and supervisor logins are view-only everywhere, not just on some screens.</span></div>
         </div>
         <div class="trust-item">
           <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 13l4-4 3 3 5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div><strong>Numbers that are never stale</strong><span>Every total is worked out fresh each time you look, so a correction shows up everywhere at once, with no old figure left behind to cause confusion.</span></div>
+          <div><strong>Numbers that are never stale</strong><span>Totals are worked out fresh each time you look, so a correction shows up everywhere at once.</span></div>
         </div>
         <div class="trust-item">
           <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M6 9l2 2 4-4M9 2l6 2v4c0 4-2.7 6.7-6 8-3.3-1.3-6-4-6-8V4l6-2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          <div><strong>Clear, plain-English errors</strong><span>When an entry is wrong, the app says exactly what to fix, not a cryptic failure someone has to call the agency about.</span></div>
+          <div><strong>Clear, plain errors</strong><span>When an entry is wrong, the app says exactly what to fix.</span></div>
         </div>
         <div class="trust-item">
           <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M9 5v4l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <div><strong>Promoters never get logged out mid-shift</strong><span>Even on patchy in-store wifi, a shift in progress stays signed in, so a dropped connection never costs you a day's data.</span></div>
-        </div>
-        <div class="trust-item">
-          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v10H3zM3 7h12" stroke="currentColor" stroke-width="1.4"/></svg>
-          <div><strong>Checked before every release</strong><span>Every change is tested against the rules that actually run a campaign, targets, shifts, geofencing, before it ever reaches your team.</span></div>
-        </div>
-        <div class="trust-item">
-          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <div><strong>Access only ever grows on purpose</strong><span>Naming a supervisor on an activation widens their access and confirms it on screen. Nothing is ever quietly taken away.</span></div>
+          <div><strong>Promoters stay signed in</strong><span>Even on patchy in-store wifi, a shift in progress stays signed in, so a dropped connection never costs you a day's data.</span></div>
         </div>
       </div>
       <p class="trust-tag">The parts that face the field feel new. The parts that hold the data are <b>deliberately unexciting.</b></p>
@@ -1071,13 +1353,13 @@
         <a href="#platform">The two apps</a>
         <a href="#lifecycle">Campaign lifecycle</a>
         <a href="#field">Field insight</a>
-        <a href="#trust">Engineering</a>
+        <a href="#trust">Reliability</a>
       </div>
       <div class="foot-col">
         <h4>Audiences</h4>
         <a href="#sponsors">For sponsors</a>
         <a href="#staff">Staff management</a>
-        <a href="#vision">Vision</a>
+        <a href="#intelligence">Intelligence</a>
         <a href="#pilot">Start a pilot</a>
       </div>
       <div class="foot-col">
@@ -1106,6 +1388,98 @@
       links.addEventListener('click', function (e) {
         if (e.target.tagName === 'A') { links.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }
       });
+    }
+
+    // CB Intelligence: animated chat replays. The full conversations are plain HTML,
+    // so with no JS (or reduced motion) everything shows at once.
+    var ciBody = document.getElementById('ci-body');
+    if (ciBody) {
+      var ciTabs = Array.prototype.slice.call(document.querySelectorAll('.ci-tab'));
+      var ciConvos = Array.prototype.slice.call(ciBody.querySelectorAll('.ci-convo'));
+      var ciReplay = document.getElementById('ci-replay');
+      var ciReduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ciRun = 0, ciCurrent = 'sponsor', ciStarted = false;
+      var ciAv = '<span class="av"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+
+      var ciSleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+      var ciConvo = function (name) { return ciConvos.filter(function (c) { return c.getAttribute('data-scn') === name; })[0]; };
+      ciBody.style.position = 'relative';
+      ciConvos.forEach(function (c) {
+        Array.prototype.forEach.call(c.querySelectorAll('.ci-msg.user .bub'), function (b) { b.setAttribute('data-full', b.textContent); });
+      });
+
+      var ciReset = function (c) {
+        Array.prototype.forEach.call(c.children, function (m) {
+          m.classList.remove('ci-hide', 'ci-enter');
+          if (m.getAttribute('data-typing')) { m.parentNode.removeChild(m); return; }
+          var b = m.querySelector('.user .bub, .bub');
+          if (m.classList.contains('user') && b) { b.textContent = b.getAttribute('data-full'); }
+        });
+      };
+      var ciScrollTo = function (m) {
+        var bottom = m.offsetTop + m.offsetHeight - ciBody.clientHeight + 16;
+        ciBody.scrollTop = Math.max(0, Math.min(bottom, m.offsetTop - 12));
+      };
+
+      var ciPlay = async function (name) {
+        var id = ++ciRun;
+        ciCurrent = name;
+        ciTabs.forEach(function (t) {
+          var on = t.getAttribute('data-scn') === name;
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.setAttribute('tabindex', on ? '0' : '-1');
+        });
+        ciConvos.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-scn') === name); ciReset(c); });
+        var c = ciConvo(name);
+        ciBody.scrollTop = 0;
+        if (ciReduce) { return; }
+        var msgs = Array.prototype.slice.call(c.children);
+        msgs.forEach(function (m) { m.classList.add('ci-hide'); });
+        await ciSleep(500);
+        for (var i = 0; i < msgs.length; i++) {
+          if (id !== ciRun) { return; }
+          var m = msgs[i];
+          if (m.classList.contains('user')) {
+            var b = m.querySelector('.bub'), full = b.getAttribute('data-full');
+            b.textContent = '';
+            m.classList.remove('ci-hide'); m.classList.add('ci-enter'); ciScrollTo(m);
+            for (var k = 2; k <= full.length + 1; k += 2) {
+              if (id !== ciRun) { return; }
+              b.textContent = full.slice(0, k);
+              await ciSleep(24);
+            }
+            await ciSleep(450);
+          } else {
+            var t = document.createElement('div');
+            t.className = 'ci-msg ai ci-enter'; t.setAttribute('data-typing', '1');
+            t.innerHTML = ciAv + '<div class="bub"><span class="ci-dots"><i></i><i></i><i></i></span></div>';
+            c.insertBefore(t, m); ciScrollTo(t);
+            await ciSleep(1000);
+            if (id !== ciRun) { return; }
+            c.removeChild(t);
+            m.classList.remove('ci-hide'); m.classList.add('ci-enter'); ciScrollTo(m);
+            await ciSleep(1500 + Math.min(2200, m.textContent.length * 4));
+          }
+        }
+      };
+
+      ciTabs.forEach(function (t, idx) {
+        t.addEventListener('click', function () { ciStarted = true; ciPlay(t.getAttribute('data-scn')); });
+        t.addEventListener('keydown', function (e) {
+          var d = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : (e.key === 'ArrowUp' || e.key === 'ArrowLeft') ? -1 : 0;
+          if (!d) { return; }
+          e.preventDefault();
+          var n = ciTabs[(idx + d + ciTabs.length) % ciTabs.length];
+          n.focus(); n.click();
+        });
+      });
+      if (ciReplay) { ciReplay.addEventListener('click', function () { ciStarted = true; ciPlay(ciCurrent); }); }
+      if ('IntersectionObserver' in window) {
+        var ciIo = new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting && !ciStarted) { ciStarted = true; ciPlay(ciCurrent); ciIo.disconnect(); }
+        }, { threshold: 0.4 });
+        ciIo.observe(document.getElementById('ci-panel'));
+      }
     }
 
     var WA_NUMBER = '94712184846';
