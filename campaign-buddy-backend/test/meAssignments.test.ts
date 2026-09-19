@@ -173,3 +173,33 @@ describe("GET /v1/me/assignments[/today] — soft-deleted activations hidden", (
     expect(today.status).toBe(404);
   });
 });
+
+// A soft-deleted outlet (or campaign) whose activation row is still live must
+// not surface as a pickable assignment on the app's outlet chooser.
+describe("GET /v1/me/assignments — soft-deleted outlet/campaign hidden", () => {
+  it("excludes an assignment whose outlet was deleted, keeps the live one", async () => {
+    const promoter = await makeStaff();
+    const token = await staffToken(promoter.mobileUsername, "field-pw");
+    const deleted = await makeActivation(promoter.id, "On deleted outlet", "Outlet Gone", false);
+    const live = await makeActivation(promoter.id, "On live outlet", "Outlet Kept", false);
+    await prisma.outlet.update({ where: { id: deleted.outletId }, data: { deletedAt: new Date() } });
+
+    const res = await request(app).get("/v1/me/assignments").set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].assignmentId).toBe(live.id);
+  });
+
+  it("excludes an assignment whose campaign was deleted", async () => {
+    const promoter = await makeStaff();
+    const token = await staffToken(promoter.mobileUsername, "field-pw");
+    const deleted = await makeActivation(promoter.id, "In dead campaign", "Outlet C", false);
+    const live = await makeActivation(promoter.id, "In live campaign", "Outlet D", false);
+    await prisma.campaign.update({ where: { id: deleted.campaignId }, data: { deletedAt: new Date() } });
+
+    const res = await request(app).get("/v1/me/assignments").set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].assignmentId).toBe(live.id);
+  });
+});

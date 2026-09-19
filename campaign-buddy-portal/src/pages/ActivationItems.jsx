@@ -21,7 +21,7 @@ export default function ActivationItems() {
     try {
       const [ciRes, itemsRes, aiRes] = await Promise.all([
         campaignsApi.items(campaignId),
-        itemsApi.list(),
+        itemsApi.list({ pageSize: 1000 }),
         activationsApi.items(campaignId, activationId),
       ]);
       setCampaignItems(ciRes?.data || []);
