@@ -44,7 +44,7 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
 // covering the same activation each have their own row, so every record lookup
 // below is by `staffId`, never by "records on my activations".
 function activationStaffScope(staffId: string) {
-  return { OR: [{ staffId }, { supervisorStaffId: staffId }] };
+  return { OR: [{ staffId }, { supervisorStaffId: staffId }], deletedAt: null };
 }
 
 const dayKey = (activationId: string, staffId: string, date: Date) => ({ activationId_staffId_date: { activationId, staffId, date } });
@@ -149,6 +149,9 @@ router.post(
           checkInAt: { not: null },
           checkOutAt: { not: null },
           date: today,
+          // Done for the day at THIS outlet. A promoter holding several same-day
+          // outlets (outlet chooser) checks out of one and works the next.
+          activationId: activation.id,
         },
       });
       if (checkedOutToday) {
