@@ -7,15 +7,15 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
-import * as statsApi from '@/api/stats';
-import * as salesFieldsApi from '@/api/salesFields';
-import * as salesSummaryApi from '@/api/salesSummary';
+import * as offlineQueries from '@/offline/queries';
+import { useOfflineSave, savedMessage, saveErrorMessage } from '@/offline/useOfflineSave';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/Button';
 import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'StatsUpdate'>;
 
@@ -23,12 +23,14 @@ export function StatsUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const { checkedIn } = useAttendance();
-  const statsQuery = useQuery({ queryKey: ['stats', 'today'], queryFn: statsApi.getTodayStats });
+  const { save } = useOfflineSave();
+  const { showToast } = useToast();
+  const statsQuery = useQuery({ queryKey: ['stats', 'today'], queryFn: offlineQueries.getTodayStats });
   // Tester count (client doc D) — a campaign-toggled day-scope custom field,
   // not a DailyStats column, but reps enter it the same way as footfall/
   // approached/conversion, so it gets the same Stepper UI here rather than a
   // plain text box buried in the Daily Sales screen's "Additional details".
-  const salesFieldsQuery = useQuery({ queryKey: ['sales-fields'], queryFn: salesFieldsApi.getSalesFields });
+  const salesFieldsQuery = useQuery({ queryKey: ['sales-fields'], queryFn: offlineQueries.getSalesFields });
   const testerField = salesFieldsQuery.data?.day.find((f) => f.key === 'tester');
 
   // Local editable copies — seeded from the fetched values once loaded.
@@ -52,22 +54,25 @@ export function StatsUpdateScreen() {
     approached && approached > 0 ? Math.round(((converted ?? 0) / approached) * 100) : 0;
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      Promise.all([
-        statsApi.updateTodayStats({
+    mutationFn: async () => {
+      const outcomes = await Promise.all([
+        save('stats', 'today', {
           footFall: footFall ?? undefined,
           approached: approached ?? undefined,
           converted: converted ?? undefined,
         }),
-        testerField ? salesSummaryApi.updateSalesSummary({ customFields: { tester: tester ?? 0 } }) : null,
-      ]),
-    onSuccess: () => {
+        testerField ? save('salesSummary', 'today', { customFields: { tester: tester ?? 0 } }) : null,
+      ]);
+      return outcomes.includes('queued') ? 'queued' : 'sent';
+    },
+    onSuccess: (outcome) => {
       queryClient.invalidateQueries({ queryKey: ['stats', 'today'] });
       queryClient.invalidateQueries({ queryKey: ['sales-fields'] });
       queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
+      showToast(savedMessage(outcome));
       navigation.goBack();
     },
-    onError: (err) => Alert.alert('Could not save', getApiErrorMessage(err)),
+    onError: (err) => Alert.alert('Could not save', saveErrorMessage(err)),
   });
 
   if (footFall === null || approached === null || converted === null) {
@@ -86,6 +91,9 @@ export function StatsUpdateScreen() {
             <Text style={styles.subtitle}>{new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
           </View>
         </Pressable>
+        <View style={styles.badgeRow}>
+          <SyncStatusBadge onPress={() => navigation.navigate('SyncStatus')} />
+        </View>
       </View>
 
       <KeyboardAwareScrollView
@@ -206,6 +214,7 @@ const styles = StyleSheet.create({
   frame: { flex: 1, backgroundColor: colors.surface },
   topnav: { backgroundColor: colors.ink, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  badgeRow: { marginTop: spacing.sm },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.white },
   subtitle: { color: '#9FB2AA', fontSize: 12.5, marginTop: 2 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxxl },

@@ -7,8 +7,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import type { AttendanceStackParamList } from '@/navigation/types';
 import { useAttendance } from '@/context/AttendanceContext';
-import * as profileApi from '@/api/profile';
-import * as attendanceApi from '@/api/attendance';
+import * as offlineQueries from '@/offline/queries';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { CheckoutConfirmSheet } from '@/components/CheckoutConfirmSheet';
@@ -28,8 +28,8 @@ export function AttendanceScreen() {
   const [checkoutSheetVisible, setCheckoutSheetVisible] = useState(false);
   const [elapsed, setElapsed] = useState('');
 
-  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: profileApi.getTodayAssignment });
-  const historyQuery = useQuery({ queryKey: ['attendance', 'history'], queryFn: () => attendanceApi.getAttendanceHistory('week') });
+  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: offlineQueries.getTodayAssignment });
+  const historyQuery = useQuery({ queryKey: ['attendance', 'history'], queryFn: offlineQueries.getAttendanceHistory });
 
   // Live "on shift for Xh Ym" ticker, matching the mockup's `.timer` text.
   useEffect(() => {
@@ -71,6 +71,9 @@ export function AttendanceScreen() {
         <Text style={styles.subtitle}>
           {assignmentQuery.data ? `${assignmentQuery.data.campaign.name} · ${assignmentQuery.data.outlet.name}` : ' '}
         </Text>
+        <View style={{ marginTop: spacing.sm }}>
+          <SyncStatusBadge />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -89,6 +92,8 @@ export function AttendanceScreen() {
             </Text>
             {locationVerified === false ? (
               <LocationRow label="You checked in away from the outlet — your supervisor can see this" warn />
+            ) : locationVerified === null ? (
+              <LocationRow label="Location will be verified once you are back online" />
             ) : (
               <LocationRow label="Location verified at check-in" />
             )}

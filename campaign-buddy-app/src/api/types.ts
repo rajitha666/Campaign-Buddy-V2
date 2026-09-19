@@ -201,6 +201,8 @@ export interface StockUpdateRequest {
   otherInterestedCustomers?: number;
   reorderFlag?: boolean;
   customFields?: CustomFieldWrite; // product-scope custom fields (#13)
+  /** Only for a write queued offline and delivered late (see api/stats.ts). */
+  capturedAt?: string;
 }
 
 export interface StockEntry {

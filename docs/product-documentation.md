@@ -488,10 +488,67 @@ Reached from the Attendance tab.
 Avatar with initials, name, role label ("Field Promoter"), employee ID, phone,
 "reports to". **Log out** button.
 
-### 5.10 What CB Mobile deliberately does not do
+### 5.10 Working offline
 
-Reads are cached and refetched on change (TanStack Query). There is no offline
-write queue — the promoter needs a connection to check in, save stock, and confirm.
+A promoter can check in, record the day and check out with no signal.
+**Check-in / check-out, stock updates, footfall / approached / converted (and
+Tester), and the daily sales remarks + confirmation** are written to the phone
+first, so saving never waits on the network, then sent automatically — in order
+(check-in first, data, confirmation, check-out last) — when the connection
+returns. Each save shows a message: *Saved ✓* (reached the server almost
+instantly) or *Saved on this phone — will sync automatically*.
+
+- **Times are the real times.** An offline check-in/out is sent with the moment it
+  happened (`capturedAt`, api-spec §5) so on-time/late and shift length are
+  judged on that, not on when the phone reconnected. The server only trusts it for
+  a queued action, never in the future, and only within the same day; ordinary
+  online check-ins keep server time.
+- **Indicator.** A pill on Home / Attendance / Performance / Update stock / Today's
+  stats / Daily sales reads Online, Offline (+ how many changes are waiting),
+  Syncing… or *n need attention*. Tapping it — or Profile → **Sync status** —
+  shows the connection, when data was last updated, what is waiting, and a **Sync
+  now** button. After a sync a toast says *All changes synced ✓*. While offline,
+  Home says how old the data on screen is.
+- **Reopening offline.** If the app is closed and reopened with no signal, the
+  promoter goes straight back in **while they have a shift today that isn't over**
+  (assigned and not checked out). There is no offline password login — a fresh
+  sign-in always needs a connection. The 5-minute inactivity sign-out is held off
+  while offline before check-out for the same reason, and tries to send anything
+  waiting before it signs out.
+- **Reads offline.** Assignment, stats, products, product details, sales summary,
+  performance and attendance history show the last copy fetched today, with the
+  promoter's own queued edits applied; on a slow link the saved copy is shown after
+  a few seconds instead of waiting. Totals the server computes (e.g. Total sales)
+  refresh after sync. Product photos are pre-loaded while there is signal.
+- **Edits delivered after the shift closed.** Every queued write also carries the
+  time the edit was made (`capturedAt`, api-spec §6). If the shift has closed by
+  the time it arrives (the rep's own check-out, or the end-of-day auto-checkout), the
+  server still accepts it when that moment falls inside the shift, and refuses
+  anything from outside it. While the shift is open the field is ignored.
+- **Location trail.** GPS points recorded offline are kept (up to ~1000) with their
+  capture time and uploaded after the check-in reaches the server.
+- **Office changed the same number.** If head office edits a stat or stock figure
+  the promoter also edited offline, the promoter's edit is *not* silently applied.
+  It appears on Sync status under *Changed at the office while you were offline*
+  with **Use office numbers** / **Keep mine** (conflict check compares against what
+  the server held when the offline edit began; edits sent within a minute are not
+  checked).
+- **Rejected or failing edits.** A server refusal (e.g. shift closed elsewhere) is
+  listed under *Could not be saved to the server* with the reason and **Try again**
+  / **Discard**. Temporary server trouble (5xx, busy) and expired sessions are *not*
+  treated as refusals — they are retried with backoff (30 s → 2 min), and give up
+  after 8 failed tries.
+- **Logging out with unsent changes** asks first; they stay on the phone (kept per
+  user) and are sent at the next sign-in. Cached data is cleared at logout only when
+  nothing is waiting. The saved profile and shift state live in the device's secure
+  store.
+- **Background sync.** On a build that includes it, the OS also runs a sync roughly
+  every 15+ minutes when the app is closed (timing is up to the OS).
+- **Still online-only.** Signing in, time-off requests, supervisors' route
+  check-in/out and product-details for items never opened.
+
+### 5.11 What CB Mobile deliberately does not do
+
 Location pings are foreground-only by design (battery + privacy).
 
 ---
@@ -534,8 +591,9 @@ These are the rules a marketing/sales or training writer needs to state correctl
 - **Access scoping below campaign/outlet** — no brand- or distributor-level
   scoping.
 - **Fuller HR profile / staff photos** — the 11-field HR set is final for v3.
-- **Offline writes on mobile** — a connection is required for check-in, stock
-  saves and confirmation.
+- **Offline password login on mobile** — a fresh sign-in needs a connection (an
+  existing session resumes offline, see §5.10). Supervisor route check-in/out is
+  also online-only.
 - **Custom sales fields in the SKU / brand reports** — custom-field values show on
   the Sales page, the "Last 7 Days" panel and the CSV export, but not yet in the
   aggregate Reports screens.

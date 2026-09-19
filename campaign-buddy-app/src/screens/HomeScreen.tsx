@@ -10,9 +10,11 @@ import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendance } from '@/context/AttendanceContext';
 import { openPromoterGuide } from '@/lib/trainingGuide';
-import * as profileApi from '@/api/profile';
-import * as statsApi from '@/api/stats';
-import * as productsApi from '@/api/products';
+import * as offlineQueries from '@/offline/queries';
+import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useNetwork } from '@/offline/NetworkContext';
+import { useSyncEngine } from '@/offline/SyncContext';
+import { formatSyncedAgo } from '@/lib/syncLabel';
 import { Avatar } from '@/components/Avatar';
 import { StatTile } from '@/components/StatTile';
 import { ProductListItem } from '@/components/ProductListItem';
@@ -28,22 +30,24 @@ export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const { checkedIn, checkInAt } = useAttendance();
+  const { isOnline } = useNetwork();
+  const { lastSyncedAt } = useSyncEngine();
   const [statsExpanded, setStatsExpanded] = useState(false);
 
   const assignmentQuery = useQuery({
     queryKey: ['assignment', 'today'],
-    queryFn: profileApi.getTodayAssignment,
+    queryFn: offlineQueries.getTodayAssignment,
   });
 
   const statsQuery = useQuery({
     queryKey: ['stats', 'today'],
-    queryFn: statsApi.getTodayStats,
+    queryFn: offlineQueries.getTodayStats,
   });
 
   const productsQuery = useQuery({
     queryKey: ['products', assignmentQuery.data?.campaign.id, assignmentQuery.data?.outlet.id],
     queryFn: () =>
-      productsApi.getCampaignProducts(
+      offlineQueries.getCampaignProducts(
         assignmentQuery.data!.campaign.id,
         assignmentQuery.data!.outlet.id
       ),
@@ -71,6 +75,12 @@ export function HomeScreen() {
             <Text style={styles.greetSub}>
               {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
+            <View style={{ marginTop: spacing.sm }}>
+              <SyncStatusBadge onLight onPress={() => navigation.navigate('SyncStatus')} />
+            </View>
+            {!isOnline && (
+              <Text style={styles.staleNote}>Showing what was saved {formatSyncedAgo(lastSyncedAt).toLowerCase()}</Text>
+            )}
           </View>
           <View style={styles.greetActions}>
             <Pressable
@@ -278,6 +288,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   greetSub: { fontSize: fontSize.base, color: colors.textMuted, marginTop: 2 },
+  staleNote: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
   campaignCard: { backgroundColor: colors.ink, borderRadius: radius.xxl, padding: spacing.lg, marginTop: spacing.lg },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   locText: { color: '#A9BDB4', fontSize: 12.5 },

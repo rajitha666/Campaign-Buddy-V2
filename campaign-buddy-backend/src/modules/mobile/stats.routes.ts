@@ -54,9 +54,11 @@ router.patch(
   asyncHandler(async (req, res) => {
     const activation = await currentActivation(req.staff!.sub);
     if (!activation) throw new ApiError(422, "NO_ACTIVATION", "No active assignment for today — contact your supervisor");
-    await requireOpenShift(activation);
+    const { footFall, approached, converted, capturedAt } = req.body as {
+      footFall?: number; approached?: number; converted?: number; capturedAt?: string;
+    };
+    await requireOpenShift(activation, capturedAt);
     const today = dayDate();
-    const { footFall, approached, converted } = req.body as { footFall?: number; approached?: number; converted?: number };
 
     const stats = await prisma.dailyStats.upsert({
       where: { activationId_date: { activationId: activation.id, date: today } },

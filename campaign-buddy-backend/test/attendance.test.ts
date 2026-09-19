@@ -381,3 +381,74 @@ describe("attendance — mobile response shapes", () => {
     expect(ok.body.data).toMatchObject({ campaignProductAssignmentId: cpaId, remainingStock: 6 });
   });
 });
+
+describe("attendance — offline-captured times (capturedAt)", () => {
+  // Midpoint between UTC midnight and now: always earlier than now, always the same UTC day.
+  const earlierToday = () => new Date((dayDate().getTime() + Date.now()) / 2);
+
+  it("a queued check-in / check-out is recorded at the time the promoter actually did it", async () => {
+    const { staff, outlet, activation } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
+    const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
+    const inAt = earlierToday();
+    const outAt = new Date((inAt.getTime() + Date.now()) / 2);
+
+    await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo, capturedAt: inAt.toISOString() }).expect(201);
+    await request(app).post("/v1/attendance/check-out").set(auth).send({ ...geo, capturedAt: outAt.toISOString() }).expect(200);
+
+    const rec = await prisma.attendanceRecord.findUniqueOrThrow({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(rec.checkInAt?.toISOString()).toBe(inAt.toISOString());
+    expect(rec.checkOutAt?.toISOString()).toBe(outAt.toISOString());
+  });
+
+  it("a check-out time earlier than the check-in is clamped to the check-in", async () => {
+    const { staff, outlet, activation } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
+    const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
+    const inAt = earlierToday();
+
+    await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo, capturedAt: inAt.toISOString() }).expect(201);
+    await request(app)
+      .post("/v1/attendance/check-out")
+      .set(auth)
+      .send({ ...geo, capturedAt: new Date(inAt.getTime() - 60_000).toISOString() })
+      .expect(200);
+
+    const rec = await prisma.attendanceRecord.findUniqueOrThrow({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(rec.checkOutAt?.toISOString()).toBe(inAt.toISOString());
+  });
+
+  it("a plain online check-in keeps server time — `timestamp` alone is never trusted", async () => {
+    const { staff, outlet, activation } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
+    const before = Date.now();
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ latitude: outlet.latitude, longitude: outlet.longitude, timestamp: earlierToday().toISOString() })
+      .expect(201);
+    const rec = await prisma.attendanceRecord.findUniqueOrThrow({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(rec.checkInAt!.getTime()).toBeGreaterThanOrEqual(before - 1000);
+  });
+
+  it("a capturedAt in the future is ignored", async () => {
+    const { staff, outlet, activation } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
+    const before = Date.now();
+    await request(app)
+      .post("/v1/attendance/check-in")
+      .set(auth)
+      .send({ latitude: outlet.latitude, longitude: outlet.longitude, capturedAt: new Date(before + 3_600_000).toISOString() })
+      .expect(201);
+    const rec = await prisma.attendanceRecord.findUniqueOrThrow({
+      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    });
+    expect(rec.checkInAt!.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
+  });
+});

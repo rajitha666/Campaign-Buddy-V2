@@ -48,7 +48,8 @@
           "backgroundColor": "#12241F"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-background-task"
     ]
   }
 }

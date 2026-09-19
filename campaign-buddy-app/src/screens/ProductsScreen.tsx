@@ -7,8 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import type { HomeStackParamList } from '@/navigation/types';
-import * as profileApi from '@/api/profile';
-import * as productsApi from '@/api/products';
+import * as offlineQueries from '@/offline/queries';
 import { ProductListItem } from '@/components/ProductListItem';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
@@ -22,11 +21,11 @@ export function ProductsScreen() {
   const [reorderOnly, setReorderOnly] = useState(false);
   const [search, setSearch] = useState('');
 
-  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: profileApi.getTodayAssignment });
+  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: offlineQueries.getTodayAssignment });
   const productsQuery = useQuery({
     queryKey: ['products', assignmentQuery.data?.campaign.id, assignmentQuery.data?.outlet.id, reorderOnly],
     queryFn: () =>
-      productsApi.getCampaignProducts(assignmentQuery.data!.campaign.id, assignmentQuery.data!.outlet.id, {
+      offlineQueries.getCampaignProducts(assignmentQuery.data!.campaign.id, assignmentQuery.data!.outlet.id, {
         reorderOnly,
       }),
     enabled: !!assignmentQuery.data,

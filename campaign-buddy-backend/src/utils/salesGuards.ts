@@ -5,15 +5,27 @@ import { dayDate } from "./dates";
 import { prisma } from "./prisma";
 import { ApiError } from "./apiResponse";
 
-/** Throws 422 NOT_CHECKED_IN unless this activation has an open shift today. */
-export async function requireOpenShift(activation: { id: string }) {
+/**
+ * Throws 422 NOT_CHECKED_IN unless this activation has an open shift today.
+ *
+ * A write the mobile app recorded offline can reach the server after the shift
+ * has closed (the rep's own check-out, or the end-of-day auto-checkout). The app
+ * sends `capturedAt` — when the edit was really made — and such a write is
+ * accepted if that moment falls INSIDE the shift. Without `capturedAt`, or from
+ * outside the shift, a closed shift still refuses.
+ */
+export async function requireOpenShift(activation: { id: string }, capturedAt?: string) {
   const record = await prisma.attendanceRecord.findUnique({
     where: { activationId_date: { activationId: activation.id, date: dayDate() } },
   });
-  if (!record?.checkInAt || record.checkOutAt) {
-    throw new ApiError(422, "NOT_CHECKED_IN", "You need to check in before entering sales data");
-  }
+  if (!record?.checkInAt) throw notCheckedIn();
+  if (!record.checkOutAt) return;
+  const at = capturedAt ? new Date(capturedAt) : null;
+  const insideShift = !!at && !Number.isNaN(at.getTime()) && at >= record.checkInAt && at <= record.checkOutAt;
+  if (!insideShift) throw notCheckedIn();
 }
+
+const notCheckedIn = () => new ApiError(422, "NOT_CHECKED_IN", "You need to check in before entering sales data");
 
 // Issue #53 — performance day counters must reflect working days, since
 // outlets are closed on weekends. Counts Mon–Fri inclusive; weekend-only

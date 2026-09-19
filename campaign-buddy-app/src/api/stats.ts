@@ -36,6 +36,8 @@ export interface StatsUpdateRequest {
   footFall?: number;
   approached?: number;
   converted?: number;
+  /** Only for a write queued offline and delivered late: when it was really made (server accepts it if inside the shift). */
+  capturedAt?: string;
 }
 
 export async function updateTodayStats(payload: StatsUpdateRequest): Promise<DailyStats> {

@@ -15,24 +15,37 @@ import { AppState, Alert, type AppStateStatus } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { INACTIVITY_TIMEOUT_MS, hasExceededInactivityTimeout } from '@/lib/inactivity';
 
-export function useInactivityLogout() {
+const SUSPENDED_RECHECK_MS = 30_000;
+
+export function useInactivityLogout({
+  suspended = false,
+  beforeSignOut,
+}: { suspended?: boolean; beforeSignOut?: () => Promise<void> } = {}) {
   const { logout } = useAuth();
   const lastActiveAt = useRef(Date.now());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // While suspended (offline mid-shift — the rep couldn't log back in) the sign-out
+  // is deferred; it fires on the next check once they're back online or checked out.
+  const suspendedRef = useRef(suspended);
+  suspendedRef.current = suspended;
 
   const signOutForInactivity = useCallback(async () => {
+    // Give anything still waiting to sync a last chance to reach the server.
+    await beforeSignOut?.().catch(() => {});
     await logout();
     Alert.alert('Signed out', "You've been signed out after 5 minutes of inactivity. Please log in again.");
-  }, [logout]);
+  }, [logout, beforeSignOut]);
 
   const scheduleCheck = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     const remaining = Math.max(INACTIVITY_TIMEOUT_MS - (Date.now() - lastActiveAt.current), 0);
     timer.current = setTimeout(() => {
-      if (hasExceededInactivityTimeout(lastActiveAt.current, Date.now())) {
-        signOutForInactivity();
-      } else {
+      if (!hasExceededInactivityTimeout(lastActiveAt.current, Date.now())) {
         scheduleCheck();
+      } else if (suspendedRef.current) {
+        timer.current = setTimeout(scheduleCheck, SUSPENDED_RECHECK_MS);
+      } else {
+        signOutForInactivity();
       }
     }, remaining);
   }, [signOutForInactivity]);
@@ -46,10 +59,10 @@ export function useInactivityLogout() {
     scheduleCheck();
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (next !== 'active') return;
-      if (hasExceededInactivityTimeout(lastActiveAt.current, Date.now())) {
-        signOutForInactivity();
-      } else {
+      if (!hasExceededInactivityTimeout(lastActiveAt.current, Date.now())) {
         recordActivity();
+      } else if (!suspendedRef.current) {
+        signOutForInactivity();
       }
     });
     return () => {

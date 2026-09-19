@@ -10,6 +10,7 @@ export async function getTodaySalesSummary(): Promise<SalesSummary> {
 export async function updateSalesSummary(payload: {
   remarks?: string;
   customFields?: CustomFieldWrite;
+  capturedAt?: string;
 }): Promise<SalesSummary> {
   const { data } = await apiClient.patch<{ data: SalesSummary }>('/sales-summary/today', payload);
   return data.data;
@@ -26,6 +27,7 @@ export async function updateSalesSummary(payload: {
 export async function confirmSalesSummary(payload: {
   remarks?: string;
   customFields?: CustomFieldWrite;
+  capturedAt?: string;
 } = {}): Promise<SalesSummary> {
   const { data } = await apiClient.post<{ data: SalesSummary }>(
     '/sales-summary/today/confirm',

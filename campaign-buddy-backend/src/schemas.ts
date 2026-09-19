@@ -67,6 +67,8 @@ export const s = {
     latitude: lat,
     longitude: lng,
     timestamp: z.string().optional(),
+    // Set only by the mobile app for a check-in it queued while offline (see utils/clientTime.ts).
+    capturedAt: z.string().optional(),
   }),
   checkOut: z.object({
     // Which route outlet to check out of (supervisors have several
@@ -75,6 +77,7 @@ export const s = {
     latitude: lat.optional(),
     longitude: lng.optional(),
     timestamp: z.string().optional(),
+    capturedAt: z.string().optional(),
     salesSummaryConfirmed: z.boolean().optional(),
   }),
   locationPing: z.object({
@@ -88,7 +91,8 @@ export const s = {
   }),
   statsUpdate: z
     .object({ footFall: nonNegInt, approached: nonNegInt, converted: nonNegInt })
-    .partial(),
+    .partial()
+    .extend({ capturedAt: z.string().optional() }),
   stockUpdate: z
     .object({
       openingStock: nonNegInt,
@@ -97,15 +101,18 @@ export const s = {
       reorderFlag: z.boolean(),
       customFields: z.record(z.string(), z.unknown()).optional(),
     })
-    .partial(),
+    .partial()
+    .extend({ capturedAt: z.string().optional() }),
   salesSummaryRemarks: z.object({
     remarks: z.string().optional(),
     customFields: z.record(z.string(), z.unknown()).optional(),
+    capturedAt: z.string().optional(),
   }),
   salesSummaryConfirm: z
     .object({
       remarks: z.string().optional(),
       customFields: z.record(z.string(), z.unknown()).optional(),
+      capturedAt: z.string().optional(),
     })
     .partial(),
   timeOffCreate: z.object({

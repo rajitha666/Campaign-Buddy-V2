@@ -7,6 +7,7 @@ import { haversineDistanceMeters } from "../../utils/geo";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { checkInStatus, resolveShiftStart } from "../../utils/attendanceWindow";
+import { resolveCapturedAt } from "../../utils/clientTime";
 import type { AttendanceRecord } from "@prisma/client";
 
 const router = Router();
@@ -89,10 +90,11 @@ router.post(
   "/attendance/check-in",
   validate({ body: s.checkIn }),
   asyncHandler(async (req, res) => {
-    const { assignmentId, latitude, longitude } = req.body as {
+    const { assignmentId, latitude, longitude, capturedAt } = req.body as {
       assignmentId?: string;
       latitude: number;
       longitude: number;
+      capturedAt?: string;
     };
 
     const today = dayDate();
@@ -184,7 +186,9 @@ router.post(
     // activation's own override if set, else the campaign's configured shift,
     // else the hardcoded ideal window as a last resort (enhancement: per-
     // campaign shift windows).
-    const now = new Date();
+    // A check-in the app queued offline is judged (late/on-time) and recorded at
+    // the time the promoter actually did it, not when it finally synced.
+    const now = resolveCapturedAt(capturedAt);
     const status = checkInStatus(
       resolveShiftStart(activation, activation.campaign, today),
       now
@@ -225,10 +229,11 @@ router.post(
   "/attendance/check-out",
   validate({ body: s.checkOut }),
   asyncHandler(async (req, res) => {
-    const { assignmentId, latitude, longitude } = req.body as {
+    const { assignmentId, latitude, longitude, capturedAt } = req.body as {
       assignmentId?: string;
       latitude?: number;
       longitude?: number;
+      capturedAt?: string;
     };
     const today = dayDate();
 
@@ -274,10 +279,14 @@ router.post(
       where: { activationId_date: { activationId: activation.id, date: today } },
     });
 
+    // Queued-offline check-out: record when it really happened, never before the check-in.
+    const capturedOutAt = resolveCapturedAt(capturedAt);
+    const checkOutAt = capturedOutAt < record.checkInAt ? record.checkInAt : capturedOutAt;
+
     const updated = await prisma.attendanceRecord.update({
       where: { id: record.id },
       data: {
-        checkOutAt: new Date(),
+        checkOutAt,
         checkOutLat: latitude ?? null,
         checkOutLng: longitude ?? null,
         salesSummaryConfirmedAtCheckout: summary?.confirmed ?? false,

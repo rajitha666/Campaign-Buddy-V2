@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { BottomSheetModal } from './BottomSheetModal';
 import { ProductThumb } from './ProductThumb';
-import * as productsApi from '@/api/products';
+import * as offlineQueries from '@/offline/queries';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 interface ProductDetailsSheetProps {
@@ -21,7 +21,7 @@ interface ProductDetailsSheetProps {
 export function ProductDetailsSheet({ visible, onClose, productId, bandColor }: ProductDetailsSheetProps) {
   const detailsQuery = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => productsApi.getProductDetails(productId!),
+    queryFn: () => offlineQueries.getProductDetails(productId!),
     enabled: visible && !!productId,
   });
 

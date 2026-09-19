@@ -12,6 +12,7 @@ import { ProductsScreen } from '@/screens/ProductsScreen';
 import { ProductUpdateScreen } from '@/screens/ProductUpdateScreen';
 import { StatsUpdateScreen } from '@/screens/StatsUpdateScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { SyncStatusScreen } from '@/screens/SyncStatusScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -23,6 +24,7 @@ export function HomeStack() {
       <Stack.Screen name="ProductUpdate" component={ProductUpdateScreen} />
       <Stack.Screen name="StatsUpdate" component={StatsUpdateScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="SyncStatus" component={SyncStatusScreen} />
     </Stack.Navigator>
   );
 }

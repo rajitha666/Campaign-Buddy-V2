@@ -412,7 +412,8 @@ Optional `?assignmentId=` — for supervisor mode, where several Activations can
 | `assignmentId` | string (UUID) | yes |
 | `latitude` | number | yes |
 | `longitude` | number | yes |
-| `timestamp` | date-time | yes — device clock |
+| `timestamp` | date-time | yes — device clock; informational only, the server records its own time |
+| `capturedAt` | date-time | no — **set only for a check-in the app queued while offline** and sent later. The server then records and judges (`on_time`/`late`) the check-in at this time instead of arrival time. Trusted only if it is not in the future (2 min clock-skew tolerance) and falls on the same UTC day as the request; otherwise ignored |
 
 Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `geofenceRadiusMeters`) and `status` (`on_time` vs `late`, vs. `shiftStart` + grace period).
 **Response `201`** → the created `AttendanceRecord`.
@@ -432,7 +433,8 @@ Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `ge
 |---|---|---|---|
 | `latitude` | number | yes | |
 | `longitude` | number | yes | |
-| `timestamp` | date-time | yes | |
+| `timestamp` | date-time | yes | informational, as for check-in |
+| `capturedAt` | date-time | no | Only for a check-out queued while offline; same rules as check-in's `capturedAt`, and never earlier than the check-in time (clamped to it) |
 | `salesSummaryConfirmed` | boolean | yes | `true` if the rep tapped **"Yes, check out"** on the confirm popup; `false` is not a valid submission — if the rep taps **"No, confirm sales summary"**, the client does not call this endpoint yet, it navigates to `POST /sales-summary/today/confirm` first, then re-attempts checkout |
 
 **Response `200`** → updated `AttendanceRecord`.
@@ -507,6 +509,8 @@ Used by the Update Today's Stats screen. Client sends the **final absolute value
 { "footFall": 13, "approached": 21, "converted": 12 }
 ```
 **Response `200`** → full updated `DailyStats` object (see §2.7).
+
+**`capturedAt` (all sales writes — this endpoint, `PATCH /products/{id}/stock`, `PATCH /sales-summary/today`, `POST /sales-summary/today/confirm`).** Optional date-time: when the edit was really made. The mobile app sends it on writes it queued locally and delivered later. These endpoints require an open shift (`422 NOT_CHECKED_IN` otherwise); if the shift has **already closed** (the rep's check-out, or the end-of-day auto-checkout) a write is still accepted when `capturedAt` falls between the check-in and check-out times, and refused if it is missing or outside that window. While the shift is open the field is ignored.
 
 ### 6.3 `GET /campaigns/{campaignId}/outlets/{outletId}/products`
 Backs both the Home embedded list and the full Campaign product list. **Response `200`**
