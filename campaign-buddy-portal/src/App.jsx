@@ -19,6 +19,7 @@ import IssueReports from './pages/IssueReports';
 import SystemStatus from './pages/SystemStatus';
 import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
+import SupervisorTaskResults from './pages/SupervisorTaskResults';
 import LiveMap from './pages/LiveMap';
 import NotFound from './pages/NotFound';
 
@@ -66,6 +67,7 @@ export default function App() {
               <Route path="/promoter-list" element={R('promoterListReadOnly')()} />
 
               <Route path="/supervisor-tasks" element={R('supervisorTasks')()} />
+              <Route path="/supervisor-task-results" element={<SupervisorTaskResults />} />
               <Route path="/outlet-attendance" element={R('outletAttendance')()} />
               <Route path="/my-outlet-attendance" element={R('outletAttendance')()} />
               <Route path="/supervisor-attendance" element={R('supervisorAttendance')()} />

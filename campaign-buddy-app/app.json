@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campaign Buddy",
     "slug": "campaign-buddy",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F4F6F3",
@@ -33,6 +33,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Campaign Buddy uses the camera so supervisors can photograph the promotion setup at an outlet.",
+          "photosPermission": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-location",
         {

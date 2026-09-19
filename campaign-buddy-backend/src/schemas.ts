@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { looksLikePhone } from "./utils/phone";
+import { MAX_TASK_IMAGES } from "./utils/supervisorRatings";
 
 // Shared building blocks -----------------------------------------------------
 const id = z.string().min(1);
@@ -378,15 +379,31 @@ export const s = {
   supervisorTaskCreate: z.object({
     category: z.string().min(1),
     task: z.string().min(1),
-    taskType: z.enum(["range", "feedback"]).optional(),
+    taskType: z.enum(["range", "feedback", "photo"]).optional(),
+    imageCount: z.number().int().min(0).max(MAX_TASK_IMAGES).optional(),
   }),
   supervisorTaskUpdate: z
     .object({
       category: z.string().min(1),
       task: z.string().min(1),
-      taskType: z.enum(["range", "feedback"]),
+      taskType: z.enum(["range", "feedback", "photo"]),
+      imageCount: z.number().int().min(0).max(MAX_TASK_IMAGES),
     })
     .partial(),
+  // Mobile: a supervisor saving their answers for one outlet visit. Omitted
+  // rating/feedback are left untouched; an explicit null clears the answer.
+  supervisorChecklistSave: z.object({
+    responses: z
+      .array(
+        z.object({
+          taskId: id,
+          rating: z.number().int().min(1).max(5).nullable().optional(),
+          feedback: z.string().max(2000).nullable().optional(),
+        })
+      )
+      .min(1)
+      .max(100),
+  }),
 
   // ---- Admin: custom sales fields (issue #13) ----
   salesFieldCreate: z

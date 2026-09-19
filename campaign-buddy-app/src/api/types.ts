@@ -98,6 +98,52 @@ export interface SupervisorRoute {
   dateTo: ISODate;
 }
 
+/** One rung of the fixed 1–5 scale a supervisor scores a promoter on. */
+export interface RatingScaleEntry {
+  value: number;
+  label: string;
+  description: string;
+}
+
+export type ChecklistTaskType = 'range' | 'feedback' | 'photo';
+
+/** An outlet-setup photo; `uploadedAt` is the server's clock, not the phone's. */
+export interface ChecklistPhoto {
+  url: string;
+  uploadedAt: ISODateTime;
+}
+
+export interface ChecklistResponse {
+  rating: number | null;
+  feedback: string | null;
+  photos: ChecklistPhoto[];
+}
+
+/** One admin-defined QA task plus today's saved answer for this outlet visit. */
+export interface ChecklistTask {
+  id: UUID;
+  category: string;
+  taskType: ChecklistTaskType;
+  task: string;
+  /** Photos to capture for a `photo` task; 0 otherwise. */
+  imageCount: number;
+  response: ChecklistResponse | null;
+}
+
+/** GET /me/assignments/:id/supervisor-tasks — the checklist for one outlet visit. */
+export interface SupervisorChecklist {
+  ratingScale: RatingScaleEntry[];
+  promoter: { id: UUID; name: string };
+  outlet: { id: UUID; name: string };
+  tasks: ChecklistTask[];
+}
+
+export interface ChecklistAnswer {
+  taskId: UUID;
+  rating?: number | null;
+  feedback?: string | null;
+}
+
 export type AttendanceStatus = 'on_time' | 'late' | 'leave' | 'absent' | 'pending';
 
 export interface AttendanceRecord {

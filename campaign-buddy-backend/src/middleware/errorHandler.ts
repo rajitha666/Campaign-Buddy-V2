@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Prisma } from "@prisma/client";
+import multer from "multer";
 import { ApiError } from "../utils/apiResponse";
 
 // Central error formatter — every route is wrapped in asyncHandler, so any thrown
@@ -9,6 +10,17 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     res.status(err.statusCode).json({
       error: { code: err.code, message: err.message, ...(err.field ? { field: err.field } : {}) },
     });
+    return;
+  }
+
+  // multer rejections (upload too big, unexpected field…) are client mistakes,
+  // not server faults — without this they fall through to a 500.
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "That image is too large. The limit is 5 MB." } });
+      return;
+    }
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: err.message } });
     return;
   }
 

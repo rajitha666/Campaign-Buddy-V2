@@ -6,7 +6,9 @@ import { prisma } from "./prisma";
 import { ApiError } from "./apiResponse";
 
 /**
- * Throws 422 NOT_CHECKED_IN unless this activation has an open shift today.
+ * Throws 422 NOT_CHECKED_IN unless the activation's own promoter has an open
+ * shift today. Sales entry is the promoter's, so a covering supervisor's
+ * check-in on the same activation must not unlock it.
  *
  * A write the mobile app recorded offline can reach the server after the shift
  * has closed (the rep's own check-out, or the end-of-day auto-checkout). The app
@@ -14,9 +16,9 @@ import { ApiError } from "./apiResponse";
  * accepted if that moment falls INSIDE the shift. Without `capturedAt`, or from
  * outside the shift, a closed shift still refuses.
  */
-export async function requireOpenShift(activation: { id: string }, capturedAt?: string) {
+export async function requireOpenShift(activation: { id: string; staffId: string }, capturedAt?: string) {
   const record = await prisma.attendanceRecord.findUnique({
-    where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+    where: { activationId_staffId_date: { activationId: activation.id, staffId: activation.staffId, date: dayDate() } },
   });
   if (!record?.checkInAt) throw notCheckedIn();
   if (!record.checkOutAt) return;

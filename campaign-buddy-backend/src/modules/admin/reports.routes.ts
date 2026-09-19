@@ -259,7 +259,8 @@ router.get(
 
     const rows = activations.map((a) => {
       const confirmed = a.salesSummaries[0]?.confirmed ?? false;
-      const checkedIn = a.attendanceRecords.some((r) => r.checkInAt);
+      // Only the promoter's own check-in counts, not a covering supervisor's on the same activation.
+      const checkedIn = a.attendanceRecords.some((r) => r.staffId === a.staffId && r.checkInAt);
       const status: "completed" | "pending" | "absent" = confirmed ? "completed" : checkedIn ? "pending" : "absent";
       return {
         activationId: a.id,
@@ -331,6 +332,7 @@ router.get(
     const rows = activations.map((a) => {
       const days: Record<number, string> = {};
       for (const rec of a.attendanceRecords) {
+        if (rec.staffId !== a.staffId) continue; // a covering supervisor's visit isn't the promoter's attendance
         const d = new Date(rec.date).getUTCDate(); // @db.Date is stored at UTC midnight
         days[d] =
           rec.status === "leave" ? "L" :

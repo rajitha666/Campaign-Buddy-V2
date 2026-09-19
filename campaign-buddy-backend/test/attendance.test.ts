@@ -86,7 +86,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     expect(reIn.body.error.code).toBe("ALREADY_CHECKED_OUT");
 
     const record = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(record.checkOutAt).not.toBeNull();
   });
@@ -114,7 +114,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     expect(next.body.data.assignmentId).toBe(activation2.id);
 
     const stale = await prisma.attendanceRecord.findUnique({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(stale?.checkOutAt).not.toBeNull();
   });
@@ -135,6 +135,7 @@ describe("attendance — global one-open-shift lock (§5.1)", () => {
     await prisma.attendanceRecord.create({
       data: {
         activationId: activation.id,
+        staffId: staff.id,
         date: yesterday,
         checkInAt: new Date(yesterday.getTime() + 9 * 3600000),
         status: "on_time",
@@ -397,7 +398,7 @@ describe("attendance — offline-captured times (capturedAt)", () => {
     await request(app).post("/v1/attendance/check-out").set(auth).send({ ...geo, capturedAt: outAt.toISOString() }).expect(200);
 
     const rec = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(rec.checkInAt?.toISOString()).toBe(inAt.toISOString());
     expect(rec.checkOutAt?.toISOString()).toBe(outAt.toISOString());
@@ -417,7 +418,7 @@ describe("attendance — offline-captured times (capturedAt)", () => {
       .expect(200);
 
     const rec = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(rec.checkOutAt?.toISOString()).toBe(inAt.toISOString());
   });
@@ -432,7 +433,7 @@ describe("attendance — offline-captured times (capturedAt)", () => {
       .send({ latitude: outlet.latitude, longitude: outlet.longitude, timestamp: earlierToday().toISOString() })
       .expect(201);
     const rec = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(rec.checkInAt!.getTime()).toBeGreaterThanOrEqual(before - 1000);
   });
@@ -447,7 +448,7 @@ describe("attendance — offline-captured times (capturedAt)", () => {
       .send({ latitude: outlet.latitude, longitude: outlet.longitude, capturedAt: new Date(before + 3_600_000).toISOString() })
       .expect(201);
     const rec = await prisma.attendanceRecord.findUniqueOrThrow({
-      where: { activationId_date: { activationId: activation.id, date: dayDate() } },
+      where: { activationId_staffId_date: { activationId: activation.id, staffId: staff.id, date: dayDate() } },
     });
     expect(rec.checkInAt!.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
   });

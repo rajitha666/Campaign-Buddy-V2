@@ -383,6 +383,39 @@ Read-only itinerary from the CB Office "Assign Routes" screen (Backend Spec v3 �
 }
 ```
 
+### Outlet checklist — supervisor mode
+At each outlet a supervisor scores the **promoter** against the campaign's QA checklist (the CB Office "Supervisors → Tasks" template). Every endpoint takes an `assignmentId` from `/me/assignments` and returns `404 NOT_FOUND` unless that Activation has the caller as its `supervisorStaffId` **and** is live today. `range`/`feedback` answers are stored per (task, activation, day) — saving again on the same day updates in place, and each promoter at an outlet is scored separately. **`photo` answers are per outlet**, not per promoter: one set per (task, supervisor, outlet, day), shared by every promoter that supervisor covers at the outlet, so the same display is photographed once and the task's `imageCount` limit is shared. A supervisor visiting several outlets has one independent checklist per outlet. The app offers the checklist once the supervisor has checked in at that outlet today (and keeps it open after check-out, so a forgotten photo can still be added), but the API does not require a check-in.
+
+**`GET /me/assignments/:assignmentId/supervisor-tasks`** — the checklist plus today's saved answers. **Response `200`**
+```json
+{
+  "data": {
+    "ratingScale": [
+      { "value": 1, "label": "Poor", "description": "Well below standard. Needs immediate corrective action." },
+      { "value": 2, "label": "Needs improvement", "description": "Below standard. Clear gaps; follow-up required." },
+      { "value": 3, "label": "Meets standard", "description": "Acceptable. Meets the basic campaign requirement." },
+      { "value": 4, "label": "Good", "description": "Above standard. Only minor room for improvement." },
+      { "value": 5, "label": "Excellent", "description": "Outstanding. Sets the benchmark for other promoters." }
+    ],
+    "promoter": { "id": "s_3", "name": "Kasun Perera" },
+    "outlet": { "id": "o_2", "name": "Keells Rajagiriya" },
+    "tasks": [
+      { "id": "t_1", "category": "Sale", "taskType": "range", "task": "Shelf pricing matches the campaign sheet", "imageCount": 0,
+        "response": { "rating": 4, "feedback": null, "photos": [] } },
+      { "id": "t_3", "category": "Outlet PR", "taskType": "photo", "task": "Photos of the promotion display setup", "imageCount": 2,
+        "response": { "rating": null, "feedback": null, "photos": [{ "url": "/uploads/visit-photos/…jpg", "uploadedAt": "2026-09-18T09:14:03.000Z" }] } }
+    ]
+  }
+}
+```
+`taskType` is `range` (1–5 rating, scale above — fixed for every campaign), `feedback` (free text) or `photo` (`imageCount` photos, 1–10). `response` is `null` until something is saved. Photo `url`s are relative `/uploads/visit-photos/…` paths, resolved like `profilePictureUrl`; `uploadedAt` is the **server's** clock (the phone's clock isn't trusted).
+
+**`PUT /me/assignments/:assignmentId/supervisor-tasks/responses`** — save ratings and feedback. Body `{ "responses": [{ "taskId", "rating"?: 1–5|null, "feedback"?: string|null }] }` (1–100 entries). An omitted field is left untouched; `null` clears it. `rating` is only accepted on `range` tasks and `photo` tasks take no rating/feedback (`400` otherwise); a task from another campaign is `404`. **Response `200`** `{ "data": { "saved": 2 } }`.
+
+**`POST /me/assignments/:assignmentId/supervisor-tasks/:taskId/photos`** — `multipart/form-data`, one image in field `image` — JPEG, PNG, WebP, GIF or HEIC (anything else, including SVG, is `400`), **≤ 5 MB** (`413 PAYLOAD_TOO_LARGE` above that). The stored extension comes from the verified image type, never the client's filename. `photo` tasks only; `400` once the outlet's `imageCount` is reached. Photos upload immediately rather than with the save above. The app resizes to ≤ 1600 px on the long side and re-encodes as JPEG before uploading, and offers the camera only (no gallery). **Response `200`** `{ "data": { "photos": [{ "url", "uploadedAt" }] } }` — the task's full list.
+
+**`DELETE /me/assignments/:assignmentId/supervisor-tasks/:taskId/photos?url=<photoUrl>`** — remove one photo (so it can be retaken). `404` if the url isn't on this visit's answer. **Response `200`** `{ "data": { "photos": [...] } }`.
+
 ---
 
 ## 5. Attendance & Location
@@ -697,6 +730,9 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
 | GET | `/me/assignments/today` | Home |
 | GET | `/me/assignments` | Supervisor mode — My Route (today's visits) |
 | GET | `/me/supervisor-routes` | Supervisor mode — My Route (planned itinerary) |
+| GET | `/me/assignments/:assignmentId/supervisor-tasks` | Supervisor mode — Outlet checklist |
+| PUT | `/me/assignments/:assignmentId/supervisor-tasks/responses` | Supervisor mode — Outlet checklist (save) |
+| POST / DELETE | `/me/assignments/:assignmentId/supervisor-tasks/:taskId/photos` | Supervisor mode — Outlet checklist (photos) |
 | GET | `/attendance/today` | Home, Attendance |
 | POST | `/attendance/check-in` | Attendance (pre-shift) |
 | POST | `/attendance/check-out` | Attendance (checkout popup) |

@@ -56,6 +56,11 @@ export type SupervisorTabParamList = {
   ProfileTab: undefined;
 };
 
+export type SupervisorRouteStackParamList = {
+  SupervisorRoute: undefined;
+  SupervisorChecklist: { assignmentId: string; outletName: string; campaignName: string };
+};
+
 export type AuthStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;

@@ -9,6 +9,7 @@ import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { computeTotalSales } from "../../utils/salesCalc";
 import { activeDefsForCampaign, dayValueMap, serializeWithValues } from "../../utils/salesFieldStore";
+import { loadChecklistData, average } from "../../utils/supervisorChecklist";
 
 const router = Router();
 
@@ -33,31 +34,25 @@ router.get(
     const allowed = outletIdsAllowed(req);
     if (outletId) assertOutletAllowed(req, outletId);
 
+    // `role` is the role of the person who CHECKED IN (the record's staff) — a
+    // supervisor covering a promoter's activation has their own record on it.
+    const where = {
+      activation: {
+        campaignId: req.params.campaignId,
+        ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
+      },
+      ...(role ? { staff: { is: { userType: role } } } : {}),
+      ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
+    };
     const paged = paginate(req);
     const [rows, total] = await Promise.all([
       prisma.attendanceRecord.findMany({
-        where: {
-          activation: {
-            campaignId: req.params.campaignId,
-            ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
-            ...(role ? { staff: { is: { userType: role } } } : {}),
-          },
-          ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
-        },
-        include: { activation: { include: { staff: true, outlet: true } } },
+        where,
+        include: { staff: true, activation: { include: { staff: true, outlet: true } } },
         orderBy: { date: "desc" },
         ...paged,
       }),
-      prisma.attendanceRecord.count({
-        where: {
-          activation: {
-            campaignId: req.params.campaignId,
-            ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
-            ...(role ? { staff: { is: { userType: role } } } : {}),
-          },
-          ...(dateFrom || dateTo ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } } : {}),
-        },
-      }),
+      prisma.attendanceRecord.count({ where }),
     ]);
     res.json(okList(rows, total));
   })
@@ -267,17 +262,18 @@ router.get(
         checkOutAt: null,
         activation: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) },
       },
-      include: { activation: { include: { staff: true, outlet: true } } },
+      include: { staff: true, activation: { include: { outlet: true } } },
     });
 
     const positions = await Promise.all(
       openShifts.map(async (shift) => {
+        // The pinging person's own latest position, not anyone else's on the same activation.
         const lastPing = await prisma.trackingPing.findFirst({
-          where: { activationId: shift.activationId },
+          where: { activationId: shift.activationId, staffId: shift.staffId },
           orderBy: { capturedAt: "desc" },
         });
         return {
-          staffName: shift.activation.staff.fullName,
+          staffName: shift.staff.fullName,
           outletName: shift.activation.outlet.name,
           checkedInSince: shift.checkInAt,
           lastPosition: lastPing ? { latitude: lastPing.latitude, longitude: lastPing.longitude, capturedAt: lastPing.capturedAt } : null,
@@ -391,8 +387,16 @@ router.delete(
   })
 );
 
-// ---- Supervisor Tasks (QA checklist) — model existed since v3, endpoints added
-// for portal completion. Portal-only config; the mobile app does not read it. ----
+// ---- Supervisor Tasks (QA checklist) — the per-campaign template that
+// supervisors fill in on mobile during outlet visits (see
+// mobile/supervisorChecklist.routes.ts). A `photo` task carries the number of
+// setup photos to capture; range/feedback tasks always have imageCount 0. ----
+function resolveTaskImageCount(taskType: "range" | "feedback" | "photo", imageCount: number | undefined): number {
+  if (taskType !== "photo") return 0;
+  if (!imageCount || imageCount < 1) throw validationError("imageCount must be at least 1 for a photo task", "imageCount");
+  return imageCount;
+}
+
 router.get(
   "/campaigns/:campaignId/supervisor-tasks",
   requireCampaignAccess,
@@ -411,10 +415,16 @@ router.post(
   requireRole("adm", "usr"),
   validate({ body: s.supervisorTaskCreate }),
   asyncHandler(async (req, res) => {
-    const { category, taskType, task } = req.body as { category: string; taskType: "range" | "feedback"; task: string };
+    const { category, taskType, task, imageCount } = req.body as {
+      category: string;
+      taskType?: "range" | "feedback" | "photo";
+      task: string;
+      imageCount?: number;
+    };
     if (!category || !task) throw validationError("category and task are required");
+    const type = taskType ?? "feedback";
     const created = await prisma.supervisorTask.create({
-      data: { campaignId: req.params.campaignId, category, taskType: taskType ?? "feedback", task },
+      data: { campaignId: req.params.campaignId, category, taskType: type, task, imageCount: resolveTaskImageCount(type, imageCount) },
     });
     res.status(201).json(ok(created));
   })
@@ -426,16 +436,129 @@ router.patch(
   requireRole("adm", "usr"),
   validate({ body: s.supervisorTaskUpdate }),
   asyncHandler(async (req, res) => {
-    const { category, taskType, task } = req.body as { category?: string; taskType?: "range" | "feedback"; task?: string };
+    const { category, taskType, task, imageCount } = req.body as {
+      category?: string;
+      taskType?: "range" | "feedback" | "photo";
+      task?: string;
+      imageCount?: number;
+    };
+    const existing = await prisma.supervisorTask.findUnique({ where: { id: req.params.id } });
+    if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Supervisor task");
+    const type = taskType ?? existing.taskType;
+    if (type !== existing.taskType && (await prisma.supervisorTaskResponse.count({ where: { taskId: existing.id } })) > 0) {
+      throw validationError("This task already has answers, so its type can't change. Add a new task instead.", "taskType");
+    }
     const updated = await prisma.supervisorTask.update({
       where: { id: req.params.id },
       data: {
         ...(category !== undefined ? { category } : {}),
-        ...(taskType !== undefined ? { taskType } : {}),
         ...(task !== undefined ? { task } : {}),
+        taskType: type,
+        imageCount: resolveTaskImageCount(type, imageCount ?? existing.imageCount),
       },
     });
     res.json(ok(updated));
+  })
+);
+
+// Results of the mobile checklist: one row per task answered per outlet visit,
+// newest first. Outlet-scoped users only see their granted outlets.
+router.get(
+  "/campaigns/:campaignId/supervisor-task-responses",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const { date, dateFrom, dateTo, outletId } = req.query as { date?: string; dateFrom?: string; dateTo?: string; outletId?: string };
+    if (outletId) assertOutletAllowed(req, outletId);
+    const allowed = outletIdsAllowed(req);
+    const dateFilter = date
+      ? { date: dayDate(date) }
+      : dateFrom || dateTo
+        ? { date: { ...(dateFrom ? { gte: dayDate(dateFrom) } : {}), ...(dateTo ? { lte: dayDate(dateTo) } : {}) } }
+        : {};
+    const where = {
+      task: { campaignId: req.params.campaignId },
+      activation: outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {},
+      ...dateFilter,
+    };
+    const paged = paginate(req);
+    const [rows, total] = await Promise.all([
+      prisma.supervisorTaskResponse.findMany({
+        where,
+        include: { task: true, supervisor: true, photos: true, activation: { include: { staff: true, outlet: true } } },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        ...paged,
+      }),
+      prisma.supervisorTaskResponse.count({ where }),
+    ]);
+    const shaped = rows.map((r) => ({
+      id: r.id,
+      taskId: r.taskId,
+      date: r.date,
+      supervisorName: r.supervisor.fullName,
+      // The response row is tied to the supervisor's visit (activation), so the
+      // visit's promoter is known even for outlet-level photo tasks.
+      promoterName: r.activation.staff.fullName,
+      outletName: r.activation.outlet.name,
+      category: r.task.category,
+      taskType: r.task.taskType,
+      task: r.task.task,
+      rating: r.rating,
+      feedback: r.feedback,
+      photos: r.photos
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map((p) => ({ url: p.url, uploadedAt: p.createdAt })),
+    }));
+    res.json(okList(shaped, total));
+  })
+);
+
+// Score summary + incomplete-visit flag for the Task Results page: average
+// rating overall / per promoter / per outlet / per category, and the visits
+// whose checklist isn't fully answered. Only `range` tasks carry ratings.
+router.get(
+  "/campaigns/:campaignId/supervisor-task-summary",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const { dateFrom, dateTo, outletId } = req.query as { dateFrom?: string; dateTo?: string; outletId?: string };
+    if (outletId) assertOutletAllowed(req, outletId);
+    const { responses, visits } = await loadChecklistData({
+      campaignId: req.params.campaignId,
+      from: dateFrom ? dayDate(dateFrom) : undefined,
+      to: dateTo ? dayDate(dateTo) : undefined,
+      outletIds: outletIdsAllowed(req),
+      outletId,
+    });
+
+    const rated = responses.filter((r) => r.rating != null);
+    const group = <K extends string>(keyOf: (r: (typeof rated)[number]) => { key: K; extra: Record<string, unknown> }) => {
+      const groups = new Map<K, { extra: Record<string, unknown>; values: number[] }>();
+      for (const r of rated) {
+        const { key, extra } = keyOf(r);
+        const g = groups.get(key) ?? { extra, values: [] };
+        g.values.push(r.rating as number);
+        groups.set(key, g);
+      }
+      return [...groups.values()].map((g) => ({ ...g.extra, average: average(g.values), ratings: g.values.length }));
+    };
+
+    const incompleteVisits = visits
+      .filter((v) => v.answered < v.total)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map((v) => ({
+        date: v.date, outletName: v.outletName, promoterName: v.promoterName, supervisorName: v.supervisorName,
+        answered: v.answered, total: v.total,
+      }));
+
+    res.json(
+      ok({
+        overall: { average: average(rated.map((r) => r.rating as number)), ratings: rated.length },
+        byPromoter: group((r) => ({ key: r.activation.staffId, extra: { staffId: r.activation.staffId, name: r.activation.staff.fullName } })),
+        byOutlet: group((r) => ({ key: r.outletId, extra: { outletId: r.outletId, outletName: r.activation.outlet.name } })),
+        byCategory: group((r) => ({ key: r.task.category, extra: { category: r.task.category } })),
+        visits: { total: visits.length, complete: visits.length - incompleteVisits.length, incomplete: incompleteVisits.length },
+        incompleteVisits,
+      })
+    );
   })
 );
 
@@ -487,7 +610,8 @@ router.get(
     }
 
     const absent = [...byStaff.values()].map(({ activations: staffActivations, first }) => {
-      const records = staffActivations.map((a) => a.attendanceRecords[0]).filter(Boolean);
+      // Only the promoter's own record counts — a covering supervisor's check-in on the same activation doesn't make them present.
+      const records = staffActivations.map((a) => a.attendanceRecords.find((r) => r.staffId === a.staffId)).filter(Boolean);
       const checkedIn = records.some((r) => r!.checkInAt);
       return {
         activationId: first.id,
@@ -508,8 +632,9 @@ router.get(
   })
 );
 
-// ---- Outlet Attendance — supervisor visit log: attendance rows for activations
-// whose assigned staff is a supervisor. ----
+// ---- Outlet Attendance — supervisor visit log: the attendance rows supervisors
+// themselves created (record staff = a supervisor), whether they visit as the
+// covering supervisor of a promoter's activation or as the activation's staff. ----
 router.get(
   "/campaigns/:campaignId/outlet-attendance",
   requireCampaignAccess,
@@ -518,9 +643,9 @@ router.get(
     if (outletId) assertOutletAllowed(req, outletId);
     const allowed = outletIdsAllowed(req);
     const where: Record<string, unknown> = {
+      staff: { is: { userType: "supervisor" } },
       activation: {
         campaignId: req.params.campaignId,
-        staff: { is: { userType: "supervisor" } },
         ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
       },
     };
@@ -529,7 +654,7 @@ router.get(
     const [rows, total] = await Promise.all([
       prisma.attendanceRecord.findMany({
         where,
-        include: { activation: { include: { staff: true, outlet: true } } },
+        include: { staff: true, activation: { include: { staff: true, outlet: true } } },
         orderBy: { date: "desc" },
         ...paged,
       }),
@@ -537,8 +662,8 @@ router.get(
     ]);
     const shaped = rows.map((r) => ({
       id: r.id,
-      supervisorName: r.activation.staff.fullName,
-      staffName: r.activation.staff.fullName,
+      supervisorName: r.staff.fullName,
+      staffName: r.staff.fullName,
       outletName: r.activation.outlet.name,
       date: r.date,
       checkInAt: r.checkInAt,
@@ -558,11 +683,12 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
 
   const dateFilter = date ? dayBounds(date) : undefined;
 
+  // The trail belongs to whoever sent the pings (ping.staff), not to the activation's promoter.
   const where = {
     ...(dateFilter ? { capturedAt: dateFilter } : {}),
+    staff: { is: { userType, ...(staffId ? { id: staffId } : {}) } },
     activation: {
       campaignId: req.params.campaignId,
-      staff: { is: { userType, ...(staffId ? { id: staffId } : {}) } },
       ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),
     },
   };
@@ -570,7 +696,7 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
   const [rows, total] = await Promise.all([
     prisma.trackingPing.findMany({
       where,
-      include: { activation: { include: { staff: true, outlet: true } } },
+      include: { staff: true, activation: { include: { outlet: true } } },
       orderBy: { capturedAt: "asc" },
       ...paged,
     }),
@@ -578,8 +704,8 @@ async function trackingHistory(req: any, userType: "promoter" | "supervisor") {
   ]);
   const data = rows.map((p) => ({
     id: p.id,
-    staffId: p.activation.staffId,
-    staffName: p.activation.staff.fullName,
+    staffId: p.staffId,
+    staffName: p.staff.fullName,
     outletName: p.activation.outlet.name,
     latitude: p.latitude,
     longitude: p.longitude,

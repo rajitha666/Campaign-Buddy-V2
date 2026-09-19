@@ -285,7 +285,7 @@ describe("GET /admin/v1/campaigns/:id/reports/sales-status", () => {
 
     // Checks in but hasn't confirmed sales yet -> pending
     await prisma.attendanceRecord.create({
-      data: { activationId: f.activation2.id, date: new Date(today), checkInAt: new Date(), status: "on_time" },
+      data: { activationId: f.activation2.id, staffId: f.activation2.staffId, date: new Date(today), checkInAt: new Date(), status: "on_time" },
     });
     // Confirms sales -> completed (even without an explicit check-in row)
     await prisma.salesSummary.create({
@@ -323,9 +323,9 @@ describe("GET /admin/v1/campaigns/:id/reports/attendance-monthly", () => {
     if (!today.startsWith(month)) return;
     await prisma.attendanceRecord.createMany({
       data: [
-        { activationId: f.activation.id, date: new Date(today), checkInAt: new Date(), status: "on_time" },
-        { activationId: f.activation.id, date: new Date(yesterday), status: "absent" },
-        { activationId: f.activation.id, date: new Date(beforeYesterday), status: "leave" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(today), checkInAt: new Date(), status: "on_time" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(yesterday), status: "absent" },
+        { activationId: f.activation.id, staffId: f.activation.staffId, date: new Date(beforeYesterday), status: "leave" },
       ],
     });
     const res = await request(app)

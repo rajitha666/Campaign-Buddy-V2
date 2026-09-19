@@ -308,10 +308,22 @@ see a read-only **My Campaigns** card view.
   which outlets a supervisor actually visited and when.
 - **Supervisors → Attendance** — supervisors' own check-in log.
 - **Supervisors → Tasks** — a QA checklist template per campaign (category + task
-  type Range/Feedback + the question text). Categories include Sale, Outlet PR,
-  Documentation, Discipline, Competitor Activities, Communication, Capability,
-  Attitude, Attire & Grooming. *(The template is configurable in the portal; the
-  mobile app does not yet consume it — see §7.)*
+  type Range/Feedback/Photo + the question text; a Photo task also sets how many
+  photos to capture). Categories include Sale, Outlet PR, Documentation,
+  Discipline, Competitor Activities, Communication, Capability, Attitude, Attire &
+  Grooming. Supervisors fill it in on the mobile app at each outlet: **Range**
+  scores the promoter 1–5 on a fixed scale (Poor, Needs improvement, Meets
+  standard, Good, Excellent), **Feedback** is free text, **Photo** captures
+  outlet-setup pictures (camera only, shrunk before upload; taken once per outlet
+  and shared by every promoter the supervisor covers there).
+- **Supervisors → Task Results** — for a date range: average score overall and by
+  promoter / outlet / category, a list of **incomplete checklists** (supervisor
+  visits where not every task was answered — including visits with no answers at
+  all), and the full answer log with photo thumbnails
+  (click to enlarge, upload time shown) and an Excel export with photo links. Also
+  available, read-only and limited to their own outlets, to portal supervisors and
+  to clients/sponsors. The promoter's average also appears as **Supervisor QA
+  Score** on their Staff Profile.
 
 ### 4.8 Tracking  *(Admin full; Supervisor/Sponsor get the live map)*
 
@@ -577,8 +589,8 @@ These are the rules a marketing/sales or training writer needs to state correctl
 
 ## 7. Not in this version (deferred, by decision)
 
-- **Supervisor Tasks on mobile** — the QA checklist template is configurable in CB
-  Office, but the mobile app doesn't present it to supervisors yet.
+- **Supervisor checklist offline** — the outlet checklist (ratings, feedback and
+  photos) is online-only; nothing is queued if the supervisor has no signal.
 - **Password-reset delivery** — the "forgot password" screen and endpoint exist,
   but no email/SMS is actually sent.
 - **Portal session refresh** — CB Office users re-login when their session expires

@@ -9,6 +9,7 @@ import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { normalizePhoneField } from "../../utils/phone";
+import { imageExtension, imageFileFilter } from "../../utils/imageUpload";
 
 const router = Router();
 
@@ -22,15 +23,11 @@ const itemImageUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, itemImagesDir),
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-      cb(null, `${req.params.id}-${Date.now()}${ext}`);
+      cb(null, `${req.params.id}-${Date.now()}${imageExtension(file.mimetype)}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) return cb(new ApiError(400, "VALIDATION_ERROR", "Only image files are allowed"));
-    cb(null, true);
-  },
+  fileFilter: imageFileFilter,
 });
 
 function paginate(req: any) {

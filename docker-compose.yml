@@ -33,6 +33,10 @@ services:
       # Staff profile photos — same scheme; without this mount, /uploads/staff
       # 404s inside the container for anything uploaded before it started (#48).
       - ./campaign-buddy-backend/uploads/staff:/app/uploads/staff
+      # Supervisor outlet-checklist photos (evidence of the outlet setup) —
+      # without this mount they live only in the container and are lost the
+      # next time it is rebuilt/redeployed.
+      - ./campaign-buddy-backend/uploads/visit-photos:/app/uploads/visit-photos
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-campaign_buddy}?schema=public
       PORT: 4000
@@ -87,12 +91,14 @@ services:
   # prod hostname differs from the default:
   #   docker compose --profile production build --build-arg \
   #     EXPO_PUBLIC_API_BASE_URL=https://api.campaignbuddy.lk/v1 app
-  # CB Mobile web build; point tunnel hostname (e.g. app.campaignbuddy.lk)
-  # at `http://app:80`. No local ports are exposed.
+  # Locally, EXPO_PUBLIC_API_BASE_URL is read from the root .env (same value
+  # as campaign-buddy-app/.env keeps the two in sync) — see that file.
   app:
     build:
       context: ./campaign-buddy-app
       dockerfile: Dockerfile.web
+      args:
+        EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-https://api.campaignbuddy.lk/v1}
     restart: unless-stopped
     depends_on:
       - backend
