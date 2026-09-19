@@ -1,7 +1,11 @@
 /**
  * Opens when the rep taps "Check out" on the Attendance screen.
  *
- *  - "Yes, check out" -> calls useAttendance().checkOut() directly.
+ *  - "Yes, check out" -> calls useAttendance().checkOut() directly — but a promoter
+ *    can only close a shift once today's sales summary is confirmed (that is what
+ *    frees them to check in at another outlet). We check the confirmed flag
+ *    (local cache, so it works offline) and send them to Sales if it isn't; the
+ *    server refuses with SALES_NOT_CONFIRMED as the backstop.
  *  - "No, confirm sales summary" -> closes this sheet and navigates to the
  *    Sales tab so the rep can review/confirm numbers BEFORE checking out.
  *    Note this does NOT call checkOut() — the rep needs to come back and
@@ -9,14 +13,17 @@
  *    never want to silently check someone out from inside the Sales screen.
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { BottomSheetModal } from './BottomSheetModal';
 import { Button } from './Button';
 import { useAttendance } from '@/context/AttendanceContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
-import { getApiErrorMessage } from '@/api/client';
+import { getApiErrorCode, getApiErrorMessage } from '@/api/client';
+import { confirmAction, showAlert } from '@/lib/showAlert';
+import { useAuth } from '@/context/AuthContext';
+import * as offlineQueries from '@/offline/queries';
 
 interface CheckoutConfirmSheetProps {
   visible: boolean;
@@ -33,16 +40,41 @@ export function CheckoutConfirmSheet({
   assignmentId,
 }: CheckoutConfirmSheetProps) {
   const { checkOut } = useAttendance();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
+  const isSupervisor = user?.role === 'campaign_owner'; // supervisors don't enter sales
+
+  // Unknown (no cache, no signal) counts as confirmed: the server decides.
+  async function salesConfirmed(): Promise<boolean> {
+    try {
+      return !!(await offlineQueries.getTodaySalesSummary(assignmentId)).confirmed;
+    } catch {
+      return true;
+    }
+  }
+
+  async function askToConfirmSales() {
+    const go = await confirmAction(
+      'Confirm your sales first',
+      "Confirm today's sales summary to check out — after that you can check in at another outlet.",
+      'Go to Sales'
+    );
+    if (go) handleNo();
+  }
 
   async function handleYes() {
     setLoading(true);
     try {
+      if (!isSupervisor && !(await salesConfirmed())) {
+        await askToConfirmSales();
+        return;
+      }
       await checkOut(assignmentId);
       onClose();
     } catch (err) {
-      Alert.alert('Could not check out', getApiErrorMessage(err));
+      if (getApiErrorCode(err) === 'SALES_NOT_CONFIRMED') await askToConfirmSales();
+      else showAlert('Could not check out', getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }

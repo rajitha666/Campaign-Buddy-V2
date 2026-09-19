@@ -242,7 +242,7 @@ async function main() {
       const date = D(day);
       const isToday = day === 0;
       await prisma.attendanceRecord.upsert({
-        where: { activationId_staffId_date: { activationId: sv.id, staffId: supervisors[sv.sup], date } },
+        where: { activationId_staffId_date_visitNo: { activationId: sv.id, staffId: supervisors[sv.sup], date, visitNo: 1 } },
         create: {
           activationId: sv.id, staffId: supervisors[sv.sup], date, status: "on_time",
           checkInAt: at(day, isToday ? 10 : 11, rnd(0, 30)), checkInLat: sv.outlet.lat, checkInLng: sv.outlet.lng, checkInLocationVerified: true,
@@ -279,7 +279,7 @@ async function main() {
       const verified = checkInAt != null && !(act.prom === "Tharindu Jayasuriya" && day === 4);
 
       await prisma.attendanceRecord.upsert({
-        where: { activationId_staffId_date: { activationId: act.id, staffId: promoters[act.prom], date } },
+        where: { activationId_staffId_date_visitNo: { activationId: act.id, staffId: promoters[act.prom], date, visitNo: 1 } },
         create: {
           activationId: act.id, staffId: promoters[act.prom], date, status: status as any,
           checkInAt, checkInLat: checkInAt ? act.outlet.lat + (verified ? 0 : 0.004) : null, checkInLng: checkInAt ? act.outlet.lng : null,

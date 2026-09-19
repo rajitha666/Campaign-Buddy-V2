@@ -20,6 +20,7 @@ export function checklistCompletion(tasks: TaskLite[], answers: Map<string, Answ
 export interface ChecklistVisit {
   activationId: string;
   date: Date;
+  visitNo: number;
   outletId: string;
   outletName: string;
   promoterName: string;
@@ -31,11 +32,12 @@ export interface ChecklistVisit {
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 // Everything the summary needs for one campaign: the answers in range and the
-// per-visit completion. A "visit" is a (promoter activation, day) the covering
-// supervisor either checked in at OR started a checklist for — so a visit that
-// never got a single answer still shows up as incomplete. Photo tasks are
-// outlet-level (shared by every promoter that supervisor covers there), so they
-// count toward each visit.
+// per-visit completion. A "visit" is a (promoter activation, day, visit number) the
+// covering supervisor either checked in at OR started a checklist for — so a visit
+// that never got a single answer still shows up as incomplete, and a supervisor who
+// returns to an outlet the same day has one visit per check-in. Photo tasks are
+// outlet-level (shared by every promoter that supervisor covers there in that visit
+// number), so they count toward each visit.
 export async function loadChecklistData(opts: { campaignId: string; from?: Date; to?: Date; outletIds?: string[]; outletId?: string }) {
   const dateWhere = opts.from || opts.to ? { date: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } } : {};
   const outletWhere = opts.outletId ? { outletId: opts.outletId } : opts.outletIds ? { outletId: { in: opts.outletIds } } : {};
@@ -59,43 +61,43 @@ export async function loadChecklistData(opts: { campaignId: string; from?: Date;
     }),
   ]);
 
-  const photoCounts = new Map<string, number>(); // supervisor|outlet|day|task -> photos
+  const photoCounts = new Map<string, number>(); // supervisor|outlet|day|visit|task -> photos
   for (const r of responses) {
-    if (r.task.taskType === "photo") photoCounts.set(`${r.supervisorStaffId}|${r.outletId}|${day(r.date)}|${r.taskId}`, r._count.photos);
+    if (r.task.taskType === "photo") photoCounts.set(`${r.supervisorStaffId}|${r.outletId}|${day(r.date)}|${r.visitNo}|${r.taskId}`, r._count.photos);
   }
   const photoTasks = tasks.filter((t) => t.taskType === "photo");
 
   const visitsByKey = new Map<string, ChecklistVisit>();
   const addVisit = (v: {
-    activationId: string; date: Date; outletId: string; outletName: string; promoterName: string;
+    activationId: string; date: Date; visitNo: number; outletId: string; outletName: string; promoterName: string;
     supervisorStaffId: string; supervisorName: string;
   }) => {
-    const key = `${v.activationId}|${day(v.date)}`;
+    const key = `${v.activationId}|${day(v.date)}|${v.visitNo}`;
     if (visitsByKey.has(key)) return;
     const answers = new Map<string, Answer>();
     for (const other of responses) {
-      if (other.activationId !== v.activationId || day(other.date) !== day(v.date) || other.task.taskType === "photo") continue;
+      if (other.activationId !== v.activationId || day(other.date) !== day(v.date) || other.visitNo !== v.visitNo || other.task.taskType === "photo") continue;
       answers.set(other.taskId, { rating: other.rating, feedback: other.feedback, photoCount: 0 });
     }
     for (const t of photoTasks) {
-      answers.set(t.id, { rating: null, feedback: null, photoCount: photoCounts.get(`${v.supervisorStaffId}|${v.outletId}|${day(v.date)}|${t.id}`) ?? 0 });
+      answers.set(t.id, { rating: null, feedback: null, photoCount: photoCounts.get(`${v.supervisorStaffId}|${v.outletId}|${day(v.date)}|${v.visitNo}|${t.id}`) ?? 0 });
     }
     visitsByKey.set(key, {
-      activationId: v.activationId, date: v.date, outletId: v.outletId, outletName: v.outletName,
+      activationId: v.activationId, date: v.date, visitNo: v.visitNo, outletId: v.outletId, outletName: v.outletName,
       promoterName: v.promoterName, supervisorName: v.supervisorName, ...checklistCompletion(tasks, answers),
     });
   };
 
   for (const r of responses) {
     addVisit({
-      activationId: r.activationId, date: r.date, outletId: r.outletId, outletName: r.activation.outlet.name,
+      activationId: r.activationId, date: r.date, visitNo: r.visitNo, outletId: r.outletId, outletName: r.activation.outlet.name,
       promoterName: r.activation.staff.fullName, supervisorStaffId: r.supervisorStaffId, supervisorName: r.supervisor.fullName,
     });
   }
   for (const c of supervisorCheckIns) {
     if (c.staffId !== c.activation.supervisorStaffId) continue; // a supervisor who is the activation's own staff isn't a covering visit
     addVisit({
-      activationId: c.activationId, date: c.date, outletId: c.activation.outletId, outletName: c.activation.outlet.name,
+      activationId: c.activationId, date: c.date, visitNo: c.visitNo, outletId: c.activation.outletId, outletName: c.activation.outlet.name,
       promoterName: c.activation.staff.fullName, supervisorStaffId: c.staffId, supervisorName: c.staff.fullName,
     });
   }

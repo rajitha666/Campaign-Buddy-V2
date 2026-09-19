@@ -44,7 +44,7 @@ function useTodaysVisits() {
       const withStatus = await Promise.all(
         assignments.map(async (a) => {
           const today = await attendanceApi.getAttendanceToday(a.assignmentId);
-          return { assignment: a, checkedIn: today.checkedIn, checkInAt: today.checkInAt };
+          return { assignment: a, checkedIn: today.checkedIn, checkInAt: today.checkInAt, visitNo: today.visitNo ?? 0 };
         })
       );
       return withStatus;
@@ -100,8 +100,10 @@ export function SupervisorRouteScreen() {
   );
 }
 
-function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn: boolean; checkInAt: string | null } }) {
-  const { assignment, checkedIn } = row;
+function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn: boolean; checkInAt: string | null; visitNo: number } }) {
+  const { assignment, checkedIn, visitNo } = row;
+  // A supervisor can visit the same outlet again the same day: each check-in is its own visit with its own checklist.
+  const visitTag = visitNo > 1 ? ` · Visit ${visitNo}` : '';
   const checklistOpen = checklistUnlocked(row);
   const { checkedIn: anyOpenElsewhere, checkIn, checkOut } = useAttendance();
   const navigation = useNavigation<NativeStackNavigationProp<SupervisorRouteStackParamList, 'SupervisorRoute'>>();
@@ -114,6 +116,8 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
     try {
       await checkIn(assignment.assignmentId);
       queryClient.invalidateQueries({ queryKey: VISITS_KEY });
+      // A new visit starts a blank checklist — drop the previous visit's cached one.
+      queryClient.removeQueries({ queryKey: ['supervisor', 'checklist', assignment.assignmentId] });
       // Land straight on the checked-in outlet's checklist.
       navigation.navigate('SupervisorChecklist', {
         assignmentId: assignment.assignmentId,
@@ -163,7 +167,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
           <Text style={styles.visitCampaign}>{assignment.campaign.name}</Text>
         </View>
         {checkedIn ? (
-          <Chip label="Checked in" tone="success" />
+          <Chip label={`Checked in${visitTag}`} tone="success" />
         ) : inactive ? (
           <Chip label="Not active" tone="pending" />
         ) : disabled ? (
@@ -171,7 +175,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
         ) : null}
       </View>
       <Button
-        label={checkedIn ? 'Check out' : 'Check in'}
+        label={checkedIn ? 'Check out' : visitNo > 0 ? 'Check in again' : 'Check in'}
         variant={checkedIn ? 'alert' : 'primary'}
         onPress={checkedIn ? handleCheckOut : handleCheckIn}
         disabled={disabled}
@@ -179,7 +183,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
         style={{ marginTop: spacing.md }}
       />
       <Button
-        label="Outlet checklist"
+        label={`Outlet checklist${visitTag}`}
         variant="secondary"
         onPress={() =>
           navigation.navigate('SupervisorChecklist', {

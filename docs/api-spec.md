@@ -386,7 +386,9 @@ Read-only itinerary from the CB Office "Assign Routes" screen (Backend Spec v3 �
 ### Outlet checklist — supervisor mode
 At each outlet a supervisor scores the **promoter** against the campaign's QA checklist (the CB Office "Supervisors → Tasks" template). Every endpoint takes an `assignmentId` from `/me/assignments` and returns `404 NOT_FOUND` unless that Activation has the caller as its `supervisorStaffId` **and** is live today. `range`/`feedback` answers are stored per (task, activation, day) — saving again on the same day updates in place, and each promoter at an outlet is scored separately. **`photo` answers are per outlet**, not per promoter: one set per (task, supervisor, outlet, day), shared by every promoter that supervisor covers at the outlet, so the same display is photographed once and the task's `imageCount` limit is shared. A supervisor visiting several outlets has one independent checklist per outlet. The app offers the checklist once the supervisor has checked in at that outlet today (and keeps it open after check-out, so a forgotten photo can still be added), but the API does not require a check-in.
 
-**`GET /me/assignments/:assignmentId/supervisor-tasks`** — the checklist plus today's saved answers. **Response `200`**
+**Several visits a day.** A supervisor may check in at the same outlet more than once in a day; every check-in is its own **visit** (`visitNo` 1, 2, …, see `AttendanceRecord.visitNo`) with its own blank checklist. The checklist these endpoints read and write is the supervisor's **open visit**, or — once checked out — their **latest** one (so a visit can still be finished after leaving). Answers are stored per (task, activation, day, visit); `photo` answers per (task, supervisor, outlet, day, visit). Earlier visits' answers are never overwritten.
+
+**`GET /me/assignments/:assignmentId/supervisor-tasks`** — the checklist plus today's saved answers **for the current visit** (`data.visitNo`). **Response `200`**
 ```json
 {
   "data": {
@@ -421,7 +423,7 @@ At each outlet a supervisor scores the **promoter** against the campaign's QA ch
 ## 5. Attendance & Location
 
 ### `GET /attendance/today`
-Optional `?assignmentId=` — for supervisor mode, where several Activations can be open on the same day; asks about that specific one instead of the server's single-activation default. Promoters never send this. **Response `200`**
+Optional `?assignmentId=` — asks about one specific Activation (a supervisor's route outlets, or one of a multi-outlet promoter's same-day outlets); without it the server reports on the caller's **open shift** if there is one, else its single-activation default. **Response `200`**
 ```json
 {
   "data": {
@@ -430,10 +432,15 @@ Optional `?assignmentId=` — for supervisor mode, where several Activations can
     "checkOutAt": null,
     "shiftDurationSeconds": 13320,
     "locationVerified": true,
-    "status": "on_time"
+    "status": "on_time",
+    "assignmentId": "a_55",
+    "visitNo": 1,
+    "openAssignmentId": "a_55",
+    "workedAssignmentIds": []
   }
 }
 ```
+`assignmentId` is the Activation the answer is about; `visitNo` a supervisor's current (latest) visit to it today. `openAssignmentId` is the shift open anywhere right now (or `null`). `workedAssignmentIds` (promoters only; always empty for supervisors) lists the Activations already checked out of today — the app closes those outlets off, and also any other Activation at the same outlet.
 
 ### `POST /attendance/check-in`
 **Request**
@@ -450,7 +457,7 @@ Optional `?assignmentId=` — for supervisor mode, where several Activations can
 
 Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `geofenceRadiusMeters`) and `status` (`on_time` vs `late`, vs. `shiftStart` + grace period).
 **Response `201`** → the created `AttendanceRecord`.
-**Errors:** `409 ALREADY_CHECKED_IN`, `409 ALREADY_CHECKED_OUT` (promoters only — once a promoter has checked out of an assignment today, check-in to *that assignment* is closed for the day; a promoter with several same-day assignments can still check in to a different one; supervisors are exempt so they can re-check-in and move between route outlets).
+**Errors:** `409 ALREADY_CHECKED_IN` (a shift is already open — for anyone, at any outlet), `409 ALREADY_CHECKED_OUT` (promoters only — they have already checked out of **this outlet** today, under any campaign; a *different* outlet is fine once the shift is closed, so AM at one outlet and PM at another works, but never back to the same one). Supervisors are exempt from `ALREADY_CHECKED_OUT`: each check-in after a check-out is a **new visit** (`visitNo` + 1) with its own record and checklist.
 
 ### `POST /attendance/check-out`
 **Request**
@@ -471,7 +478,7 @@ Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `ge
 | `salesSummaryConfirmed` | boolean | yes | `true` if the rep tapped **"Yes, check out"** on the confirm popup; `false` is not a valid submission — if the rep taps **"No, confirm sales summary"**, the client does not call this endpoint yet, it navigates to `POST /sales-summary/today/confirm` first, then re-attempts checkout |
 
 **Response `200`** → updated `AttendanceRecord`.
-**Errors:** `422 NOT_CHECKED_IN` if no open check-in exists.
+**Errors:** `422 NOT_CHECKED_IN` if no open check-in exists; `422 SALES_NOT_CONFIRMED` for a promoter whose sales summary for that outlet today is not yet confirmed (`POST /sales-summary/today/confirm` first — this is what frees them to check in at another outlet). Supervisors don't enter sales and check out freely.
 
 ### `GET /attendance/history?range=week`
 **Response `200`**
@@ -624,7 +631,7 @@ Updates today's `StockEntry` for this rep. All fields optional — send only wha
 Marks today confirmed — this is the action the "No, confirm sales summary" path in the checkout popup ultimately drives, and also what the **Confirm & submit** button on the Sales page calls directly.
 **Request:** `{}` (or `{ "remarks": "...", "customFields": { ... } }` to save in the same call)
 **Response `200`** → `SalesSummary` with `confirmed: true`, `confirmedAt` set.
-**Errors:** `409` if already confirmed (idempotent — treat as success on the client); `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required day-scope custom field is still empty; `422 STATS_REQUIRED` if today's `DailyStats` haven't been logged with foot fall and approached both > 0 (the app disables Confirm & submit and points the rep to *Update today's stats*).
+**Errors:** `409` if already confirmed (idempotent — treat as success on the client); `422 MISSING_REQUIRED_FIELD` (with `field: <key>`) if a required day-scope custom field is still empty. There is no minimum foot fall: a zero day can be confirmed (the app asks the rep to acknowledge it first).
 
 ### 6.9 `GET /sales-fields`
 The custom fields configured for the promoter's current campaign (§2.14). Returns `{ "data": { "day": [...], "product": [...] } }`; `day` entries carry today's `value`, `product` entries are definitions only (values come with each product in §6.3). Empty lists when there's no assignment today.

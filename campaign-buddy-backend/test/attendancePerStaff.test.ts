@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
-import { app, resetDb, staffToken, makeStaff, makeCampaignWithActivation, adminToken } from "./helpers";
+import { app, resetDb, staffToken, makeStaff, makeCampaignWithActivation, adminToken, confirmSales } from "./helpers";
 import { prisma } from "../src/utils/prisma";
 import { dayDate } from "../src/utils/dates";
 
@@ -69,6 +69,7 @@ describe("mobile check-in: promoter and supervisor on one activation", () => {
     expect((await today(f, "supervisor")).body.data.checkedIn).toBe(false);
 
     await checkIn(f, "supervisor");
+    await confirmSales(f.activation.id);
     expect((await checkOut(f, "promoter")).status).toBe(200);
     expect((await today(f, "supervisor")).body.data.checkedIn).toBe(true);
   });

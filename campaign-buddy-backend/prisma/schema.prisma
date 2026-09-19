@@ -552,6 +552,9 @@ model AttendanceRecord {
   activationId                    String
   staffId                         String
   date                            DateTime         @db.Date
+  // A supervisor may visit the same outlet more than once a day: each check-in is
+  // its own visit (1, 2, ...). Promoters only ever have visit 1.
+  visitNo                         Int              @default(1)
   checkInAt                       DateTime?
   checkInLat                      Float?
   checkInLng                      Float?
@@ -569,7 +572,7 @@ model AttendanceRecord {
   staff        Staff         @relation(fields: [staffId], references: [id], onDelete: Cascade)
   leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id])
 
-  @@unique([activationId, staffId, date])
+  @@unique([activationId, staffId, date, visitNo])
   @@index([activationId])
   @@index([staffId, date])
   @@map("attendance_records")
@@ -743,6 +746,8 @@ model SupervisorTaskResponse {
   outletId          String
   supervisorStaffId String
   date              DateTime @db.Date
+  // Which of the supervisor's visits to this activation today (AttendanceRecord.visitNo).
+  visitNo           Int      @default(1)
   rating            Int?
   feedback          String?
   createdAt         DateTime @default(now())
@@ -754,7 +759,7 @@ model SupervisorTaskResponse {
   supervisor Staff                 @relation(fields: [supervisorStaffId], references: [id], onDelete: Cascade)
   photos     SupervisorTaskPhoto[]
 
-  @@unique([taskId, activationId, date])
+  @@unique([taskId, activationId, date, visitNo])
   @@index([activationId, date])
   @@index([outletId, date])
   @@index([supervisorStaffId])

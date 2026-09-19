@@ -10,6 +10,7 @@ import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendance } from '@/context/AttendanceContext';
 import { useAssignment } from '@/context/AssignmentContext';
+import { isCheckedInAt } from '@/lib/shiftState';
 import { openPromoterGuide } from '@/lib/trainingGuide';
 import * as offlineQueries from '@/offline/queries';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
@@ -30,7 +31,8 @@ type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
-  const { checkedIn, checkInAt } = useAttendance();
+  const attendance = useAttendance();
+  const { checkInAt } = attendance;
   const { isOnline } = useNetwork();
   const { lastSyncedAt } = useSyncEngine();
   const [statsExpanded, setStatsExpanded] = useState(false);
@@ -38,6 +40,7 @@ export function HomeScreen() {
   // Multi-outlet promoters pick their live outlet here; everything on Home
   // (campaign card, stats, products) reads the chosen assignment.
   const { assignments, assignment, hasMultiple, select } = useAssignment();
+  const checkedIn = isCheckedInAt(attendance, assignment?.assignmentId);
 
   const statsQuery = useQuery({
     queryKey: ['stats', 'today', assignment?.assignmentId],

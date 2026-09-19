@@ -29,13 +29,18 @@ import * as queue from '@/offline/queue';
 import { loadAttendanceSnapshot, saveAttendanceSnapshot, type AttendanceSnapshot } from '@/offline/sessionSnapshot';
 
 interface AttendanceContextValue {
+  /** A shift is open right now (at `openAssignmentId`). */
   checkedIn: boolean;
   /**
-   * True once the rep has checked out today — check-in is done for the day
-   * (promoters; the backend rejects a re-check-in with ALREADY_CHECKED_OUT).
-   * Supervisors still move between outlets, and their re-check-ins reset this.
+   * True once a promoter has checked out of at least one outlet today and has no
+   * shift open. Not "done for the day": they may still move on to another outlet —
+   * use `workedAssignmentIds` (or lib/shiftState) for per-outlet questions.
    */
   checkedOutToday: boolean;
+  /** Assignment id of the open shift, or null. Check-in anywhere else is locked while it's set. */
+  openAssignmentId: string | null;
+  /** Promoters: assignments already checked out of today. An outlet is closed once worked. */
+  workedAssignmentIds: string[];
   checkInAt: string | null;
   status: AttendanceStatus | null;
   /**
@@ -65,6 +70,8 @@ type ShiftState = Omit<AttendanceSnapshot, 'userId' | 'day'>;
 export function AttendanceProvider({ children }: { children: React.ReactNode }) {
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkedOutToday, setCheckedOutToday] = useState(false);
+  const [openAssignmentId, setOpenAssignmentId] = useState<string | null>(null);
+  const [workedAssignmentIds, setWorkedAssignmentIds] = useState<string[]>([]);
   const [checkInAt, setCheckInAt] = useState<string | null>(null);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
   const [locationVerified, setLocationVerified] = useState<boolean | null>(null);
@@ -83,6 +90,8 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
     (s: ShiftState) => {
       setCheckedIn(s.checkedIn);
       setCheckedOutToday(s.checkedOutToday);
+      setOpenAssignmentId(s.openAssignmentId ?? null);
+      setWorkedAssignmentIds(s.workedAssignmentIds ?? []);
       setCheckInAt(s.checkInAt);
       setStatus(s.status);
       setLocationVerified(s.locationVerified);
@@ -104,10 +113,12 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       const today = await attendanceApi.getAttendanceToday();
       applyState({
         checkedIn: today.checkedIn,
-        checkedOutToday: !today.checkedIn && !!today.checkOutAt,
+        checkedOutToday: !today.checkedIn && (today.workedAssignmentIds ? today.workedAssignmentIds.length > 0 : !!today.checkOutAt),
         checkInAt: today.checkInAt,
         status: today.status,
         locationVerified: today.checkInAt ? today.locationVerified : null,
+        openAssignmentId: today.openAssignmentId ?? null,
+        workedAssignmentIds: today.workedAssignmentIds ?? [],
       });
     } catch (err) {
       if (!isRetryable(err)) throw err;
@@ -148,6 +159,8 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
             checkInAt: record.checkInAt,
             status: record.status,
             locationVerified: record.checkInLocationVerified,
+            openAssignmentId: assignmentId,
+            workedAssignmentIds,
           });
           return;
         } catch (err) {
@@ -162,12 +175,20 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
         longitude: position.longitude,
         capturedAt,
       });
-      applyState({ checkedIn: true, checkedOutToday: false, checkInAt: capturedAt, status, locationVerified: null });
+      applyState({
+        checkedIn: true,
+        checkedOutToday: false,
+        checkInAt: capturedAt,
+        status,
+        locationVerified: null,
+        openAssignmentId: assignmentId,
+        workedAssignmentIds,
+      });
       await refreshCounts();
       showToast('Checked in on this phone — will sync automatically');
       syncNow();
     },
-    [applyState, canQueue, isOnline, refreshCounts, showToast, status, syncNow]
+    [applyState, canQueue, isOnline, refreshCounts, showToast, status, syncNow, workedAssignmentIds]
   );
 
   const checkOut = useCallback(
@@ -185,7 +206,17 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
         timestamp: capturedAt,
         salesSummaryConfirmed: true as const,
       };
-      const closed: ShiftState = { checkedIn: false, checkedOutToday: true, checkInAt: null, status, locationVerified: null };
+      // A promoter's outlet is closed to them once they check out (supervisors revisit freely).
+      const closedId = assignmentId ?? openAssignmentId;
+      const closed: ShiftState = {
+        checkedIn: false,
+        checkedOutToday: true,
+        checkInAt: null,
+        status,
+        locationVerified: null,
+        openAssignmentId: null,
+        workedAssignmentIds: canQueue && closedId ? [...new Set([...workedAssignmentIds, closedId])] : workedAssignmentIds,
+      };
 
       if (isOnline || !canQueue) {
         try {
@@ -206,12 +237,15 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       showToast('Checked out on this phone — will sync automatically');
       syncNow();
     },
-    [applyState, canQueue, isOnline, refreshCounts, showToast, status, syncNow]
+    [applyState, canQueue, isOnline, openAssignmentId, refreshCounts, showToast, status, syncNow, workedAssignmentIds]
   );
 
   return (
     <AttendanceContext.Provider
-      value={{ checkedIn, checkedOutToday, checkInAt, status, locationVerified, isLoading, refresh, checkIn, checkOut }}
+      value={{
+        checkedIn, checkedOutToday, openAssignmentId, workedAssignmentIds,
+        checkInAt, status, locationVerified, isLoading, refresh, checkIn, checkOut,
+      }}
     >
       {children}
     </AttendanceContext.Provider>

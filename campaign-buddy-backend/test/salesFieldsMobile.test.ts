@@ -19,27 +19,28 @@ async function fieldsFor(campaignId: string) {
   };
 }
 
-describe("sales summary confirm requires today's stats", () => {
-  it("confirm is blocked until foot fall and approached are logged (> 0), then succeeds", async () => {
+describe("sales summary confirm on a zero day", () => {
+  // A day with no shoppers is a real day: the promoter must still be able to confirm it
+  // (confirming is what lets them check out and move to another outlet).
+  it("confirms with nothing logged", async () => {
     const { staff, outlet } = await makeCampaignWithActivation();
     const token = await staffToken(staff.mobileUsername, "field-pw");
     await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
 
-    const noStats = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
-    expect(noStats.status).toBe(422);
-    expect(noStats.body.error.code).toBe("STATS_REQUIRED");
+    const res = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ confirmed: true, footFall: 0, approached: 0 });
+  });
 
-    // Half-filled stats still block — both counts must be > 0.
+  it("confirms with only some counts logged", async () => {
+    const { staff, outlet } = await makeCampaignWithActivation();
+    const token = await staffToken(staff.mobileUsername, "field-pw");
+    await request(app).post("/v1/attendance/check-in").set("Authorization", `Bearer ${token}`).send({ latitude: outlet.latitude, longitude: outlet.longitude });
     await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 10 });
-    const half = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
-    expect(half.status).toBe(422);
-    expect(half.body.error.code).toBe("STATS_REQUIRED");
 
-    const done = await request(app).patch("/v1/stats/today").set("Authorization", `Bearer ${token}`).send({ footFall: 10, approached: 4 });
-    expect(done.status).toBe(200);
-    const okRes = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
-    expect(okRes.status).toBe(200);
-    expect(okRes.body.data.confirmed).toBe(true);
+    const res = await request(app).post("/v1/sales-summary/today/confirm").set("Authorization", `Bearer ${token}`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.data.confirmed).toBe(true);
   });
 });
 

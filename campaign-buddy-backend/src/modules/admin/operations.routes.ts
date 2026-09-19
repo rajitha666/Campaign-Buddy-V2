@@ -514,10 +514,24 @@ router.get(
       }),
       prisma.supervisorTaskResponse.count({ where }),
     ]);
+    // A supervisor can visit an outlet more than once a day; show when each visit began.
+    const visitStarts = rows.length
+      ? await prisma.attendanceRecord.findMany({
+          where: {
+            activationId: { in: [...new Set(rows.map((r) => r.activationId))] },
+            staffId: { in: [...new Set(rows.map((r) => r.supervisorStaffId))] },
+            date: { in: [...new Set(rows.map((r) => r.date.getTime()))].map((t) => new Date(t)) },
+          },
+          select: { activationId: true, staffId: true, date: true, visitNo: true, checkInAt: true },
+        })
+      : [];
+    const visitStart = new Map(visitStarts.map((v) => [`${v.activationId}|${v.staffId}|${v.date.getTime()}|${v.visitNo}`, v.checkInAt]));
     const shaped = rows.map((r) => ({
       id: r.id,
       taskId: r.taskId,
       date: r.date,
+      visitNo: r.visitNo,
+      visitStartedAt: visitStart.get(`${r.activationId}|${r.supervisorStaffId}|${r.date.getTime()}|${r.visitNo}`) ?? null,
       supervisorName: r.supervisor.fullName,
       // The response row is tied to the supervisor's visit (activation), so the
       // visit's promoter is known even for outlet-level photo tasks.
@@ -569,7 +583,7 @@ router.get(
       .filter((v) => v.answered < v.total)
       .sort((a, b) => b.date.getTime() - a.date.getTime())
       .map((v) => ({
-        date: v.date, outletName: v.outletName, promoterName: v.promoterName, supervisorName: v.supervisorName,
+        date: v.date, visitNo: v.visitNo, outletName: v.outletName, promoterName: v.promoterName, supervisorName: v.supervisorName,
         answered: v.answered, total: v.total,
       }));
 
@@ -690,6 +704,7 @@ router.get(
       staffName: r.staff.fullName,
       outletName: r.activation.outlet.name,
       date: r.date,
+      visitNo: r.visitNo,
       checkInAt: r.checkInAt,
       checkOutAt: r.checkOutAt,
     }));

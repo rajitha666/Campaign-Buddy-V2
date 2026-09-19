@@ -295,7 +295,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | GET | `/sales-fields` | day + product custom-field definitions (#13) for the staff's current campaign, day values filled in |
 | GET | `/sales-summary/today` | includes `customFields` (day-scope) |
 | PATCH | `/sales-summary/today` | `remarks` and/or `customFields`; `409 SUMMARY_CONFIRMED` once the day is confirmed |
-| POST | `/sales-summary/today/confirm` | idempotent; `422 MISSING_REQUIRED_FIELD` if a required day-scope `customFields` value is empty; `422 STATS_REQUIRED` if today's foot fall / approached counts aren't both > 0 |
+| POST | `/sales-summary/today/confirm` | idempotent; `422 MISSING_REQUIRED_FIELD` if a required day-scope `customFields` value is empty; no minimum foot fall — a zero day can be confirmed |
 | GET | `/time-off/balance` | |
 | GET | `/time-off/requests` | |
 | POST | `/time-off/requests` | checks for overlapping pending/approved requests → `409` |
@@ -409,7 +409,9 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 
 A Staff member can only ever have **one open shift at a time, across every campaign they're assigned to** — not just within a single Activation. `POST /v1/attendance/check-in` queries for *any* `AttendanceRecord` **of that staff member** (`staffId` = the caller — a covering supervisor's or promoter's own row, never the other's) where `checkInAt` is set and `checkOutAt` is null; if one exists, the request is rejected with `409 ALREADY_CHECKED_IN` (message differs depending on whether the open shift is on the same Activation or a different one). This blocks moonlighting across concurrent campaigns by policy — note this governs **checking in**, not being *assigned* to concurrent Activations, which is allowed (§2.5). Implemented in `src/modules/mobile/attendance.routes.ts`.
 
-Additionally, **a promoter's day ends at check-out**: once a promoter has a checked-out record for today on an Activation (`checkInAt` and `checkOutAt` both set), further check-ins to **that Activation** that day are rejected (a promoter holding several same-day Activations moves on to the next one; the one-open-shift lock still applies) with `409 ALREADY_CHECKED_OUT`. Supervisors are exempt — they check out of one route outlet and check into the next (api-spec `/me/assignments`), and each supervisor re-check-in clears the prior `checkOutAt`.
+Additionally, **a promoter never returns to an outlet they have checked out of today**: once a promoter has a checked-out record for today on an Activation at outlet O (`checkInAt` and `checkOutAt` both set), further check-ins that day at O — under any campaign — are rejected with `409 ALREADY_CHECKED_OUT`. A *different* outlet is allowed once the open shift is closed (AM at one outlet, PM at another). To close a shift a promoter's sales summary for that Activation and day must be confirmed, else `422 SALES_NOT_CONFIRMED`; supervisors don't enter sales and are exempt.
+
+Supervisors are also exempt from `ALREADY_CHECKED_OUT` — they check out of one route outlet and into the next (api-spec `/me/assignments`), and may return to the same outlet the same day. **Each supervisor check-in creates a new `AttendanceRecord` visit** (`visitNo` 1, 2, …; unique on `(activationId, staffId, date, visitNo)`) rather than reopening the previous one, and each visit has its own outlet checklist (`SupervisorTaskResponse.visitNo`). Portal logs list one row per visit; the QA score averages every visit; hours are the sum of the visits.
 
 ### 5.2 `totalSales` / rollups are always computed, never stored
 
