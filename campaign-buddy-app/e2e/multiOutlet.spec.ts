@@ -43,7 +43,10 @@ test.beforeAll(async ({ request }) => {
   expect(spare, "an outlet Sanduni is not yet assigned to").toBeTruthy();
   extraOutletName = spare.name;
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Colombo calendar day (UTC+5:30), the same key the app's day-keyed logic
+  // uses — `new Date().toISOString()` would be the UTC day, wrong between
+  // 19:30–24:00 UTC (00:00–05:30 Colombo, already the next day).
+  const today = new Date(Date.now() + 5 * 60 * 60000 + 30 * 60000).toISOString().slice(0, 10);
   const created = await request.post(`${API}/admin/v1/campaigns/${campaignId}/activations`, {
     headers: auth,
     data: { name: "E2E second outlet", outletId: spare.id, staffId: sanduni.id, dateFrom: today, dateTo: today },

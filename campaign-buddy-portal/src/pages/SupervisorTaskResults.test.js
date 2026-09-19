@@ -15,4 +15,11 @@ describe('SupervisorTaskResults groups answers by outlet', () => {
   it('renders an outlet header block before its rows', () => {
     expect(page).toMatch(/colSpan.*outletName|outletName.*colSpan/s);
   });
+
+  it('initialises the date range with the Colombo day key, not a UTC day', () => {
+    // Regression: the default "to" filter called isoDay(), an undefined helper
+    // — the whole page crashed (issue: smoke "supervisor: every nav route").
+    expect(page).toContain('[to, setTo] = useState(colomboYmd()');
+    expect(page).not.toMatch(/isoDay/);
+  });
 });

@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import { exportFilename } from '../lib/exportFilename';
-import { dayDateColombo } from '../lib/colomboDay';
+import { dayDateColombo, colomboYmd } from '../lib/colomboDay';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet, visitLabel } from '../lib/supervisorResults';
 
@@ -25,7 +25,7 @@ export default function SupervisorTaskResults() {
   const { currentCampaignId, designationLabel } = useAuth();
   const promoter = applyDesignationLabel('Promoter', designationLabel);
   const [from, setFrom] = useState(daysAgo(30));
-  const [to, setTo] = useState(isoDay(new Date()));
+  const [to, setTo] = useState(colomboYmd());
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [summary, setSummary] = useState(null);
