@@ -14,15 +14,18 @@ import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
 import { useAssignment } from '@/context/AssignmentContext';
+import { isCheckedInAt } from '@/lib/shiftState';
 import { canConfirmSales } from '@/lib/salesConfirmGuard';
+import { confirmAction } from '@/lib/showAlert';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 export function SalesSummaryScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
-  const { checkedIn } = useAttendance();
+  const attendance = useAttendance();
   // Multi-outlet promoters confirm the outlet chosen on Home.
   const { assignment } = useAssignment();
+  const checkedIn = isCheckedInAt(attendance, assignment?.assignmentId);
   const assignmentId = assignment?.assignmentId;
   const { save } = useOfflineSave();
   const { showToast } = useToast();
@@ -74,7 +77,20 @@ export function SalesSummaryScreen() {
   const conversionPct = s && s.approached > 0 ? Math.round((s.converted / s.approached) * 100) : 0;
   const guard = s
     ? canConfirmSales({ confirmed: !!s.confirmed, checkedIn, footFall: s.footFall, approached: s.approached })
-    : { ok: false, statsMissing: false };
+    : { ok: false, zeroDay: false };
+
+  // A day with no foot fall / approached is allowed, but ask first so it's never an oversight.
+  async function handleConfirm() {
+    if (guard.zeroDay) {
+      const yes = await confirmAction(
+        'Confirm a day with no counts?',
+        'No foot fall or approached count is logged for today. If that is right, confirm it as a zero day; otherwise go back and log them first.',
+        'Confirm zero day'
+      );
+      if (!yes) return;
+    }
+    confirmMutation.mutate();
+  }
 
   return (
     <SafeAreaView style={styles.frame} edges={['top']}>
@@ -183,19 +199,19 @@ export function SalesSummaryScreen() {
 
         {!checkedIn && !confirmed && <CheckInRequiredNotice />}
 
-        {guard.statsMissing && (
+        {guard.zeroDay && checkedIn && (
           <View style={styles.statsRequiredBox}>
             <Text style={styles.statsRequiredText}>
-              Log today's foot fall and approached counts in "Update footfall & conversions" before confirming.
+              No foot fall or approached logged yet. Add them in "Update footfall & conversions", or confirm a zero day.
             </Text>
           </View>
         )}
 
         <Button
           label={s?.confirmed ? 'Confirmed ✓' : 'Confirm & submit'}
-          onPress={() => confirmMutation.mutate()}
+          onPress={handleConfirm}
           loading={confirmMutation.isPending}
-          disabled={s?.confirmed || !checkedIn || guard.statsMissing}
+          disabled={s?.confirmed || !checkedIn}
           style={{ marginTop: spacing.xl }}
         />
 

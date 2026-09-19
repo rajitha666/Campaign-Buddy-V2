@@ -117,15 +117,9 @@ router.post(
     const existing = await dayValueMap(activation.id, today);
     assertRequired(dayDefs, existing, customFields ?? {});
 
-    // Sales summary can't be confirmed until the promoter has logged today's
-    // foot fall and approached counts (both > 0) via PATCH /stats/today.
-    const stats = await prisma.dailyStats.findUnique({
-      where: { activationId_date: { activationId: activation.id, date: today } },
-    });
-    if (!stats || stats.footFall <= 0 || stats.approached <= 0) {
-      throw new ApiError(422, "STATS_REQUIRED", "Log today's foot fall and approached counts (greater than 0) before confirming");
-    }
-
+    // No minimum foot fall: a quiet or zero day is still a day to confirm, and
+    // confirming is what lets a promoter check out. The app asks the promoter to
+    // acknowledge a zero day before sending this.
     await prisma.$transaction(async (tx) => {
       if (customFields) {
         await writeValues(tx, { activationId: activation.id, activationItemId: null, date: today }, dayDefs, customFields);

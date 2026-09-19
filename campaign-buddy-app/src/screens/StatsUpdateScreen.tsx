@@ -16,6 +16,7 @@ import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
 import { useAssignment } from '@/context/AssignmentContext';
+import { isCheckedInAt } from '@/lib/shiftState';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'StatsUpdate'>;
@@ -23,10 +24,11 @@ type Nav = NativeStackNavigationProp<HomeStackParamList, 'StatsUpdate'>;
 export function StatsUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
-  const { checkedIn } = useAttendance();
+  const attendance = useAttendance();
   // Multi-outlet promoters update the outlet chosen on Home — stats are per
   // assignment, so every read and write carries its assignmentId.
   const { assignment } = useAssignment();
+  const checkedIn = isCheckedInAt(attendance, assignment?.assignmentId);
   const assignmentId = assignment?.assignmentId;
   const { save } = useOfflineSave();
   const { showToast } = useToast();

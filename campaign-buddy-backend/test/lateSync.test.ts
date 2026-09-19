@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
-import { app, resetDb, staffToken, makeCampaignWithActivation } from "./helpers";
+import { app, resetDb, staffToken, makeCampaignWithActivation, confirmSales } from "./helpers";
 import { dayDate } from "../src/utils/dates";
+import { prisma } from "../src/utils/prisma";
 
 beforeEach(resetDb);
 
@@ -12,13 +13,14 @@ describe("sales writes delivered after the shift closed (offline sync)", () => {
   const mid = (a: number, b: number) => new Date((a + b) / 2);
 
   async function closedShift() {
-    const { staff, outlet, activationItem } = await makeCampaignWithActivation();
+    const { staff, outlet, activation, activationItem } = await makeCampaignWithActivation();
     const auth = { Authorization: `Bearer ${await staffToken(staff.mobileUsername, "field-pw")}` };
     const geo = { latitude: outlet.latitude, longitude: outlet.longitude };
     const inAt = mid(dayDate().getTime(), Date.now());
     await request(app).post("/v1/attendance/check-in").set(auth).send({ ...geo, capturedAt: inAt.toISOString() }).expect(201);
+    await confirmSales(activation.id);
     await request(app).post("/v1/attendance/check-out").set(auth).send(geo).expect(200);
-    return { auth, inAt, outAt: new Date(), activationItem };
+    return { auth, inAt, outAt: new Date(), activation, activationItem };
   }
 
   it("accepts a stats write captured inside the closed shift", async () => {
@@ -65,8 +67,10 @@ describe("sales writes delivered after the shift closed (offline sync)", () => {
   });
 
   it("applies to stock and to the daily sales summary too", async () => {
-    const { auth, inAt, outAt, activationItem } = await closedShift();
+    const { auth, inAt, outAt, activation, activationItem } = await closedShift();
     const during = mid(inAt.getTime(), outAt.getTime()).toISOString();
+    // Check-out needs a confirmed summary, which locks further edits; the office reopening it is what lets a late edit through.
+    await prisma.salesSummary.updateMany({ where: { activationId: activation.id }, data: { confirmed: false } });
     await request(app)
       .patch(`/v1/products/${activationItem.id}/stock`)
       .set(auth)

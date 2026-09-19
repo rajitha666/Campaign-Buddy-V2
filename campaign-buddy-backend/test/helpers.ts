@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
 import { app } from "../src/app";
+import { dayDate } from "../src/utils/dates";
 
 export { app };
 
@@ -98,4 +99,22 @@ export async function makeCampaignWithActivation() {
   });
   const activationItem = await prisma.activationItem.create({ data: { activationId: activation.id, campaignItemId: campaignItem.id } });
   return { client, brand, item, city, outlet, campaign, campaignItem, activation, activationItem, staff };
+}
+
+/**
+ * A promoter can only check out once the day's sales summary is confirmed.
+ * Marks it confirmed (with the foot-fall the real confirm endpoint requires).
+ */
+export async function confirmSales(activationId: string) {
+  const date = dayDate();
+  await prisma.dailyStats.upsert({
+    where: { activationId_date: { activationId, date } },
+    create: { activationId, date, footFall: 10, approached: 5 },
+    update: { footFall: 10, approached: 5 },
+  });
+  await prisma.salesSummary.upsert({
+    where: { activationId_date: { activationId, date } },
+    create: { activationId, date, confirmed: true, confirmedAt: new Date() },
+    update: { confirmed: true, confirmedAt: new Date() },
+  });
 }
