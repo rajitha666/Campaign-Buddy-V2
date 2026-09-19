@@ -5,19 +5,20 @@ import { useQuery } from '@tanstack/react-query';
 import * as offlineQueries from '@/offline/queries';
 import { ProductThumb } from '@/components/ProductThumb';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+import { useAssignment } from '@/context/AssignmentContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 const BAND_COLORS = [colors.success, '#8B5FBF', colors.info];
 const CHART_HEIGHT = 100;
 
 export function PerformanceScreen() {
-  const assignmentQuery = useQuery({ queryKey: ['assignment', 'today'], queryFn: offlineQueries.getTodayAssignment });
+  const { assignment } = useAssignment();
 
   const performanceQuery = useQuery({
-    queryKey: ['performance', assignmentQuery.data?.campaign.id, assignmentQuery.data?.outlet.id],
+    queryKey: ['performance', assignment?.campaign.id, assignment?.outlet.id],
     queryFn: () =>
-      offlineQueries.getCampaignPerformance(assignmentQuery.data!.campaign.id, assignmentQuery.data!.outlet.id),
-    enabled: !!assignmentQuery.data,
+      offlineQueries.getCampaignPerformance(assignment!.campaign.id, assignment!.outlet.id),
+    enabled: !!assignment,
   });
 
   const p = performanceQuery.data;
@@ -28,7 +29,7 @@ export function PerformanceScreen() {
       <View style={styles.topnav}>
         <Text style={styles.title}>Performance</Text>
         <Text style={styles.subtitle}>
-          {assignmentQuery.data ? `${assignmentQuery.data.campaign.name} · ${assignmentQuery.data.outlet.name}` : ' '}
+          {assignment ? `${assignment.campaign.name} · ${assignment.outlet.name}` : ' '}
         </Text>
         <View style={{ marginTop: spacing.sm }}>
           <SyncStatusBadge />

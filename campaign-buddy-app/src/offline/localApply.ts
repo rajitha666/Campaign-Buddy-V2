@@ -68,7 +68,7 @@ export async function readBase(
   store: CacheStore = defaultCacheStore
 ): Promise<Record<string, unknown> | undefined> {
   if (kind === 'stats') {
-    const hit = await readCache<DailyStats>(cacheKeys.stats(day), store);
+    const hit = await readCache<DailyStats>(cacheKeys.stats(day, payloadAssignmentId(payload)), store);
     return hit ? pickBase(kind, payload, hit.payload) : undefined;
   }
   if (kind === 'productStock') {
@@ -97,7 +97,17 @@ export function patchCache<T>(key: string, patch: (old: T) => T, store: CacheSto
 
 const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 
-export const patchStats = (old: DailyStats, sent: StatsUpdateRequest): DailyStats => ({ ...old, ...defined(sent) });
+// A queued write carries the assignment it targets (multi-outlet promoters);
+// it's queue metadata, never part of the saved data.
+const payloadAssignmentId = (payload: unknown): string | undefined =>
+  typeof payload === 'object' && payload !== null && 'assignmentId' in payload
+    ? (payload as { assignmentId?: string }).assignmentId
+    : undefined;
+
+export const patchStats = (old: DailyStats, sent: StatsUpdateRequest): DailyStats => {
+  const { assignmentId: _target, ...rest } = sent as StatsUpdateRequest & { assignmentId?: string };
+  return { ...old, ...defined(rest) };
+};
 
 const withFieldValues = <F extends { key: string; value: unknown }>(fields: F[], writes?: CustomFieldWrite): F[] =>
   writes ? fields.map((f) => (f.key in writes ? { ...f, value: writes[f.key] } : f)) : fields;
@@ -133,33 +143,37 @@ export function patchProducts(list: CampaignProductListItem[], cpaId: string, se
 export const filterReorder = (list: CampaignProductListItem[]) => list.filter((p) => p.reorderFlag);
 
 // Today-scoped cache keys carry the local day so yesterday's numbers are never served as today's.
+// Multi-outlet promoters: per-assignment variants keep outlet B's numbers out of outlet A's cache.
 export const cacheKeys = {
   assignment: (day: string) => `assignment:${day}`,
-  stats: (day: string) => `stats:${day}`,
-  salesSummary: (day: string) => `sales-summary:${day}`,
+  assignments: (day: string) => `assignments:${day}`,
+  stats: (day: string, assignmentId?: string) => (assignmentId ? `stats:${day}:${assignmentId}` : `stats:${day}`),
+  salesSummary: (day: string, assignmentId?: string) =>
+    assignmentId ? `sales-summary:${day}:${assignmentId}` : `sales-summary:${day}`,
   salesFields: (day: string) => `sales-fields:${day}`,
   products: (day: string, campaignId: string, outletId: string) => `products:${day}:${campaignId}:${outletId}`,
 };
 
 /** Overlay a just-queued write onto every cached read it affects. */
-export async function applyQueuedWrite(kind: QueueKind, key: string, payload: unknown, day: string): Promise<void> {
+export async function applyQueuedWrite(kind: QueueKind, key: string, payload: unknown, day: string, store: CacheStore = defaultCacheStore): Promise<void> {
+  const aid = payloadAssignmentId(payload);
   if (kind === 'stats') {
-    await patchCache<DailyStats>(cacheKeys.stats(day), (o) => patchStats(o, payload as StatsUpdateRequest));
+    await patchCache<DailyStats>(cacheKeys.stats(day, aid), (o) => patchStats(o, payload as StatsUpdateRequest), store);
   }
   if (kind === 'stats' || kind === 'salesSummary' || kind === 'salesConfirm') {
-    await patchCache<SalesSummary>(cacheKeys.salesSummary(day), (o) => patchSalesSummary(o, kind, payload));
+    await patchCache<SalesSummary>(cacheKeys.salesSummary(day, aid), (o) => patchSalesSummary(o, kind, payload), store);
   }
   if (kind === 'salesSummary' || kind === 'salesConfirm') {
     const writes = (payload as { customFields?: CustomFieldWrite }).customFields;
-    if (writes) await patchCache<SalesFieldSets>(cacheKeys.salesFields(day), (o) => patchSalesFields(o, writes));
+    if (writes) await patchCache<SalesFieldSets>(cacheKeys.salesFields(day), (o) => patchSalesFields(o, writes), store);
   }
   if (kind === 'productStock') {
     // The product list is cached per campaign+outlet; the assignment cache says which one is live.
-    const assignment = await readCache<{ campaign: { id: string }; outlet: { id: string } }>(cacheKeys.assignment(day));
+    const assignment = await readCache<{ campaign: { id: string }; outlet: { id: string } }>(cacheKeys.assignment(day), store);
     if (assignment) {
       const { campaign, outlet } = assignment.payload;
       await patchCache<CampaignProductListItem[]>(cacheKeys.products(day, campaign.id, outlet.id), (o) =>
-        patchProducts(o, key, payload as StockUpdateRequest)
+        patchProducts(o, key, payload as StockUpdateRequest), store
       );
     }
   }

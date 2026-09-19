@@ -28,6 +28,8 @@ import * as profile from './profile';
 import * as stats from './stats';
 import * as attendance from './attendance';
 import * as products from './products';
+import * as salesSummary from './salesSummary';
+import * as supervisorRoute from './supervisorRoute';
 
 beforeEach(() => {
   calls.length = 0;
@@ -111,5 +113,50 @@ describe('api adapters — path + verb', () => {
       'patch /products/cpa1/stock',
     ]);
     expect(calls[0].params).toEqual({ reorderOnly: true });
+  });
+});
+
+// Multi-outlet promoters: the stats + sales-summary endpoints accept an
+// ?assignmentId= query param so the app targets the chosen outlet instead of
+// the server's findFirst pick (backend matches /attendance/today's param, #me/assignments selected).
+describe('api adapters — assignmentId targeting for multi-outlet promoters', () => {
+  it('stats forwards assignmentId as a query param (read + write)', async () => {
+    await stats.getTodayStats('a2');
+    await stats.updateTodayStats({ footFall: 3 }, 'a2');
+    expect(calls.map((c) => `${c.method} ${c.path} ${JSON.stringify(c.params) ?? ''}`)).toEqual([
+      'get /stats/today {"assignmentId":"a2"}',
+      'patch /stats/today {"assignmentId":"a2"}',
+    ]);
+    expect(calls[1].body).toEqual({ footFall: 3 }); // assignmentId must not leak into the body
+  });
+
+  it('stats omit the param entirely for the single-assignment promoters', async () => {
+    await stats.getTodayStats();
+    await stats.updateTodayStats({ footFall: 1 });
+    expect(calls[0].params).toBeUndefined();
+    expect(calls[1].params).toBeUndefined();
+  });
+
+  it('sales-summary read, update and confirm forward assignmentId as a query param', async () => {
+    await salesSummary.getTodaySalesSummary('a2');
+    await salesSummary.updateSalesSummary({ remarks: 'r' }, 'a2');
+    await salesSummary.confirmSalesSummary({ remarks: 'r' }, 'a2');
+    expect(calls.map((c) => `${c.method} ${c.path} ${JSON.stringify(c.params) ?? ''}`)).toEqual([
+      'get /sales-summary/today {"assignmentId":"a2"}',
+      'patch /sales-summary/today {"assignmentId":"a2"}',
+      'post /sales-summary/today/confirm {"assignmentId":"a2"}',
+    ]);
+    for (const c of calls.slice(1)) {
+      expect((c.body as Record<string, unknown>).assignmentId).toBeUndefined();
+    }
+  });
+
+  it('supervisor-mode /me/assignments list doubles as the promoter assignment picker source', async () => {
+    await supervisorRoute.getMyAssignments();
+    await supervisorRoute.getMyAssignments('2026-09-19');
+    expect(calls.map((c) => `${c.method} ${c.path} ${JSON.stringify(c.params) ?? ''}`)).toEqual([
+      'get /me/assignments ',
+      'get /me/assignments {"date":"2026-09-19"}',
+    ]);
   });
 });

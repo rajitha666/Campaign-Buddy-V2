@@ -15,6 +15,7 @@ import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
+import { useAssignment } from '@/context/AssignmentContext';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'StatsUpdate'>;
@@ -23,9 +24,17 @@ export function StatsUpdateScreen() {
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const { checkedIn } = useAttendance();
+  // Multi-outlet promoters update the outlet chosen on Home — stats are per
+  // assignment, so every read and write carries its assignmentId.
+  const { assignment } = useAssignment();
+  const assignmentId = assignment?.assignmentId;
   const { save } = useOfflineSave();
   const { showToast } = useToast();
-  const statsQuery = useQuery({ queryKey: ['stats', 'today'], queryFn: offlineQueries.getTodayStats });
+  const statsQuery = useQuery({
+    queryKey: ['stats', 'today', assignmentId],
+    queryFn: () => offlineQueries.getTodayStats(assignmentId),
+    enabled: !!assignmentId,
+  });
   // Tester count (client doc D) — a campaign-toggled day-scope custom field,
   // not a DailyStats column, but reps enter it the same way as footfall/
   // approached/conversion, so it gets the same Stepper UI here rather than a
@@ -56,19 +65,15 @@ export function StatsUpdateScreen() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const outcomes = await Promise.all([
-        save('stats', 'today', {
-          footFall: footFall ?? undefined,
-          approached: approached ?? undefined,
-          converted: converted ?? undefined,
-        }),
-        testerField ? save('salesSummary', 'today', { customFields: { tester: tester ?? 0 } }) : null,
+        save('stats', assignmentId!, { footFall: footFall ?? undefined, approached: approached ?? undefined, converted: converted ?? undefined, assignmentId }),
+        testerField ? save('salesSummary', assignmentId!, { customFields: { tester: tester ?? 0 }, assignmentId }) : null,
       ]);
       return outcomes.includes('queued') ? 'queued' : 'sent';
     },
     onSuccess: (outcome) => {
-      queryClient.invalidateQueries({ queryKey: ['stats', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
       queryClient.invalidateQueries({ queryKey: ['sales-fields'] });
-      queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-summary'] });
       showToast(savedMessage(outcome));
       navigation.goBack();
     },

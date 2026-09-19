@@ -19,6 +19,13 @@ const CONFLICT_CHECK_MIN_AGE_MS = 60_000;
 
 const sendPings = () => flushPings((p) => sendLocationPing(p));
 
+// Multi-outlet promoters: a queued write's `assignmentId` chooses which
+// outlet's activation the send targets — query param, never in the body.
+function targeted<T>(payload: unknown): { body: T; assignmentId?: string } {
+  const { assignmentId, ...body } = (payload ?? {}) as T & { assignmentId?: string };
+  return { body: body as T, assignmentId };
+}
+
 export const syncHandlers: queue.SyncHandlers = {
   checkIn: async (_key, payload) => {
     const p = payload as { assignmentId: string; latitude: number; longitude: number; capturedAt: string };
@@ -28,22 +35,19 @@ export const syncHandlers: queue.SyncHandlers = {
   // arrives (own check-out, end-of-day auto-checkout) the server still accepts it when that
   // moment falls inside the shift. While the shift is open it is ignored.
   stats: async (_key, payload, item) => {
-    await statsApi.updateTodayStats({ ...(payload as statsApi.StatsUpdateRequest), capturedAt: item.updatedAt });
+    const { body, assignmentId } = targeted<statsApi.StatsUpdateRequest>(payload);
+    await statsApi.updateTodayStats({ ...body, capturedAt: item.updatedAt }, assignmentId);
   },
   salesSummary: async (_key, payload, item) => {
-    await salesSummaryApi.updateSalesSummary({
-      ...(payload as Parameters<typeof salesSummaryApi.updateSalesSummary>[0]),
-      capturedAt: item.updatedAt,
-    });
+    const { body, assignmentId } = targeted<Parameters<typeof salesSummaryApi.updateSalesSummary>[0]>(payload);
+    await salesSummaryApi.updateSalesSummary({ ...body, capturedAt: item.updatedAt }, assignmentId);
   },
   productStock: async (key, payload, item) => {
     await productsApi.updateStock(key, { ...(payload as Parameters<typeof productsApi.updateStock>[1]), capturedAt: item.updatedAt });
   },
   salesConfirm: async (_key, payload, item) => {
-    await salesSummaryApi.confirmSalesSummary({
-      ...(payload as Parameters<typeof salesSummaryApi.confirmSalesSummary>[0]),
-      capturedAt: item.updatedAt,
-    });
+    const { body, assignmentId } = targeted<Parameters<typeof salesSummaryApi.confirmSalesSummary>[0]>(payload);
+    await salesSummaryApi.confirmSalesSummary({ ...body, capturedAt: item.updatedAt }, assignmentId);
   },
   checkOut: async (_key, payload) => {
     // Pings must reach the server while the shift is still open.
@@ -57,7 +61,7 @@ export async function checkConflict(item: QueuedMutation): Promise<ConflictField
   if (Date.now() - Date.parse(item.createdAt) < CONFLICT_CHECK_MIN_AGE_MS) return null;
   let server: unknown;
   if (item.kind === 'stats') {
-    server = await statsApi.getTodayStats();
+    server = await statsApi.getTodayStats(targeted<statsApi.StatsUpdateRequest>(item.payload).assignmentId);
   } else if (item.kind === 'productStock') {
     const a = await profileApi.getTodayAssignment();
     const products = await productsApi.getCampaignProducts(a.campaign.id, a.outlet.id);

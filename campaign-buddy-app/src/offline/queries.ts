@@ -9,6 +9,7 @@ import * as salesFieldsApi from '@/api/salesFields';
 import * as salesSummaryApi from '@/api/salesSummary';
 import * as productsApi from '@/api/products';
 import * as performanceApi from '@/api/performance';
+import * as supervisorRouteApi from '@/api/supervisorRoute';
 import * as attendanceApi from '@/api/attendance';
 import { Image } from 'react-native';
 import { localDayKey } from '@/lib/date';
@@ -19,7 +20,10 @@ import { isNetworkError } from './networkError';
 import type { CampaignProductListItem } from '@/api/types';
 
 export const getTodayAssignment = () => cachedFetch(cacheKeys.assignment(localDayKey()), profileApi.getTodayAssignment);
-export const getTodayStats = () => cachedFetch(cacheKeys.stats(localDayKey()), statsApi.getTodayStats);
+/** Multi-outlet promoters: every assignment open today, chosen outlet included (backend /me/assignments). */
+export const getMyAssignments = () => cachedFetch(cacheKeys.assignments(localDayKey()), supervisorRouteApi.getMyAssignments);
+export const getTodayStats = (assignmentId?: string) =>
+  cachedFetch(cacheKeys.stats(localDayKey(), assignmentId), () => statsApi.getTodayStats(assignmentId));
 export const getSalesFields = () => cachedFetch(cacheKeys.salesFields(localDayKey()), salesFieldsApi.getSalesFields);
 export const getAttendanceHistory = () =>
   cachedFetch(`attendance-history:${localDayKey()}`, () => attendanceApi.getAttendanceHistory('week'));
@@ -32,8 +36,8 @@ export const getCampaignPerformance = (campaignId: string, outletId: string) =>
 export const getProductDetails = (productId: string) =>
   cachedFetch(`product:${productId}`, () => productsApi.getProductDetails(productId));
 export const getLast7Days = () => cachedFetch(`stats-range-7d:${localDayKey()}`, () => statsApi.getLast7Days());
-export const getTodaySalesSummary = () =>
-  cachedFetch(cacheKeys.salesSummary(localDayKey()), salesSummaryApi.getTodaySalesSummary);
+export const getTodaySalesSummary = (assignmentId?: string) =>
+  cachedFetch(cacheKeys.salesSummary(localDayKey(), assignmentId), () => salesSummaryApi.getTodaySalesSummary(assignmentId));
 
 export async function getCampaignProducts(
   campaignId: string,

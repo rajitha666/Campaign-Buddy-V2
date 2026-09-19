@@ -356,8 +356,8 @@ Drives the Home campaign card. **Response `200`**
 }
 ```
 
-### `GET /me/assignments` — supervisor mode (`role: "campaign_owner"`)
-Same shape as a single `/me/assignments/today` entry, but returns **every** Activation open for a given date, not just one — a supervisor can have several concurrent outlet assignments on a route where a promoter has one. Optional `?date=YYYY-MM-DD` (defaults to today). Each entry's `assignmentId` is passed to `POST /attendance/check-in`/`check-out` exactly as today — the global one-open-shift lock (§5) still applies, so a supervisor checks into one outlet, checks out, then checks into the next. **Response `200`**
+### `GET /me/assignments` — every same-day assignment (supervisor route mode + multi-outlet promoters)
+Same shape as a single `/me/assignments/today` entry, but returns **every** Activation open for a given date, not just one. A supervisor can have several concurrent outlet assignments on a route, and a promoter can also hold multiple same-day outlet assignments (the app shows an outlet picker for this — the old `/today` flow silently showed only one). Optional `?date=YYYY-MM-DD` (defaults to today). Each entry's `assignmentId` is passed to `POST /attendance/check-in`/`check-out` exactly as today — the global one-open-shift lock (§5) still applies, so the rep checks into one outlet, checks out, then checks into the next. **Response `200`**
 ```json
 {
   "data": [
@@ -521,7 +521,7 @@ Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `ge
 ## 6. Daily Stats, Products & Stock, Sales Summary
 
 ### 6.1 `GET /stats/today`
-**Response `200`**
+Optional `?assignmentId=` targets one of the rep's several same-day assignments (multi-outlet promoters pick an outlet; single-assignment reps omit it and the server picks as before — same param as `GET /attendance/today`). **Response `200`**
 ```json
 {
   "data": {

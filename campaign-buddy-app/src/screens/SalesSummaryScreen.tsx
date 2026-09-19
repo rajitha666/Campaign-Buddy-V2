@@ -13,6 +13,7 @@ import { CheckInRequiredNotice } from '@/components/CheckInRequiredNotice';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useToast } from '@/components/Toast';
 import { useAttendance } from '@/context/AttendanceContext';
+import { useAssignment } from '@/context/AssignmentContext';
 import { canConfirmSales } from '@/lib/salesConfirmGuard';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
@@ -20,9 +21,16 @@ export function SalesSummaryScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { checkedIn } = useAttendance();
+  // Multi-outlet promoters confirm the outlet chosen on Home.
+  const { assignment } = useAssignment();
+  const assignmentId = assignment?.assignmentId;
   const { save } = useOfflineSave();
   const { showToast } = useToast();
-  const summaryQuery = useQuery({ queryKey: ['sales-summary', 'today'], queryFn: offlineQueries.getTodaySalesSummary });
+  const summaryQuery = useQuery({
+    queryKey: ['sales-summary', 'today', assignmentId],
+    queryFn: () => offlineQueries.getTodaySalesSummary(assignmentId),
+    enabled: !!assignmentId,
+  });
   const last7Query = useQuery({ queryKey: ['stats', 'range-7d'], queryFn: offlineQueries.getLast7Days });
   const [remarks, setRemarks] = useState<string | null>(null);
   const [customValues, setCustomValues] = useState<Record<string, CustomFieldValue>>({});
@@ -45,13 +53,14 @@ export function SalesSummaryScreen() {
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
-      return save('salesConfirm', 'today', {
+      return save('salesConfirm', assignmentId!, {
         remarks: displayedRemarks || undefined,
         customFields: customFields.length ? customValues : undefined,
+        assignmentId,
       });
     },
     onSuccess: (outcome) => {
-      queryClient.invalidateQueries({ queryKey: ['sales-summary', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-summary'] });
       queryClient.invalidateQueries({ queryKey: ['stats', 'range-7d'] });
       showToast(savedMessage(outcome));
       // Land back on Home after confirming — matches the prototype's

@@ -13,6 +13,7 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { registerBackgroundSync } from '@/offline/backgroundSync';
 import { AttendanceProvider, useAttendance } from '@/context/AttendanceContext';
+import { AssignmentProvider } from '@/context/AssignmentContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { useInactivityLogout } from '@/hooks/useInactivityLogout';
@@ -52,8 +53,10 @@ export function AuthenticatedApp() {
       <NetworkProvider>
         <SyncEngineProvider>
           <AttendanceProvider>
-            <LocationTrackerMount />
-            <Shell />
+            <AssignmentProvider>
+              <LocationTrackerMount />
+              <Shell />
+            </AssignmentProvider>
           </AttendanceProvider>
         </SyncEngineProvider>
       </NetworkProvider>
