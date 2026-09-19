@@ -358,6 +358,15 @@ see a read-only **My Campaigns** card view.
 ### 4.11 Cross-cutting portal behaviour
 
 - **Campaign switcher** re-scopes everything campaign-bound in one click.
+- **Personalization** (account menu → Personalization) — per-user portal settings
+  saved on the *account*, so they follow the user to any browser or device.
+  First option: **favorite pages** — star any menu item (or the star beside the
+  page title) and it is pinned under a "Favorites" heading at the top of the
+  sidebar; reorder or remove from the Personalization page (up to 12). Available
+  to every portal role; a favorite the role can't reach is simply hidden.
+  Storage is a generic per-user key/value table (`UserPreference`) with a
+  server-side key registry (`utils/userPreferences.ts`), so new options are an
+  additive change: register a key, add a section to the Personalization page.
 - **Excel/CSV export** on the log and report tables.
 - **Grant-scoped empty states** — "No activity in your assigned outlets for this
   range" rather than a blank table, for supervisors/sponsors whose outlet subset

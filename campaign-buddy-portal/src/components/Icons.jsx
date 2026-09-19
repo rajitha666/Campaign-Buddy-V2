@@ -25,5 +25,7 @@ export const ICONS = {
   admins: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" /><path d="M2.5 19c1.1-3.4 3.4-5 6.5-5s5.4 1.6 6.5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /><path d="M16 4.8a2.8 2.8 0 010 5.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /><path d="M18.5 13.5c1.7.7 2.8 2 3.5 4.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>,
   approve: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   decline: <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>,
+  star: <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L12 3.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>,
+  starFilled: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L12 3.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>,
   menu: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>,
 };

@@ -704,3 +704,22 @@ Full detail in `docs/issue-reporting-spec.md`. Summary:
 - **Retry job** (`src/jobs/issueSync.ts`): node-cron hourly + boot catch-up,
   flushes `pending`/`failed` rows once the integration is configured. Wired from
   `server.ts` only. `ISSUE_SYNC_DISABLED=1` to opt out.
+
+## 14. Addendum — Portal personalization (2026-09-19)
+
+Per-account portal settings (first option: favorite menu pages) that follow the
+user to any device.
+
+- **Schema:** new model `UserPreference` (table `user_preferences`, migration
+  `20260919090000_add_user_preferences`) — composite key `(userId, key)`, `value`
+  JSON, `updatedAt`; cascades on user delete. One row per key so two devices
+  saving different options never overwrite each other.
+- **Endpoints** (`/admin/v1`, any authenticated portal user, own rows only):
+  `GET /me/preferences` → `{ "<key>": value }` for keys the user has set;
+  `PUT /me/preferences` with `{ "<key>": value | null }` → partial update
+  (`null` resets a key), returns the full set. Unknown keys and invalid values
+  → `400 VALIDATION_ERROR` with `field` set to the key.
+- **Registry** (`src/utils/userPreferences.ts`): allowed keys + Zod value
+  schemas. Add a key there to add an option — no migration. Current keys:
+  `menu.favorites` — array of portal route paths (≤ 12, de-duplicated, order
+  preserved).

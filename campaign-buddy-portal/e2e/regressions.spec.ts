@@ -141,3 +141,32 @@ test("brand_wise activation target form offers brand selection and saves a brand
   await page.locator(".drawer button.btn-primary, .drawer button").last().click();
   await expect(page.locator("table tbody tr", { hasText: "(Brand)" }).first()).toBeVisible({ timeout: 10000 });
 });
+
+// Personalization: favorite pages are saved on the account (not the browser),
+// so a second browser context — another device — sees them after signing in.
+test("favorite pages follow the account to another device (personalization)", async ({ page, browser }) => {
+  const favLabel = page.locator(".nav-section-label", { hasText: "Favorites" });
+  const isPreferencePut = (r: import("@playwright/test").Response) =>
+    r.url().includes("/me/preferences") && r.request().method() === "PUT";
+
+  await loginAs(page, "admin");
+  const star = page.getByRole("button", { name: "Add Clients to favorites" });
+  const saved = page.waitForResponse(isPreferencePut);
+  await star.click({ force: true }); // hover-only affordance on desktop
+  expect((await saved).ok()).toBe(true);
+  await expect(favLabel).toBeVisible();
+
+  const otherDevice = await browser.newContext();
+  const page2 = await otherDevice.newPage();
+  try {
+    await loginAs(page2, "admin");
+    await expect(page2.locator(".nav-section-label", { hasText: "Favorites" })).toBeVisible();
+    await expect(page2.getByRole("button", { name: "Remove Clients from favorites" }).first()).toBeAttached();
+  } finally {
+    // leave the shared demo account as we found it
+    const cleared = page2.waitForResponse(isPreferencePut);
+    await page2.getByRole("button", { name: "Remove Clients from favorites" }).first().click({ force: true });
+    await cleared;
+    await otherDevice.close();
+  }
+});

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NAV } from '../config/nav';
 import { ICONS } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { useFavorites } from '../context/PreferencesContext';
+import { navEntriesFor, resolveFavorites, entryLabel } from '../lib/favorites';
 
 export default function Sidebar({ collapsed = false, isPhone = false, onToggleCollapse, onNavigate }) {
   const { persona, designationLabel } = useAuth();
@@ -12,6 +14,12 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
   // Which collapsed nav-group's flyout is pinned open by a tap — hover alone
   // never fires on touch, so collapsed groups need a click-to-open fallback.
   const [openGroup, setOpenGroup] = useState(null);
+  // Personalization: pages this user starred, pinned above the regular menu.
+  const favorites = useFavorites();
+  const favEntries = useMemo(
+    () => resolveFavorites(favorites.paths, navEntriesFor(NAV, persona)),
+    [favorites.paths, persona]
+  );
 
   const roleLabel = persona === 'admin' ? 'SUPER ADMIN' : persona === 'supervisor' ? 'SUPERVISOR' : 'SPONSOR';
 
@@ -51,6 +59,23 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
         ) : null}
       </div>
       <div className="nav-scroll">
+        {favEntries.length > 0 ? (
+          <div>
+            <div className="nav-section-label">Favorites</div>
+            {favEntries.map((e) => (
+              <NavEntry
+                key={`fav-${e.path}`}
+                item={{ path: e.path, label: entryLabel(e), icon: e.icon, roles: [persona] }}
+                pathname={location.pathname}
+                go={go}
+                isOpen={false}
+                onToggleOpen={() => {}}
+                designationLabel={designationLabel}
+                favorites={favorites}
+              />
+            ))}
+          </div>
+        ) : null}
         {NAV.map((sec, si) => {
           if (sec.roles && !sec.roles.includes(persona)) return null;
           const visibleItems = sec.items.filter((it) => it.roles.includes(persona));
@@ -67,6 +92,7 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
                   isOpen={openGroup === `${si}-${ii}`}
                   onToggleOpen={() => setOpenGroup((g) => (g === `${si}-${ii}` ? null : `${si}-${ii}`))}
                   designationLabel={designationLabel}
+                  favorites={favorites}
                 />
               ))}
             </div>
@@ -77,7 +103,26 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
   );
 }
 
-function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel }) {
+// Star toggle shown on every page entry. Stops the click so starring never
+// navigates. Hidden until hover/focus unless already a favorite.
+function StarButton({ path, name, favorites }) {
+  const on = favorites.isFavorite(path);
+  const text = on ? `Remove ${name} from favorites` : `Add ${name} to favorites`;
+  return (
+    <button
+      type="button"
+      className={`nav-star${on ? ' is-on' : ''}`}
+      aria-pressed={on}
+      aria-label={text}
+      title={text}
+      onClick={(e) => { e.stopPropagation(); favorites.toggle(path); }}
+    >
+      {on ? ICONS.starFilled : ICONS.star}
+    </button>
+  );
+}
+
+function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel, favorites }) {
   const label = (text) => applyDesignationLabel(text, designationLabel);
   if (item.children) {
     const activeParent = item.children.some((c) => c.path === pathname);
@@ -95,6 +140,7 @@ function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel }
               onClick={() => go(c.path)}
             >
               <span className="dot" />{label(c.label)}
+              <StarButton path={c.path} name={label(c.label)} favorites={favorites} />
             </div>
           ))}
         </div>
@@ -109,6 +155,7 @@ function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel }
         title={label(item.label)}
       >
         {ICONS[item.icon]}<span>{label(item.label)}</span>
+        <StarButton path={item.path} name={label(item.label)} favorites={favorites} />
       </div>
       <div className="nav-flyout-label">{label(item.label)}</div>
     </div>
