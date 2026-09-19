@@ -21,8 +21,14 @@ function toDailyStats(s: { footFall: number; approached: number; converted: numb
   };
 }
 
-async function currentActivation(staffId: string) {
+// Multi-outlet promoters may hold two same-day Activations; ?assignmentId=
+// targets one explicitly (same param as /attendance/today). Without it the
+// legacy findFirst pick applies, so single-assignment callers are unchanged.
+async function currentActivation(staffId: string, assignmentId?: string) {
   const today = dayDate();
+  if (assignmentId) {
+    return prisma.activation.findFirst({ where: { id: assignmentId, staffId } });
+  }
   return prisma.activation.findFirst({
     where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
   });
@@ -31,7 +37,8 @@ async function currentActivation(staffId: string) {
 router.get(
   "/stats/today",
   asyncHandler(async (req, res) => {
-    const activation = await currentActivation(req.staff!.sub);
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = await currentActivation(req.staff!.sub, assignmentId);
     const today = dayDate();
     if (!activation) {
       res.json(ok(toDailyStats({ footFall: 0, approached: 0, converted: 0 }, 0)));
@@ -52,7 +59,8 @@ router.patch(
   "/stats/today",
   validate({ body: s.statsUpdate }),
   asyncHandler(async (req, res) => {
-    const activation = await currentActivation(req.staff!.sub);
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = await currentActivation(req.staff!.sub, assignmentId);
     if (!activation) throw new ApiError(422, "NO_ACTIVATION", "No active assignment for today — contact your supervisor");
     const { footFall, approached, converted, capturedAt } = req.body as {
       footFall?: number; approached?: number; converted?: number; capturedAt?: string;

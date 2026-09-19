@@ -18,11 +18,13 @@ import {
 
 const router = Router();
 
-async function currentActivationOrThrow(staffId: string) {
+async function currentActivationOrThrow(staffId: string, assignmentId?: string) {
   const today = dayDate();
-  const activation = await prisma.activation.findFirst({
-    where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
-  });
+  const activation = assignmentId
+    ? await prisma.activation.findFirst({ where: { id: assignmentId, staffId } })
+    : await prisma.activation.findFirst({
+        where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
+      });
   if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
   return activation;
 }
@@ -56,7 +58,8 @@ async function fullSummary(
 router.get(
   "/sales-summary/today",
   asyncHandler(async (req, res) => {
-    const activation = await currentActivationOrThrow(req.staff!.sub);
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = await currentActivationOrThrow(req.staff!.sub, assignmentId);
     res.json(ok(await fullSummary(activation, req.staff!.sub, dayDate())));
   })
 );
@@ -74,7 +77,8 @@ router.patch(
   "/sales-summary/today",
   validate({ body: s.salesSummaryRemarks }),
   asyncHandler(async (req, res) => {
-    const activation = await currentActivationOrThrow(req.staff!.sub);
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = await currentActivationOrThrow(req.staff!.sub, assignmentId);
     const { remarks, customFields, capturedAt } = req.body as {
       remarks?: string; customFields?: Record<string, unknown>; capturedAt?: string;
     };
@@ -101,7 +105,8 @@ router.post(
   "/sales-summary/today/confirm",
   validate({ body: s.salesSummaryConfirm }),
   asyncHandler(async (req, res) => {
-    const activation = await currentActivationOrThrow(req.staff!.sub);
+    const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
+    const activation = await currentActivationOrThrow(req.staff!.sub, assignmentId);
     const { remarks, customFields, capturedAt } = req.body as {
       remarks?: string; customFields?: Record<string, unknown>; capturedAt?: string;
     };
