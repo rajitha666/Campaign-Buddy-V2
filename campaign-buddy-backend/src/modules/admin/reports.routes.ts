@@ -238,7 +238,7 @@ router.get(
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
     const outlets = outletScope(req);
-    const when = dayDate((req.query.date as string) || new Date().toISOString().slice(0, 10));
+    const when = dayDate(typeof req.query.date === "string" ? req.query.date : undefined);
     const campaignId = req.params.campaignId;
 
     const activations = await prisma.activation.findMany({
