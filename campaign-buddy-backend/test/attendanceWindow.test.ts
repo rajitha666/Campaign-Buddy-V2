@@ -70,6 +70,11 @@ describe("resolveShiftStart/resolveShiftEnd — campaign default + activation ov
   });
 });
 
+// makeCampaignWithActivation builds its date range around the real "now", so the
+// faked clock must land on the real UTC day — a pinned calendar date drifts out
+// of the activation's window as the days pass.
+const todayAtUtc = (hhmm: string) => new Date(`${new Date().toISOString().slice(0, 10)}T${hhmm}:00.000Z`);
+
 describe("check-in flagging uses the campaign's default shift window (09:00-18:00)", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -80,7 +85,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T07:00:00.000Z")); // 12:30 Colombo — past 09:10
+    vi.setSystemTime(todayAtUtc("07:00")); // 12:30 Colombo — past 09:10
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -94,7 +99,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T02:00:00.000Z")); // 07:30 Colombo
+    vi.setSystemTime(todayAtUtc("02:00")); // 07:30 Colombo
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -110,7 +115,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T02:15:00.000Z")); // 07:45 Colombo — past 07:10
+    vi.setSystemTime(todayAtUtc("02:15")); // 07:45 Colombo — past 07:10
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -127,7 +132,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T01:00:00.000Z")); // 06:30 Colombo — past 06:10, but well before 09:00
+    vi.setSystemTime(todayAtUtc("01:00")); // 06:30 Colombo — past 06:10, but well before 09:00
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)

@@ -69,7 +69,7 @@ test("staff attendance outlet dropdown: reopen on click, keyboard select, and fi
 
   // The table reloads filtered to that outlet's rows.
   await page.waitForTimeout(1500);
-  const outlets = await page.locator("table tbody tr td:nth-child(2)").allTextContents();
+  const outlets = await page.locator("table tbody tr td:nth-child(1)").allTextContents(); // Outlet is the first column
   expect(outlets.length).toBeGreaterThan(0);
   for (const o of outlets) expect(o).toContain("Nawala");
 
