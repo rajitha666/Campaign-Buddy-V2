@@ -32,20 +32,20 @@ export const NAV = [
       { path: '/staff', label: 'List' },
       { path: '/staff/attendance', label: 'Attendance' },
       { path: '/staff/absence', label: 'Absence' },
+      { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
       { path: '/leave-requests', label: 'Leave Requests' },
       { path: '/staff/profiles', label: 'Profiles' },
     ]},
     { label: 'Supervisors', icon: 'supervisors', roles: ['admin'], children: [
       { path: '/supervisor-tasks', label: 'Tasks' },
       { path: '/supervisor-task-results', label: 'Task Results' },
-      { path: '/outlet-attendance', label: 'Outlet Attendance' },
       { path: '/supervisor-attendance', label: 'Attendance' },
       { path: '/assign-routes', label: 'Assign Routes' },
     ]},
     { path: '/my-outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['supervisor'] },
     { path: '/my-leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['supervisor'] },
     // Outlet checklist results (photos + 1–5 scores) — read-only, outlet-scoped by grant.
-    { path: '/supervisor-task-results', label: 'Task Results', icon: 'supervisors', roles: ['supervisor', 'sponsor'] },
+    { path: '/supervisor-task-results', label: 'Task Results', icon: 'supervisors', roles: ['supervisor'] },
     // Client role (doc G) — read-only visibility into both attendance logs
     // for their own campaign, same generic outlet-scoping as everyone else.
     { path: '/staff/attendance', label: 'Attendance', icon: 'staff', roles: ['sponsor'] },
@@ -53,7 +53,6 @@ export const NAV = [
   ]},
   { section: 'Sales', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Sales Overview', icon: 'sales', roles: ['admin'], children: [
-      { path: '/sales', label: 'Overview' },
       { path: '/sales/sku-wise', label: 'SKU Wise Sales' },
       { path: '/sales/status', label: 'Sales Update Status' },
       { path: '/sales/outlet-wise', label: 'Outlet wise' },
@@ -77,21 +76,32 @@ export const NAV = [
       { path: '/reports/sku-wise', label: 'Overall SKU Wise' },
       { path: '/reports/brand-wise', label: 'Brand Wise' },
     ]},
-    { label: 'Admin Reports', icon: 'reports', roles: ['admin'], children: [
-      { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
-    ]},
-    { label: 'Client Reports', icon: 'reports', roles: ['admin', 'sponsor'], children: [
+    { label: 'Client Reports', icon: 'reports', roles: ['sponsor'], children: [
       { path: '/sponsor/sales', label: 'Overall Outlet and SKU Wise' },
       { path: '/reports/client-brand-wise', label: 'Brand Wise' },
     ]},
     { path: '/reports/sku-wise', label: 'Overall Reports', icon: 'reports', roles: ['supervisor'] },
   ]},
   { section: 'Admin', roles: ['admin'], items: [
-    { path: '/promoter-list', label: 'Promoter List', icon: 'staff', roles: ['admin'] },
     { path: '/license', label: 'License Usage', icon: 'reports', roles: ['admin'] },
     { path: '/issues', label: 'Issue Reports', icon: 'reports', roles: ['admin'] },
     { path: '/system-status', label: 'System Status', icon: 'reports', roles: ['admin'] },
     { path: '/users', label: 'Users', icon: 'users', roles: ['admin'] },
     { path: '/roles', label: 'Roles', icon: 'roles', roles: ['admin'] },
+  ]},
+  // Nav review (2026-09): pages that duplicate another menu item. Kept reachable
+  // here (routes untouched) so nothing goes missing unnoticed; once confirmed,
+  // delete the entry here and, if the page is now unused, its route/resource.
+  { section: 'Archive', roles: ['admin'], items: [
+    // Dashboard shows the same cards + weekly chart.
+    { path: '/sales', label: 'Sales Overview', icon: 'sales', roles: ['admin'] },
+    // Same query as Supervisors › Attendance (supervisor attendance rows).
+    { path: '/outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['admin'] },
+    // Same page as Sales › SKU Wise Sales.
+    { path: '/sponsor/sales', label: 'Client: Outlet & SKU Wise', icon: 'reports', roles: ['admin'] },
+    // Same API + filters as Reports › Brand Wise.
+    { path: '/reports/client-brand-wise', label: 'Client: Brand Wise', icon: 'reports', roles: ['admin'] },
+    // Read-only subset of Staff › List.
+    { path: '/promoter-list', label: 'Promoter List', icon: 'staff', roles: ['admin'] },
   ]},
 ];

@@ -1,11 +1,14 @@
 // Supervisor outlet checklist (mobile). A supervisor visiting an outlet scores
 // the promoter against the campaign's QA tasks: 1-5 ratings, free-text feedback
 // and a configured number of outlet-setup photos.
-//  - range/feedback answers are per promoter: keyed (task, activation, day),
+//  - A supervisor may visit the same outlet several times a day; every check-in is
+//    its own visit (AttendanceRecord.visitNo) with its own blank checklist. The
+//    checklist being filled is the open visit, or — after check-out — the latest.
+//  - range/feedback answers are per promoter: keyed (task, activation, day, visit),
 //    so re-saving the same visit updates in place.
-//  - photo answers are per OUTLET: one row per (task, supervisor, outlet, day),
-//    shared by every promoter that supervisor covers there, so the same display
-//    is never photographed twice.
+//  - photo answers are per OUTLET: one row per (task, supervisor, outlet, day,
+//    visit), shared by every promoter that supervisor covers there in that visit
+//    number, so the same display is never photographed twice.
 import { Router, type Request, type Response, type NextFunction } from "express";
 import path from "path";
 import fs from "fs";
@@ -46,18 +49,24 @@ function removeStoredPhoto(url: string) {
 async function loadVisit(req: Request) {
   const today = dayDate();
   const activation = await prisma.activation.findFirst({
-    where: { id: req.params.assignmentId, supervisorStaffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+    where: { id: req.params.assignmentId, supervisorStaffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null },
     include: { staff: true, outlet: true },
   });
   if (!activation) throw notFound("Assignment");
-  return { activation, today };
+  const latest = await prisma.attendanceRecord.findFirst({
+    where: { activationId: activation.id, staffId: req.staff!.sub, date: today },
+    orderBy: { visitNo: "desc" },
+  });
+  return { activation, today, visitNo: latest?.visitNo ?? 1 };
 }
 
 type Visit = Awaited<ReturnType<typeof loadVisit>>;
 
-const answerKey = (taskId: string, activationId: string, date: Date) => ({ taskId_activationId_date: { taskId, activationId, date } });
+const answerKey = (taskId: string, activationId: string, date: Date, visitNo: number) => ({
+  taskId_activationId_date_visitNo: { taskId, activationId, date, visitNo },
+});
 const photoRow = (v: Visit, taskId: string, supervisorStaffId: string) => ({
-  taskId, supervisorStaffId, outletId: v.activation.outletId, date: v.today,
+  taskId, supervisorStaffId, outletId: v.activation.outletId, date: v.today, visitNo: v.visitNo,
 });
 const shapePhotos = (photos: { url: string; createdAt: Date }[]) =>
   photos.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).map((p) => ({ url: p.url, uploadedAt: p.createdAt }));
@@ -66,16 +75,16 @@ router.get(
   "/me/assignments/:assignmentId/supervisor-tasks",
   asyncHandler(async (req, res) => {
     const visit = await loadVisit(req);
-    const { activation, today } = visit;
+    const { activation, today, visitNo } = visit;
     const tasks = await prisma.supervisorTask.findMany({
       where: { campaignId: activation.campaignId, deletedAt: null },
       orderBy: { createdAt: "asc" },
     });
     const answers = await prisma.supervisorTaskResponse.findMany({
-      where: { activationId: activation.id, date: today, task: { taskType: { not: "photo" } } },
+      where: { activationId: activation.id, date: today, visitNo, task: { taskType: { not: "photo" } } },
     });
     const photoRows = await prisma.supervisorTaskResponse.findMany({
-      where: { supervisorStaffId: req.staff!.sub, outletId: activation.outletId, date: today, task: { taskType: "photo" } },
+      where: { supervisorStaffId: req.staff!.sub, outletId: activation.outletId, date: today, visitNo, task: { taskType: "photo" } },
       include: { photos: true },
     });
     const answerByTask = new Map(answers.map((r) => [r.taskId, r]));
@@ -83,6 +92,7 @@ router.get(
     res.json(
       ok({
         ratingScale: RATING_SCALE,
+        visitNo,
         promoter: { id: activation.staff.id, name: activation.staff.fullName },
         outlet: { id: activation.outlet.id, name: activation.outlet.name },
         tasks: tasks.map((t) => {
@@ -105,7 +115,7 @@ router.put(
   "/me/assignments/:assignmentId/supervisor-tasks/responses",
   validate({ body: s.supervisorChecklistSave }),
   asyncHandler(async (req, res) => {
-    const { activation, today } = await loadVisit(req);
+    const { activation, today, visitNo } = await loadVisit(req);
     const { responses } = req.body as { responses: { taskId: string; rating?: number | null; feedback?: string | null }[] };
 
     const taskIds = [...new Set(responses.map((r) => r.taskId))];
@@ -128,10 +138,10 @@ router.put(
           ...(feedback !== undefined ? { feedback } : {}),
         };
         return prisma.supervisorTaskResponse.upsert({
-          where: answerKey(r.taskId, activation.id, today),
+          where: answerKey(r.taskId, activation.id, today, visitNo),
           create: {
             taskId: r.taskId, activationId: activation.id, outletId: activation.outletId,
-            supervisorStaffId: req.staff!.sub, date: today, ...data,
+            supervisorStaffId: req.staff!.sub, date: today, visitNo, ...data,
           },
           update: data,
         });
@@ -192,7 +202,7 @@ router.post(
       : await prisma.supervisorTaskResponse.create({
           data: {
             taskId: task.id, activationId: visit.activation.id, outletId: visit.activation.outletId,
-            supervisorStaffId: req.staff!.sub, date: visit.today, photos: { create: { url } },
+            supervisorStaffId: req.staff!.sub, date: visit.today, visitNo: visit.visitNo, photos: { create: { url } },
           },
           include: { photos: true },
         });

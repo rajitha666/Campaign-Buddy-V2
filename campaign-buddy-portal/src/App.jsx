@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { PreferencesProvider } from './context/PreferencesContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
 import Login from './pages/Login';
@@ -21,6 +22,7 @@ import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
 import SupervisorTaskResults from './pages/SupervisorTaskResults';
 import LiveMap from './pages/LiveMap';
+import Personalization from './pages/Personalization';
 import NotFound from './pages/NotFound';
 
 // `key` on the element forces a REMOUNT when navigating between two table
@@ -34,11 +36,13 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <PreferencesProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/personalization" element={<Personalization />} />
 
               <Route path="/clients" element={R('clients')()} />
               <Route path="/items" element={R('items')()} />
@@ -100,6 +104,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
+          </PreferencesProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

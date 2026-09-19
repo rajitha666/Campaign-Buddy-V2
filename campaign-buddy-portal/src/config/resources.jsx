@@ -611,6 +611,7 @@ export const RESOURCES = {
     columns: [
       { key: 'supervisorName', label: 'Supervisor' }, { key: 'outletName', label: 'Outlet' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'visitNo', label: 'Visit', render: (r) => r.visitNo ?? 1 },
       { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
       { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
     ],
@@ -624,6 +625,7 @@ export const RESOURCES = {
       { key: 'staffName', label: 'Supervisor', render: (r) => r.staff?.fullName || r.activation?.staff?.fullName || '—' },
       { key: 'outletName', label: 'Outlet', render: (r) => r.activation?.outlet?.name || '—' },
       { key: 'date', label: 'Date', render: (r) => fmtDate(r.date) },
+      { key: 'visitNo', label: 'Visit', render: (r) => r.visitNo ?? 1 },
       { key: 'checkInAt', label: 'Check-in', render: (r) => fmtTime(r.checkInAt) },
       { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
     ],

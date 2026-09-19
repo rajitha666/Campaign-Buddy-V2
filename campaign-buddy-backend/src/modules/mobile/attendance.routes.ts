@@ -20,6 +20,7 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
     userId: staffId,
     assignmentId: rec.activationId,
     date: rec.date,
+    visitNo: rec.visitNo,
     checkInAt: rec.checkInAt,
     checkInLat: rec.checkInLat,
     checkInLng: rec.checkInLng,
@@ -44,10 +45,20 @@ function toAttendanceRecord(rec: AttendanceRecord, staffId: string) {
 // covering the same activation each have their own row, so every record lookup
 // below is by `staffId`, never by "records on my activations".
 function activationStaffScope(staffId: string) {
-  return { OR: [{ staffId }, { supervisorStaffId: staffId }] };
+  return { OR: [{ staffId }, { supervisorStaffId: staffId }], deletedAt: null };
 }
 
-const dayKey = (activationId: string, staffId: string, date: Date) => ({ activationId_staffId_date: { activationId, staffId, date } });
+// A supervisor can visit one outlet several times a day (AttendanceRecord.visitNo),
+// so "the record" for an activation-day is the latest visit, and "the open shift"
+// is the visit with no check-out yet. Promoters only ever have visit 1.
+const isSupervisor = (req: { staff?: { userType?: string } }) => req.staff?.userType === "supervisor";
+const latestVisit = (activationId: string, staffId: string, date: Date) =>
+  prisma.attendanceRecord.findFirst({ where: { activationId, staffId, date }, orderBy: { visitNo: "desc" } });
+const openVisit = (activationId: string, staffId: string, date: Date) =>
+  prisma.attendanceRecord.findFirst({
+    where: { activationId, staffId, date, checkInAt: { not: null }, checkOutAt: null },
+    orderBy: { visitNo: "desc" },
+  });
 
 router.get(
   "/attendance/today",
@@ -59,17 +70,42 @@ router.get(
     // pass this — they only ever have one Activation, so behavior for them
     // is unchanged.
     const assignmentId = typeof req.query.assignmentId === "string" ? req.query.assignmentId : undefined;
-    const activation = assignmentId
-      ? await prisma.activation.findFirst({ where: { id: assignmentId, ...activationStaffScope(req.staff!.sub) } })
-      : await prisma.activation.findFirst({
-          where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },
+    const staffId = req.staff!.sub;
+
+    // The person's open shift (if any) wherever it is, plus — for promoters — the
+    // activations they have already checked out of today. The app uses these to
+    // lock check-in elsewhere while a shift is open and to close off outlets
+    // already worked; supervisors are free to return, so theirs is always empty.
+    const open = await prisma.attendanceRecord.findFirst({
+      where: { staffId, date: today, checkInAt: { not: null }, checkOutAt: null },
+    });
+    const worked = isSupervisor(req)
+      ? []
+      : await prisma.attendanceRecord.findMany({
+          where: { staffId, date: today, checkInAt: { not: null }, checkOutAt: { not: null } },
+          select: { activationId: true },
         });
+    const shiftContext = {
+      openAssignmentId: open?.activationId ?? null,
+      workedAssignmentIds: [...new Set(worked.map((w) => w.activationId))],
+    };
+
+    // With no assignmentId, report on the open shift's activation first so a
+    // multi-outlet promoter isn't shown an arbitrary other outlet.
+    const activation = assignmentId
+      ? await prisma.activation.findFirst({ where: { id: assignmentId, ...activationStaffScope(staffId) } })
+      : open
+        ? await prisma.activation.findUnique({ where: { id: open.activationId } })
+        : await prisma.activation.findFirst({
+            where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(staffId) },
+          });
     const empty = {
       checkedIn: false, checkInAt: null, checkOutAt: null,
       shiftDurationSeconds: 0, locationVerified: false, status: "pending" as const,
+      assignmentId: activation?.id ?? null, visitNo: null, ...shiftContext,
     };
     if (!activation) return res.json(ok(empty));
-    const record = await prisma.attendanceRecord.findUnique({ where: dayKey(activation.id, req.staff!.sub, today) });
+    const record = await latestVisit(activation.id, staffId, today);
     if (!record) return res.json(ok(empty));
 
     // docs/api-spec.md §5 GET /attendance/today — the slim view.
@@ -86,6 +122,9 @@ router.get(
         shiftDurationSeconds,
         locationVerified: record.checkInLocationVerified,
         status: record.status,
+        assignmentId: activation.id,
+        visitNo: record.visitNo,
+        ...shiftContext,
       })
     );
   })
@@ -139,20 +178,24 @@ router.post(
       });
     }
 
-    // Promoters are done for the day once they check out — no re-check-in
-    // (client request 2026-09). Supervisors are exempt: they check out of one
-    // route outlet and check into the next (docs/api-spec.md /me/assignments).
-    if (req.staff!.userType !== "supervisor") {
-      const checkedOutToday = await prisma.attendanceRecord.findFirst({
+    // A promoter may work one outlet in the morning and another in the afternoon
+    // (checking out of the first comes first — see the open-shift lock below and
+    // the sales-confirmed rule at check-out), but never returns to an outlet they
+    // have already checked out of today, even under a different campaign.
+    // Supervisors are exempt: they revisit outlets, and every visit is its own
+    // record (docs/api-spec.md /me/assignments).
+    if (!isSupervisor(req)) {
+      const workedHere = await prisma.attendanceRecord.findFirst({
         where: {
           staffId: req.staff!.sub,
           checkInAt: { not: null },
           checkOutAt: { not: null },
           date: today,
+          activation: { outletId: activation.outletId },
         },
       });
-      if (checkedOutToday) {
-        throw new ApiError(409, "ALREADY_CHECKED_OUT", "You have already checked out for today.");
+      if (workedHere) {
+        throw new ApiError(409, "ALREADY_CHECKED_OUT", "You have already checked out of this outlet today.");
       }
     }
 
@@ -195,33 +238,29 @@ router.post(
       now
     );
 
-    const record = await prisma.attendanceRecord.upsert({
-      where: dayKey(activation.id, req.staff!.sub, today),
-      create: {
-        activationId: activation.id,
-        staffId: req.staff!.sub,
-        date: today,
-        checkInAt: now,
-        checkInLat: latitude,
-        checkInLng: longitude,
-        checkInLocationVerified,
-        status,
-      },
-      update: {
-        checkInAt: now,
-        checkInLat: latitude,
-        checkInLng: longitude,
-        checkInLocationVerified,
-        status,
-        // Re-check-in (e.g. after an accidental check-out earlier today) starts a
-        // fresh shift — clear the prior check-out so the one-open-shift lock and
-        // downstream "is this shift open?" checks stay consistent.
-        checkOutAt: null,
-        checkOutLat: null,
-        checkOutLng: null,
-        salesSummaryConfirmedAtCheckout: false,
-      },
-    });
+    const checkInData = {
+      checkInAt: now,
+      checkInLat: latitude,
+      checkInLng: longitude,
+      checkInLocationVerified,
+      status,
+    };
+    // The one-open-shift lock has passed, so any earlier row for this activation-day
+    // is closed. A row that never had a check-in (e.g. a leave placeholder) is
+    // filled in; otherwise this is a new visit — the supervisor's next one.
+    const latest = await latestVisit(activation.id, req.staff!.sub, today);
+    const record =
+      latest && !latest.checkInAt
+        ? await prisma.attendanceRecord.update({ where: { id: latest.id }, data: checkInData })
+        : await prisma.attendanceRecord.create({
+            data: {
+              activationId: activation.id,
+              staffId: req.staff!.sub,
+              date: today,
+              visitNo: (latest?.visitNo ?? 0) + 1,
+              ...checkInData,
+            },
+          });
 
     res.status(201).json(ok(toAttendanceRecord(record, req.staff!.sub)));
   })
@@ -266,14 +305,20 @@ router.post(
     }
     if (!activation) throw new ApiError(404, "NOT_FOUND", "No assignment for today");
 
-    const record = await prisma.attendanceRecord.findUnique({ where: dayKey(activation.id, req.staff!.sub, today) });
-    if (!record || !record.checkInAt || record.checkOutAt) {
+    const record = await openVisit(activation.id, req.staff!.sub, today);
+    if (!record || !record.checkInAt) {
       throw new ApiError(422, "NOT_CHECKED_IN", "You are not currently checked in");
     }
 
     const summary = await prisma.salesSummary.findUnique({
       where: { activationId_date: { activationId: activation.id, date: today } },
     });
+    // A promoter closes their shift only once the day's sales numbers are
+    // confirmed — that is what lets them move on to another outlet. (Supervisors
+    // don't enter sales, so their visits close freely.)
+    if (!isSupervisor(req) && !summary?.confirmed) {
+      throw new ApiError(422, "SALES_NOT_CONFIRMED", "Confirm today's sales summary before checking out.");
+    }
 
     // Queued-offline check-out: record when it really happened, never before the check-in.
     const capturedOutAt = resolveCapturedAt(capturedAt);

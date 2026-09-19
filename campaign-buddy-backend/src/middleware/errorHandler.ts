@@ -13,6 +13,18 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return;
   }
 
+  // express.json() failures: a broken or oversized request body is the caller's
+  // mistake, not a server fault.
+  const bodyErr = err as { type?: string } | null;
+  if (bodyErr?.type === "entity.parse.failed") {
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Request body is not valid JSON" } });
+    return;
+  }
+  if (bodyErr?.type === "entity.too.large") {
+    res.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Request body is too large" } });
+    return;
+  }
+
   // multer rejections (upload too big, unexpected field…) are client mistakes,
   // not server faults — without this they fall through to a 500.
   if (err instanceof multer.MulterError) {

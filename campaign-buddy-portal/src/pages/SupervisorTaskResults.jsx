@@ -9,7 +9,7 @@ import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import { exportFilename } from '../lib/exportFilename';
 import { applyDesignationLabel } from '../lib/designationLabel';
-import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet } from '../lib/supervisorResults';
+import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet, visitLabel } from '../lib/supervisorResults';
 
 const PAGE_SIZE = 25;
 const isoDay = (d) => d.toISOString().slice(0, 10);
@@ -110,11 +110,11 @@ export default function SupervisorTaskResults() {
               <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Incomplete checklists <Badge type="alert">{summary.incompleteVisits.length}</Badge></div>
               <div className="table-scroll">
                 <table className="data-table">
-                  <thead><tr><th>Date</th><th>Outlet</th><th>{promoter}</th><th>Supervisor</th><th>Answered</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Visit</th><th>Outlet</th><th>{promoter}</th><th>Supervisor</th><th>Answered</th></tr></thead>
                   <tbody>
                     {summary.incompleteVisits.map((v, i) => (
                       <tr key={i}>
-                        <td>{String(v.date).slice(0, 10)}</td><td className="cell-strong">{v.outletName}</td>
+                        <td>{String(v.date).slice(0, 10)}</td><td>{visitLabel(v)}</td><td className="cell-strong">{v.outletName}</td>
                         <td>{v.promoterName}</td><td>{v.supervisorName}</td>
                         <td><Badge type="pending">{v.answered} of {v.total}</Badge></td>
                       </tr>
@@ -140,7 +140,7 @@ export default function SupervisorTaskResults() {
             {shown.length === 0 ? <EmptyState title="No answers in this range" /> : (
               <div className="table-scroll">
                 <table className="data-table">
-                  <thead><tr><th>Date</th><th>Outlet</th><th>{promoter}</th><th>Supervisor</th><th>Category</th><th>Task</th><th>Result</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Visit</th><th>Outlet</th><th>{promoter}</th><th>Supervisor</th><th>Category</th><th>Task</th><th>Result</th></tr></thead>
                   <tbody>
                     {groupByOutlet(shown).map((g) => (
                       <Group key={g.outletName} group={g} promoter={promoter} onView={setViewing} />
@@ -173,13 +173,13 @@ function Group({ group, promoter, onView }) {
   return (
     <>
       <tr>
-        <td className="cell-strong" colSpan={7} style={{ background: 'var(--bg-soft, #fafafa)', borderTop: '2px solid var(--line)' }}>
+        <td className="cell-strong" colSpan={8} style={{ background: 'var(--bg-soft, #fafafa)', borderTop: '2px solid var(--line)' }}>
           {group.outletName} <span className="hint-note" style={{ marginLeft: 6 }}>{group.rows.length} answer{group.rows.length === 1 ? '' : 's'}</span>
         </td>
       </tr>
       {group.rows.map((r) => (
         <tr key={r.id}>
-          <td>{String(r.date).slice(0, 10)}</td><td className="cell-strong">{r.outletName}</td>
+          <td>{String(r.date).slice(0, 10)}</td><td>{visitLabel(r)}</td><td className="cell-strong">{r.outletName}</td>
           <td>{r.promoterName ?? <span title="Outlet-level task, shared by every promoter at the outlet">—</span>}</td>
           <td>{r.supervisorName}</td><td>{r.category}</td><td>{r.task}</td>
           <td>

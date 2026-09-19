@@ -132,6 +132,8 @@ export interface ChecklistTask {
 
 /** GET /me/assignments/:id/supervisor-tasks — the checklist for one outlet visit. */
 export interface SupervisorChecklist {
+  /** Which of today's visits to this outlet the checklist belongs to (each check-in starts a new one). */
+  visitNo?: number;
   ratingScale: RatingScaleEntry[];
   promoter: { id: UUID; name: string };
   outlet: { id: UUID; name: string };
@@ -151,6 +153,8 @@ export interface AttendanceRecord {
   userId: UUID;
   assignmentId: UUID;
   date: ISODate;
+  /** A supervisor's Nth visit to this outlet today (1 for promoters). */
+  visitNo?: number;
   checkInAt: ISODateTime | null;
   checkInLat: number | null;
   checkInLng: number | null;
@@ -171,6 +175,14 @@ export interface AttendanceToday {
   shiftDurationSeconds: number;
   locationVerified: boolean;
   status: AttendanceStatus;
+  /** The assignment this answer is about (the open shift's, when none was asked for). */
+  assignmentId?: UUID | null;
+  /** A supervisor's current (latest) visit to that outlet today. */
+  visitNo?: number | null;
+  /** Assignment of the shift currently open anywhere, or null. */
+  openAssignmentId?: UUID | null;
+  /** Promoters: assignments already checked out of today (an outlet is closed once worked). */
+  workedAssignmentIds?: UUID[];
 }
 
 /** GET /attendance/history entry */

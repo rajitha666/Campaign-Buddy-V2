@@ -56,10 +56,19 @@ export function exportDateTime(d) {
   return String(d).slice(0, 16).replace('T', ' ');
 }
 
+// A supervisor can visit an outlet several times in a day; each check-in is its own visit
+// with its own checklist. "Visit 2 · 3:35 PM" (time = when that visit began, if known).
+const clock = (iso) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+export function visitLabel(r, fmt = clock) {
+  const label = `Visit ${r.visitNo ?? 1}`;
+  return r.visitStartedAt ? `${label} · ${fmt(r.visitStartedAt)}` : label;
+}
+
 export function resultsCsv(rows, origin) {
-  const header = ['Date', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded'];
+  const header = ['Date', 'Visit', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded'];
   const lines = rows.map((r) => [
     exportDate(r.date),
+    r.visitNo ?? 1,
     r.outletName,
     r.promoterName ?? '',
     r.supervisorName,

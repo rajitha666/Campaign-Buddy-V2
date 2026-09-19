@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resultText, scoreLabel, resultsCsv, absoluteUrl, toCsv, groupByOutlet } from './supervisorResults';
+import { resultText, scoreLabel, resultsCsv, absoluteUrl, toCsv, groupByOutlet, visitLabel } from './supervisorResults';
 
 describe('toCsv', () => {
   it('quotes fields that contain commas, quotes or newlines', () => {
@@ -57,6 +57,17 @@ describe('groupByOutlet', () => {
   });
 });
 
+describe('visitLabel', () => {
+  it('names the visit, adding the time it began when known', () => {
+    expect(visitLabel({ visitNo: 2 })).toBe('Visit 2');
+    expect(visitLabel({ visitNo: 2, visitStartedAt: '2026-09-18T10:05:00.000Z' }, () => '3:35 PM')).toBe('Visit 2 · 3:35 PM');
+  });
+
+  it('treats rows from before visits were numbered as visit 1', () => {
+    expect(visitLabel({})).toBe('Visit 1');
+  });
+});
+
 describe('resultsCsv', () => {
   it('exports one line per answer with working photo links and readable upload times', () => {
     const rows = [
@@ -64,10 +75,16 @@ describe('resultsCsv', () => {
       { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: 'Kasun', supervisorName: 'Dinesh', category: 'Outlet PR', task: 'Display', taskType: 'photo', rating: null, feedback: null, photos: [photo('/uploads/visit-photos/a.jpg')] },
     ];
     const [header, first, second] = resultsCsv(rows, 'https://office.example.lk');
-    expect(header).toEqual(['Date', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded']);
-    expect(first.slice(0, 8)).toEqual(['2026-09-18', 'Keells', 'Kasun', 'Dinesh', 'Sale', 'Pricing', '4 / 5', '']);
-    expect(second[2]).toBe('Kasun');
-    expect(second[7]).toBe('https://office.example.lk/uploads/visit-photos/a.jpg');
-    expect(second[8]).toBe('2026-09-18 04:30');
+    expect(header).toEqual(['Date', 'Visit', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded']);
+    expect(first.slice(0, 9)).toEqual(['2026-09-18', 1, 'Keells', 'Kasun', 'Dinesh', 'Sale', 'Pricing', '4 / 5', '']);
+    expect(second[3]).toBe('Kasun');
+    expect(second[8]).toBe('https://office.example.lk/uploads/visit-photos/a.jpg');
+    expect(second[9]).toBe('2026-09-18 04:30');
+  });
+
+  it('numbers each visit so a supervisor\'s second visit to an outlet the same day is told apart', () => {
+    const base = { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: 'Kasun', supervisorName: 'Dinesh', category: 'Sale', task: 'Pricing', taskType: 'range', rating: 3, feedback: null, photos: [] };
+    const [, v1, v2] = resultsCsv([{ ...base, visitNo: 1 }, { ...base, visitNo: 2 }], 'https://x');
+    expect([v1[1], v2[1]]).toEqual([1, 2]);
   });
 });

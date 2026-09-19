@@ -119,6 +119,7 @@ export function SupervisorChecklistScreen() {
             <Text style={styles.title}>Outlet checklist</Text>
             <Text style={styles.subtitle} numberOfLines={1}>
               {outletName} · {campaignName}
+              {query.data?.visitNo && query.data.visitNo > 1 ? ` · Visit ${query.data.visitNo}` : ''}
             </Text>
           </View>
         </Pressable>

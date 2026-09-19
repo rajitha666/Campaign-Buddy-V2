@@ -24,7 +24,7 @@ router.get(
     const today = dayDate();
 
     const activation = await prisma.activation.findFirst({
-      where: { staffId: req.staff!.sub, campaignId, outletId, dateFrom: { lte: today }, dateTo: { gte: today } },
+      where: { staffId: req.staff!.sub, campaignId, outletId, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null },
     });
     if (!activation) throw notFound("Your assignment at this outlet");
 
@@ -125,7 +125,11 @@ router.patch(
       where: { id: activationItemId },
       include: { activation: true },
     });
-    if (!activationItem) throw notFound("Activation product");
+    // Only the assigned promoter may edit an activation's stock, and never on an
+    // activation an admin has deleted.
+    if (!activationItem || activationItem.activation.deletedAt || activationItem.activation.staffId !== req.staff!.sub) {
+      throw notFound("Activation product");
+    }
     await requireOpenShift(activationItem.activation, capturedAt);
 
     const existing = await prisma.salesRecord.findUnique({

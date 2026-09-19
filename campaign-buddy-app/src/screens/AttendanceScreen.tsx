@@ -18,19 +18,26 @@ import { getApiErrorMessage, getApiErrorCode } from '@/api/client';
 import { formatDay } from '@/lib/date';
 import { LocationUnavailableError } from '@/lib/checkInLocation';
 import { showAlert } from '@/lib/showAlert';
+import { describeShiftAtOutlet, outletWorked } from '@/lib/shiftState';
 import type { AttendanceStatus } from '@/api/types';
 
 type Nav = NativeStackNavigationProp<AttendanceStackParamList, 'Attendance'>;
 
 export function AttendanceScreen() {
   const navigation = useNavigation<Nav>();
-  const { checkedIn, checkedOutToday, checkInAt, locationVerified, checkIn, refresh } = useAttendance();
+  const { checkedIn, openAssignmentId, workedAssignmentIds, checkInAt, locationVerified, checkIn, refresh } = useAttendance();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkoutSheetVisible, setCheckoutSheetVisible] = useState(false);
   const [elapsed, setElapsed] = useState('');
 
   // Multi-outlet promoters check in against the outlet chosen on Home.
   const { assignment, hasMultiple, assignments, select } = useAssignment();
+
+  // One shift at a time, and an outlet is closed once checked out of — but the
+  // rest of the day's outlets stay open. What this outlet's card offers follows.
+  const shift = assignment
+    ? describeShiftAtOutlet({ checkedIn, openAssignmentId, workedAssignmentIds, assignments, target: assignment })
+    : ({ kind: 'ready' } as const);
 
   const historyQuery = useQuery({ queryKey: ['attendance', 'history'], queryFn: offlineQueries.getAttendanceHistory });
 
@@ -94,6 +101,7 @@ export function AttendanceScreen() {
                 >
                   <Text numberOfLines={1} style={[styles.outletChipText, active && styles.outletChipTextActive]}>
                     {a.outlet.name}
+                    {outletWorked(workedAssignmentIds, assignments, a) ? ' ✓' : ''}
                   </Text>
                 </Pressable>
               );
@@ -101,7 +109,7 @@ export function AttendanceScreen() {
           </View>
         )}
 
-        {checkedIn ? (
+        {shift.kind === 'onShift' ? (
           <View style={styles.hero}>
             <View style={[styles.ring, { backgroundColor: colors.successTint }]}>
               <View style={[styles.ringInner, { backgroundColor: colors.success }]}>
@@ -122,9 +130,24 @@ export function AttendanceScreen() {
               <LocationRow label="Location verified at check-in" />
             )}
           </View>
-        ) : checkedOutToday ? (
-          // Shift's done — no check-in until tomorrow (the backend rejects a
-          // promoter's re-check-in with ALREADY_CHECKED_OUT), so no tap target.
+        ) : shift.kind === 'elsewhere' ? (
+          // Another outlet's shift is still open — the backend refuses a second
+          // check-in (ALREADY_CHECKED_IN), so point at the shift to finish first.
+          <View style={styles.hero}>
+            <View style={[styles.ring, { backgroundColor: colors.pendingTint }]}>
+              <View style={[styles.ringInner, { backgroundColor: colors.pending }]}>
+                <Text style={styles.ringLabel}>On shift</Text>
+                <Text style={styles.ringSub}>at another outlet</Text>
+              </View>
+            </View>
+            <Text style={styles.timer}>Finish {shift.openOutletName ?? 'your open shift'} first</Text>
+            <Text style={styles.doneNote}>
+              Check out there (after confirming its sales summary) before starting a shift here.
+            </Text>
+          </View>
+        ) : shift.kind === 'done' ? (
+          // Checked out of this outlet — it stays closed until tomorrow (the
+          // backend rejects a re-check-in with ALREADY_CHECKED_OUT).
           <View style={styles.hero}>
             <View style={[styles.ring, { backgroundColor: colors.infoTint }]}>
               <View style={[styles.ringInner, { backgroundColor: colors.info }]}>
@@ -134,8 +157,12 @@ export function AttendanceScreen() {
                 <Text style={styles.ringLabel}>Checked out</Text>
               </View>
             </View>
-            <Text style={styles.timer}>Shift completed for today</Text>
-            <Text style={styles.doneNote}>You've checked out for the day. Check-in reopens on your next shift day.</Text>
+            <Text style={styles.timer}>Shift completed at this outlet</Text>
+            <Text style={styles.doneNote}>
+              {shift.moreOutlets
+                ? "You've checked out of this outlet for today. Pick another outlet above to start your next shift."
+                : "You've checked out for the day. Check-in reopens on your next shift day."}
+            </Text>
           </View>
         ) : (
           <View style={styles.hero}>
@@ -158,14 +185,21 @@ export function AttendanceScreen() {
           </View>
         )}
 
-        {checkedIn ? (
+        {shift.kind === 'onShift' ? (
           <Button
             label="Check out"
             variant="alert"
             onPress={() => setCheckoutSheetVisible(true)}
             style={{ marginTop: spacing.xl }}
           />
-        ) : checkedOutToday ? null : (
+        ) : shift.kind === 'elsewhere' ? (
+          <Button
+            label={`Go to ${shift.openOutletName ?? 'open shift'}`}
+            variant="secondary"
+            onPress={() => select(shift.openAssignmentId)}
+            style={{ marginTop: spacing.xl }}
+          />
+        ) : shift.kind === 'done' ? null : (
           <Button label="Check in" onPress={handleCheckIn} loading={checkingIn} style={{ marginTop: spacing.xl }} />
         )}
 
@@ -201,7 +235,7 @@ export function AttendanceScreen() {
 
       <CheckoutConfirmSheet
         visible={checkoutSheetVisible}
-        assignmentId={assignment?.assignmentId}
+        assignmentId={openAssignmentId ?? assignment?.assignmentId}
         onClose={() => {
           setCheckoutSheetVisible(false);
           refresh();

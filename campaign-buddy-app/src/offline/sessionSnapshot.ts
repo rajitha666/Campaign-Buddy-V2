@@ -20,6 +20,9 @@ export interface AttendanceSnapshot {
   checkInAt: string | null;
   status: AttendanceStatus | null;
   locationVerified: boolean | null;
+  /** Optional: snapshots saved by older app versions don't have them. */
+  openAssignmentId?: string | null;
+  workedAssignmentIds?: string[];
 }
 
 async function read<T>(key: string): Promise<T | null> {

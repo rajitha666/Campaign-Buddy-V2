@@ -17,8 +17,9 @@ import { ApiError } from "./apiResponse";
  * outside the shift, a closed shift still refuses.
  */
 export async function requireOpenShift(activation: { id: string; staffId: string }, capturedAt?: string) {
-  const record = await prisma.attendanceRecord.findUnique({
-    where: { activationId_staffId_date: { activationId: activation.id, staffId: activation.staffId, date: dayDate() } },
+  const record = await prisma.attendanceRecord.findFirst({
+    where: { activationId: activation.id, staffId: activation.staffId, date: dayDate() },
+    orderBy: { visitNo: "desc" },
   });
   if (!record?.checkInAt) throw notCheckedIn();
   if (!record.checkOutAt) return;

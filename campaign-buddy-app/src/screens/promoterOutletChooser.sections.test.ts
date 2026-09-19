@@ -8,9 +8,13 @@ import { describe, expect, it } from 'vitest';
 // scoped screen (Attendance check-in/out, Stats update, Sales confirm,
 // Products, Performance) reads the same chosen assignment — one outlet at a
 // time under the one-open-shift lock.
+// Source files are checked out with CRLF on Windows; the multi-line expectations below use LF.
+const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+
 describe('promoter outlet chooser wiring', () => {
   const context = readFileSync(join(__dirname, '..', 'context', 'AssignmentContext.tsx'), 'utf8');
-  const home = readFileSync(join(__dirname, 'HomeScreen.tsx'), 'utf8');
+  // Matched across line breaks below; normalise so a Windows (autocrlf) checkout behaves like CI.
+  const home = readFileSync(join(__dirname, 'HomeScreen.tsx'), 'utf8').replace(/\r\n/g, '\n');
   const attendance = readFileSync(join(__dirname, 'AttendanceScreen.tsx'), 'utf8');
   const stats = readFileSync(join(__dirname, 'StatsUpdateScreen.tsx'), 'utf8');
   const summary = readFileSync(join(__dirname, 'SalesSummaryScreen.tsx'), 'utf8');
@@ -32,7 +36,8 @@ describe('promoter outlet chooser wiring', () => {
 
   it('Attendance checks in/out against the chosen assignment', () => {
     expect(attendance).toContain('await checkIn(assignment.assignmentId)');
-    expect(attendance).toContain('assignmentId={assignment?.assignmentId}');
+    // check-out closes the OPEN shift's outlet, which may differ from the outlet being viewed
+    expect(attendance).toContain('assignmentId={openAssignmentId ?? assignment?.assignmentId}');
     expect(attendance.indexOf('hasMultiple && assignment')).toBeGreaterThan(-1);
   });
 
