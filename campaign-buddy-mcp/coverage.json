@@ -320,6 +320,9 @@
     },
     "GET /system/status": {
       "tool": "api_get"
+    },
+    "GET /campaigns/:campaignId/supervisors": {
+      "tool": "api_get"
     }
   },
   "reviewedFields": {

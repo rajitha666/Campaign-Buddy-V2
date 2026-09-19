@@ -19,6 +19,6 @@ export function mobileToday(): Date {
 export function currentActivationForStaff(staffId: string) {
   const today = mobileToday();
   return prisma.activation.findFirst({
-    where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today } },
+    where: { staffId, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null },
   });
 }

@@ -46,7 +46,7 @@ function removeStoredPhoto(url: string) {
 async function loadVisit(req: Request) {
   const today = dayDate();
   const activation = await prisma.activation.findFirst({
-    where: { id: req.params.assignmentId, supervisorStaffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today } },
+    where: { id: req.params.assignmentId, supervisorStaffId: req.staff!.sub, dateFrom: { lte: today }, dateTo: { gte: today }, deletedAt: null },
     include: { staff: true, outlet: true },
   });
   if (!activation) throw notFound("Assignment");

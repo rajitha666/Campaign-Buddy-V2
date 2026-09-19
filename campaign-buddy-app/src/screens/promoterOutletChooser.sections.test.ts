@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest';
 // time under the one-open-shift lock.
 describe('promoter outlet chooser wiring', () => {
   const context = readFileSync(join(__dirname, '..', 'context', 'AssignmentContext.tsx'), 'utf8');
-  const home = readFileSync(join(__dirname, 'HomeScreen.tsx'), 'utf8');
+  // Matched across line breaks below; normalise so a Windows (autocrlf) checkout behaves like CI.
+  const home = readFileSync(join(__dirname, 'HomeScreen.tsx'), 'utf8').replace(/\r\n/g, '\n');
   const attendance = readFileSync(join(__dirname, 'AttendanceScreen.tsx'), 'utf8');
   const stats = readFileSync(join(__dirname, 'StatsUpdateScreen.tsx'), 'utf8');
   const summary = readFileSync(join(__dirname, 'SalesSummaryScreen.tsx'), 'utf8');
