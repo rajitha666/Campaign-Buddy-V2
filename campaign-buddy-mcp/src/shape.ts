@@ -5,7 +5,7 @@
 //  2. Slim — drop nulls and bookkeeping columns, and cap payload size, so tool
 //     results are cheap for a model to read.
 
-const ALWAYS_DROP = new Set([
+export const ALWAYS_DROP = new Set([
   // secrets
   "passwordHash", "tokenHash",
   // HR / identity / banking (Staff)

@@ -128,4 +128,5 @@ The seeds create their own logins and print them to the terminal when run.
 - `docs/product-documentation.md` — feature reference
 - `docs/archive/` — superseded specs, do NOT build against
 - `marketing/README.md` — the landing site, evaluation brief and user-training guides
+- `docs/mcp-sync-agent.md` — the agent that keeps `campaign-buddy-mcp/` in step with backend changes (and the CI gate it relies on)
 - `docs/triage-agent-spec.md` — the scheduled issue-triage bot; setup in `triage-agent/README.md`

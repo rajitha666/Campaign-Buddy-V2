@@ -86,6 +86,13 @@ Deliberately **not** exposed: deletes, user / role / access-grant management, li
 | **Read-only switch** | `CB_MCP_READ_ONLY=1` (or `--read-only`) doesn't register write tools at all. |
 | **HTTP** | Bearer token (constant-time compare), 1 MB body cap, loopback bind by default. |
 
+## Staying in sync with the backend
+
+The MCP server sits on top of the backend API, so it can silently fall behind. Two mechanisms prevent that (details: [`docs/mcp-sync-agent.md`](../docs/mcp-sync-agent.md)):
+
+- **CI gate** — `coverage.json` records a decision (a tool, or an exclusion with a reason) for every `/admin/v1` route, and `test/coverage.test.ts` fails when the backend adds, renames or removes a route without one. It also fails when a new DB column with a sensitive-looking name (NIC, bank, address, ...) isn't redacted or reviewed.
+- **Sync agent** — `.github/workflows/mcp-sync-agent.yml` reviews backend commits pushed to `main` and opens a PR against this package (never pushes to `main`, never touches the backend). `npm run sync-report -- --since <ref>` shows the drift it works from.
+
 ## Known gaps / next steps
 
 - **Service-account auth.** The backend issues 8 h user JWTs with no refresh; the server re-logs-in with the configured credentials. A first-class API-key / OAuth flow would allow per-end-user identity (today all HTTP clients share one service user).

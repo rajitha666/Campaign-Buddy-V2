@@ -17,6 +17,7 @@
     "dev:http": "tsx src/http.ts",
     "intel": "tsx src/client/cli.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "sync-report": "tsx scripts/sync-report.ts",
     "test": "vitest run"
   },
   "engines": { "node": ">=20" },
