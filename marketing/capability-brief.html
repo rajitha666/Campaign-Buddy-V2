@@ -178,6 +178,65 @@
   .vision-line .vs b { color: var(--text); font-weight: 600; }
   .vision-note { margin-top: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mango-dark); }
 
+  /* ---------- CB Intelligence ---------- */
+  .ci-flag { display: inline-block; margin-top: 12px; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mango-dark); background: var(--mango-tint); border-radius: 20px; padding: 3px 10px; }
+  .chat { margin-top: 12px; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; break-inside: avoid; }
+  .chat-head { background: var(--surface); border-bottom: 1px solid var(--line); padding: 7px 12px; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); display: flex; justify-content: space-between; gap: 8px; }
+  .chat-head b { color: var(--text); font-weight: 700; }
+  .chat-body { padding: 9px 11px; background: var(--surface); display: grid; gap: 6px; }
+  .cm { display: flex; }
+  .cm.user { justify-content: flex-end; }
+  .cm.user .b { background: var(--ink); color: #fff; border-radius: 12px 12px 3px 12px; padding: 5px 10px; font-size: 10.5px; max-width: 80%; line-height: 1.4; }
+  .cm.ai .b { background: #fff; border: 1px solid var(--line); border-radius: 3px 12px 12px 12px; padding: 7px 10px; font-size: 10.5px; line-height: 1.45; color: var(--text); max-width: 94%; min-width: 0; }
+  .cm.ai .b > * + * { margin-top: 5px; }
+  .cchip { display: inline-block; font-size: 9px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 1px 9px; }
+  .cchip::before { content: "\2713\00a0"; color: var(--success); font-weight: 700; }
+  .cstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .cstat { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+  .cstat .l { font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); }
+  .cstat .n { font-family: var(--font-display); font-weight: 600; font-size: 13px; }
+  .cstat .d { font-size: 9px; color: var(--success); font-weight: 600; }
+  .cbars { display: grid; gap: 5px; }
+  .cbar { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center; font-size: 10px; }
+  .ctrack { height: 7px; background: var(--line); border-radius: 5px; overflow: hidden; }
+  .ctrack i { display: block; height: 100%; background: var(--success); border-radius: 5px; }
+  .ctrack i.low { background: #C77F00; }
+  .cbar b { font-family: var(--font-display); font-weight: 600; font-size: 9.5px; }
+  .cfind { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+  .cfind li { border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; background: var(--surface); font-size: 10px; color: var(--text-muted); line-height: 1.45; }
+  .cfind li strong { color: var(--text); font-size: 10.5px; }
+  .ctag { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 20px; padding: 1px 7px; margin-right: 5px; vertical-align: 1px; }
+  .ctag.alert { color: var(--alert); background: #FBE6E4; }
+  .ctag.warn { color: #C77F00; background: #FBF0DA; }
+  .ctag.info { color: var(--info); background: #EAF1F7; }
+  .ctag.ok { color: var(--success); background: #E4F5EA; }
+  .cplan { border: 1.5px solid var(--line-strong); border-radius: 8px; overflow: hidden; font-size: 10px; }
+  .cplan .ph { background: var(--surface); padding: 5px 9px; font-family: var(--font-display); font-weight: 600; font-size: 10.5px; border-bottom: 1px solid var(--line); }
+  .cplan dl { margin: 0; padding: 6px 9px; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; color: var(--text-muted); }
+  .cplan dt { color: var(--text-faint); }
+  .cplan dd { margin: 0; }
+  .cplan .acts { padding: 0 9px 7px; display: flex; gap: 6px; }
+  .cbtn { font-family: var(--font-display); font-weight: 600; font-size: 9px; border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 9px; }
+  .cbtn.go { background: var(--mango); border-color: var(--mango); color: #fff; }
+  .cnote { font-size: 9.5px; color: var(--text-faint); }
+  .chat-note { margin-top: 6px; font-size: 9.5px; color: var(--text-faint); }
+  .ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .way { border-top: 2px solid var(--mango); padding-top: 8px; }
+  .way .wn { font-family: var(--font-display); font-weight: 700; font-size: 10px; color: var(--mango-dark); }
+  .way h4 { font-size: 13px; margin-top: 2px; }
+  .way p { margin-top: 5px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+  .way .wq { margin-top: 6px; font-size: 10px; color: var(--mango-dark); background: var(--mango-tint); border-radius: 6px; padding: 4px 8px; }
+  .chat-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  table.agents { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+  table.agents th { text-align: left; font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-faint); padding: 0 10px 6px 0; border-bottom: 2px solid var(--mango); }
+  table.agents td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text-muted); }
+  table.agents tr:last-child td { border-bottom: none; }
+  table.agents td:first-child { font-family: var(--font-display); font-weight: 600; color: var(--text); white-space: nowrap; }
+  table.agents td.when { white-space: nowrap; font-size: 10px; color: var(--text-faint); }
+  .safe { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .safe h4 { font-size: 11.5px; }
+  .safe p { margin-top: 4px; font-size: 10.5px; color: var(--text-muted); line-height: 1.5; }
+
   /* ---------- practicalities ---------- */
   .block { margin-top: 16px; }
   .block h3 { font-size: 12.5px; }
@@ -229,7 +288,9 @@
     .runfoot { padding: 0 18px 14px; }
     .cover-mid h1 { font-size: 30px; }
     .page h2.title { font-size: 21px; }
-    .sc-cols, .cap-grid, .tracks { grid-template-columns: 1fr; }
+    .sc-cols, .cap-grid, .tracks, .ways, .chat-pair, .safe { grid-template-columns: 1fr; }
+    .cbar { grid-template-columns: 90px 1fr auto; }
+    .cstats { grid-template-columns: 1fr 1fr 1fr; }
     .cap-grid { gap: 8px; }
     table.brief, table.roles { font-size: 12px; }
     .tbl-scroll { overflow-x: auto; }
@@ -578,14 +639,135 @@
       </div>
       <div class="vision-line">
         <h3>Where Campaign Buddy is going</h3>
-        <p class="vs">A layer of intelligence for the sponsor's sales and marketing teams: <b>sales &amp; demand forecasting</b>, <b>written field-insight summaries</b> from a week of promoter notes, <b>anomaly and fraud signals</b>, and <b>plain-language questions</b> put to the campaign data.</p>
-        <p class="vision-note">Directional. The field data that makes these possible is already being captured today.</p>
+        <p class="vs"><b>CB Intelligence</b>: sponsors and admins use the AI assistant they already have to ask questions of their live campaigns, set up and adjust work, and hand daily monitoring to AI agents. See the next two pages.</p>
+        <p class="vision-note">Directional. The field data that makes this possible is already being captured today.</p>
       </div>
     </div>
     <footer class="runfoot"><span>Dyro Technologies (Pvt) Ltd &middot; CampaignBuddy.lk</span><span class="pgnum"></span></footer>
   </section>
 
-  <!-- ============ 11 · PRACTICALITIES ============ -->
+  <!-- ============ 11 · CB INTELLIGENCE: ASK ============ -->
+  <section class="page">
+    <header class="runhead"><span class="rh-brand"><span class="rh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span><span>CB Intelligence</span></header>
+    <div class="pbody">
+      <span class="eyebrow">CB Intelligence</span>
+      <h2 class="title">Ask your campaign anything.</h2>
+      <p class="lead">CB Intelligence is AI native from the ground up. Admins and sponsors connect the AI chat assistant they already use to their live campaigns. They ask questions, keep digging with follow ups, or hand the daily monitoring and reviews to AI agents that report back.</p>
+      <span class="ci-flag">Directional. Illustrative conversations on sample campaign data.</span>
+
+      <div class="chat">
+        <div class="chat-head"><span><b>Sponsor</b> &middot; brand manager</span><span>Your AI assistant &middot; connected to Radiance Q3 Push</span></div>
+        <div class="chat-body">
+          <div class="cm user"><div class="b">How is my campaign going?</div></div>
+          <div class="cm ai"><div class="b">
+            <span class="cchip">Checked live outlets and today's sales</span>
+            <p>Radiance Q3 Push is on track. <b>24 outlets are live today</b>, up from 21 yesterday, and sales so far are <b>LKR 1.94M</b>, up 8.4% on yesterday. The week is running at <b>106% of target</b>.</p>
+          </div></div>
+          <div class="cm user"><div class="b">What do sales look like so far, outlet by outlet?</div></div>
+          <div class="cm ai"><div class="b">
+            <span class="cchip">Compared every outlet with its target</span>
+            <p>Week to date you are at <b>LKR 8.7M against an LKR 8.2M target</b>. Strongest and weakest outlets:</p>
+            <div class="cbars">
+              <div class="cbar"><span>Keells Rajagiriya</span><span class="ctrack"><i style="width:100%"></i></span><b>128%</b></div>
+              <div class="cbar"><span>CCC Food Hall</span><span class="ctrack"><i style="width:88%"></i></span><b>112%</b></div>
+              <div class="cbar"><span>Nawala Retail Outlet</span><span class="ctrack"><i class="low" style="width:69%"></i></span><b>88%</b></div>
+            </div>
+          </div></div>
+          <div class="cm user"><div class="b">Based on what the team has collected, where should I focus my brand strategy?</div></div>
+          <div class="cm ai"><div class="b">
+            <span class="cchip">Read 312 promoter remarks, sales and footfall</span>
+            <p>Three things stand out:</p>
+            <ul class="cfind">
+              <li><span class="ctag ok">Opportunity</span><strong>Evenings carry the campaign.</strong> 5 to 8 pm delivers 41% of sales, yet 6 outlets have a single promoter in that window.</li>
+              <li><span class="ctag info">Shopper voice</span><strong>People keep asking for a trial size.</strong> It came up in 64 remarks, mostly at supermarkets. Worth testing a sampling offer.</li>
+              <li><span class="ctag warn">Competitor</span><strong>A rival discount at Nawala.</strong> Promoters flagged it 4 times, and it is your only outlet below target.</li>
+            </ul>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="ways">
+        <div class="way"><span class="wn">01</span><h4>Ask</h4><p>Put any question to the campaign in plain English, then keep going with follow ups. No dashboard to build.</p><div class="wq">"Which outlets are trending down this week?"</div></div>
+        <div class="way"><span class="wn">02</span><h4>Direct</h4><p>Set up and adjust campaign work by saying what you want. You see the plan first, and nothing changes until you approve it.</p><div class="wq">"Move Sunday cover to Ishara's team."</div></div>
+        <div class="way"><span class="wn">03</span><h4>Delegate</h4><p>Hand the daily rounds to AI agents that review, monitor and flag. You hear about the exceptions, not the routine.</p><div class="wq">"Watch attendance and sales pace every morning."</div></div>
+      </div>
+    </div>
+    <footer class="runfoot"><span>Dyro Technologies (Pvt) Ltd &middot; CampaignBuddy.lk</span><span class="pgnum"></span></footer>
+  </section>
+
+  <!-- ============ 12 · CB INTELLIGENCE: SET UP, MONITOR, AGENTS ============ -->
+  <section class="page">
+    <header class="runhead"><span class="rh-brand"><span class="rh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span><span>CB Intelligence</span></header>
+    <div class="pbody">
+      <span class="eyebrow">CB Intelligence</span>
+      <h2 class="title">Let it set things up, and keep watch.</h2>
+      <p class="lead">Admins can run the campaign from the same conversation: plan and approve new work, then hand the monitoring to agents that flag anything unusual.</p>
+
+      <div class="chat-pair">
+        <div class="chat">
+          <div class="chat-head"><span><b>Admin</b> &middot; set up and monitor</span></div>
+          <div class="chat-body">
+            <div class="cm user"><div class="b">Set up a four weekend activation across our Kandy outlets from Saturday 3 October, using whoever is free.</div></div>
+            <div class="cm ai"><div class="b">
+              <span class="cchip">Checked outlets, availability and leave</span>
+              <p>Here is the plan. <b>Nothing is saved until you approve it.</b></p>
+              <div class="cplan">
+                <div class="ph">Kandy Weekend Push &middot; 3 to 25 Oct</div>
+                <dl><dt>Outlets</dt><dd>8 in Kandy</dd><dt>Promoters</dt><dd>6 free, 2 on leave the first Sunday</dd><dt>Gaps</dt><dd>2 outlets have no Sunday cover</dd></dl>
+                <div class="acts"><span class="cbtn go">Approve and create</span><span class="cbtn">Change something</span></div>
+              </div>
+            </div></div>
+            <div class="cm user"><div class="b">Approve it. Cover the Sunday gaps from Ishara's team, then keep an eye on it for me.</div></div>
+            <div class="cm ai"><div class="b">
+              <span class="cchip">Created the activation and assigned the shifts</span>
+              <p><b>Kandy Weekend Push is set up</b>, with all 8 outlets covered. Each weekend morning I will check attendance and sales pace, and message you only when something needs a decision.</p>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="chat">
+          <div class="chat-head"><span><b>Admin</b> &middot; find what looks off</span></div>
+          <div class="chat-body">
+            <div class="cm user"><div class="b">Does anything look off this week?</div></div>
+            <div class="cm ai"><div class="b">
+              <span class="cchip">Compared sales, check-ins and stock</span>
+              <p>Three things are worth a look:</p>
+              <ul class="cfind">
+                <li><span class="ctag alert">Sales spike</span><strong>Nugegoda Superstore.</strong> Tuesday sales were LKR 480K, about four times a normal day, with footfall flat.</li>
+                <li><span class="ctag warn">Check-ins</span><strong>Nawala Retail Outlet.</strong> Two promoters checked in from the same spot, 380 m away, six mornings running.</li>
+                <li><span class="ctag warn">Stock gap</span><strong>Kohuwala Mini Mart.</strong> 60 units reported sold, 12 units of stock movement recorded.</li>
+              </ul>
+            </div></div>
+            <div class="cm user"><div class="b">Ask Ishara to verify the first one.</div></div>
+            <div class="cm ai"><div class="b">
+              <span class="cchip">Task sent to Ishara Fernando</span>
+              <p>Done. Ishara will check the Nugegoda entries first thing tomorrow, and I will tell you what comes back.</p>
+            </div></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub" style="margin-top:16px">Agents on shift</h3>
+      <table class="agents">
+        <thead><tr><th>Agent</th><th>Latest result</th><th>Runs</th></tr></thead>
+        <tbody>
+          <tr><td>Attendance watch</td><td>21 of 24 promoters are in. 3 are late, and supervisors have been asked to follow up.</td><td class="when">Daily, 8:30 am</td></tr>
+          <tr><td>Sales pace monitor</td><td>22 outlets are on pace. Nawala Retail Outlet is behind and flagged.</td><td class="when">Hourly</td></tr>
+          <tr><td>Anomaly watch</td><td>1 unusual sales entry is waiting for your review.</td><td class="when">Always on</td></tr>
+          <tr><td>Weekly brand review</td><td>The Radiance brand team briefing is drafted and ready to send.</td><td class="when">Mondays, 9 am</td></tr>
+        </tbody>
+      </table>
+
+      <div class="safe">
+        <div><h4>You stay in control</h4><p>Changes are shown to you first and only happen after you approve them.</p></div>
+        <div><h4>Same permissions as CB Office</h4><p>Sponsors can look, admins can act. Personal details like ID and bank information stay hidden.</p></div>
+        <div><h4>Bring your own AI</h4><p>Use the chat assistant your team already works in. No new tool to learn.</p></div>
+      </div>
+    </div>
+    <footer class="runfoot"><span>Dyro Technologies (Pvt) Ltd &middot; CampaignBuddy.lk</span><span class="pgnum"></span></footer>
+  </section>
+
+  <!-- ============ 13 · PRACTICALITIES ============ -->
   <section class="page">
     <header class="runhead"><span class="rh-brand"><span class="rh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17L9 12L13 16L20 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Campaign Buddy</span><span>Commercial model</span></header>
     <div class="pbody">
@@ -606,7 +788,7 @@
     <footer class="runfoot"><span>Dyro Technologies (Pvt) Ltd &middot; CampaignBuddy.lk</span><span class="pgnum"></span></footer>
   </section>
 
-  <!-- ============ 12 · NEXT STEPS (back cover) ============ -->
+  <!-- ============ 14 · NEXT STEPS (back cover) ============ -->
   <section class="page ink">
     <div class="pbody" style="display:flex;flex-direction:column;padding-top:40px;padding-bottom:36px">
       <span class="eyebrow">Next steps</span>
