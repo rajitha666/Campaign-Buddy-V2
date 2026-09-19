@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
-import { app, resetDb, staffToken, makeStaff } from "./helpers";
+import { app, resetDb, staffToken, makeStaff, confirmSales } from "./helpers";
 import { dayDate } from "../src/utils/dates";
 
 beforeEach(resetDb);
@@ -108,6 +108,7 @@ describe("promoter checks out of one outlet then works the next (documented flow
   it("can check in at outlet B after checking out of outlet A on the same day", async () => {
     const { auth, A, B, geoA, geoB } = await seed();
     expect((await request(app).post("/v1/attendance/check-in").set(auth).send({ assignmentId: A.a.id, ...geoA })).status).toBe(201);
+    await confirmSales(A.a.id); // a promoter can only check out once the outlet's sales are confirmed
     expect((await request(app).post("/v1/attendance/check-out").set(auth).send({ assignmentId: A.a.id, ...geoA })).status).toBe(200);
     const inB = await request(app).post("/v1/attendance/check-in").set(auth).send({ assignmentId: B.a.id, ...geoB });
     expect(inB.status).toBe(201);
@@ -117,6 +118,7 @@ describe("promoter checks out of one outlet then works the next (documented flow
   it("still cannot re-open the SAME outlet after checking out of it", async () => {
     const { auth, A, geoA } = await seed();
     await request(app).post("/v1/attendance/check-in").set(auth).send({ assignmentId: A.a.id, ...geoA });
+    await confirmSales(A.a.id);
     await request(app).post("/v1/attendance/check-out").set(auth).send({ assignmentId: A.a.id, ...geoA });
     const again = await request(app).post("/v1/attendance/check-in").set(auth).send({ assignmentId: A.a.id, ...geoA });
     expect(again.status).toBe(409);

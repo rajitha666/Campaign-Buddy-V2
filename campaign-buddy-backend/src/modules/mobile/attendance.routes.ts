@@ -191,9 +191,7 @@ router.post(
           checkInAt: { not: null },
           checkOutAt: { not: null },
           date: today,
-          // Done for the day at THIS outlet. A promoter holding several same-day
-          // outlets (outlet chooser) checks out of one and works the next.
-          activationId: activation.id,
+          activation: { outletId: activation.outletId },
         },
       });
       if (workedHere) {
