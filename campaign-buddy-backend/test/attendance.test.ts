@@ -25,7 +25,7 @@ describe("attendance — activation lookup day boundary (issue #42)", () => {
       tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
       await prisma.activation.update({
         where: { id: (await prisma.activation.findFirstOrThrow({ where: { staffId: staff.id } })).id },
-        data: { dateFrom: new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`) },
+        data: { dateFrom: dayDate() },
       });
 
       const checkIn = await request(app).post("/v1/attendance/check-in").set(auth).send(geo);

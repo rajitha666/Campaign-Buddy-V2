@@ -6,10 +6,7 @@ import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { exportFilename } from '../lib/exportFilename';
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { colomboYmd } from '../lib/colomboDay';
 
 // One editable cell for a custom field value, driven by the field definition.
 function CustomFieldCell({ def, value, onChange }) {
@@ -103,7 +100,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
         (rows || []).forEach((r) => { products[r.activationItemId] = productValues[r.activationItemId] || {}; });
         await salesFieldsApi.saveValues(campaignId, {
           activationId: meta.activationId,
-          date: form.date || todayISO(),
+          date: form.date || colomboYmd(),
           day: dayValues,
           products,
         });

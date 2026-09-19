@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { colomboYmd } from "../src/utils/dates";
 import request from "supertest";
 import { app, resetDb, adminToken, makeCampaignWithActivation, makeStaff } from "./helpers";
 import { prisma } from "../src/utils/prisma";
@@ -124,7 +125,7 @@ describe("campaign-scoped list pagination", () => {
     }
     const res = await request(app)
       .get(`/admin/v1/campaigns/${campaign.id}/absence`)
-      .query({ date: new Date().toISOString().slice(0, 10), page: 2, pageSize: 2 })
+      .query({ date: colomboYmd(), page: 2, pageSize: 2 })
       .set("Authorization", `Bearer ${await adminToken()}`);
     expect(res.status).toBe(200);
     // 4 total absent staff (base activation + 3 extras, none checked in),

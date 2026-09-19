@@ -3,7 +3,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList } from "../../utils/apiResponse";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
-import { dayDate } from "../../utils/dates";
+import { colomboMonth, dayDate, lastDayOfMonth } from "../../utils/dates";
 import { activeDefsForCampaign } from "../../utils/salesFieldStore";
 import { readFieldValue } from "../../utils/salesFields";
 
@@ -313,11 +313,12 @@ router.get(
   "/campaigns/:campaignId/reports/attendance-monthly",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
-    const [year, mo] = month.split("-").map(Number);
-    const from = new Date(year, mo - 1, 1);
-    const to = new Date(year, mo, 0);
-    const daysInMonth = to.getDate();
+    // Default to the Colombo calendar month, and build the day bounds from
+    // fixed UTC-midnight dates (utils/dates.ts) — `new Date(y, m-1, 1)` would
+    // bake in the container's timezone.
+    const from = dayDate(`${(req.query.month as string) || colomboMonth()}-01`);
+    const to = lastDayOfMonth(`${from.toISOString().slice(0, 7)}`);
+    const daysInMonth = to.getUTCDate();
     const outlets = outletScope(req);
 
     const activations = await prisma.activation.findMany({

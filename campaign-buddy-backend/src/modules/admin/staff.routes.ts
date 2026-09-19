@@ -173,7 +173,11 @@ router.get(
     const { staffId } = req.params;
     const { dateFrom, dateTo } = req.query as { dateFrom?: string; dateTo?: string };
     const from = dateFrom ? new Date(dateFrom) : new Date(0);
-    const to = dateTo ? new Date(dateTo) : new Date();
+    // Default "to" is the END of the Colombo calendar day (exclusive next
+    // UTC-midnight) — plain `new Date()` would cut off at the current instant,
+    // excluding anything the caller saved today (its `date` is the Colombo
+    // tomorrow-UTC-midnight key before 18:30 UTC).
+    const to = dateTo ? new Date(dateTo) : new Date(dayDate().getTime() + 86400000);
 
     const staff = await prisma.staff.findUnique({ where: { id: staffId }, include: { city: true, reportsTo: true } });
     if (!staff) throw notFound("Staff member");

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { dayDate } from "../src/utils/dates";
 import { resetDb, makeCampaignWithActivation } from "./helpers";
 import { prisma } from "../src/utils/prisma";
 import { closeOpenShifts } from "../src/jobs/autoCheckout";
@@ -14,7 +15,7 @@ beforeEach(resetDb);
 describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
   it("checks out every open shift, using the campaign's default shift end (18:00 Colombo) as checkOutAt", async () => {
     const { staff, activation, campaign } = await makeCampaignWithActivation();
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     void staff;
     const open = await prisma.attendanceRecord.create({
       data: { activationId: activation.id, staffId: activation.staffId, date: today, checkInAt: new Date(today.getTime() + 3.5 * 3600_000) },
@@ -33,7 +34,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
     const { staff, activation, campaign } = await makeCampaignWithActivation();
     void staff;
     void campaign;
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     const shiftEnd = new Date(today.getTime() + 10.5 * 3600_000); // 16:00 Colombo
     await prisma.activation.update({ where: { id: activation.id }, data: { shiftEndMinutes: 960 } }); // 16:00
     await prisma.attendanceRecord.create({
@@ -47,7 +48,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
 
   it("never sets checkOutAt in the future and skips already-closed records", async () => {
     const { staff, activation } = await makeCampaignWithActivation();
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     const shiftEnd = new Date(today.getTime() + 20 * 3600_000); // 01:30 Colombo NEXT day — past the 23:55 job run
     // 01:30 is earlier in the day than the campaign's default 09:00 start, so
     // resolveShiftEnd rolls it over to the following calendar day (see
@@ -71,7 +72,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
 
   it("closes abandoned open shifts from previous days too", async () => {
     const { staff, activation } = await makeCampaignWithActivation();
-    const yesterday = new Date(new Date(Date.now() - 86400_000).toISOString().slice(0, 10));
+    const yesterday = new Date(dayDate().getTime() - 86400_000);
     const open = await prisma.attendanceRecord.create({
       data: { activationId: activation.id, staffId: activation.staffId, date: yesterday, checkInAt: new Date(yesterday.getTime() + 4 * 3600_000) },
     });
@@ -84,7 +85,7 @@ describe("closeOpenShifts — auto check-out at end of day (issue #32)", () => {
 
   it("leaves records without a check-in alone", async () => {
     const { staff, activation } = await makeCampaignWithActivation();
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const today = dayDate();
     await prisma.attendanceRecord.create({ data: { activationId: activation.id, staffId: activation.staffId, date: today, status: "leave" } });
     expect(await closeOpenShifts()).toBe(0);
   });

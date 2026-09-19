@@ -18,7 +18,15 @@ export function dayOfMonth(iso: string): number {
   return new Date(iso).getUTCDate();
 }
 
-/** "YYYY-MM-DD" for today (or a given Date), for date-input state and API bodies. */
+/**
+ * "YYYY-MM-DD" for today (or a given Date), for date-input state and API
+ * bodies. Uses the Colombo calendar (Campaign.timezone default; fixed
+ * UTC+5:30, no DST — same convention as the backend's dayDate()), NOT the
+ * device's UTC day: a Sri Lankan user opening the app 00:00–05:30 local would
+ * otherwise send yesterday.
+ */
+const COLOMBO_OFFSET_MIN = 5 * 60 + 30;
+
 export function ymd(d: Date = new Date()): string {
-  return d.toISOString().slice(0, 10);
+  return new Date(d.getTime() + COLOMBO_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
 }

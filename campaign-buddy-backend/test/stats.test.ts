@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { dayDate } from "../src/utils/dates";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
 import { app, resetDb, staffToken, makeCampaignWithActivation, makeStaff } from "./helpers";
@@ -121,7 +122,7 @@ describe("performance day counts (#53)", () => {
 
 describe("GET /v1/stats/range", () => {
   function ymd(offsetDays: number) {
-    return new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10);
+    return new Date(dayDate().getTime() + offsetDays * 86400000).toISOString().slice(0, 10);
   }
 
   it("returns zero-seeded days when staff has no activation", async () => {
@@ -143,15 +144,15 @@ describe("GET /v1/stats/range", () => {
     // Today and yesterday rows on the same activation (created directly so the
     // fixture is independent of how /stats/today derives "today" locally).
     await prisma.salesRecord.create({
-      data: { activationItemId: activationItem.id, date: new Date(), openingStock: 20, soldToday: 3 },
+      data: { activationItemId: activationItem.id, date: dayDate(), openingStock: 20, soldToday: 3 },
     });
     await prisma.salesRecord.create({
-      data: { activationItemId: activationItem.id, date: new Date(Date.now() - 1 * 86400000), openingStock: 25, soldToday: 2 },
+      data: { activationItemId: activationItem.id, date: new Date(dayDate().getTime() - 1 * 86400000), openingStock: 25, soldToday: 2 },
     });
     await prisma.dailyStats.createMany({
       data: [
-        { activationId: activation.id, date: new Date(), footFall: 30, approached: 10, converted: 4 },
-        { activationId: activation.id, date: new Date(Date.now() - 1 * 86400000), footFall: 10, approached: 6, converted: 1 },
+        { activationId: activation.id, date: dayDate(), footFall: 30, approached: 10, converted: 4 },
+        { activationId: activation.id, date: new Date(dayDate().getTime() - 1 * 86400000), footFall: 10, approached: 6, converted: 1 },
       ],
     });
 

@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { app } from "../src/app";
 import { resetDb, staffToken, makeCampaignWithActivation } from "./helpers";
+import { dayDate } from "../src/utils/dates";
 import {
   idealShiftStart,
   idealShiftEnd,
@@ -80,7 +81,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T07:00:00.000Z")); // 12:30 Colombo — past 09:10
+    vi.setSystemTime(new Date(dayDate().getTime() + 7 * 3600000)); // 12:30 Colombo — past 09:10
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -94,7 +95,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T02:00:00.000Z")); // 07:30 Colombo
+    vi.setSystemTime(new Date(dayDate().getTime() + 2 * 3600000)); // 07:30 Colombo
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -110,7 +111,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T02:15:00.000Z")); // 07:45 Colombo — past 07:10
+    vi.setSystemTime(new Date(dayDate().getTime() + 2 * 3600000 + 15 * 60000)); // 07:45 Colombo — past 07:10
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)
@@ -127,7 +128,7 @@ describe("check-in flagging uses the campaign's default shift window (09:00-18:0
     const token = await staffToken(staff.mobileUsername, "field-pw");
 
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-16T01:00:00.000Z")); // 06:30 Colombo — past 06:10, but well before 09:00
+    vi.setSystemTime(new Date(dayDate().getTime() + 1 * 3600000)); // 06:30 Colombo — past 06:10, but well before 09:00
     const res = await request(app)
       .post("/v1/attendance/check-in")
       .set("Authorization", `Bearer ${token}`)

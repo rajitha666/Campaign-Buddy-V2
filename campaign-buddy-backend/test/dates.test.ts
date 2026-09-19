@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { dayDate } from "../src/utils/dates";
+import {
+  colomboMonth,
+  colomboYmd,
+  dayBounds,
+  dayDate,
+  lastDayOfMonth,
+} from "../src/utils/dates";
 
 describe("dayDate() — Colombo calendar for the implicit 'today'", () => {
   afterEach(() => {
@@ -25,5 +31,39 @@ describe("dayDate() — Colombo calendar for the implicit 'today'", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-18T20:00:00.000Z"));
     expect(dayDate("2026-09-18").toISOString()).toBe("2026-09-18T00:00:00.000Z");
+  });
+});
+
+describe("colomboYmd / colomboMonth / lastDayOfMonth", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("colomboYmd uses the Colombo calendar, not UTC", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-18T20:00:00.000Z")); // 01:30 Colombo Sep 19
+    expect(colomboYmd()).toBe("2026-09-19");
+  });
+
+  it("colomboMonth uses the Colombo month, not UTC", () => {
+    // 23:00 UTC on the 30th is already the 1st of the next Colombo month.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-30T23:00:00.000Z")); // 04:30 Colombo Aug 31
+    expect(colomboMonth()).toBe("2026-08");
+    vi.setSystemTime(new Date("2026-08-31T19:00:00.000Z")); // 00:30 Colombo Sep 1
+    expect(colomboMonth()).toBe("2026-09");
+  });
+
+  it("lastDayOfMonth uses fixed UTC month bounds, not container-local time", () => {
+    // Container TZ is UTC in CI, but this must be TZ-independent anyway.
+    expect(lastDayOfMonth("2026-02").toISOString()).toBe("2026-02-28T00:00:00.000Z");
+    expect(lastDayOfMonth("2024-02").toISOString()).toBe("2024-02-29T00:00:00.000Z"); // leap year
+    expect(lastDayOfMonth("2026-08").toISOString()).toBe("2026-08-31T00:00:00.000Z");
+  });
+
+  it("dayBounds still covers exactly one UTC calendar day", () => {
+    const b = dayBounds("2026-08-31");
+    expect(b.gte.toISOString()).toBe("2026-08-31T00:00:00.000Z");
+    expect(b.lt.toISOString()).toBe("2026-09-01T00:00:00.000Z");
   });
 });

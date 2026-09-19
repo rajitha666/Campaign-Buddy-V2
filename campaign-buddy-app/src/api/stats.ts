@@ -1,6 +1,7 @@
 // Spec §6.1-6.2 — Daily Stats
 import { apiClient } from './client';
 import type { DailyStats, StatsRangeResult } from './types';
+import { ymd } from '../lib/date';
 
 export async function getTodayStats(): Promise<DailyStats> {
   const { data } = await apiClient.get<{ data: DailyStats }>('/stats/today');
@@ -21,10 +22,9 @@ export async function getStatsRange(dateFrom?: string, dateTo?: string): Promise
 
 /** Convenience wrapper — the Sales tab only ever asks for the last 7 days. */
 export function getLast7Days(): Promise<StatsRangeResult> {
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
   const to = new Date();
   const from = new Date(to.getTime() - 6 * 86_400_000);
-  return getStatsRange(fmt(from), fmt(to));
+  return getStatsRange(ymd(from), ymd(to));
 }
 
 /**
