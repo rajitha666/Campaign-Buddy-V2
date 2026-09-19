@@ -18,12 +18,13 @@ describe('NAV', () => {
     expect((sales.items || []).some((i) => (i.children || i).path === '/sponsor/sales')).toBe(false);
   });
 
-  // Supervisor checklist results are read-only for clients and portal
-  // supervisors (outlet-scoped by their campaign grant), full menu for admins.
-  it('offers Task Results to admin, supervisor and sponsor', () => {
+  // Supervisor checklist results are read-only for portal supervisors
+  // (outlet-scoped by their campaign grant), full menu for admins.
+  // Sponsor must NOT see Task Results.
+  it('offers Task Results to admin and supervisor, but not sponsor', () => {
     const items = NAV.flatMap((s) => (s.items || []).flatMap((i) => [i, ...(i.children || []).map((c) => ({ ...c, roles: i.roles }))]));
     const entries = items.filter((i) => i.path === '/supervisor-task-results');
     const roles = new Set(entries.flatMap((e) => e.roles));
-    expect([...roles].sort()).toEqual(['admin', 'sponsor', 'supervisor']);
+    expect([...roles].sort()).toEqual(['admin', 'supervisor']);
   });
 });

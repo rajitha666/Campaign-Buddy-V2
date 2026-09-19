@@ -45,7 +45,7 @@ export const NAV = [
     { path: '/my-outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['supervisor'] },
     { path: '/my-leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['supervisor'] },
     // Outlet checklist results (photos + 1–5 scores) — read-only, outlet-scoped by grant.
-    { path: '/supervisor-task-results', label: 'Task Results', icon: 'supervisors', roles: ['supervisor', 'sponsor'] },
+    { path: '/supervisor-task-results', label: 'Task Results', icon: 'supervisors', roles: ['supervisor'] },
     // Client role (doc G) — read-only visibility into both attendance logs
     // for their own campaign, same generic outlet-scoping as everyone else.
     { path: '/staff/attendance', label: 'Attendance', icon: 'staff', roles: ['sponsor'] },
