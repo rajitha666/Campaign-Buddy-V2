@@ -20,7 +20,9 @@ test.describe("phone viewport (375x812)", () => {
     await expect(page.locator(".mobile-nav-backdrop")).toBeVisible();
 
     // Clicking a route closes the drawer and navigates.
-    await page.locator(".nav-item", { hasText: "Clients" }).click();
+    // .first(): the favorites e2e can pin Clients on this shared admin account
+    // while this test runs in parallel, which adds a second matching nav item.
+    await page.locator(".nav-item", { hasText: "Clients" }).first().click();
     await expect(page).toHaveURL(/\/clients/);
     await expect(page.locator(".sidebar")).not.toBeInViewport();
   });
