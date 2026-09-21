@@ -63,12 +63,14 @@ router.get(
   "/campaigns/:campaignId/sales",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const { outletId, dateFrom, dateTo } = req.query as { outletId?: string; dateFrom?: string; dateTo?: string };
+    const { outletId, dateFrom, dateTo, soldOnly } = req.query as { outletId?: string; dateFrom?: string; dateTo?: string; soldOnly?: string };
     const allowed = outletIdsAllowed(req);
     if (outletId) assertOutletAllowed(req, outletId);
 
     const paged = paginate(req);
     const whereSales = {
+      // soldOnly=true: drop nothing-sold rows (SKU-wise view/export, #90).
+      ...(soldOnly === "true" ? { soldToday: { gt: 0 } } : {}),
       activationItem: {
         activation: {
           campaignId: req.params.campaignId,

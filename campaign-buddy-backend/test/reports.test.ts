@@ -89,6 +89,22 @@ describe("GET /admin/v1/campaigns/:id/reports/sku-wise", () => {
     expect(res.body.meta).toEqual({ total: 2, grandTotal: 43000 });
   });
 
+  it("leaves out items with nothing sold (0-value rows), without changing the grand total (#90)", async () => {
+    const f = await buildReportsFixture();
+    const brand3 = await prisma.brand.create({ data: { name: "Brand C", clientId: f.client.id } });
+    const item3 = await prisma.item.create({ data: { brandId: brand3.id, sku: "SKU-3", name: "Item C", unitPrice: 500 } });
+    const campaignItem3 = await prisma.campaignItem.create({ data: { campaignId: f.campaign.id, itemId: item3.id } });
+    const activationItem3 = await prisma.activationItem.create({ data: { activationId: f.activation2.id, campaignItemId: campaignItem3.id } });
+    await prisma.salesRecord.create({ data: { activationItemId: activationItem3.id, date: dayDate(), openingStock: 30, soldToday: 0 } });
+
+    const res = await request(app)
+      .get(`/admin/v1/campaigns/${f.campaign.id}/reports/sku-wise`)
+      .set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.status).toBe(200);
+    expect((res.body.data as any[]).map((r) => r.itemName).sort()).toEqual(["Item 1", "Item B"]);
+    expect(res.body.meta).toEqual({ total: 2, grandTotal: 43000 });
+  });
+
   it("filters by date range", async () => {
     const f = await buildReportsFixture();
     const yesterday = new Date(dayDate().getTime() - 86400000).toISOString().slice(0, 10);
@@ -110,6 +126,24 @@ describe("GET /admin/v1/campaigns/:id/reports/sku-wise", () => {
     expect(res.status).toBe(200);
     // outlet 2 only: item1 13@1000 + itemB 40@250
     expect(res.body.meta.grandTotal).toBe(23000);
+  });
+});
+
+describe("GET /admin/v1/campaigns/:id/sales", () => {
+  it("soldOnly=true drops rows with nothing sold and keeps the paging total in step (#90)", async () => {
+    const f = await buildReportsFixture();
+    await prisma.salesRecord.create({
+      data: { activationItemId: f.activationItem2.id, date: new Date(dayDate().getTime() - 86400000), openingStock: 5, soldToday: 0 },
+    });
+    const auth = `Bearer ${await adminToken()}`;
+
+    const all = await request(app).get(`/admin/v1/campaigns/${f.campaign.id}/sales`).set("Authorization", auth);
+    expect(all.body.meta.total).toBe(5);
+
+    const sold = await request(app).get(`/admin/v1/campaigns/${f.campaign.id}/sales`).query({ soldOnly: "true" }).set("Authorization", auth);
+    expect(sold.status).toBe(200);
+    expect(sold.body.meta.total).toBe(4);
+    expect((sold.body.data as any[]).every((r) => r.soldToday > 0)).toBe(true);
   });
 });
 

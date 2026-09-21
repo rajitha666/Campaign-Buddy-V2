@@ -19,14 +19,7 @@ export function absoluteUrl(url, origin) {
   return /^https?:\/\//i.test(url) ? url : `${origin}${url}`;
 }
 
-// Quote a field only when it needs it (comma, quote or newline), doubling quotes.
-export function toCsv(lines) {
-  const cell = (v) => {
-    const s = v == null ? '' : String(v);
-    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return lines.map((l) => l.map(cell).join(',')).join('\n');
-}
+export { toCsv } from './csv';
 
 // Split answer rows into per-outlet blocks for the grouped results table,
 // keeping each outlet's rows in server order (date). A dash covers rows
