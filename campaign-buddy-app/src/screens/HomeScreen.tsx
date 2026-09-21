@@ -17,6 +17,7 @@ import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useNetwork } from '@/offline/NetworkContext';
 import { useSyncEngine } from '@/offline/SyncContext';
 import { formatSyncedAgo } from '@/lib/syncLabel';
+import { targetLabel } from '@/lib/targetLabel';
 import { Avatar } from '@/components/Avatar';
 import { StatTile } from '@/components/StatTile';
 import { ProductListItem } from '@/components/ProductListItem';
@@ -47,6 +48,14 @@ export function HomeScreen() {
     queryFn: () => offlineQueries.getTodayStats(assignment!.assignmentId),
     enabled: !!assignment,
   });
+
+  // Shares the Sales Summary screen's query (same key), so no extra request when both are open.
+  const summaryQuery = useQuery({
+    queryKey: ['sales-summary', 'today', assignment?.assignmentId],
+    queryFn: () => offlineQueries.getTodaySalesSummary(assignment!.assignmentId),
+    enabled: !!assignment,
+  });
+  const summary = summaryQuery.data;
 
   const productsQuery = useQuery({
     queryKey: ['products', assignment?.campaign.id, assignment?.outlet.id],
@@ -158,6 +167,15 @@ export function HomeScreen() {
         >
           <StatTile label="Sales" value={formatK(statsQuery.data?.totalSales)} />
           <Divider />
+          {summary?.target != null && (
+            <>
+              <StatTile
+                label={targetLabel(summary.targetCategorization)}
+                value={summary.targetUnit === 'unit_wise' ? String(summary.target) : formatK(summary.target)}
+              />
+              <Divider />
+            </>
+          )}
           <StatTile
             label="Foot fall"
             value={String(statsQuery.data?.footFall ?? 0)}
