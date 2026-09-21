@@ -21,6 +21,7 @@ import { PhotoCapture } from '@/components/PhotoCapture';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { capturePhoto } from '@/lib/capturePhoto';
+import { applyDesignationLabel } from '@/lib/designationLabel';
 import { showAlert } from '@/lib/showAlert';
 import {
   buildSavePayload,
@@ -47,7 +48,7 @@ function confirmDiscard(onDiscard: () => void) {
 
 export function SupervisorChecklistScreen() {
   const navigation = useNavigation<Nav>();
-  const { assignmentId, outletName, campaignName } = useRoute<Route>().params;
+  const { assignmentId, outletName, campaignName, promoterLabel } = useRoute<Route>().params;
   const queryClient = useQueryClient();
   const queryKey = ['supervisor', 'checklist', assignmentId];
   const query = useQuery({ queryKey, queryFn: () => checklistApi.getChecklist(assignmentId) });
@@ -143,7 +144,9 @@ export function SupervisorChecklistScreen() {
             extraScrollHeight={24}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.promoter}>Scoring promoter: {query.data?.promoter.name}</Text>
+            <Text style={styles.promoter}>
+              {applyDesignationLabel('Scoring promoter', promoterLabel)}: {query.data?.promoter.name}
+            </Text>
             <Text style={styles.progress}>
               {progress.done} of {progress.total} done
             </Text>
@@ -161,6 +164,7 @@ export function SupervisorChecklistScreen() {
                           scale={scale}
                           value={draft?.rating !== undefined ? draft.rating : t.response?.rating ?? null}
                           onChange={(rating) => edit(t.id, { rating })}
+                          promoterLabel={promoterLabel}
                         />
                       ) : t.taskType === 'feedback' ? (
                         <TextInput

@@ -348,13 +348,14 @@ Drives the Home campaign card. **Response `200`**
 {
   "data": {
     "assignmentId": "a_55",
-    "campaign": { "id": "c_9", "name": "Sktest Activation", "startDate": "2026-09-01" },
+    "campaign": { "id": "c_9", "name": "Sktest Activation", "startDate": "2026-09-01", "promoterLabel": null },
     "outlet": { "id": "o_2", "name": "Nawala Retail Outlet", "latitude": 6.8845, "longitude": 79.8887, "geofenceRadiusMeters": 150 },
     "shiftStart": "2026-09-05T03:30:00Z",
     "shiftEnd": "2026-09-05T12:30:00Z"
   }
 }
 ```
+`campaign.promoterLabel` (nullable string, also on every `/me/assignments` entry) is the campaign's configured designation label (e.g. `"Beauty Advisor"`, #64); `null` means the default word "Promoter". The app swaps it in wherever it would say "Promoter" (Profile role line, supervisor checklist).
 
 ### `GET /me/assignments` — every same-day assignment (supervisor route mode + multi-outlet promoters)
 Same shape as a single `/me/assignments/today` entry, but returns **every** Activation open for a given date, not just one. A supervisor can have several concurrent outlet assignments on a route, and a promoter can also hold multiple same-day outlet assignments (the app shows an outlet picker for this — the old `/today` flow silently showed only one). Optional `?date=YYYY-MM-DD` (defaults to today). Each entry's `assignmentId` is passed to `POST /attendance/check-in`/`check-out` exactly as today — the global one-open-shift lock (§5) still applies, so the rep checks into one outlet, checks out, then checks into the next. **Response `200`**

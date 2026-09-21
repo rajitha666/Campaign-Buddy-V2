@@ -1,17 +1,20 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { RatingScaleEntry } from '@/api/types';
+import { applyDesignationLabel } from '@/lib/designationLabel';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 interface Props {
   scale: RatingScaleEntry[];
   value: number | null;
   onChange: (value: number | null) => void;
+  /** The campaign's designation label; null/absent → "promoter". */
+  promoterLabel?: string | null;
 }
 
 // 1–5 score for a promoter. The chosen rung's label + definition is shown under
 // the row so every supervisor reads the same standard while scoring.
-export function RatingSelector({ scale, value, onChange }: Props) {
+export function RatingSelector({ scale, value, onChange, promoterLabel }: Props) {
   const selected = scale.find((r) => r.value === value);
   return (
     <View>
@@ -37,7 +40,7 @@ export function RatingSelector({ scale, value, onChange }: Props) {
           <Text style={styles.definitionLabel}>{selected.label}</Text> — {selected.description}
         </Text>
       ) : (
-        <Text style={styles.hint}>Tap a number to rate the promoter</Text>
+        <Text style={styles.hint}>{applyDesignationLabel('Tap a number to rate the promoter', promoterLabel)}</Text>
       )}
     </View>
   );
