@@ -7,6 +7,8 @@ export function columnText(column, row) {
   if (typeof column.csvValue === 'function') return column.csvValue(row);
   if (typeof column.render === 'function') {
     const rendered = column.render(row);
+    // '—' is the on-screen "no value" placeholder, not data — export it empty.
+    if (rendered === '—') return row[column.key] ?? '';
     if (typeof rendered === 'string' || typeof rendered === 'number') return rendered;
     // A JSX element (e.g. a Badge/Avatar) — fall back to the raw field rather
     // than stringify a React element.

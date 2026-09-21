@@ -12,6 +12,7 @@ import { useToast } from '../context/ToastContext';
 import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
+import { downloadCsv } from '../lib/csv';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { colomboYmd } from '../lib/colomboDay';
 
@@ -171,13 +172,8 @@ export default function ResourcePage({ resourceKey }) {
   function exportCsv() {
     if (rows.length === 0) return;
     const headers = columns.map((c) => applyDesignationLabel(c.label, designationLabel));
-    const lines = rows.map((r) => columns.map((c) => JSON.stringify(String(columnText(c, r) ?? ''))).join(','));
-    const csv = [headers.join(','), ...lines].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = exportFilename(applyDesignationLabel(config.title, designationLabel) || resourceKey, 'csv'); a.click();
-    URL.revokeObjectURL(url);
+    const lines = rows.map((r) => columns.map((c) => columnText(c, r)));
+    downloadCsv(exportFilename(applyDesignationLabel(config.title, designationLabel) || resourceKey, 'csv'), [headers, ...lines]);
   }
 
   if (!config) return <ErrorState message={`Unknown resource: ${resourceKey}`} />;

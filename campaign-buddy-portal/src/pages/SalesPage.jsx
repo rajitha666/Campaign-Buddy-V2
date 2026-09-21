@@ -11,6 +11,7 @@ import StatCard from '../components/StatCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { dayDateColombo } from '../lib/colomboDay';
+import { fetchAllPages } from '../lib/fetchAllPages';
 
 function todayISO(offsetDays = 0) {
   // Anchor on the Colombo calendar day (backend convention) so UTC 18:30–24:00
@@ -44,19 +45,19 @@ export default function SalesPage() {
     if (!currentCampaignId) return;
     setRecentLoading(true);
     Promise.all([
-      salesRecordsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }),
+      fetchAllPages((q) => salesRecordsApi.list(currentCampaignId, q), { dateFrom: todayISO(-6), dateTo: todayISO() }),
       dailyStatsApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }),
-      attendanceApi.list(currentCampaignId, { dateFrom: todayISO(), dateTo: todayISO() }),
+      fetchAllPages((q) => attendanceApi.list(currentCampaignId, q), { dateFrom: todayISO(), dateTo: todayISO() }),
       salesFieldsApi.dayValues(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }).catch(() => null),
     ])
       .then(([salesRes, statsRes, attRes, fieldRes]) => {
-        const salesRows = salesRes?.data || [];
+        const salesRows = salesRes;
         setRecentSales(salesRows);
         setDayFieldValues(fieldRes?.data || []);
 
         const todaySales = salesRows.filter((r) => String(r.date).slice(0, 10) === todayISO());
         const totalSales = todaySales.reduce((s, r) => s + saleValue(r), 0);
-        const attRows = attRes?.data || [];
+        const attRows = attRes;
         const outletIds = new Set(
           attRows.filter((a) => String(a.date).slice(0, 10) === todayISO() && a.checkInAt)
             .map((a) => a.activation?.outletId).filter(Boolean)

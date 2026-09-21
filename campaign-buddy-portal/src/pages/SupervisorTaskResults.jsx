@@ -10,7 +10,9 @@ import Badge from '../components/Badge';
 import { exportFilename } from '../lib/exportFilename';
 import { dayDateColombo, colomboYmd } from '../lib/colomboDay';
 import { applyDesignationLabel } from '../lib/designationLabel';
-import { resultText, scoreLabel, resultsCsv, toCsv, groupByOutlet, visitLabel } from '../lib/supervisorResults';
+import { resultText, scoreLabel, resultsCsv, groupByOutlet, visitLabel } from '../lib/supervisorResults';
+import { downloadCsv } from '../lib/csv';
+import { fetchAllPages } from '../lib/fetchAllPages';
 
 const PAGE_SIZE = 25;
 const daysAgo = (n) =>
@@ -65,17 +67,8 @@ export default function SupervisorTaskResults() {
 
   async function exportCsv() {
     // Export the whole range, not just the page on screen.
-    const all = [];
-    for (let p = 1; p <= 100; p++) {
-      const res = await api.list(currentCampaignId, { dateFrom: from, dateTo: to, page: p, pageSize: 200 });
-      all.push(...(res?.data || []));
-      if (all.length >= (res?.meta?.total ?? 0) || !(res?.data || []).length) break;
-    }
-    const blob = new Blob([toCsv(resultsCsv(all, window.location.origin))], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = exportFilename('Supervisor Task Results', 'csv');
-    a.click();
+    const all = await fetchAllPages((q) => api.list(currentCampaignId, q), { dateFrom: from, dateTo: to });
+    downloadCsv(exportFilename('Supervisor Task Results', 'csv'), resultsCsv(all, window.location.origin));
   }
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;

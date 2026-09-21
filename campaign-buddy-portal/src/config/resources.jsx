@@ -660,7 +660,8 @@ export const RESOURCES = {
         csvValue: (r) => (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0),
       },
     ],
-    fetchList: ({ campaignId, query }) => salesRecordsApi.list(campaignId, query),
+    // Nothing-sold rows are noise in this log and its export (#90).
+    fetchList: ({ campaignId, query }) => salesRecordsApi.list(campaignId, { ...query, soldOnly: true }),
   },
 
   salesStatus: {

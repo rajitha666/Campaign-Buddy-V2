@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
-import { app, resetDb, staffToken, makeCampaignWithActivation } from "./helpers";
+import { app, resetDb, staffToken, adminToken, makeStaff, makeCampaignWithActivation } from "./helpers";
 import { totalTargetFromDaily } from "../src/utils/targets";
 
 beforeEach(resetDb);
@@ -76,5 +76,36 @@ describe("mobile Target display (#daily-target-display)", () => {
     expect(res.status).toBe(200);
     const expectedDays = Math.round((activation.dateTo.getTime() - activation.dateFrom.getTime()) / 86_400_000) + 1;
     expect(res.body.data.totalTarget).toBe(6000 * expectedDays);
+  });
+});
+
+describe("reassigning an activation's promoter (#88)", () => {
+  it("the new promoter inherits the activation's targets; the previous one no longer sees them", async () => {
+    const { campaign, activation, item, staff: oldStaff } = await makeCampaignWithActivation();
+    await prisma.activationTarget.create({
+      data: { activationId: activation.id, dateFrom: activation.dateFrom, dateTo: activation.dateTo, targetItemId: item.id, targetValue: 12000 },
+    });
+    const newStaff = await makeStaff();
+
+    const patch = await request(app)
+      .patch(`/admin/v1/campaigns/${campaign.id}/activations/${activation.id}`)
+      .set("Authorization", `Bearer ${await adminToken()}`)
+      .send({ staffId: newStaff.id });
+    expect(patch.status).toBe(200);
+    expect(await prisma.activationTarget.count({ where: { activationId: activation.id } })).toBe(1);
+
+    const asNew = await request(app).get("/v1/sales-summary/today")
+      .set("Authorization", `Bearer ${await staffToken(newStaff.mobileUsername, "field-pw")}`);
+    expect(asNew.status).toBe(200);
+    expect(asNew.body.data.target).toBe(12000);
+
+    const perf = await request(app).get(`/v1/campaigns/${campaign.id}/performance`)
+      .set("Authorization", `Bearer ${await staffToken(newStaff.mobileUsername, "field-pw")}`);
+    expect(perf.status).toBe(200);
+    expect(perf.body.data.totalTarget).toBeGreaterThanOrEqual(12000);
+
+    const asOld = await request(app).get("/v1/sales-summary/today")
+      .set("Authorization", `Bearer ${await staffToken(oldStaff.mobileUsername, "field-pw")}`);
+    expect(asOld.body.data?.target ?? null).toBeNull();
   });
 });

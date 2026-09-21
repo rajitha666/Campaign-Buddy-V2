@@ -14,6 +14,7 @@ import ErrorState from '../components/ErrorState';
 import CampaignMap from '../components/CampaignMap';
 import TrendChart from '../components/TrendChart';
 import { dayDateColombo } from '../lib/colomboDay';
+import { fetchAllPages } from '../lib/fetchAllPages';
 
 function todayISO(offsetDays = 0) {
   // Anchor on the Colombo calendar day (backend convention) so UTC 18:30–24:00
@@ -58,10 +59,10 @@ export default function Dashboard() {
       try {
         const [statsRes, weekSalesRes, weekAttRes, skuRes, campaignSalesRes, actRes, liveRes] = await Promise.all([
           dailyStatsApi.list(currentCampaignId, { dateFrom: range.from, dateTo: range.to }),
-          salesApi.list(currentCampaignId, { dateFrom: todayISO(-6), dateTo: todayISO() }),
-          attendanceApi.list(currentCampaignId, { dateFrom: todayISO(-1), dateTo: todayISO() }),
+          fetchAllPages((q) => salesApi.list(currentCampaignId, q), { dateFrom: todayISO(-6), dateTo: todayISO() }),
+          fetchAllPages((q) => attendanceApi.list(currentCampaignId, q), { dateFrom: todayISO(-1), dateTo: todayISO() }),
           reportsApi.skuWise(currentCampaignId, { dateFrom: range.from, dateTo: range.to }),
-          salesApi.list(currentCampaignId, { dateFrom: range.from, dateTo: range.to }),
+          fetchAllPages((q) => salesApi.list(currentCampaignId, q), { dateFrom: range.from, dateTo: range.to }),
           activationsApi.list(currentCampaignId),
           trackingApi.live(currentCampaignId),
         ]);
@@ -71,8 +72,8 @@ export default function Dashboard() {
         const days = statsRes?.data?.byDay || [];
         setByDay(statsByDay(days));
 
-        const salesRows = weekSalesRes?.data || [];
-        const attRows = weekAttRes?.data || [];
+        const salesRows = weekSalesRes;
+        const attRows = weekAttRes;
         const todayStat = dayStat(days, todayISO());
         setToday({ ...daySummary(salesRows, attRows, todayISO()), ...todayStat });
         setYesterday(daySummary(salesRows, attRows, todayISO(-1)));
@@ -81,7 +82,7 @@ export default function Dashboard() {
         const skuRows = skuRes?.data || [];
         setTopProducts([...skuRows].sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0)).slice(0, 10));
 
-        setInterestProducts(interestByProduct(campaignSalesRes?.data || []).slice(0, 8));
+        setInterestProducts(interestByProduct(campaignSalesRes).slice(0, 8));
 
         setOutlets(uniqueOutlets(actRes?.data || []));
         setLiveStaff(liveRes?.data || []);

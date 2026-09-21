@@ -4,6 +4,7 @@ import { reports as reportsApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { exportFilename } from '../lib/exportFilename';
+import { downloadCsv } from '../lib/csv';
 import { applyDesignationLabel } from '../lib/designationLabel';
 
 export default function MonthlyAttendance() {
@@ -30,10 +31,9 @@ export default function MonthlyAttendance() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentCampaignId, month]);
 
   function exportCsv() {
-    const header = [applyDesignationLabel('Promoter', designationLabel), 'Outlet', ...days].join(',');
-    const lines = rows.map((r) => [r.staffName, r.outletName, ...days.map((d) => r.days?.[d] ?? '')].join(','));
-    const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = exportFilename('Monthly Attendance', 'csv'); a.click();
+    const header = [applyDesignationLabel('Promoter', designationLabel), 'Outlet', ...days];
+    const lines = rows.map((r) => [r.staffName, r.outletName, ...days.map((d) => r.days?.[d] ?? '')]);
+    downloadCsv(exportFilename('Monthly Attendance', 'csv'), [header, ...lines]);
   }
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar first." />;

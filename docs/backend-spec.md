@@ -367,7 +367,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | Method | Path | Access |
 |---|---|---|
 | GET | `/campaigns/:campaignId/attendance?outletId=&dateFrom=&dateTo=` | grant required, outlet-filtered |
-| GET | `/campaigns/:campaignId/sales?outletId=&dateFrom=&dateTo=` | grant required, outlet-filtered |
+| GET | `/campaigns/:campaignId/sales?outletId=&dateFrom=&dateTo=&soldOnly=&page=&pageSize=` | grant required, outlet-filtered. Paged (default 25, max 200) — a client aggregating over a range must walk every page (portal: `fetchAllPages`, #93). `soldOnly=true` drops rows with `soldToday = 0` (portal SKU-wise log, #90) |
 | PATCH | `/campaigns/:campaignId/sales/:salesRecordId` | **[adm/usr]** — correction, re-validates outlet ownership; can raise `openingStock` mid-day (§2.6) |
 | GET | `/campaigns/:campaignId/sales/lookup?staffId=&outletId=&activationId=&date=` | grant required — **new in v3**, folded in from the retired contract doc's §7.7.4. The cascading-dropdown load step before the portal's editable Update Sales grid. Response: `data: [{ id (=salesRecordId), activationItemId, itemName, unitPrice, openingStock, soldToday, customFields }]`, `meta: { total, activationId, date, dayCustomFields }` (#13). Nested under the campaign-scoped router (the original draft had this as a global endpoint with `campaignId` as a query param — moved here for consistency with every other grant-enforced resource) |
 | GET/POST/PATCH/DELETE | `/campaigns/:campaignId/sales-fields[/:id]` | `salesFields.routes.ts` — **[adm/usr]** for writes. Custom sales-field definitions (#13): auto-slugged `key`, `type`/`scope` frozen once values exist, `DELETE` archives instead (soft delete, #102) — recorded values are kept |
@@ -384,7 +384,7 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 **Reports** (`reports.routes.ts`, nested under the campaign-scoped router)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/campaigns/:campaignId/reports/sku-wise` | rows + grand total, outlet-filtered. **Confirmed v3: this single endpoint also serves the Sponsor "client report" use case** via normal grant-based filtering — there is no separate `-client` route (§5.10) |
+| GET | `/campaigns/:campaignId/reports/sku-wise` | rows + grand total, outlet-filtered; items with nothing sold are omitted (#90). **Confirmed v3: this single endpoint also serves the Sponsor "client report" use case** via normal grant-based filtering — there is no separate `-client` route (§5.10) |
 | GET | `/campaigns/:campaignId/reports/brand-wise` | rows + grand total, outlet-filtered. Same "no separate client variant" rule applies |
 | GET | `/campaigns/:campaignId/reports/reorder` | today's `SalesRecord`s with `reorderFlag = true` |
 | GET | `/campaigns/:campaignId/reports/attendance-monthly?month=MM-YYYY` | per-activation day-grid |

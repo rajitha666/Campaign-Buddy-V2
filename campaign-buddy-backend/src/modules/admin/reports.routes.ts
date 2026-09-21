@@ -37,6 +37,8 @@ router.get(
     const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
       where: {
+        // Nothing-sold rows carry no value; leaving them out keeps 0-sold SKUs off the report (#90).
+        soldToday: { gt: 0 },
         ...(range ? { date: range } : {}),
         activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
       },

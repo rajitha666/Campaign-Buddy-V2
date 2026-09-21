@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RESOURCES } from './resources';
-import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi, reports as reportsApi, campaigns as campaignsApi, supervisorTasks as supervisorTasksApi } from '../lib/endpoints';
+import { outlets as outletsApi, items as itemsApi, staff as staffApi, users as usersApi, activations as activationsApi, reports as reportsApi, salesRecords as salesRecordsApi, campaigns as campaignsApi, supervisorTasks as supervisorTasksApi } from '../lib/endpoints';
 import { columnText } from '../lib/columnText';
 
 describe('resources config', () => {
@@ -232,6 +232,17 @@ describe('resources config', () => {
     }
   });
 
+  // #90: 0-sold rows are excluded from the SKU-wise log (and so its export).
+  it('skuSales fetchList asks the API for sold-only rows', async () => {
+    const spy = vi.spyOn(salesRecordsApi, 'list').mockResolvedValue({ data: [], meta: { total: 0 } });
+    try {
+      await RESOURCES.skuSales.fetchList({ campaignId: 'c1', query: { page: 1, pageSize: 25 } });
+      expect(spy).toHaveBeenCalledWith('c1', { page: 1, pageSize: 25, soldOnly: true });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('clientPaged slices full-list endpoints into the requested page', async () => {
     const full = { data: Array.from({ length: 125 }, (_, i) => ({ id: i })), meta: {} };
     const spy = vi.spyOn(activationsApi, 'list').mockResolvedValue(full);
@@ -279,7 +290,8 @@ describe('resources config', () => {
     expect(col.label).toBe('Promoter');
     const row = { activationItem: { activation: { staff: { employeeId: 'EMP-0004', fullName: 'Tharindu Jayasuriya' } } } };
     expect(columnText(col, row)).toBe('Tharindu Jayasuriya');
-    expect(columnText(col, { activationItem: {} })).toBe('—');
+    // Missing promoter shows a dash on screen but exports empty (#92).
+    expect(columnText(col, { activationItem: {} })).toBe('');
   });
 
   it('SKU Wise Sales ends with a Total Sales column (sold qty × unit price) alongside Promoter (client doc D)', () => {
@@ -397,7 +409,7 @@ describe('resources config', () => {
     const boolCol = withBoolean.find((c) => c.key === 'promo');
     expect(columnText(boolCol, { promo: true })).toBe('Yes');
     expect(columnText(boolCol, { promo: false })).toBe('No');
-    expect(columnText(boolCol, {})).toBe('—');
+    expect(columnText(boolCol, {})).toBe('');
 
     const spy = vi.spyOn(reportsApi, 'outletWise').mockResolvedValue({
       data: [{ outletId: 'o1', outletName: 'Outlet A', footFall: 10, approached: 4, converted: 1, totalSales: 5000, target: 20, achievementPct: 50 }],

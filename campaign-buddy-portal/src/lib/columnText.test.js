@@ -23,6 +23,14 @@ describe('columnText', () => {
     expect(columnText(col, { updatedAt: null })).toBe('Missing');
   });
 
+  // #92: the on-screen '—' placeholder for a missing value must not leak into
+  // exports as if it were data.
+  it('exports a missing value as empty instead of the on-screen dash placeholder', () => {
+    const col = { key: 'outletName', render: (r) => r.activation?.outlet?.name || '—' };
+    expect(columnText(col, {})).toBe('');
+    expect(columnText(col, { outletName: 'Fallback' })).toBe('Fallback');
+  });
+
   it('reads the raw field when there is no render or csvValue', () => {
     expect(columnText({ key: 'name' }, { name: 'Outlet A' })).toBe('Outlet A');
   });

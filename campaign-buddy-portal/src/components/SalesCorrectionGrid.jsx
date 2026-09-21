@@ -6,6 +6,7 @@ import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { exportFilename } from '../lib/exportFilename';
+import { downloadCsv } from '../lib/csv';
 import { colomboYmd } from '../lib/colomboDay';
 
 // One editable cell for a custom field value, driven by the field definition.
@@ -121,13 +122,8 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
       r.itemName, r.unitPrice, r.openingStock, r.soldToday,
       ...productDefs.map((d) => productValues[r.activationItemId]?.[d.key] ?? ''),
       ...dayDefs.map((d) => dayValues[d.key] ?? ''),
-    ].map((v) => JSON.stringify(String(v ?? ''))).join(','));
-    const csv = [headers.join(','), ...lines].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = exportFilename('Sales Correction', 'csv'); a.click();
-    URL.revokeObjectURL(url);
+    ]);
+    downloadCsv(exportFilename('Sales Correction', 'csv'), [headers, ...lines]);
   }
 
   return (
