@@ -80,7 +80,8 @@ export interface Assignment {
 /** Response shape of GET /me/assignments/today — denormalized for one call. */
 export interface TodayAssignment {
   assignmentId: UUID;
-  campaign: Pick<Campaign, 'id' | 'name' | 'startDate'>;
+  /** `promoterLabel` is the campaign's designation label (e.g. "Beauty Advisor"); null/absent → "Promoter". */
+  campaign: Pick<Campaign, 'id' | 'name' | 'startDate'> & { promoterLabel?: string | null };
   outlet: Outlet;
   shiftStart: ISODateTime | null;
   shiftEnd: ISODateTime | null;

@@ -123,6 +123,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
         assignmentId: assignment.assignmentId,
         outletName: assignment.outlet.name,
         campaignName: assignment.campaign.name,
+        promoterLabel: assignment.campaign.promoterLabel,
       });
     } catch (err) {
       if (err instanceof LocationUnavailableError) {
@@ -190,6 +191,7 @@ function VisitRow({ row }: { row: { assignment: SupervisorAssignment; checkedIn:
             assignmentId: assignment.assignmentId,
             outletName: assignment.outlet.name,
             campaignName: assignment.campaign.name,
+            promoterLabel: assignment.campaign.promoterLabel,
           })
         }
         disabled={!checklistOpen}

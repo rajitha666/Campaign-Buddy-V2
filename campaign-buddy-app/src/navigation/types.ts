@@ -58,7 +58,7 @@ export type SupervisorTabParamList = {
 
 export type SupervisorRouteStackParamList = {
   SupervisorRoute: undefined;
-  SupervisorChecklist: { assignmentId: string; outletName: string; campaignName: string };
+  SupervisorChecklist: { assignmentId: string; outletName: string; campaignName: string; promoterLabel?: string | null };
 };
 
 export type AuthStackParamList = {

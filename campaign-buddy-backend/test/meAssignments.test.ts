@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
-import { app, resetDb, staffToken, makeStaff } from "./helpers";
+import { app, resetDb, staffToken, makeStaff, makeCampaignWithActivation } from "./helpers";
 import { dayDate } from "../src/utils/dates";
 
 beforeEach(resetDb);
@@ -201,5 +201,24 @@ describe("GET /v1/me/assignments — soft-deleted outlet/campaign hidden", () =>
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].assignmentId).toBe(live.id);
+  });
+});
+
+// #64 — the campaign's configured designation label (e.g. "Beauty Advisor")
+// reaches the mobile app so it can replace the hardcoded word "Promoter".
+describe("campaign designation label on the mobile assignment payloads (#64)", () => {
+  it("is null by default and the configured label once set, on both endpoints", async () => {
+    const f = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(f.staff.mobileUsername, "field-pw")}` };
+
+    const before = await request(app).get("/v1/me/assignments/today").set(auth);
+    expect(before.body.data.campaign.promoterLabel).toBeNull();
+
+    await prisma.campaign.update({ where: { id: f.campaign.id }, data: { promoterLabel: "Beauty Advisor" } });
+
+    const today = await request(app).get("/v1/me/assignments/today").set(auth);
+    expect(today.body.data.campaign.promoterLabel).toBe("Beauty Advisor");
+    const all = await request(app).get("/v1/me/assignments").set(auth);
+    expect(all.body.data[0].campaign.promoterLabel).toBe("Beauty Advisor");
   });
 });

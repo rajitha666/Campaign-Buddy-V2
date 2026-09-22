@@ -6,6 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
+import { useAssignment } from '@/context/AssignmentContext';
+import { applyDesignationLabel } from '@/lib/designationLabel';
 import { useNetwork } from '@/offline/NetworkContext';
 import { useSyncEngine } from '@/offline/SyncContext';
 import { formatSyncedAgo, syncStatusLabel } from '@/lib/syncLabel';
@@ -21,6 +23,7 @@ import { colors, fontFamily, fontSize, spacing } from '@/theme';
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { user, logout } = useAuth();
+  const { assignment } = useAssignment();
   const { isOnline } = useNetwork();
   const { isSyncing, pendingCount, failedItems, conflictItems, lastSyncedAt, syncNow } = useSyncEngine();
   // Offline entry (stats/stock/sales) is a promoter flow; supervisors mount
@@ -73,7 +76,11 @@ export function ProfileScreen() {
         <View style={styles.hero}>
           <Avatar initials={user?.avatarInitials ?? '—'} imageUrl={user?.profilePictureUrl} size={76} />
           <Text style={styles.name}>{user?.fullName}</Text>
-          <Text style={styles.role}>{user?.role === 'campaign_owner' ? 'Field Supervisor' : 'Field Promoter'}</Text>
+          <Text style={styles.role}>
+            {user?.role === 'campaign_owner'
+              ? 'Field Supervisor'
+              : applyDesignationLabel('Field Promoter', assignment?.campaign.promoterLabel)}
+          </Text>
         </View>
 
         <Card style={{ marginTop: spacing.xl, paddingVertical: 4, paddingHorizontal: spacing.lg }}>

@@ -92,6 +92,7 @@ router.get(
           id: activation.campaign.id,
           name: activation.campaign.name,
           startDate: activation.campaign.startDate,
+          promoterLabel: activation.campaign.promoterLabel ?? null,
         },
         outlet: {
           id: activation.outlet.id,
@@ -142,6 +143,7 @@ router.get(
             id: activation.campaign.id,
             name: activation.campaign.name,
             startDate: activation.campaign.startDate,
+            promoterLabel: activation.campaign.promoterLabel ?? null,
           },
           outlet: {
             id: activation.outlet.id,
