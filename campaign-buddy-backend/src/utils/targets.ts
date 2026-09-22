@@ -19,6 +19,30 @@ export async function todaysTarget(activationId: string, date: Date = dayDate())
   return rows.reduce((sum, row) => sum + row.targetValue, 0);
 }
 
+export interface TargetInfo {
+  /** The figure to show: the daily target for a daily activation, the monthly target (as entered) for a monthly one. */
+  target: number | null;
+  targetCategorization: "daily" | "monthly";
+  /** How to read `target`: units sold, or LKR of sales. */
+  targetUnit: "unit_wise" | "sales_wise";
+}
+
+/**
+ * What the mobile app should show as the promoter's target. `targetValue` is
+ * stored as entered, so both categorisations sum today's active targets; the
+ * activation's categorisation says whether that figure is per day or per month.
+ */
+export async function targetInfo(
+  activation: { id: string; targetCategorization: "daily" | "monthly"; targetUnit: "unit_wise" | "sales_wise" },
+  date: Date = dayDate()
+): Promise<TargetInfo> {
+  return {
+    target: await todaysTarget(activation.id, date),
+    targetCategorization: activation.targetCategorization,
+    targetUnit: activation.targetUnit,
+  };
+}
+
 /**
  * Projects today's active daily target across the activation's full run —
  * inclusive calendar days from dateFrom to dateTo. `null` propagates when

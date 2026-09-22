@@ -5,7 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok } from "../../utils/apiResponse";
 import { buildSalesSummary } from "../../utils/salesCalc";
 import { requireOpenShift } from "../../utils/salesGuards";
-import { todaysTarget } from "../../utils/targets";
+import { targetInfo } from "../../utils/targets";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import {
@@ -33,16 +33,16 @@ async function currentActivationOrThrow(staffId: string, assignmentId?: string) 
 // docs/api-spec.md §2.11 — SalesSummary carries id/userId/assignmentId/date
 // on top of the computed rollup, plus the campaign's day-scope custom fields (#13).
 async function fullSummary(
-  activation: { id: string; campaignId: string },
+  activation: { id: string; campaignId: string; targetCategorization: "daily" | "monthly"; targetUnit: "unit_wise" | "sales_wise" },
   staffId: string,
   date: Date
 ) {
   const activationId = activation.id;
-  const [rollup, row, dayDefs, target] = await Promise.all([
+  const [rollup, row, dayDefs, targetFields] = await Promise.all([
     buildSalesSummary(prisma, activationId, date),
     prisma.salesSummary.findUnique({ where: { activationId_date: { activationId, date } } }),
     activeDefsForCampaign(activation.campaignId, "day"),
-    todaysTarget(activationId, date),
+    targetInfo(activation, date),
   ]);
   const values = await dayValueMap(activationId, date);
   return {
@@ -51,7 +51,7 @@ async function fullSummary(
     assignmentId: activationId,
     date,
     ...rollup,
-    target,
+    ...targetFields,
     customFields: serializeWithValues(dayDefs, values),
   };
 }

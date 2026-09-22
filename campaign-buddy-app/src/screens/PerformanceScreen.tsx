@@ -6,6 +6,7 @@ import * as offlineQueries from '@/offline/queries';
 import { ProductThumb } from '@/components/ProductThumb';
 import { SyncStatusBadge } from '@/components/SyncStatusBadge';
 import { useAssignment } from '@/context/AssignmentContext';
+import { targetLabel, targetValueText } from '@/lib/targetLabel';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
 const BAND_COLORS = [colors.success, '#8B5FBF', colors.info];
@@ -23,6 +24,8 @@ export function PerformanceScreen() {
 
   const p = performanceQuery.data;
   const maxSale = p ? Math.max(...p.dailySales.map((d) => d.amount), 1) : 1;
+  // `target` is daily or monthly per the activation; an older server only sends totalTarget.
+  const perfTarget = p ? (p.target !== undefined ? p.target : p.totalTarget) : null;
 
   return (
     <SafeAreaView style={styles.frame} edges={['top']}>
@@ -46,7 +49,6 @@ export function PerformanceScreen() {
                   n={new Date(p.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                   l="Start date"
                 />
-                <MetaItem n={`Day ${p.dayNumber} of ${p.totalDays}`} l="Days passed" />
               </View>
             </View>
 
@@ -54,7 +56,9 @@ export function PerformanceScreen() {
               <PerfStat n={`LKR ${p.totalSales.toLocaleString()}`} l="Total sales" />
               <PerfStat n={String(p.totalUnitsSold)} l="Units sold" />
               <PerfStat n={String(p.totalApproached)} l="Approached" />
-              {p.totalTarget != null && <PerfStat n={`LKR ${p.totalTarget.toLocaleString()}`} l="Target" />}
+              {perfTarget != null && (
+                <PerfStat n={targetValueText(perfTarget, p.targetUnit)} l={targetLabel(p.targetCategorization)} />
+              )}
             </View>
 
             <View style={styles.chartCard}>

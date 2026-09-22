@@ -16,6 +16,7 @@ import { useAttendance } from '@/context/AttendanceContext';
 import { useAssignment } from '@/context/AssignmentContext';
 import { isCheckedInAt } from '@/lib/shiftState';
 import { canConfirmSales } from '@/lib/salesConfirmGuard';
+import { targetLabel, targetValueText } from '@/lib/targetLabel';
 import { confirmAction } from '@/lib/showAlert';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/theme';
 
@@ -119,8 +120,8 @@ export function SalesSummaryScreen() {
             </View>
             {s?.target != null && (
               <View style={styles.targetBox}>
-                <Text style={styles.targetLabel}>Target</Text>
-                <Text style={styles.targetValue}>LKR {s.target.toLocaleString()}</Text>
+                <Text style={styles.targetLabel}>{targetLabel(s.targetCategorization)}</Text>
+                <Text style={styles.targetValue}>{targetValueText(s.target, s.targetUnit)}</Text>
               </View>
             )}
           </View>

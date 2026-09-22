@@ -493,8 +493,8 @@ Sales summary and the portal's stats/footfall reporting.
 
 The promoter's own scoreboard for the campaign:
 
-- Campaign name, start date, **"Day 12 of 30"** progress.
-- Totals: total sales, units sold, approached.
+- Campaign name and start date. (The "Day X of Y / Days passed" progress text was removed in #87.)
+- Totals: total sales, units sold, approached, and the promoter's **target** — the daily target for a *daily* activation, the monthly target for a *monthly* one (#86), shown in LKR or units per the activation's Target Unit. The same figure appears on Home's stats card and the Daily sales screen.
 - A **bar chart of daily sales** across the campaign so far.
 - **Top products** by units sold.
 

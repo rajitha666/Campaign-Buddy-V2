@@ -4,7 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ok } from "../../utils/apiResponse";
 import { workingDaysBetween } from "../../utils/salesGuards";
 import { countActivationWorkingDays } from "../../utils/activationPerformance";
-import { todaysTarget, totalTargetFromDaily } from "../../utils/targets";
+import { targetInfo, totalTargetFromDaily } from "../../utils/targets";
 
 const router = Router();
 
@@ -79,10 +79,13 @@ router.get(
     const totalApproached = dailyStats.reduce((s, d) => s + d.approached, 0);
     const totalSales = Object.values(byDay).reduce((s, v) => s + v, 0);
 
-    // "Total target" projects today's active target across the whole
-    // activation run — see utils/targets.ts.
-    const dailyTarget = await todaysTarget(activation.id);
-    const totalTarget = totalTargetFromDaily(dailyTarget, activation.dateFrom, activation.dateTo);
+    // `target` is what the app shows (daily or monthly per the activation's
+    // categorisation). `totalTarget` is kept for app builds already in the field:
+    // a daily target projected across the whole run, or the monthly figure as is.
+    const targetFields = await targetInfo(activation);
+    const totalTarget = targetFields.targetCategorization === "monthly"
+      ? targetFields.target
+      : totalTargetFromDaily(targetFields.target, activation.dateFrom, activation.dateTo);
 
     res.json(
       ok({
@@ -94,6 +97,7 @@ router.get(
         totalUnitsSold,
         totalApproached,
         totalTarget,
+        ...targetFields,
         dailySales,
         topProducts,
       })
