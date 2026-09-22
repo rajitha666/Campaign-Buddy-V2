@@ -237,7 +237,9 @@ Aggregated per `(userId, assignmentId, date)` — mostly a rollup of `StockEntry
 | `footFall` | integer | read-only, mirrors `DailyStats.footFall` |
 | `approached` | integer | read-only, mirrors `DailyStats.approached` |
 | `converted` | integer | read-only, mirrors `DailyStats.converted` |
-| `target` | integer (LKR), nullable | read-only, sum of every `ActivationTarget` active today for this activation; `null` when none is set — the app hides the Target UI in that case |
+| `target` | integer, nullable | read-only, sum of every `ActivationTarget` active today for this activation, as entered — the **daily** figure for a daily activation, the **monthly** figure for a monthly one (see `targetCategorization`); `null` when none is set — the app hides the Target UI in that case |
+| `targetCategorization` | `daily` \| `monthly` | read-only, the activation's `targetCategorization` — says whether `target` is per day or per month (#86) |
+| `targetUnit` | `unit_wise` \| `sales_wise` | read-only, the activation's `targetUnit` — `target` is a unit count or an LKR value |
 | `remarks` | string, nullable | free text, rep-entered |
 | `confirmed` | boolean | set `true` by `POST /sales-summary/today/confirm` |
 | `confirmedAt` | date-time, nullable | |
@@ -706,6 +708,9 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
     "totalUnitsSold": 142,
     "totalApproached": 96,
     "totalTarget": 560000,
+    "target": 40000,
+    "targetCategorization": "daily",
+    "targetUnit": "sales_wise",
     "dailySales": [
       { "date": "2026-09-01", "amount": 68000 },
       { "date": "2026-09-02", "amount": 74000 },
@@ -721,7 +726,7 @@ Backs the Performance tab. Aggregates across the full campaign-to-date for this 
   }
 }
 ```
-`dayNumber` = inclusive count of calendar days from `startDate` to "today" in the outlet's timezone. `topProducts` is sorted `unitsSold` descending — this ordering is server-side, not a client sort. `totalTarget` (integer LKR, nullable) projects today's active `ActivationTarget` total across the activation's full inclusive calendar-day run (`dateFrom`–`dateTo`); `null` when no target is currently active, and the app hides the Target UI in that case.
+`dayNumber` = inclusive count of calendar days from `startDate` to "today" in the outlet's timezone. `topProducts` is sorted `unitsSold` descending — this ordering is server-side, not a client sort. `totalTarget` (integer LKR, nullable) projects today's active `ActivationTarget` total across the activation's full inclusive calendar-day run (`dateFrom`–`dateTo`); `null` when no target is currently active, and the app hides the Target UI in that case. **`target` / `targetCategorization` / `targetUnit`** (#86, #87) are what the app shows now: `target` is today's active target total as entered — daily for a `daily` activation, monthly for a `monthly` one — in the activation's `targetUnit`. `totalTarget` is kept for older app builds (for a monthly activation it equals the monthly `target`, not a per-day projection); the Performance tab no longer shows "Day X of Y", though `dayNumber`/`totalDays` are still returned.
 
 ---
 

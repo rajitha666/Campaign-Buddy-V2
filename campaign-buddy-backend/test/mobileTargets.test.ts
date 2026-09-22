@@ -109,3 +109,42 @@ describe("reassigning an activation's promoter (#88)", () => {
     expect(asOld.body.data?.target ?? null).toBeNull();
   });
 });
+
+describe("daily vs monthly target categorisation (#86)", () => {
+  async function withTarget(categorization: "daily" | "monthly", unit: "unit_wise" | "sales_wise", value: number) {
+    const f = await makeCampaignWithActivation();
+    await prisma.activation.update({ where: { id: f.activation.id }, data: { targetCategorization: categorization, targetUnit: unit } });
+    await prisma.activationTarget.create({
+      data: { activationId: f.activation.id, dateFrom: f.activation.dateFrom, dateTo: f.activation.dateTo, targetItemId: f.item.id, targetValue: value },
+    });
+    const auth = { Authorization: `Bearer ${await staffToken(f.staff.mobileUsername, "field-pw")}` };
+    return { ...f, auth };
+  }
+
+  it("a daily activation reports the daily target, with its categorisation and unit", async () => {
+    const f = await withTarget("daily", "sales_wise", 6000);
+    const summary = await request(app).get("/v1/sales-summary/today").set(f.auth);
+    expect(summary.body.data).toMatchObject({ target: 6000, targetCategorization: "daily", targetUnit: "sales_wise" });
+
+    const perf = await request(app).get(`/v1/campaigns/${f.campaign.id}/performance`).query({ outletId: f.outlet.id }).set(f.auth);
+    const days = Math.round((f.activation.dateTo.getTime() - f.activation.dateFrom.getTime()) / 86_400_000) + 1;
+    expect(perf.body.data).toMatchObject({ target: 6000, targetCategorization: "daily", targetUnit: "sales_wise", totalTarget: 6000 * days });
+  });
+
+  it("a monthly activation reports the monthly figure as entered — not multiplied out per day", async () => {
+    const f = await withTarget("monthly", "unit_wise", 150000);
+    const summary = await request(app).get("/v1/sales-summary/today").set(f.auth);
+    expect(summary.body.data).toMatchObject({ target: 150000, targetCategorization: "monthly", targetUnit: "unit_wise" });
+
+    const perf = await request(app).get(`/v1/campaigns/${f.campaign.id}/performance`).query({ outletId: f.outlet.id }).set(f.auth);
+    expect(perf.body.data).toMatchObject({ target: 150000, targetCategorization: "monthly", targetUnit: "unit_wise", totalTarget: 150000 });
+  });
+
+  it("carries the categorisation even when no target is set (target stays null)", async () => {
+    const f = await makeCampaignWithActivation();
+    await prisma.activation.update({ where: { id: f.activation.id }, data: { targetCategorization: "monthly" } });
+    const auth = { Authorization: `Bearer ${await staffToken(f.staff.mobileUsername, "field-pw")}` };
+    const summary = await request(app).get("/v1/sales-summary/today").set(auth);
+    expect(summary.body.data).toMatchObject({ target: null, targetCategorization: "monthly" });
+  });
+});
