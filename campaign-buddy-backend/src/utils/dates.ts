@@ -24,8 +24,8 @@ export function dayDate(input?: string): Date {
 
 // "YYYY-MM-DD" for the current Colombo calendar day (wall clock), NOT the
 // container's UTC/QUALIFIER day — same convention as dayDate() above.
-export function colomboYmd(): string {
-  return new Date(Date.now() + COLOMBO_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+export function colomboYmd(at: Date = new Date()): string {
+  return new Date(at.getTime() + COLOMBO_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
 }
 
 // "YYYY-MM" for the current Colombo calendar month.
