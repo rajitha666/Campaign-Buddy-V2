@@ -137,6 +137,7 @@ export const leaveRequests = {
 export const reports = {
   skuWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sku-wise`, { query }),
   brandWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/brand-wise`, { query }),
+  startingStock: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/starting-stock`, { query }), // {dateFrom, dateTo, outletId}
   outletWise: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/outlet-wise`, { query }),
   reorder: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/reorder`, { query }),
   salesStatus: (campaignId, query) => api.get(`/campaigns/${campaignId}/reports/sales-status`, { query }),

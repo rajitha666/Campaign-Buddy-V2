@@ -152,7 +152,9 @@ router.patch(
         where: { activationItemId_date: { activationItemId, date: today } },
         create: {
           activationItemId, date: today,
-          openingStock: effectiveOpeningStock, soldToday: effectiveSoldToday,
+          // First stock update of the day (the shift is open — requireOpenShift above):
+          // its opening stock is the day's starting stock, kept through later restocks (#91).
+          openingStock: effectiveOpeningStock, startingStock: effectiveOpeningStock, soldToday: effectiveSoldToday,
           otherInterestedCustomers: otherInterestedCustomers ?? 0, reorderFlag: reorderFlag ?? false,
         },
         update: {

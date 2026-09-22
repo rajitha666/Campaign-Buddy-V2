@@ -81,4 +81,11 @@ describe('NAV', () => {
     expect(routesFor('sponsor').has('/reports/client-brand-wise')).toBe(true);
     expect(routesFor('supervisor').has('/my-outlet-attendance')).toBe(true);
   });
+
+  // #91 — per-day starting stock, visible to the client (sponsor) as well as staff.
+  it("offers Starting Stock under Sales to admin, supervisor and sponsor", () => {
+    for (const persona of ["admin", "supervisor", "sponsor"]) {
+      expect(routesFor(persona).has("/sales/starting-stock"), persona).toBe(true);
+    }
+  });
 });

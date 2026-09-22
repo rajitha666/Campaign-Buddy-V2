@@ -583,6 +583,10 @@ model SalesRecord {
   activationItemId         String
   date                     DateTime @db.Date
   openingStock             Int      @default(0)
+  // Snapshot of openingStock from the first stock update after check-in (#91).
+  // openingStock itself is edited in place on a mid-day restock; this is not.
+  // Null on rows from before the feature (no backfill).
+  startingStock            Int?
   soldToday                Int      @default(0)
   otherInterestedCustomers Int      @default(0)
   reorderFlag              Boolean  @default(false)

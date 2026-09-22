@@ -243,6 +243,24 @@ describe('resources config', () => {
     }
   });
 
+  // #91: per-day starting stock (first stock update after check-in).
+  it('startingStock lists date/outlet/promoter/product/unit price/start qty and reads the starting-stock report', async () => {
+    const cfg = RESOURCES.startingStock;
+    expect(cfg.excel).toBe(true);
+    expect(cfg.columns.map((c) => c.label)).toEqual(['Date', 'Outlet', 'Promoter', 'Product', 'Unit Price', 'Start Qty']);
+    const row = { date: '2026-09-22', outletName: 'Keells – Nawala', promoterName: 'Nimal', itemName: 'Shampoo', unitPrice: 1200, startQty: 40 };
+    expect(cfg.columns.map((c) => columnText(c, row))).toEqual(['2026-09-22', 'Keells – Nawala', 'Nimal', 'Shampoo', 1200, 40]);
+    const spy = vi.spyOn(reportsApi, 'startingStock').mockResolvedValue({ data: [row, row, row], meta: { total: 3 } });
+    try {
+      const res = await cfg.fetchList({ campaignId: 'c1', query: { page: 1, pageSize: 2, dateFrom: '2026-09-01' } });
+      expect(spy).toHaveBeenCalledWith('c1', { page: 1, pageSize: 2, dateFrom: '2026-09-01' });
+      expect(res.data).toHaveLength(2);
+      expect(res.meta.total).toBe(3);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('clientPaged slices full-list endpoints into the requested page', async () => {
     const full = { data: Array.from({ length: 125 }, (_, i) => ({ id: i })), meta: {} };
     const spy = vi.spyOn(activationsApi, 'list').mockResolvedValue(full);

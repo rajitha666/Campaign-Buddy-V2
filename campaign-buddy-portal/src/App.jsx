@@ -79,6 +79,7 @@ export default function App() {
 
               <Route path="/sales" element={<SalesPage />} />
               <Route path="/sales/sku-wise" element={R('skuSales')()} />
+              <Route path="/sales/starting-stock" element={R('startingStock')()} />
               <Route path="/sponsor/sales" element={R('skuSales')()} />
               <Route path="/sales/status" element={R('salesStatus')()} />
               <Route path="/sales/outlet-wise" element={R('outletWise')()} />
