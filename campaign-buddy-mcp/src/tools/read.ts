@@ -68,7 +68,7 @@ const mapEnv = (env: { data: any; meta?: any }, fn: (r: any) => unknown) => ({
   data: Array.isArray(env.data) ? env.data.map(fn) : env.data,
 });
 
-export const REPORTS = ["sku-wise", "brand-wise", "outlet-wise", "sales-status", "reorder", "attendance-monthly"] as const;
+export const REPORTS = ["sku-wise", "brand-wise", "outlet-wise", "starting-stock", "sales-status", "reorder", "attendance-monthly"] as const;
 
 const CATALOG = {
   clients: "/clients",
@@ -185,6 +185,7 @@ export function registerReadTools(server: McpServer, { api }: Ctx) {
         "- sku-wise: units + LKR value per product\n" +
         "- brand-wise: per outlet x brand\n" +
         "- outlet-wise: foot fall, approached, converted, sales, target achievement, custom fields per outlet\n" +
+        "- starting-stock: per day, outlet, promoter and product, the stock the promoter started the day with (first stock update after check-in)\n" +
         "- sales-status: live per-activation sales status for `date`\n" +
         "- reorder: items flagged for restock on `date`\n" +
         "- attendance-monthly: per-person day grid for `month`.\n" +

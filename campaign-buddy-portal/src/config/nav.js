@@ -60,6 +60,8 @@ export const NAV = [
     { path: '/sales/update', label: 'Update Sales', icon: 'updatesales', roles: ['admin'] },
     { path: '/sales/custom-fields', label: 'Custom Fields', icon: 'sales', roles: ['admin'] },
     { path: '/sales/sku-wise', label: 'SKU Wise Sales', icon: 'sales', roles: ['supervisor'] },
+    // Stock each promoter started the day with (#91) — also the client's starting-stock report.
+    { path: '/sales/starting-stock', label: 'Starting Stock', icon: 'sales', roles: ['admin', 'supervisor', 'sponsor'] },
   ]},
   { section: 'Tracking', roles: ['admin', 'supervisor', 'sponsor'], items: [
     { label: 'Tracking', icon: 'tracking', roles: ['admin'], children: [

@@ -267,6 +267,9 @@
     "GET /campaigns/:campaignId/reports/sku-wise": {
       "tool": "get_report"
     },
+    "GET /campaigns/:campaignId/reports/starting-stock": {
+      "tool": "get_report"
+    },
     "GET /campaigns/:campaignId/reports/brand-wise": {
       "tool": "get_report"
     },

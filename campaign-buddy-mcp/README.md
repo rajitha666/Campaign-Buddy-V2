@@ -67,7 +67,7 @@ Defaults: `claude-opus-5`, adaptive thinking, streaming, prompt caching on the t
 
 ## Tools
 
-**Read (20, all `readOnlyHint`)** — `whoami`, `list_campaigns`, `get_campaign`, `campaign_overview` (one-shot daily snapshot), `get_report` (sku-wise, brand-wise, outlet-wise, sales-status, reorder, attendance-monthly), `get_sales_records`, `get_daily_stats`, `get_attendance`, `get_absence`, `get_outlet_attendance`, `get_live_tracking`, `list_activations`, `get_activation` (+ targets & progress), `list_leave_requests`, `list_staff`, `get_staff_evaluation`, `lookup_catalog`, `get_supervisor_checklist_results`, `get_license_usage`, and `api_get` (read-only GET escape hatch; `/auth`, `/users`, `/roles` blocked).
+**Read (20, all `readOnlyHint`)** — `whoami`, `list_campaigns`, `get_campaign`, `campaign_overview` (one-shot daily snapshot), `get_report` (sku-wise, brand-wise, outlet-wise, starting-stock, sales-status, reorder, attendance-monthly), `get_sales_records`, `get_daily_stats`, `get_attendance`, `get_absence`, `get_outlet_attendance`, `get_live_tracking`, `list_activations`, `get_activation` (+ targets & progress), `list_leave_requests`, `list_staff`, `get_staff_evaluation`, `lookup_catalog`, `get_supervisor_checklist_results`, `get_license_usage`, and `api_get` (read-only GET escape hatch; `/auth`, `/users`, `/roles` blocked).
 
 **Write (8, `destructiveHint`)** — `update_campaign`, `decide_leave_request`, `correct_sales_record`, `create_activation`, `update_activation`, `add_activation_target`, `create_supervisor_task`, `assign_supervisor_route`.
 

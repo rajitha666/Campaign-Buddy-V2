@@ -29,6 +29,42 @@ function outletScope(req: any): string[] | undefined {
   return outletIdsAllowed(req);
 }
 
+// Starting stock (#91) — per day, per promoter/outlet/product: the opening stock
+// entered on the first stock update after check-in. Days with no snapshot
+// (before the feature, or no stock update yet) are not listed.
+router.get(
+  "/campaigns/:campaignId/reports/starting-stock",
+  requireCampaignAccess,
+  asyncHandler(async (req, res) => {
+    const outlets = outletScope(req);
+    const range = dateRange(req);
+    const records = await prisma.salesRecord.findMany({
+      where: {
+        startingStock: { not: null },
+        ...(range ? { date: range } : {}),
+        activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
+      },
+      include: {
+        activationItem: {
+          include: { campaignItem: { include: { item: true } }, activation: { include: { outlet: true, staff: true } } },
+        },
+      },
+      orderBy: { date: "desc" },
+    });
+    const rows = records
+      .map((r) => ({
+        date: r.date.toISOString().slice(0, 10),
+        outletName: r.activationItem.activation.outlet.name,
+        promoterName: r.activationItem.activation.staff.fullName,
+        itemName: r.activationItem.campaignItem.item.name,
+        unitPrice: r.activationItem.campaignItem.item.unitPrice,
+        startQty: r.startingStock as number,
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date) || a.outletName.localeCompare(b.outletName) || a.itemName.localeCompare(b.itemName));
+    res.json(okList(rows, rows.length));
+  })
+);
+
 router.get(
   "/campaigns/:campaignId/reports/sku-wise",
   requireCampaignAccess,

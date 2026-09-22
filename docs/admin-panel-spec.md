@@ -76,7 +76,7 @@ Sidebar sections, with which roles see them:
 3. Campaigns ▾ — List, Activation — `adm`, `usr` (write); read-only variant reachable by `supervisor`/`sponsor` for their granted campaign(s) only
 4. Outlets ▾ — List, Distributor Point, Cities — `adm`, `usr`
 5. Staff ▾ — List, Attendance, Absence, Monthly Attendance, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
-6. Sales ▾ — SKU Wise Sales, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
+6. Sales ▾ — SKU Wise Sales, **Starting Stock** *(per-day starting stock, `GET …/reports/starting-stock`, #91 — `adm`, `usr`, `supervisor`, `sponsor`, outlet-scoped)*, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
 7. Supervisors ▾ — Tasks, Task Results *(§3.7.1)*, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
 8. Items ▾ — List, Brands, Reorder — `adm`, `usr`
 9. Tracking ▾ — Promoter, Supervisor — `adm`, `usr` (full); `supervisor`/`sponsor` see a **live map** view (backed by `GET /campaigns/:id/tracking/live`) scoped to their granted outlets

@@ -270,6 +270,12 @@ see a read-only **My Campaigns** card view.
 - **Sales → SKU Wise Sales** — the raw per-item, per-promoter, per-day sales log:
   item, outlet, date, start qty, sold qty, remaining. Filter by outlet and date
   range.
+- **Sales → Starting Stock** — the stock each promoter started the day with, per
+  outlet and product: date, outlet, promoter, product, unit price, start qty. It is
+  the opening stock from the promoter's **first stock update after checking in**,
+  kept even if they restock later that day; only days from the release onward are
+  listed (no backfill). Admin, supervisor and sponsor can open it (outlet-scoped by
+  their grant), and **Excel** downloads it as the client's starting-stock report (#91).
 - **Sales → Sales Update Status** — daily submission compliance: for a chosen date,
   which activations have submitted their stats/sales ("Completed") and which
   haven't ("Missing"), with footfall.

@@ -680,6 +680,23 @@ export const RESOURCES = {
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.salesStatus(campaignId, query)),
   },
 
+  // The stock each promoter started the day with — the opening stock from the
+  // first stock update after check-in (#91). Doubles as the client report download.
+  startingStock: {
+    title: 'Starting Stock', subtitle: "Each promoter's starting stock per outlet and product, per day.", excel: true, noAdd: true,
+    scopeToCampaign: true,
+    filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
+    columns: [
+      { key: 'date', label: 'Date', render: (r) => fmtDate(r.date), csvValue: (r) => r.date },
+      { key: 'outletName', label: 'Outlet' },
+      { key: 'promoterName', label: 'Promoter' },
+      { key: 'itemName', label: 'Product' },
+      { key: 'unitPrice', label: 'Unit Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}`, csvValue: (r) => r.unitPrice ?? 0 },
+      { key: 'startQty', label: 'Start Qty' },
+    ],
+    fetchList: clientPaged(({ campaignId, query }) => reportsApi.startingStock(campaignId, query)),
+  },
+
   reportSkuWise: {
     title: 'Overall SKU Wise', subtitle: 'Aggregated sales by item, across the campaign.', excel: true, noAdd: true,
     scopeToCampaign: true,
