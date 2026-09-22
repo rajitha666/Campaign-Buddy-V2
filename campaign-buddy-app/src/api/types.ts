@@ -278,6 +278,11 @@ export interface StockEntry {
   customFields: CustomSalesField[];
 }
 
+/** Whether an activation's target figure is per day or per month (Activation.targetCategorization). */
+export type TargetCategorization = 'daily' | 'monthly';
+/** Whether a target is a unit count or an LKR sales value (Activation.targetUnit). */
+export type TargetUnit = 'unit_wise' | 'sales_wise';
+
 export interface SalesSummary {
   id: UUID;
   userId: UUID;
@@ -290,8 +295,10 @@ export interface SalesSummary {
   footFall: number;
   approached: number;
   converted: number;
-  /** Sum of every admin-set target active today (LKR), or null when none is set — hide the Target UI in that case. */
+  /** Sum of every admin-set target active today — daily or monthly per `targetCategorization`, in `targetUnit` — or null when none is set (hide the Target UI). */
   target: number | null;
+  targetCategorization?: TargetCategorization;
+  targetUnit?: TargetUnit;
   remarks: string | null;
   confirmed: boolean;
   confirmedAt: ISODateTime | null;
@@ -342,8 +349,12 @@ export interface PerformanceSummary {
   totalSales: number;
   totalUnitsSold: number;
   totalApproached: number;
-  /** Today's active target (LKR) projected across the activation's full calendar-day run, or null when no target is set. */
+  /** Legacy (pre-#87 builds): today's daily target projected across the run, or the monthly figure. Prefer `target`. */
   totalTarget: number | null;
+  /** The promoter's target — daily or monthly per `targetCategorization`, in `targetUnit` — or null when none is set. */
+  target?: number | null;
+  targetCategorization?: TargetCategorization;
+  targetUnit?: TargetUnit;
   dailySales: PerformanceDailySalesPoint[];
   topProducts: PerformanceTopProduct[];
 }
