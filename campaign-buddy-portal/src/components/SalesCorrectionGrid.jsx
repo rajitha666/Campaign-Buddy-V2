@@ -92,6 +92,10 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function save() {
     try {
       const selected = (rows || []).filter((r) => r.selected);
+        push('Nothing to update', 'error');
+        return;
+      }
+      if (!window.confirm('Update the selected sales entries?')) return;
       await Promise.all(selected.map((r) =>
         salesRecordsApi.correct(campaignId, r.id, { openingStock: Number(r.openingStock), soldToday: Number(r.soldToday) })
       ));
@@ -115,11 +119,12 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
 
   function exportCsv() {
     if (!rows || rows.length === 0) return;
-    const headers = ['Product', 'Unit Price', 'Initial Qty', 'Sold Qty',
+    const headers = ['Product', 'Unit Price', 'Initial Qty', 'Sold Qty', 'Total Sales',
       ...productDefs.map((d) => d.label),
       ...dayDefs.map((d) => `Day: ${d.label}`)];
     const lines = rows.map((r) => [
       r.itemName, r.unitPrice, r.openingStock, r.soldToday,
+      Number(r.unitPrice || 0) * Number(r.soldToday || 0),
       ...productDefs.map((d) => productValues[r.activationItemId]?.[d.key] ?? ''),
       ...dayDefs.map((d) => dayValues[d.key] ?? ''),
     ]);
@@ -162,7 +167,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th></th><th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th>
+                    <th></th><th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th><th>Total Sales</th>
                     {productDefs.map((d) => <th key={d.key}>{d.label}</th>)}
                   </tr>
                 </thead>
@@ -174,6 +179,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
                       <td>LKR {Number(r.unitPrice || 0).toLocaleString()}</td>
                       <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.openingStock} onChange={(e) => setCell(i, 'openingStock', e.target.value)} /></td>
                       <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.soldToday} onChange={(e) => setCell(i, 'soldToday', e.target.value)} /></td>
+                      <td>LKR {(Number(r.unitPrice || 0) * Number(r.soldToday || 0)).toLocaleString()}</td>
                       {productDefs.map((d) => (
                         <td key={d.key}>
                           <CustomFieldCell def={d} value={productValues[r.activationItemId]?.[d.key]}
@@ -186,7 +192,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
               </table>
             </div>
             <div className="table-footer">
-              <span className="cell-muted" style={{ fontSize: 12 }}>Tick the products whose stock you changed. Custom fields save for every row.</span>
+              <span className="cell-muted" style={{ fontSize: 12 }}>Tick the products to update — unticked rows are not saved. Custom fields save for every row.</span>
               <button className="btn btn-primary btn-sm" onClick={save}>Save corrections</button>
             </div>
           </div>
