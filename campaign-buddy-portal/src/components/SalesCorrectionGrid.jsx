@@ -92,6 +92,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function save() {
     try {
       const selected = (rows || []).filter((r) => r.selected);
+      if (selected.length === 0) {
         push('Nothing to update', 'error');
         return;
       }
