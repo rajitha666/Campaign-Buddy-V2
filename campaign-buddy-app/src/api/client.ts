@@ -16,7 +16,9 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
+import { Platform } from 'react-native';
 import { getItem, setItem, deleteItem } from './secureStore';
+import { clientIdentityHeaders } from './clientIdentity';
 import type { ApiErrorBody } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.campaignbuddy.lk/v1';
@@ -120,6 +122,9 @@ apiClient.interceptors.request.use(async (config) => {
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     (config as AxiosRequestConfig & { _start?: number })._start = Date.now();
   }
+  // Build identity on every request -- including /auth/*, so a client below the
+  // server's minSupported floor is rejected at login rather than mid-shift.
+  Object.assign(config.headers, clientIdentityHeaders(Platform.OS));
   if (!config.url?.startsWith('/auth/')) {
     const token = await getItem(ACCESS_TOKEN_KEY);
     if (token) config.headers.Authorization = `Bearer ${token}`;

@@ -1,6 +1,6 @@
 {
   "name": "campaign-buddy",
-  "version": "1.0.4",
+  "version": "1.0.13",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "ios": "expo run:ios",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
+    "version:sync": "node scripts/sync-version.mjs",
     "test": "vitest run --config vitest.config.mts",
     "test:watch": "vitest --config vitest.config.mts",
     "test:e2e": "playwright test"
