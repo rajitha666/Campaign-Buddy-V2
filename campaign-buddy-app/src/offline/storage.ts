@@ -6,9 +6,12 @@
  * Keys are namespaced by tenant (see lib/tenant.ts) and by the signed-in user
  * id (setStorageScope, called by AuthContext) so a shared device never syncs
  * one rep's queued edits under another rep's login, or one agency's edits to
- * another agency's server. The session snapshot itself must be readable before
- * we know who's signed in, so it uses `global: true` -- still tenant-scoped,
- * just not user-scoped.
+ * another agency's server.
+ *
+ * `global: true` drops the user scope but keeps the tenant namespace, for data
+ * that has to be readable before we know who's signed in. Nothing passes it
+ * today -- the session snapshot it was added for now lives in SecureStore
+ * (offline/sessionSnapshot.ts).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deviceStorageKey, scopedKeyTail } from '../lib/tenant';
