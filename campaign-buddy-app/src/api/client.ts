@@ -19,12 +19,16 @@ import axios, {
 import { Platform } from 'react-native';
 import { getItem, setItem, deleteItem } from './secureStore';
 import { clientIdentityHeaders } from './clientIdentity';
+import { secureStoreKey } from '../lib/tenant';
 import type { ApiErrorBody } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.campaignbuddy.lk/v1';
 
-export const ACCESS_TOKEN_KEY = 'cb_access_token';
-export const REFRESH_TOKEN_KEY = 'cb_refresh_token';
+// Tenant-scoped at call time, not module load: one build serves many agencies,
+// so an account switch must not read the previous tenant's tokens back out of
+// the Keychain. See lib/tenant.ts.
+export const accessTokenKey = () => secureStoreKey('cb_access_token');
+export const refreshTokenKey = () => secureStoreKey('cb_refresh_token');
 
 // Field-rep devices run on flaky mobile data — the app must stay usable on 2G
 // (EDGE: ~100 kbps, 600 ms+ RTT, multi-second stalls) and on some Wi-Fi
@@ -126,7 +130,7 @@ apiClient.interceptors.request.use(async (config) => {
   // server's minSupported floor is rejected at login rather than mid-shift.
   Object.assign(config.headers, clientIdentityHeaders(Platform.OS));
   if (!config.url?.startsWith('/auth/')) {
-    const token = await getItem(ACCESS_TOKEN_KEY);
+    const token = await getItem(accessTokenKey());
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -141,7 +145,7 @@ interface RefreshResult {
 let refreshInFlight: Promise<RefreshResult> | null = null;
 
 async function refreshAccessToken(): Promise<RefreshResult> {
-  const refreshToken = await getItem(REFRESH_TOKEN_KEY);
+  const refreshToken = await getItem(refreshTokenKey());
   if (!refreshToken) return { token: null, networkFailure: false };
   try {
     // Bare axios (not apiClient) so this request skips the interceptors and
@@ -152,7 +156,7 @@ async function refreshAccessToken(): Promise<RefreshResult> {
       { timeout: REQUEST_TIMEOUT_MS, adapter: plainFetchAdapter }
     );
     const next = data?.data?.accessToken ?? null;
-    if (next) await setItem(ACCESS_TOKEN_KEY, next);
+    if (next) await setItem(accessTokenKey(), next);
     return { token: next, networkFailure: false };
   } catch (err) {
     return { token: null, networkFailure: !(err as AxiosError).response };
@@ -205,8 +209,8 @@ apiClient.interceptors.response.use(
           new AxiosError('Network Error', AxiosError.ERR_NETWORK, original as InternalAxiosRequestConfig)
         );
       }
-      await deleteItem(ACCESS_TOKEN_KEY);
-      await deleteItem(REFRESH_TOKEN_KEY);
+      await deleteItem(accessTokenKey());
+      await deleteItem(refreshTokenKey());
       onAuthFailure?.();
       return Promise.reject(error);
     }
