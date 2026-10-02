@@ -71,9 +71,10 @@ Replying to a `po:objection` issue also triggers a fresh look.
 
 ## Failure behaviour
 
-If the model or API fails, the PR status is set to **error** (fail closed) with the message
-*"Review failed — owner can add the po-override label to proceed."* The agent is never a way to
-silently wave something through, and never a way to get stuck.
+If the `claude` CLI isn't installed, the OAuth token is missing/expired, or the model's answer fails
+validation twice in a row, the PR status is set to **error** (fail closed) with the message *"Review
+failed — owner can add the po-override label to proceed."* The agent is never a way to silently wave
+something through, and never a way to get stuck.
 
 ## Safety design
 
@@ -86,27 +87,54 @@ silently wave something through, and never a way to get stuck.
   merges, or closes anything. Charter changes are the owner's (the subagent can *propose* them).
 - Diffs are capped (100 kB total, 8 kB per file); a truncated view is stated in the prompt.
 
+## Billing & authentication — decided 2026-10-02
+
+Unlike the triage and MCP-sync agents (which call the Messages API directly with `ANTHROPIC_API_KEY`,
+pay-per-token Console billing), the PO agent gets its verdicts by shelling out to the local **`claude`
+CLI** (`lib/claude.mjs`), authenticated against the **owner's Claude Pro/Max subscription** via a
+long-lived OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`, from `claude setup-token`) rather than a Console API
+key. This was a deliberate owner choice over a small API-credit top-up, made with a known trade-off
+spelled out up front:
+
+- **Why:** draws from usage already paid for, instead of a new metered balance.
+- **The catch:** Claude Code's subscription-OAuth terms are written for the subscriber's own "ordinary
+  use," and caution against "routing requests through...credentials on behalf of" other users. The PO
+  agent reacts to *any* issue or PR on the repo, not just ones the owner authors — today that's a
+  non-issue because the owner is the repo's sole contributor, but it stops being clearly fine the
+  moment anyone else opens an issue or sends a PR here.
+- **Revisit when:** a second contributor shows up. At that point, switch `lib/claude.mjs` back to a
+  Messages-API call with `ANTHROPIC_API_KEY` (it's the `review()` function's only real dependency —
+  `github.mjs`, `review.mjs` and everything else are unaffected either way), or get Anthropic's
+  sign-off for the shared-repo case first.
+- The CLI call carries no tool access (`--tools ""`, `--bare`, `--permission-mode dontAsk`) — it's a
+  pure text completion over the prompt it's given on stdin, nothing more.
+
 ## One-time setup
 
-1. **Secret** `ANTHROPIC_API_KEY` (already used by the triage and MCP-sync agents).
-2. **Workflow permissions** — Settings → Actions → General → *Workflow permissions*: Read and write.
+1. **Generate the token.** Locally, logged into the Pro/Max account: `claude setup-token`. It prints a
+   long-lived (1-year) token starting `sk-ant-oat01-...`. Copy it immediately — it's shown once.
+2. **Secret** — add it as `CLAUDE_CODE_OAUTH_TOKEN` at
+   `github.com/<owner>/<repo>/settings/secrets/actions`. (The triage and MCP-sync agents separately
+   need `ANTHROPIC_API_KEY`, unaffected by this.)
+3. **Workflow permissions** — Settings → Actions → General → *Workflow permissions*: Read and write.
    (The workflow itself requests `issues`, `pull-requests`, `statuses` write.)
-3. **Trial run** — Actions → *Product Owner Agent* → *Run workflow* with `dry_run: true` and a PR or
+4. **Trial run** — Actions → *Product Owner Agent* → *Run workflow* with `dry_run: true` and a PR or
    issue `number`. Read the log; nothing is written.
-4. **Make the block real** — Settings → Branches → protection rule for `main` → *Require status
+5. **Make the block real** — Settings → Branches → protection rule for `main` → *Require status
    checks to pass* → add **`product-owner`**. Without this the red status is informational only.
    (Branch protection on private repos needs GitHub Team/Pro; on the free plan the status is
    visible but not enforced.)
-5. Optional variable `PO_OVERRIDE_USERS` (comma-separated logins) if someone besides the repo owner may override.
-6. The triage bot's PAT (`TRIAGE_GITHUB_TOKEN`) is what makes its summary comment trigger the PO —
+6. Optional variable `PO_OVERRIDE_USERS` (comma-separated logins) if someone besides the repo owner may override.
+7. The triage bot's PAT (`TRIAGE_GITHUB_TOKEN`) is what makes its summary comment trigger the PO —
    events created by the built-in token don't start workflows. The daily sweep catches anything missed.
 
 ## Tuning
 
 - **The charter is the only knob for judgement.** Edit `docs/product-charter.md`, merge it, done —
   next review uses it. §6 (platform gaps) should be updated when a gap closes.
-- Model: repo variable/env `PO_MODEL` (default `claude-opus-5`). Reviews are infrequent and the
-  charter/docs prompt is cached, so cost is small; drop to a Sonnet model if it isn't.
+- Model: repo variable/env `PO_MODEL` (default `claude-opus-5`, also accepts aliases like `sonnet`).
+  Since billing is the subscription's included usage rather than per-token, cost isn't the reason to
+  change it — a lighter model only matters if subscription usage/rate limits become the constraint.
 - Which categories block: `BLOCK_CATEGORIES` in `product-owner-agent/lib/review.mjs` **and** charter §7 — keep both in step.
 
 ## Out of scope (v1)
@@ -123,5 +151,11 @@ silently wave something through, and never a way to get stuck.
 cd product-owner-agent && npm test   # verdict validation, comment format, override authority, diff packing
 ```
 
-The GitHub/Anthropic calls were exercised against a stubbed `fetch` (block, override). It has not run
-against the live services yet — use the dry-run trial in step 3 first.
+Unit-tested: verdict validation, comment formatting, override authority, diff packing, and the pure
+prompt/CLI-response-parsing functions in `lib/claude.mjs` (`buildPrompt`, `extractResultText`,
+`parseVerdictJson`). The GitHub-writing side was exercised against a stubbed `fetch` (block, override
+scenarios); the `claude` CLI spawn/stdin/stdout/retry path was exercised against a fake CLI binary
+(block, endorse, retry-on-invalid-verdict, and three failure modes — nonzero exit, an `is_error`
+envelope, and non-JSON stdout — all correctly raised and would surface as a failed-closed `error`
+status). It has not run against the real `claude` CLI, a real OAuth token, or live GitHub yet — use
+the dry-run trial in setup step 4 first.

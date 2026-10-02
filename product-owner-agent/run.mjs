@@ -15,11 +15,17 @@ import {
 } from './lib/review.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const { GITHUB_TOKEN, GITHUB_REPO, ANTHROPIC_API_KEY, DRY_RUN, EVENT_NAME, GITHUB_EVENT_PATH, OVERRIDE_USERS, INPUT_NUMBER, DOCS_DIR } =
+const { GITHUB_TOKEN, GITHUB_REPO, CLAUDE_CODE_OAUTH_TOKEN, DRY_RUN, EVENT_NAME, GITHUB_EVENT_PATH, OVERRIDE_USERS, INPUT_NUMBER, DOCS_DIR } =
   process.env;
 
-if (!GITHUB_TOKEN || !GITHUB_REPO || !ANTHROPIC_API_KEY) {
-  console.error('Missing required env vars: GITHUB_TOKEN, GITHUB_REPO, ANTHROPIC_API_KEY');
+// Verdicts come from the local `claude` CLI authenticated against a Claude
+// Pro/Max subscription (CLAUDE_CODE_OAUTH_TOKEN), not the pay-per-token
+// Messages API — see "Billing & authentication" in docs/product-owner-agent.md
+// for why, and the condition under which to revisit it. The token isn't read
+// here (the CLI reads it from its own environment), but we check it's present
+// so a missing secret fails with a clear message instead of a buried CLI error.
+if (!GITHUB_TOKEN || !GITHUB_REPO || !CLAUDE_CODE_OAUTH_TOKEN) {
+  console.error('Missing required env vars: GITHUB_TOKEN, GITHUB_REPO, CLAUDE_CODE_OAUTH_TOKEN');
   process.exit(1);
 }
 
@@ -50,7 +56,7 @@ function loadContext() {
   return [`# product-charter.md\n\n${charter}`, ...rest].join('\n\n---\n\n');
 }
 
-const claude = makeClaude({ apiKey: ANTHROPIC_API_KEY, contextBundle: loadContext() });
+const claude = makeClaude({ contextBundle: loadContext() });
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 12);
 const isReview = (c) => (c.body ?? '').includes(REVIEW_MARKER);
 const labelsOf = (item) => item.labels.map((l) => (typeof l === 'string' ? l : l.name));
