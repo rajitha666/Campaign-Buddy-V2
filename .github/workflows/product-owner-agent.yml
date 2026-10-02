@@ -1,0 +1,87 @@
+name: Product Owner Agent
+
+# Reviews issues (after triage) and pull requests against docs/product-charter.md.
+# PRs get a `product-owner` commit status — make it a required check in branch
+# protection to make the block real. See docs/product-owner-agent.md.
+#
+# Verdicts come from the local `claude` CLI, authenticated against the repo
+# owner's Claude Pro/Max subscription (CLAUDE_CODE_OAUTH_TOKEN) rather than a
+# pay-per-token API key — see "Billing & authentication" in
+# docs/product-owner-agent.md for the decision and when to revisit it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  schedule:
+    # Backstop sweep, ~09:00 Asia/Colombo: anything that missed its event.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      number:
+        description: 'Issue/PR number to (re-)review; blank = sweep everything open'
+        required: false
+      dry_run:
+        description: 'Dry run (log planned comments/labels/statuses, write nothing)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  statuses: write
+
+# One review at a time per issue/PR; a newer push supersedes an in-flight one.
+concurrency:
+  group: po-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.number || 'sweep' }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Cheap pre-filter so unrelated comments/labels don't start a job.
+    if: >-
+      github.event_name != 'issue_comment' && github.event_name != 'issues'
+      || (github.event_name == 'issues' && (github.event.label.name == 'triage:ready-for-review' || github.event.label.name == 'po-override'))
+      || (github.event_name == 'issue_comment' && github.event.action == 'created'
+          && (startsWith(github.event.comment.body, '/po')
+              || startsWith(github.event.comment.body, '**🤖 Triage bot — ready for review**')
+              || contains(github.event.issue.labels.*.name, 'po:objection')))
+    steps:
+      # Always check out the DEFAULT branch: the charter and this script are the
+      # judge, so a pull request must not be able to rewrite them to pass itself.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The agent shells out to `claude -p ...` for its verdicts (see run.mjs /
+      # lib/claude.mjs) instead of calling the Messages API directly.
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Product Owner agent
+        working-directory: product-owner-agent
+        env:
+          # GITHUB_TOKEN authors the comments/labels/statuses (login github-actions[bot]).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          # Read by the `claude` CLI itself, not by our script — a long-lived
+          # token from `claude setup-token`, run locally while logged into the
+          # subscription. See docs/product-owner-agent.md.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          INPUT_NUMBER: ${{ github.event.inputs.number }}
+          # Only these users' `po-override` label and `/po` comments count.
+          OVERRIDE_USERS: ${{ vars.PO_OVERRIDE_USERS || github.repository_owner }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+        run: node run.mjs

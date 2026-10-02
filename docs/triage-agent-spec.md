@@ -49,7 +49,10 @@ triage:ready-for-review ──(you add approved-for-build)──► triage:in-bu
   changes, effort estimate, risks/assumptions) and is waiting on a human. A
   further human comment (pushback, correction) also triggers re-analysis.
 - **`approved-for-build`** — added by a human reviewer once the summary looks
-  right. This *is* the approval gate; the agent never adds it itself.
+  right. This *is* the approval gate; the agent never adds it itself. It only
+  takes effect once the Product Owner agent has endorsed the issue
+  (`po:endorsed`) or the owner has applied `po-override`; otherwise the bot
+  holds it and says why — see [`product-owner-agent.md`](product-owner-agent.md).
 - **`triage:in-build`** — the agent saw the approval label, posted a hand-off
   comment, and stops touching the issue. Terminal state for this agent —
   actual implementation happens outside it (e.g. handed to a Claude Code
