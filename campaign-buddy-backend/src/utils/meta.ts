@@ -78,3 +78,55 @@ export function buildMeta() {
     limits: { photoMaxBytes: PHOTO_MAX_BYTES, syncBatchMax: SYNC_BATCH_MAX },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Tenant slug
+// ---------------------------------------------------------------------------
+// The slug is the tenant's identity on every surface: the
+// <slug>.campaignbuddy.lk subdomain, the tenants/<slug>.yaml registry entry, the
+// `aud` claim on staff JWTs, the app's per-tenant storage namespace, and the
+// header the OTA update server routes on. One string, no separate tenant id.
+
+/** lowercase, 2-21 chars, alphanumeric + inner hyphens. Must be DNS-safe. */
+const TENANT_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,19}[a-z0-9])$/;
+
+/**
+ * Hostnames we already route, or intend to, on campaignbuddy.lk. An agency that
+ * took `api` would capture the production API for the entire fleet, and `app`
+ * would capture the PWA host -- see deploy/cloudflared/config.yml.
+ */
+export const RESERVED_SLUGS = [
+  "admin", "api", "app", "assets", "blog", "cdn", "dashboard", "demo", "dev",
+  "directory", "docs", "go", "help", "mail", "office", "push", "smtp", "staging",
+  "static", "status", "support", "test", "www",
+] as const;
+
+export type SlugCheck = { ok: true } | { ok: false; reason: string };
+
+export function validateTenantSlug(slug: string): SlugCheck {
+  if (!TENANT_SLUG_PATTERN.test(slug)) {
+    return {
+      ok: false,
+      reason:
+        "must be 2-21 characters, lowercase letters, digits and inner hyphens only " +
+        "(it becomes a subdomain)",
+    };
+  }
+  if ((RESERVED_SLUGS as readonly string[]).includes(slug)) {
+    return { ok: false, reason: `"${slug}" is reserved for platform use` };
+  }
+  return { ok: true };
+}
+
+/**
+ * Called at boot. An unset slug is fine -- single-tenant and dev deployments
+ * don't have one. A *malformed* slug is a hard failure rather than a warning:
+ * it feeds the JWT audience and the app's per-tenant storage namespace, so a
+ * typo is a cross-tenant data risk. The deploy's health gate catches this
+ * before cutover.
+ */
+export function assertTenantSlugEnv(slug = process.env.TENANT_SLUG): void {
+  if (!slug) return;
+  const check = validateTenantSlug(slug);
+  if (!check.ok) throw new Error(`TENANT_SLUG "${slug}" is invalid: ${check.reason}`);
+}

@@ -465,6 +465,17 @@ source of truth, or nothing downstream can be trusted.
 - **Namespace secure-store keys and the offline queue by slug _before_ the base
   URL becomes runtime-configurable.** Ordering matters: until this lands there is
   a window where a queued mutation can flush to the wrong agency's server.
+- **One-time key migration when the first tenant is pinned.** Namespacing is
+  written so that an unpinned install keeps byte-identical keys, which makes the
+  change itself a no-op. But the moment `setCurrentTenant` is first called on an
+  existing install, every key moves — and an unmigrated `cb_offline_queue:<uid>`
+  is a field rep's queued sales and attendance data, silently orphaned rather
+  than visibly failed. So pinning a tenant for the first time must rename the
+  existing unscoped keys into the namespace (and the SecureStore tokens with
+  them, or the rep is logged out mid-shift). Needs a test that starts from
+  unscoped keys and asserts the queue survives.
+- **Refuse to switch tenants while the offline queue is non-empty** — drain or
+  block, never silently discard.
 - Runtime `apiBaseUrl` derived from the slug, with a `/v1/meta` override; manual
   slug entry on the login screen; account switcher.
 - Invite link / QR with deferred deep linking via `go.campaignbuddy.lk`.
