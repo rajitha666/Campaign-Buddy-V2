@@ -66,6 +66,52 @@ that names the field (e.g. `"From date is required"`, `"Foot fall must be 0 or
 more"`) — safe to show directly in the UI. The raw Zod wording is never sent.
 See `src/utils/validationMessages.ts`.
 
+### 1.4 Client identity headers
+
+Every request carries the build that sent it, so each tenant deployment can
+report a real app-version distribution for its fleet and reject clients below its
+floor:
+
+| Header | Example | Meaning |
+|---|---|---|
+| `X-CB-App-Version` | `1.0.13` | semver from the app's `version.json` |
+| `X-CB-App-Build` | `100013` | derived build number (`major*100000 + minor*1000 + patch`) |
+| `X-CB-Platform` | `android` | `ios` / `android` / `web` |
+| `X-CB-Contract` | `1` | the `/v1` contract revision the build was written against |
+
+### 1.5 `GET /meta` — the compatibility handshake
+
+Public (no token). One store binary serves every agency's
+`<agency>.campaignbuddy.lk` deployment, and those deployments run different
+releases, so the app asks each server what it is before trusting it.
+
+```json
+{
+  "data": {
+    "tenant":  { "slug": "acme", "displayName": "Acme Field Marketing" },
+    "api":     { "major": 1, "contract": 1 },
+    "server":  { "version": "3.0.0" },
+    "app":     { "minSupported": "1.0.10", "recommended": "1.2.0", "channel": "stable-2026-10" },
+    "features": ["attendance.multiOutlet", "issues.reporting", "sales.customFields", "..."],
+    "limits":   { "photoMaxBytes": 5242880, "syncBatchMax": 50 }
+  }
+}
+```
+
+**The app branches on `features[]`, never on `server.version`.** A feature list
+survives version skew; a version comparison does not. A screen whose capability
+is absent hides itself rather than erroring.
+
+`tenant.slug` / `displayName` are `null` on a single-tenant or dev deployment.
+`app.minSupported` `null` means any build is accepted. Feature names come from
+`FEATURES` in `src/utils/meta.ts`; a tenant can switch one off via
+`FEATURES_DISABLED`.
+
+Within `/v1` evolution is **additive only** — no field is ever removed or
+retyped. Bump `api.contract` in the same PR as any additive change the app can
+usefully detect. Full rationale and the support window:
+`docs/multi-tenant-release-strategy.md`.
+
 ---
 
 ## 2. Data Models
