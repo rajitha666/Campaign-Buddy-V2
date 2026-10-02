@@ -125,6 +125,10 @@ The seeds create their own logins and print them to the terminal when run.
 - `docs/backend-spec.md` — canonical backend spec
 - `docs/admin-panel-spec.md` — CB Office spec
 - `docs/api-spec.md` — Mobile `/v1` API contract
+- `docs/multi-tenant-release-strategy.md` — how one store binary serves many
+  per-agency deployments: tenant discovery, `/v1/meta` capability negotiation,
+  OTA channels, release trains. Read before changing a `/v1` response shape or
+  the app's version/config plumbing.
 - `docs/product-documentation.md` — feature reference
 - `docs/archive/` — superseded specs, do NOT build against
 - `marketing/README.md` — the landing site, evaluation brief and user-training guides
