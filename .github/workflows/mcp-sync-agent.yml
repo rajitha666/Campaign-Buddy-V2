@@ -116,10 +116,25 @@ jobs:
           # A dry run gets no way to push or open a PR at all.
           if [ "$DRY" = "true" ]; then echo "allowed=$READ" >> "$GITHUB_OUTPUT"; else echo "allowed=$READ,$WRITE" >> "$GITHUB_OUTPUT"; fi
 
+      - name: Check credential is configured
+        if: steps.scope.outputs.work == 'true'
+        env:
+          HAS_OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        run: |
+          if [ "$HAS_OAUTH" != "true" ] && [ "$HAS_KEY" != "true" ]; then
+            echo "::error::No credential configured. Add repo secret CLAUDE_CODE_OAUTH_TOKEN (claude setup-token) or ANTHROPIC_API_KEY - see docs/mcp-sync-agent.md."
+            exit 1
+          fi
+
       - name: MCP sync agent
         if: steps.scope.outputs.work == 'true'
         uses: anthropics/claude-code-action@v1
         with:
+          # Set ONE of these two repo secrets; the unset one is ignored.
+          #  - CLAUDE_CODE_OAUTH_TOKEN: from `claude setup-token` (Pro/Max subscription)
+          #  - ANTHROPIC_API_KEY: pay-per-token Console key
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             You are the MCP sync agent. Read docs/mcp-sync-agent.md (section "Agent instructions") and follow it exactly.
