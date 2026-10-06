@@ -2,21 +2,23 @@ name: MCP Sync Agent
 
 # Keeps campaign-buddy-mcp/ in step with backend changes. Opens a PR; never pushes to main.
 # Design + agent instructions: docs/mcp-sync-agent.md
+#
+# Trigger note: `push` is NOT a supported event for anthropics/claude-code-action
+# (it only accepts workflow_dispatch, repository_dispatch, schedule, workflow_run,
+# plus the issue/PR entity events) — an earlier version of this workflow used
+# `on: push` and failed outright on every run ("Unsupported event type: push"),
+# before it ever reached the agent step. We instead react to the existing CI
+# workflow finishing on main, which both is supported and means we only review
+# commits CI has actually validated.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'campaign-buddy-backend/src/modules/**'
-      - 'campaign-buddy-backend/src/schemas.ts'
-      - 'campaign-buddy-backend/src/utils/**'
-      - 'campaign-buddy-backend/src/middleware/**'
-      - 'campaign-buddy-backend/prisma/schema.prisma'
-      - 'campaign-buddy-backend/prisma/migrations/**'
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       since:
-        description: 'Review backend commits since this git ref (default: the previous commit)'
+        description: 'Review backend commits since this git ref (default: auto-detected from the previous CI run on main)'
         type: string
         default: ''
       dry_run:
@@ -32,18 +34,30 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  actions: read # to look up the previous successful CI run's commit, below
   id-token: write
 
 jobs:
   sync:
     name: Review backend changes for MCP impact
-    # The agent's own PRs only touch campaign-buddy-mcp/, which is outside `paths` above; this also stops any bot loop.
-    if: github.actor != 'github-actions[bot]' && github.actor != 'claude[bot]'
+    # CI runs on both push-to-main and pull_request; only react to the former, on main,
+    # and only once it succeeded. workflow_dispatch always runs (manual/dry-run use).
+    # The agent's own PRs only touch campaign-buddy-mcp/ and never push to main, so this
+    # also can't self-trigger a loop.
+    if: >
+      github.actor != 'github-actions[bot]' && github.actor != 'claude[bot]' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
+          # workflow_run checks out the default branch by default, not the commit that
+          # triggered it — pin explicitly. Falls back to the normal ref on workflow_dispatch.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -59,12 +73,29 @@ jobs:
       - name: Work out what to review
         id: scope
         env:
-          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
           INPUT_SINCE: ${{ inputs.since }}
+          CURRENT_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          if [ -n "$INPUT_SINCE" ]; then SINCE="$INPUT_SINCE"
-          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE" 2>/dev/null; then SINCE="$BEFORE"
-          else SINCE="HEAD~1"; fi
+          if [ -n "$INPUT_SINCE" ]; then
+            SINCE="$INPUT_SINCE"
+          elif [ -n "$CURRENT_RUN_ID" ]; then
+            # The commit of the previous successful push-triggered CI run on main, i.e.
+            # the last point this agent (or its predecessor logic) would have reviewed up to.
+            SINCE=$(gh run list --workflow ci.yml --branch main --event push --status success \
+                       --json databaseId,headSha --limit 20 \
+                     | node -e '
+                         const runs = JSON.parse(require("fs").readFileSync(0, "utf8"));
+                         const cur = Number(process.env.CURRENT_RUN_ID);
+                         const prev = runs.filter((r) => r.databaseId < cur).sort((a, b) => b.databaseId - a.databaseId)[0];
+                         process.stdout.write(prev ? prev.headSha : "");
+                       ')
+          fi
+          if [ -z "$SINCE" ]; then SINCE="HEAD~1"; fi
+          if ! git cat-file -e "$SINCE" 2>/dev/null; then
+            echo "::warning::Could not resolve '$SINCE' as a commit; falling back to HEAD~1."
+            SINCE="HEAD~1"
+          fi
           echo "since=$SINCE" >> "$GITHUB_OUTPUT"
           npm --prefix campaign-buddy-mcp run --silent sync-report -- --since "$SINCE" > campaign-buddy-mcp/.sync-report.json
           cat campaign-buddy-mcp/.sync-report.json

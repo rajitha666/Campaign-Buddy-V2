@@ -11,7 +11,7 @@ Two layers, so the LLM only does what needs judgment:
 | Layer | What | Runs |
 |---|---|---|
 | **1. Deterministic gate** (no LLM) | `campaign-buddy-mcp/test/coverage.test.ts` fails the `mcp` CI job when (a) an `/admin/v1` route exists that `coverage.json` has no decision for, (b) a manifest entry points at a route that no longer exists, (c) a mapped tool is missing or read/write-mismatched, or (d) a DB column with a sensitive-looking name is neither redacted (`ALWAYS_DROP` in `src/shape.ts`) nor reviewed (`reviewedFields`). | every push / PR |
-| **2. The agent** (`.github/workflows/mcp-sync-agent.yml`) | On a push to `main` that touches backend API surface, reads the diff, decides what the MCP needs, edits `campaign-buddy-mcp/`, runs its tests, and opens a PR. | push to `main`, or manually |
+| **2. The agent** (`.github/workflows/mcp-sync-agent.yml`) | Once CI finishes on a push to `main`, reads the commits since the previous successful CI run, decides what the MCP needs, edits `campaign-buddy-mcp/`, runs its tests, and opens a PR. | after CI succeeds on `main`, or manually |
 
 `coverage.json` is the ledger: every backend admin route maps to an MCP tool (`{"tool": "..."}`; read-only routes may use `"api_get"`) or is deliberately excluded (`{"excluded": "reason"}`).
 
@@ -19,14 +19,18 @@ Not every backend change needs an MCP change (e.g. a field added to a response t
 
 ## One-time setup
 
-1. Repo secret `ANTHROPIC_API_KEY` (shared with the triage agent).
+1. Credential — either a repo secret `ANTHROPIC_API_KEY` (pay-per-token), **or** (preferred if you have a Claude Pro/Max subscription) a token from `claude setup-token` stored as secret `CLAUDE_CODE_OAUTH_TOKEN`; swap the workflow's `anthropic_api_key:` input for `claude_code_oauth_token:` accordingly. See issue tracking this setup for the tradeoffs.
 2. Settings → Actions → General → *Workflow permissions*: **Read and write**, and tick **Allow GitHub Actions to create and approve pull requests**.
 3. Try it first: Actions → *MCP Sync Agent* → *Run workflow* with `dry_run: true` and `since` = a commit before a known backend change. Read the log/summary; nothing is pushed in a dry run.
+
+## Trigger
+
+Runs via `workflow_run` once the `CI` workflow completes on a push to `main` (only `push`-triggered, successful runs — a PR's own CI run on a feature branch does not fire it). `push` itself is not a supported trigger for `anthropics/claude-code-action`, so it reacts to CI finishing instead of the push directly; `since` is auto-detected as the commit of the previous successful push-triggered `CI` run, falling back to `HEAD~1` if none is found (e.g. the very first run). `workflow_dispatch` is always available for a manual/dry run with an explicit `since`.
 
 ## Known limitations
 
 - PRs opened with the default `GITHUB_TOKEN` do not start other workflows, so the `mcp` CI job may not run on the agent's PR. The agent runs the tests itself before opening it; close/reopen the PR (or use a PAT) if you want CI to run.
-- The workflow could not be exercised end-to-end when written (needs the secret and a push to `main`); the deterministic layer is fully tested, the agent layer is validated by dry run.
+- The workflow could not be exercised end-to-end when written (needs the credential and Actions PR-creation permission); the deterministic layer is fully tested, and the trigger logic was checked against this repo's real CI run history, but the agent step itself is validated only by dry run.
 
 ---
 
