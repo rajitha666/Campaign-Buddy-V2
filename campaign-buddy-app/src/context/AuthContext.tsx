@@ -7,7 +7,7 @@
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getItem, setItem, deleteItem } from '@/api/secureStore';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, registerAuthFailureHandler } from '@/api/client';
+import { accessTokenKey, refreshTokenKey, registerAuthFailureHandler } from '@/api/client';
 import * as authApi from '@/api/auth';
 import * as profileApi from '@/api/profile';
 import type { User } from '@/api/types';
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getItem(ACCESS_TOKEN_KEY);
+        const token = await getItem(accessTokenKey());
         if (token) {
           // Mid-shift resume is only possible when we already know the rep is
           // checked in today; without that we wait on the server as before.
@@ -89,8 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         // The server answered and rejected the token — fall through to the login screen.
-        await deleteItem(ACCESS_TOKEN_KEY);
-        await deleteItem(REFRESH_TOKEN_KEY);
+        await deleteItem(accessTokenKey());
+        await deleteItem(refreshTokenKey());
       } finally {
         setIsLoading(false);
       }
@@ -99,8 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     const result = await authApi.login(username, password.trim());
-    await setItem(ACCESS_TOKEN_KEY, result.accessToken);
-    await setItem(REFRESH_TOKEN_KEY, result.refreshToken);
+    await setItem(accessTokenKey(), result.accessToken);
+    await setItem(refreshTokenKey(), result.refreshToken);
     // The v3 backend's /auth/login returns only tokens, so pull the profile
     // separately (same call the cold-start path uses).
     const me = result.user ?? (await profileApi.getMe());
@@ -116,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if the network call fails, still clear local session below —
       // we don't want a dead network to trap the user signed in.
     }
-    await deleteItem(ACCESS_TOKEN_KEY);
-    await deleteItem(REFRESH_TOKEN_KEY);
+    await deleteItem(accessTokenKey());
+    await deleteItem(refreshTokenKey());
     await clearSessionSnapshots();
     await clearCachedDataIfIdle();
     setUser(null);

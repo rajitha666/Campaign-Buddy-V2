@@ -4,6 +4,7 @@ import fs from "fs";
 import multer from "multer";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { PHOTO_MAX_BYTES } from "../../utils/meta";
 import { ApiError, ok, notFound } from "../../utils/apiResponse";
 import { dayDate } from "../../utils/dates";
 import { resolveShiftStart, resolveShiftEnd } from "../../utils/attendanceWindow";
@@ -22,7 +23,7 @@ const staffPhotoUpload = multer({
       cb(null, `${req.staff!.sub}-${Date.now()}${imageExtension(file.mimetype)}`);
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: PHOTO_MAX_BYTES },
   fileFilter: imageFileFilter,
 });
 

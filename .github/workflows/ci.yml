@@ -77,6 +77,12 @@ jobs:
           cache: npm
           cache-dependency-path: campaign-buddy-app/package-lock.json
       - run: npm ci --ignore-scripts
+      # version.json is the single source of truth for the app version; app.json,
+      # package.json and build.gradle are generated from it. They drifted apart
+      # before this gate existed, and every fleet decision (upgrade gates, OTA
+      # channel matching, per-tenant version histograms) reads that version.
+      - name: Version drift check
+        run: npm run version:sync -- --check
       - run: npm run typecheck
       # `npm run lint` is intentionally not run here: eslint isn't installed
       # as a dependency in this package yet, so the script currently fails

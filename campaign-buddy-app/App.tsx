@@ -1,6 +1,10 @@
 /**
  * App entry point. Order matters here:
- *   1. Load fonts (Poppins) before rendering anything that uses them.
+ *   1. Restore the tenant pin, and load fonts (Poppins), before rendering
+ *      anything. AuthProvider's cold-start effect reads tokens and the session
+ *      snapshot straight away, and those keys are tenant-namespaced -- so the
+ *      pin has to be in place first or a pinned install looks signed out.
+ *      Restoring it also finishes any interrupted key migration.
  *   2. QueryClientProvider wraps everything that calls useQuery/useMutation.
  *   3. AuthProvider wraps everything that needs to know who's signed in.
  *   4. RootNavigator decides Auth vs Main based on that.
@@ -8,7 +12,7 @@
  * AttendanceProvider + location tracking are intentionally NOT here — see
  * navigation/AuthenticatedApp.tsx for why they're scoped to post-login only.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
@@ -16,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import '@/offline/backgroundSync'; // defines the background sync task at startup
+import { loadPinnedTenant } from '@/lib/tenantMigration';
 import { AuthProvider } from '@/context/AuthContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { colors } from '@/theme';
@@ -46,13 +51,22 @@ export default function App() {
   });
   const fontsLoaded = loaded;
 
+  // Never blocks startup on failure: an install that can't read its pin falls
+  // back to the unscoped keys, which is exactly how it behaved before tenancy.
+  const [tenantReady, setTenantReady] = useState(false);
+  useEffect(() => {
+    loadPinnedTenant().finally(() => setTenantReady(true));
+  }, []);
+
+  const ready = fontsLoaded && tenantReady;
+
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
+    if (ready) {
       await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [ready]);
 
-  if (!fontsLoaded) {
+  if (!ready) {
     return null; // splash screen stays up
   }
 
