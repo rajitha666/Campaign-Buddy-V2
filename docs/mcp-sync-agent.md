@@ -19,7 +19,9 @@ Not every backend change needs an MCP change (e.g. a field added to a response t
 
 ## One-time setup
 
-1. Credential — either a repo secret `ANTHROPIC_API_KEY` (pay-per-token), **or** (preferred if you have a Claude Pro/Max subscription) a token from `claude setup-token` stored as secret `CLAUDE_CODE_OAUTH_TOKEN`; swap the workflow's `anthropic_api_key:` input for `claude_code_oauth_token:` accordingly. See issue tracking this setup for the tradeoffs.
+1. Credential — set **one** repo secret (the workflow accepts either, and fails with a clear message if neither is set):
+   - `CLAUDE_CODE_OAUTH_TOKEN` (preferred if you have a Claude Pro/Max subscription): run `claude setup-token` in a terminal, then `gh secret set CLAUDE_CODE_OAUTH_TOKEN` and paste the token when prompted. Caveat: subscription terms are written for the subscriber's own use, and this bot acts on other contributors' commits.
+   - `ANTHROPIC_API_KEY`: pay-per-token key from the Claude Console (shared with the triage agent).
 2. Settings → Actions → General → *Workflow permissions*: **Read and write**, and tick **Allow GitHub Actions to create and approve pull requests**.
 3. Try it first: Actions → *MCP Sync Agent* → *Run workflow* with `dry_run: true` and `since` = a commit before a known backend change. Read the log/summary; nothing is pushed in a dry run.
 
