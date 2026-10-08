@@ -62,6 +62,16 @@ async function withActivePhoneConflictAsDuplicate<T>(fn: () => Promise<T>): Prom
     return await fn();
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      // Prisma reports the violated constraint in meta.target: column names for
+      // schema-level uniques, the raw index name for the SQL partial index.
+      const target = JSON.stringify((err.meta as { target?: unknown } | undefined)?.target ?? "");
+      if (target.includes("employeeId") || target.includes("staff_employeeId_key")) {
+        throw new ApiError(409, "DUPLICATE", "Another staff member already uses this employee ID", "employeeId");
+      }
+      if (target.includes("mobileUsername") || target.includes("staff_mobileUsername_key")) {
+        throw new ApiError(409, "DUPLICATE", "Another active staff member already uses this app username", "mobileUsername");
+      }
+      // phone (partial index, migration 20260915...) or anything unrecognised.
       throw new ApiError(409, "DUPLICATE", "Another active staff member already uses this phone number", "phone");
     }
     throw err;
