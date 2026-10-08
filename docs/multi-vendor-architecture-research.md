@@ -8,6 +8,8 @@
 
 ## 1. The two models
 
+> **Current context:** there are 2 vendors onboarding. At this scale, Model B's control plane / provisioning machinery is the same engineering effort whether you have 2 vendors or 20 — the setup cost is front-loaded, the payoff only arrives with volume. Model A's migration (add `vendorId` + scoping) serves both vendors immediately with near-zero new infrastructure. This document's recommendation therefore leans strongly toward Model A as the default (§7), with Model B held as a future enterprise tier.
+
 | | **A. Shared stack, multi-tenant DB** | **B. Separate stack per vendor** |
 |---|---|---|
 | Definition | One app deployment, one (or few) Postgres DBs. All vendors' data lives together; every row carries a `vendorId`. | Each vendor gets their own Docker stack: own app container(s), own Postgres, own URL (`vendor.campaignbuddy.lk`). |
