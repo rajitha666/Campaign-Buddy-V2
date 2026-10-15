@@ -8,7 +8,7 @@ export async function computeTotalSales(prisma: PrismaClient, activationId: stri
     where: { activationId },
     include: {
       campaignItem: { include: { item: true } },
-      salesRecords: { where: { date } },
+      salesRecords: { where: { date, archivedAt: null } },
     },
   });
 
@@ -27,7 +27,7 @@ export async function buildSalesSummary(prisma: PrismaClient, activationId: stri
     where: { activationId },
     include: {
       campaignItem: { include: { item: true } },
-      salesRecords: { where: { date } },
+      salesRecords: { where: { date, archivedAt: null } },
     },
   });
 

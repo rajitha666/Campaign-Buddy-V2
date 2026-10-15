@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { salesLookup, salesRecords as salesRecordsApi, salesFields as salesFieldsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,9 @@ function CustomFieldCell({ def, value, onChange }) {
 
 // The "Update Sales" load + correction grid, shared by SalesPage and UpdateSales.
 // Adds the campaign's custom sales fields (#13): day-level inputs above the
-// table, a column per product-level field, saved alongside stock corrections.
+// table, a column per product-level field. Sales records are managed per row
+// (sales-archive-spec.md): Update saves the row, Archive soft-deletes it out of
+// every total/report, Unarchive brings it back.
 export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSaved }) {
   const { push } = useToast();
   const { designationLabel } = useAuth();
@@ -53,6 +55,24 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   const [productValues, setProductValues] = useState({}); // { activationItemId: { key: value } }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Per-row inline feedback ("Saved ✓" / "Archived ✓" / an error message) that
+  // clears itself after a few seconds — keyed by activationItemId so it
+  // survives the reload that follows archive/unarchive.
+  const [rowFeedback, setRowFeedback] = useState({});
+  const feedbackTimers = useRef({});
+
+  useEffect(() => {
+    const timers = feedbackTimers;
+    return () => { Object.values(timers.current).forEach(clearTimeout); };
+  }, []);
+
+  function setFeedback(itemId, kind) {
+    clearTimeout(feedbackTimers.current[itemId]);
+    setRowFeedback((f) => ({ ...f, [itemId]: { kind } }));
+    feedbackTimers.current[itemId] = setTimeout(() => {
+      setRowFeedback((f) => { const n = { ...f }; delete n[itemId]; return n; });
+    }, 4000);
+  }
 
   const dayDefs = meta.dayCustomFields || [];
   const productDefs = (rows && rows[0]?.customFields) || [];
@@ -62,7 +82,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     try {
       const res = await salesLookup.load(campaignId, form);
       const data = res?.data || [];
-      setRows(data.map((r) => ({ ...r, selected: false })));
+      setRows(data);
       setMeta(res?.meta || {});
 
       const dv = {};
@@ -89,42 +109,104 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     setProductValues((pv) => ({ ...pv, [itemId]: { ...pv[itemId], [key]: val } }));
   }
 
-  async function save() {
+  async function saveRowCustomFields(r) {
+    if (!meta.activationId || !(productDefs.length || dayDefs.length)) return;
+    await salesFieldsApi.saveValues(campaignId, {
+      activationId: meta.activationId,
+      date: form.date || colomboYmd(),
+      products: { [r.activationItemId]: productValues[r.activationItemId] || {} },
+    });
+  }
+
+  async function updateRow(idx) {
+    const r = rows[idx];
     try {
-      const selected = (rows || []).filter((r) => r.selected);
-      if (selected.length === 0) {
-        push('Nothing to update', 'error');
+      if (Number(r.soldToday || 0) > Number(r.openingStock || 0)) {
+        push('Sold Qty cannot exceed Initial Qty', 'error');
+        setFeedback(r.activationItemId, 'error');
         return;
       }
-      if (!window.confirm('Update the selected sales entries?')) return;
-      await Promise.all(selected.map((r) =>
-        salesRecordsApi.correct(campaignId, r.id, { openingStock: Number(r.openingStock), soldToday: Number(r.soldToday) })
-      ));
-
-      if (meta.activationId && (dayDefs.length || productDefs.length)) {
-        const products = {};
-        (rows || []).forEach((r) => { products[r.activationItemId] = productValues[r.activationItemId] || {}; });
-        await salesFieldsApi.saveValues(campaignId, {
-          activationId: meta.activationId,
+      if (r.id == null) {
+        // no record yet — create it for this product + day; the row is patched
+        // in place (no reload, no layout shift) and now has an id
+        const created = await salesRecordsApi.create(campaignId, {
+          activationItemId: r.activationItemId,
           date: form.date || colomboYmd(),
-          day: dayValues,
-          products,
+          openingStock: Number(r.openingStock),
+          soldToday: Number(r.soldToday),
         });
+        await saveRowCustomFields(r);
+        setRows((rs) => rs.map((row, i) => (i === idx ? { ...row, id: created?.data?.id ?? row.id } : row)));
+        push('Sales entry saved');
+        setFeedback(r.activationItemId, 'ok');
+        onSaved?.();
+        return;
       }
-      push('Sales corrections saved');
+      await salesRecordsApi.correct(campaignId, r.id, { openingStock: Number(r.openingStock), soldToday: Number(r.soldToday) });
+      await saveRowCustomFields(r);
+      push('Sales correction saved');
+      setFeedback(r.activationItemId, 'ok');
       onSaved?.();
     } catch (e) {
-      push(e.message || 'Could not save corrections', 'error');
+      push(e.message || 'Could not save this row', 'error');
+      setFeedback(r.activationItemId, 'error');
+    }
+  }
+
+  async function archiveRow(idx) {
+    const r = rows[idx];
+    if (r.id == null) return;
+    if (!window.confirm('Archive this sales record? It will be excluded from all totals and reports.')) return;
+    try {
+      await salesRecordsApi.archive(campaignId, r.id);
+      // mute the row in place — no reload, the table never jumps
+      setRows((rs) => rs.map((row, i) => (i === idx ? { ...row, archived: true } : row)));
+      push('Sales record archived');
+      setFeedback(r.activationItemId, 'ok');
+      onSaved?.();
+    } catch (e) {
+      push(e.message || 'Could not archive this row', 'error');
+      setFeedback(r.activationItemId, 'error');
+    }
+  }
+
+  async function unarchiveRow(idx) {
+    const r = rows[idx];
+    if (!r.archived) return;
+    if (!window.confirm('Unarchive this sales record? It will be counted in all totals and reports again.')) return;
+    try {
+      await salesRecordsApi.restore(campaignId, r.id);
+      setRows((rs) => rs.map((row, i) => (i === idx ? { ...row, archived: false } : row)));
+      push('Sales record unarchived');
+      setFeedback(r.activationItemId, 'ok');
+      onSaved?.();
+    } catch (e) {
+      push(e.message || 'Could not unarchive this row', 'error');
+      setFeedback(r.activationItemId, 'error');
+    }
+  }
+
+  async function saveDayFields() {
+    if (!meta.activationId || !dayDefs.length) return;
+    try {
+      await salesFieldsApi.saveValues(campaignId, {
+        activationId: meta.activationId,
+        date: form.date || colomboYmd(),
+        day: dayValues,
+      });
+      push('Daily fields saved');
+    } catch (e) {
+      push(e.message || 'Could not save daily fields', 'error');
     }
   }
 
   function exportCsv() {
     if (!rows || rows.length === 0) return;
-    const headers = ['Product', 'Unit Price', 'Initial Qty', 'Sold Qty', 'Total Sales',
+    const headers = ['Product', 'Status', 'Unit Price', 'Initial Qty', 'Sold Qty', 'Total Sales',
       ...productDefs.map((d) => d.label),
       ...dayDefs.map((d) => `Day: ${d.label}`)];
-    const lines = rows.map((r) => [
-      r.itemName, r.unitPrice, r.openingStock, r.soldToday,
+    const lines = rows.filter((r) => !r.archived).map((r) => [
+      r.itemName, 'Active', r.unitPrice, r.openingStock, r.soldToday,
       Number(r.unitPrice || 0) * Number(r.soldToday || 0),
       ...productDefs.map((d) => productValues[r.activationItemId]?.[d.key] ?? ''),
       ...dayDefs.map((d) => dayValues[d.key] ?? ''),
@@ -160,6 +242,9 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
                   </div>
                 ))}
               </div>
+              <div style={{ marginTop: 10 }}>
+                <button className="btn btn-secondary btn-sm" onClick={saveDayFields}>Save daily fields</button>
+              </div>
             </div>
           ) : null}
 
@@ -168,19 +253,39 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th></th><th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th><th>Total Sales</th>
+                    <th>Product</th><th>Unit Price</th><th>Initial Qty</th><th>Sold Qty</th><th>Total Sales</th><th></th>
                     {productDefs.map((d) => <th key={d.key}>{d.label}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
-                    <tr key={r.id || r.activationItemId || i}>
-                      <td><input type="checkbox" checked={!!r.selected} onChange={(e) => setCell(i, 'selected', e.target.checked)} /></td>
-                      <td className="cell-strong">{r.itemName}</td>
+                    <tr key={r.id || r.activationItemId || i} style={r.archived ? { opacity: 0.55 } : undefined}>
+                      <td className="cell-strong">
+                        {r.itemName}
+                        {/* colored status chip: fixed-size reserved slot — idle
+                            (transparent), tinted green ✓ / red ! after an action,
+                            fading out a few seconds later. Never shifts layout. */}
+                        <span aria-hidden={!rowFeedback[r.activationItemId]}
+                          style={{ display: 'inline-block', width: 22, minWidth: 22, height: 20, marginLeft: 6,
+                            borderRadius: 6, textAlign: 'center', lineHeight: '20px', fontSize: 12, fontWeight: 700,
+                            color: rowFeedback[r.activationItemId]?.kind === 'ok' ? 'var(--success)' : 'var(--alert)',
+                            background: rowFeedback[r.activationItemId] ? (rowFeedback[r.activationItemId].kind === 'ok' ? 'var(--success-tint)' : 'var(--alert-tint)') : 'transparent',
+                            animation: rowFeedback[r.activationItemId] ? 'chipPop 180ms ease-out' : 'none' }}>
+                          {rowFeedback[r.activationItemId] ? (rowFeedback[r.activationItemId].kind === 'ok' ? '✓' : '!') : ''}
+                        </span>
+                      </td>
                       <td>LKR {Number(r.unitPrice || 0).toLocaleString()}</td>
-                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.openingStock} onChange={(e) => setCell(i, 'openingStock', e.target.value)} /></td>
-                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.soldToday} onChange={(e) => setCell(i, 'soldToday', e.target.value)} /></td>
+                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.openingStock} disabled={r.archived} onChange={(e) => setCell(i, 'openingStock', e.target.value)} /></td>
+                      <td><input style={{ width: 70, padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 7 }} value={r.soldToday} disabled={r.archived} onChange={(e) => setCell(i, 'soldToday', e.target.value)} /></td>
                       <td>LKR {(Number(r.unitPrice || 0) * Number(r.soldToday || 0)).toLocaleString()}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {/* all three buttons always render; irrelevant ones are
+                            visibility-hidden so the cell's width never changes
+                            between live / blank / archived states */}
+                        <button className="btn btn-primary btn-sm" style={{ visibility: r.archived ? 'hidden' : 'visible' }} onClick={() => updateRow(i)}>Update</button>{' '}
+                        <button className="btn btn-ghost-alert btn-sm" style={{ visibility: r.archived || r.id == null ? 'hidden' : 'visible' }} onClick={() => archiveRow(i)}>Archive</button>{' '}
+                        <button className="btn btn-secondary btn-sm" style={{ visibility: r.archived ? 'visible' : 'hidden' }} onClick={() => unarchiveRow(i)}>Unarchive</button>
+                      </td>
                       {productDefs.map((d) => (
                         <td key={d.key}>
                           <CustomFieldCell def={d} value={productValues[r.activationItemId]?.[d.key]}
@@ -193,8 +298,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
               </table>
             </div>
             <div className="table-footer">
-              <span className="cell-muted" style={{ fontSize: 12 }}>Tick the products to update — unticked rows are not saved. Custom fields save for every row.</span>
-              <button className="btn btn-primary btn-sm" onClick={save}>Save corrections</button>
+              <span className="cell-muted" style={{ fontSize: 12 }}>Update saves the row (a row with no numbers yet gets created); Archive soft-deletes it out of all totals and reports (the promoter can re-enter it). Rows change on the spot — the grid never reloads. Custom fields save per row; day-level fields use "Save daily fields" above.</span>
             </div>
           </div>
         </>

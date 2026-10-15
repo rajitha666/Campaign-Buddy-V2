@@ -296,7 +296,13 @@
             <figure><img src="assets/portal-admin/24-sales-update.webp" alt="Update Sales screen with outlet and date dropdowns" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>That day's grid loads with a <b>Total Sales</b> column per row (unit price &times; sold quantity, updating live as you edit). Edit <b>opening stock</b> or <b>sold quantity</b> for any row, and any day-level or per-product custom fields. Then <b>tick</b> the rows you want to correct and press <b>Save corrections</b> &mdash; you'll be asked to confirm, and pressing it with nothing ticked shows "Nothing to update". Raising opening stock mid-day is allowed (a restock).</p></div>
+            <div class="step-text"><p>That day's grid loads with a <b>Total Sales</b> column per row (unit price &times; sold quantity, updating live as you edit). Edit <b>opening stock</b> or <b>sold quantity</b> for a row and its per-product custom fields, then press that row's <b>Update</b> button &mdash; a row the promoter never entered can be filled in the same way and <b>Update</b> creates it. Each action lands with a small green tick beside the product name (red ! for an error) that fades away after a few seconds without moving anything; day-level custom fields have their own <b>Save daily fields</b> button in the panel above the grid. Raising opening stock mid-day is allowed (a restock).</p></div>
+          </li>
+          <li>
+            <div class="step-text">
+              <p>Got a wrong entry? Press <b>Archive</b> on that row. It stays on file but drops out of <i>every</i> total &mdash; the dashboard, reports, targets and the promoter's own numbers &mdash; until it's restored. Archived rows appear in muted grey with an <b>Unarchive</b> button, so a mistake is always reversible. If the promoter re-enters stock for the same product on mobile, the archived record is brought back to life with their new figures.</p>
+              <div class="tip"><b>Why it just works:</b> totals are computed from the raw counters on read, so archiving lands everywhere the moment you reload &mdash; nothing is cached, and nothing has to be "deleted twice".</div>
+            </div>
           </li>
           <li>
             <div class="step-text">

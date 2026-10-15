@@ -205,7 +205,7 @@ router.get(
       // Their OWN check-ins only — a supervisor covering the same activation has separate records on it.
       prisma.attendanceRecord.findMany({ where: { staffId, activationId: { in: activationIds }, date: { gte: from, lte: to } } }),
       prisma.salesRecord.findMany({
-        where: { activationItem: { activationId: { in: activationIds } }, date: { gte: from, lte: to } },
+        where: { archivedAt: null, activationItem: { activationId: { in: activationIds } }, date: { gte: from, lte: to } },
         include: { activationItem: { include: { campaignItem: { include: { item: { include: { brand: true } } } } } } },
       }),
       prisma.dailyStats.findMany({ where: { activationId: { in: activationIds }, date: { gte: from, lte: to } } }),

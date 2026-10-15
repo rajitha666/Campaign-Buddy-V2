@@ -361,6 +361,17 @@ export const s = {
       reorderFlag: z.boolean(),
     })
     .partial(),
+  // Portal Update Sales: creating a record for a grid row the promoter never
+  // submitted (id null). Keyed by activation item + date; uniqueness is the DB's
+  // (activationItemId, date) — a lost race becomes a 409 in the route.
+  salesCreate: z.object({
+    activationItemId: id,
+    date: dateish,
+    openingStock: nonNegInt,
+    soldToday: nonNegInt,
+    otherInterestedCustomers: nonNegInt.optional(),
+    reorderFlag: z.boolean().optional(),
+  }),
   leaveDecide: z.object({ status: z.enum(["approved", "declined"]) }),
   supervisorRouteCreate: z.object({
     supervisorStaffId: id,

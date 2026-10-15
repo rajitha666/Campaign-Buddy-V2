@@ -33,7 +33,7 @@ router.get(
         where: { activationId: activation.id, campaignItem: { item: { deletedAt: null } } },
         include: {
           campaignItem: { include: { item: true } },
-          salesRecords: { where: { date: today } },
+          salesRecords: { where: { date: today, archivedAt: null } },
           salesFieldValues: { where: { date: today } },
         },
       }),
@@ -83,7 +83,7 @@ router.get(
     const today = dayDate();
     const activationItems = await prisma.activationItem.findMany({
       where: { campaignItem: { itemId: item.id } },
-      include: { salesRecords: { where: { date: today } }, campaignItem: true },
+      include: { salesRecords: { where: { date: today, archivedAt: null } }, campaignItem: true },
     });
     const soldAcrossAllOutletsToday = activationItems.reduce((sum, ai) => sum + (ai.salesRecords[0]?.soldToday ?? 0), 0);
     const earliestAdded = activationItems.length
@@ -158,6 +158,9 @@ router.patch(
           otherInterestedCustomers: otherInterestedCustomers ?? 0, reorderFlag: reorderFlag ?? false,
         },
         update: {
+          // A save on a previously archived row (head-office soft delete) updates
+          // the same (item, date) row and brings it back into calculations.
+          archivedAt: null,
           ...(openingStock != null ? { openingStock } : {}),
           ...(soldToday != null ? { soldToday } : {}),
           ...(otherInterestedCustomers != null ? { otherInterestedCustomers } : {}),

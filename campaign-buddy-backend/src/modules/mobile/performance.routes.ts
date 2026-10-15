@@ -40,7 +40,7 @@ router.get(
     const [dailyStats, salesRecords] = await Promise.all([
       prisma.dailyStats.findMany({ where: { activationId: activation.id }, orderBy: { date: "asc" } }),
       prisma.salesRecord.findMany({
-        where: { activationItem: { activationId: activation.id } },
+        where: { archivedAt: null, activationItem: { activationId: activation.id } },
         include: { activationItem: { include: { campaignItem: { include: { item: true } } } } },
       }),
     ]);

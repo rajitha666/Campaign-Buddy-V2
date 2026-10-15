@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
+import { ApiError, ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { dayDate, dayBounds } from "../../utils/dates";
@@ -69,6 +69,8 @@ router.get(
 
     const paged = paginate(req);
     const whereSales = {
+      // archived rows are excluded from every calculation/report read (docs/sales-archive-spec.md)
+      archivedAt: null,
       // soldOnly=true: drop nothing-sold rows (SKU-wise view/export, #90).
       ...(soldOnly === "true" ? { soldToday: { gt: 0 } } : {}),
       activationItem: {
@@ -92,6 +94,44 @@ router.get(
   })
 );
 
+// Portal side-entry: a grid row the promoter never submitted (lookup id null)
+// can be filled in and saved with Update — POST creates the record at its
+// (activationItemId, date) key (docs/sales-archive-spec.md). The DB unique
+// constraint makes a double-create impossible; a lost race is a 409.
+router.post(
+  "/campaigns/:campaignId/sales",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  validate({ body: s.salesCreate }),
+  asyncHandler(async (req, res) => {
+    const { activationItemId, date, openingStock, soldToday, otherInterestedCustomers, reorderFlag } = req.body;
+    const item = await prisma.activationItem.findUnique({
+      where: { id: activationItemId },
+      include: { activation: true },
+    });
+    if (!item || item.activation.campaignId !== req.params.campaignId) throw notFound("Activation product");
+    assertOutletAllowed(req, item.activation.outletId);
+    if (soldToday > openingStock) throw validationError("soldToday cannot exceed openingStock", "soldToday");
+
+    try {
+      const created = await prisma.salesRecord.create({
+        data: {
+          activationItemId, date: dayDate(date),
+          // same semantics as the promoter's own first stock entry — the day's
+          // starting figure (#91)
+          openingStock, startingStock: openingStock, soldToday,
+          ...(otherInterestedCustomers != null ? { otherInterestedCustomers } : {}),
+          ...(reorderFlag != null ? { reorderFlag } : {}),
+        },
+      });
+      res.status(201).json(ok(created));
+    } catch (e: any) {
+      if (e?.code === "P2002") throw new ApiError(409, "ALREADY_EXISTS", "A sales record already exists for this product and day");
+      throw e;
+    }
+  })
+);
+
 router.patch(
   "/campaigns/:campaignId/sales/:salesRecordId",
   requireCampaignAccess,
@@ -103,6 +143,8 @@ router.patch(
       include: { activationItem: { include: { activation: true } } },
     });
     if (!existing) throw notFound("Sales record");
+    if (existing.archivedAt)
+      throw validationError("This sales record is archived — restore it before correcting", "archivedAt");
     assertOutletAllowed(req, existing.activationItem.activation.outletId);
 
     // Mid-day restock: openingStock can be raised in place (§2.6) — soldToday is
@@ -113,6 +155,44 @@ router.patch(
 
     const updated = await prisma.salesRecord.update({ where: { id: req.params.salesRecordId }, data: req.body });
     res.json(ok(updated));
+  })
+);
+
+// Archive a day's sales record (soft delete, docs/sales-archive-spec.md): the
+// row stays in the DB at its (activationItemId, date) key, but every
+// calculation/report read filters it out via `archivedAt: null`.
+router.delete(
+  "/campaigns/:campaignId/sales/:salesRecordId",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.salesRecord.findUnique({
+      where: { id: req.params.salesRecordId },
+      include: { activationItem: { include: { activation: true } } },
+    });
+    if (!existing || existing.archivedAt || existing.activationItem.activation.campaignId !== req.params.campaignId)
+      throw notFound("Sales record");
+    assertOutletAllowed(req, existing.activationItem.activation.outletId);
+    const archivedAt = new Date();
+    await prisma.salesRecord.update({ where: { id: req.params.salesRecordId }, data: { archivedAt } });
+    res.json(ok({ ...existing, archivedAt, softDeleted: true }));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/sales/:salesRecordId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.salesRecord.findUnique({
+      where: { id: req.params.salesRecordId },
+      include: { activationItem: { include: { activation: true } } },
+    });
+    if (!existing || !existing.archivedAt || existing.activationItem.activation.campaignId !== req.params.campaignId)
+      throw notFound("Archived sales record");
+    assertOutletAllowed(req, existing.activationItem.activation.outletId);
+    await prisma.salesRecord.update({ where: { id: req.params.salesRecordId }, data: { archivedAt: null } });
+    res.json(ok({ ...existing, archivedAt: null, softDeleted: false }));
   })
 );
 
@@ -164,14 +244,17 @@ router.get(
 
     res.json({
       data: activationItems.map((ai) => {
+        const record = ai.salesRecords[0];
         const vals = new Map(ai.salesFieldValues.map((v) => [v.definitionId, v.value]));
         return {
-          id: ai.salesRecords[0]?.id ?? null,
+          id: record?.id ?? null,
+          archived: !!record?.archivedAt,
+          ...(record?.archivedAt ? { archivedAt: record.archivedAt } : {}),
           activationItemId: ai.id,
           itemName: ai.campaignItem.item.name,
           unitPrice: ai.campaignItem.item.unitPrice,
-          openingStock: ai.salesRecords[0]?.openingStock ?? 0,
-          soldToday: ai.salesRecords[0]?.soldToday ?? 0,
+          openingStock: record?.openingStock ?? 0,
+          soldToday: record?.soldToday ?? 0,
           customFields: serializeWithValues(productDefs, vals),
         };
       }),

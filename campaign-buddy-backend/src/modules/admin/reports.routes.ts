@@ -40,6 +40,7 @@ router.get(
     const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
       where: {
+        archivedAt: null,
         startingStock: { not: null },
         ...(range ? { date: range } : {}),
         activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
@@ -73,7 +74,7 @@ router.get(
     const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
       where: {
-        // Nothing-sold rows carry no value; leaving them out keeps 0-sold SKUs off the report (#90).
+        archivedAt: null, // archived rows excluded (sales-archive-spec.md); 0-sold rows also carry no value (#90)
         soldToday: { gt: 0 },
         ...(range ? { date: range } : {}),
         activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
@@ -105,6 +106,7 @@ router.get(
     const range = dateRange(req);
     const records = await prisma.salesRecord.findMany({
       where: {
+        archivedAt: null,
         ...(range ? { date: range } : {}),
         activationItem: { activation: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
       },
@@ -150,6 +152,7 @@ router.get(
     const [salesRecords, stats, targets, numberValues, latestValues] = await Promise.all([
       prisma.salesRecord.findMany({
         where: {
+          archivedAt: null,
           ...(range ? { date: range } : {}),
           activationItem: { activation: { campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) } },
         },
@@ -320,6 +323,7 @@ router.get(
     const day = dayDate(req.query.date as string | undefined);
     const records = await prisma.salesRecord.findMany({
       where: {
+        archivedAt: null,
         date: day,
         reorderFlag: true,
         activationItem: {

@@ -22,7 +22,7 @@ export async function computeTargetProgress(target: TargetForProgress, targetUni
     },
     include: {
       campaignItem: { include: { item: true } },
-      salesRecords: { where: { date: { gte: target.dateFrom, lte: target.dateTo } } },
+      salesRecords: { where: { date: { gte: target.dateFrom, lte: target.dateTo }, archivedAt: null } },
     },
   });
 

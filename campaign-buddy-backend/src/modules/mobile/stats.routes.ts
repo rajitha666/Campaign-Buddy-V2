@@ -107,7 +107,7 @@ router.get(
             where: { activationId: { in: activationIds }, date: { gte: lo, lte: hi } },
           }),
           prisma.salesRecord.findMany({
-            where: { activationItem: { activationId: { in: activationIds } }, date: { gte: lo, lte: hi } },
+            where: { archivedAt: null, activationItem: { activationId: { in: activationIds } }, date: { gte: lo, lte: hi } },
             include: { activationItem: { include: { campaignItem: { include: { item: true } } } } },
           }),
         ])

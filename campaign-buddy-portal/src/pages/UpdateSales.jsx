@@ -40,10 +40,6 @@ export default function UpdateSales() {
     <div>
       <div className="page-head"><div><h1>Update Sales</h1><p className="page-sub">{applyDesignationLabel("Manual correction screen for a promoter's daily sales.", designationLabel)}</p></div></div>
       <SalesCorrectionGrid campaignId={currentCampaignId} form={form} filterSlot={filterSlot} />
-      <div className="hint-note" style={{ marginTop: 12 }}>
-        Reads GET /admin/v1/campaigns/{'{id}'}/sales/lookup; saves stock via PATCH …/sales/{'{salesRecordId}'} and custom
-        fields via PUT …/sales/custom-values. Rows with an existing SalesRecord have an id and can be corrected.
-      </div>
     </div>
   );
 }

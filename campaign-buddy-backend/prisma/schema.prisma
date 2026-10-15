@@ -590,6 +590,11 @@ model SalesRecord {
   soldToday                Int      @default(0)
   otherInterestedCustomers Int      @default(0)
   reorderFlag              Boolean  @default(false)
+  // Head-office soft delete (sales-archive-spec.md): archived rows stay in the
+  // DB but are excluded from every calculation/report. The (activationItemId,
+  // date) key is untouched, so a promoter re-entering stock updates this same
+  // row and unarchives it.
+  archivedAt               DateTime?
   updatedAt                DateTime @updatedAt
 
   activationItem ActivationItem @relation(fields: [activationItemId], references: [id], onDelete: Cascade)

@@ -118,7 +118,10 @@ export const attendance = {
 };
 export const salesRecords = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales`, { query }),
+  create: (campaignId, body) => api.post(`/campaigns/${campaignId}/sales`, body),
   correct: (campaignId, salesRecordId, body) => api.patch(`/campaigns/${campaignId}/sales/${salesRecordId}`, body),
+  archive: (campaignId, salesRecordId) => api.delete(`/campaigns/${campaignId}/sales/${salesRecordId}`),
+  restore: (campaignId, salesRecordId) => api.post(`/campaigns/${campaignId}/sales/${salesRecordId}/restore`),
 };
 export const dailyStats = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/stats`, { query }),

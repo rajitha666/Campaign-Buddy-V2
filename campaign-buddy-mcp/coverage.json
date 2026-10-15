@@ -332,6 +332,15 @@
     },
     "GET /campaigns/:campaignId/supervisors": {
       "tool": "api_get"
+    },
+    "POST /campaigns/:campaignId/sales": {
+      "excluded": "Creating sales entries is the promoter's job; head-office create is a niche portal flow not exposed to an LLM."
+    },
+    "DELETE /campaigns/:campaignId/sales/:salesRecordId": {
+      "excluded": "Deletes are never exposed to an LLM."
+    },
+    "POST /campaigns/:campaignId/sales/:salesRecordId/restore": {
+      "excluded": "Archive/unarchive bookkeeping is not exposed to an LLM."
     }
   },
   "reviewedFields": {
