@@ -335,6 +335,13 @@ describe('resources config', () => {
     expect(columnText(col, row)).toBe(3200);
   });
 
+  it.each([['reportBrandWise'], ['clientReports'], ['brandWiseClient'], ['outletWise']])('%s Total Sale(s) exports a bare number, not the on-screen LKR prefix', (key) => {
+    const columns = RESOURCES[key].columns;
+    const col = (typeof columns === 'function' ? columns({ customFieldDefs: [] }) : columns).find((c) => c.key === 'totalSales');
+    expect(col.csvValue({ totalSales: 16000 })).toBe(16000);
+    expect(col.render({ totalSales: 16000 })).toBe('LKR 16,000');
+  });
+
   it('client Brand Wise report shows Sold Qty and Total Sales (client request)', () => {
     const cfg = RESOURCES.brandWiseClient;
     expect(cfg.columns.find((c) => c.key === 'itemCount').label).toBe('Sold Qty');

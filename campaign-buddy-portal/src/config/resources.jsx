@@ -51,6 +51,15 @@ const hhmmToMinutes = (v) => {
 const STATUS_LABELS = { completed: 'Completed', pending: 'Pending', absent: 'Absent' };
 const STATUS_BADGE_TYPES = { completed: 'success', pending: 'pending', absent: 'alert' };
 
+// Money column in LKR for resource tables. On screen it shows "LKR 16,000";
+// the CSV export gets the bare number (no prefix, no separators) so Excel can
+// sum/sort it — pass a `pick` that returns the amount for the row.
+const lkrColumn = (key, label, pick) => ({
+  key, label,
+  render: (r) => `LKR ${Number(pick(r) || 0).toLocaleString()}`,
+  csvValue: (r) => Number(pick(r) || 0),
+});
+
 const PROVINCES = ['Western', 'Eastern', 'Central', 'Southern', 'Sabaragamuwa', 'North Western', 'Northern', 'Uva', 'North Central'];
 const DISTRICTS = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota',
   'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala',
@@ -198,7 +207,7 @@ export const RESOURCES = {
         </span>
       ) },
       { key: 'brandName', label: 'Brand', render: (r) => r.brandName || r.brandId },
-      { key: 'unitPrice', label: 'Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}` },
+      lkrColumn('unitPrice', 'Price', (r) => r.unitPrice),
       { key: 'reorderLevel', label: 'Reorder Level' },
     ],
     actions: ['edit', 'delete'],
@@ -652,13 +661,9 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet', render: (r) => r.activationItem?.activation?.outlet?.name || '—' },
       { key: 'staffName', label: 'Promoter', render: (r) => r.activationItem?.activation?.staff ? staffLabel(r.activationItem.activation.staff) : '—' },
       { key: 'itemName', label: 'Product', render: (r) => r.activationItem?.campaignItem?.item?.name || '—' },
-      { key: 'unitPrice', label: 'Unit Price', render: (r) => `LKR ${Number(r.activationItem?.campaignItem?.item?.unitPrice || 0).toLocaleString()}`, csvValue: (r) => r.activationItem?.campaignItem?.item?.unitPrice || 0 },
+      lkrColumn('unitPrice', 'Unit Price', (r) => r.activationItem?.campaignItem?.item?.unitPrice),
       { key: 'openingStock', label: 'Start Qty' }, { key: 'soldToday', label: 'Sold Qty' },
-      {
-        key: 'totalSales', label: 'Total Sales',
-        render: (r) => `LKR ${Number((r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0)).toLocaleString()}`,
-        csvValue: (r) => (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0),
-      },
+      lkrColumn('totalSales', 'Total Sales', (r) => (r.soldToday || 0) * (r.activationItem?.campaignItem?.item?.unitPrice || 0)),
     ],
     // Nothing-sold rows are noise in this log and its export (#90).
     fetchList: ({ campaignId, query }) => salesRecordsApi.list(campaignId, { ...query, soldOnly: true }),
@@ -691,7 +696,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet' },
       { key: 'promoterName', label: 'Promoter' },
       { key: 'itemName', label: 'Product' },
-      { key: 'unitPrice', label: 'Unit Price', render: (r) => `LKR ${Number(r.unitPrice || 0).toLocaleString()}`, csvValue: (r) => r.unitPrice ?? 0 },
+      lkrColumn('unitPrice', 'Unit Price', (r) => r.unitPrice),
       { key: 'startQty', label: 'Start Qty' },
     ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.startingStock(campaignId, query)),
@@ -701,7 +706,7 @@ export const RESOURCES = {
     title: 'Overall SKU Wise', subtitle: 'Aggregated sales by item, across the campaign.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
-    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, lkrColumn('totalSales', 'Total Sales', (r) => r.totalSales)],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.skuWise(campaignId, query)),
   },
 
@@ -713,7 +718,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
       { key: 'itemCount', label: 'Product Count' },
-      { key: 'totalSales', label: 'Total', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      lkrColumn('totalSales', 'Total', (r) => r.totalSales),
     ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
@@ -722,7 +727,7 @@ export const RESOURCES = {
     title: 'Client Reports', subtitle: 'Item-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }],
-    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` }],
+    columns: [{ key: 'itemName', label: 'Product' }, { key: 'brandName', label: 'Product Brand' }, { key: 'itemCount', label: 'Product Count' }, lkrColumn('totalSales', 'Total Sales', (r) => r.totalSales)],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.skuWise(campaignId, query)),
   },
 
@@ -734,7 +739,7 @@ export const RESOURCES = {
       { key: 'outletName', label: 'Outlet' },
       { key: 'brandName', label: 'Brand' },
       { key: 'itemCount', label: 'Sold Qty' },
-      { key: 'totalSales', label: 'Total Sales', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      lkrColumn('totalSales', 'Total Sales', (r) => r.totalSales),
     ],
     fetchList: clientPaged(({ campaignId, query }) => reportsApi.brandWise(campaignId, query)),
   },
@@ -809,7 +814,7 @@ export const RESOURCES = {
         label: d.type === 'number' ? d.label : `${d.label} (current)`,
         render: d.type === 'boolean' ? (r) => (r[d.key] === true ? 'Yes' : r[d.key] === false ? 'No' : '—') : undefined,
       })),
-      { key: 'totalSales', label: 'Total Sale', render: (r) => `LKR ${Number(r.totalSales || 0).toLocaleString()}` },
+      lkrColumn('totalSales', 'Total Sale', (r) => r.totalSales),
       { key: 'target', label: 'Target' },
       { key: 'achievementPct', label: 'Achievement %', render: (r) => `${r.achievementPct ?? 0}%` },
     ],
