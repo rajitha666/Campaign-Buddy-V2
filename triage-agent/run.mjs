@@ -27,6 +27,10 @@ const STAGE = {
   inBuild: 'triage:in-build',
 };
 const APPROVAL_LABEL = 'approved-for-build';
+const PO_ENDORSED = 'po:endorsed';
+const PO_OBJECTION = 'po:objection';
+const PO_OVERRIDE = 'po-override';
+const PO_HOLD_MARKER = '<!-- triage:held-for-po -->';
 const STAGE_LABEL_SET = new Set(Object.values(STAGE));
 const PROJECT_STATUS = {
   [STAGE.new]: 'New',
@@ -35,6 +39,9 @@ const PROJECT_STATUS = {
   [STAGE.inBuild]: 'In Build',
 };
 const COMPONENTS = ['backend', 'portal', 'app', 'docs', 'infra'];
+
+// Product Owner agent output (review comments, override notes) is not a creator reply.
+const isPoComment = (c) => (c.body ?? '').includes('<!-- po-agent:review') || (c.body ?? '').startsWith('🧭');
 
 function componentLabel(component) {
   return COMPONENTS.includes(component) ? `component:${component}` : null;
@@ -110,6 +117,23 @@ async function main() {
 
       // Human approval is the one transition that needs no LLM call at all.
       if (labelNames.includes(APPROVAL_LABEL)) {
+        // The Product Owner agent (docs/product-owner-agent.md) is the gate before the owner:
+        // build only starts once it has endorsed, or the owner has overridden it.
+        if (!labelNames.includes(PO_ENDORSED) && !labelNames.includes(PO_OVERRIDE)) {
+          console.log(`#${issue.number}: approved but the Product Owner has not endorsed -> holding`);
+          stats.skipped += 1;
+          if (!dryRun) {
+            const comments = await github.listComments(issue.number);
+            if (!comments.some((c) => (c.body ?? '').includes(PO_HOLD_MARKER))) {
+              await github.postComment(
+                issue.number,
+                `${PO_HOLD_MARKER}\n**🤖 Triage bot** — held: the Product Owner agent has not endorsed this yet (see its review comment). ` +
+                  `Resolve its objection, or add the \`${PO_OVERRIDE}\` label to build now.`
+              );
+            }
+          }
+          continue;
+        }
         console.log(`#${issue.number}: approval label detected -> moving to in-build`);
         stats.movedToBuild += 1;
         if (!dryRun) {
@@ -127,7 +151,7 @@ async function main() {
       const comments = await github.listComments(issue.number);
       const lastBotCommentAt = [...comments].reverse().find((c) => c.user?.login === botLogin)?.created_at;
       const hasNewHumanReply = lastBotCommentAt
-        ? comments.some((c) => c.user?.login !== botLogin && new Date(c.created_at) > new Date(lastBotCommentAt))
+        ? comments.some((c) => c.user?.login !== botLogin && !isPoComment(c) && new Date(c.created_at) > new Date(lastBotCommentAt))
         : true;
 
       const isWaitingStage = currentStage === STAGE.needsInfo || currentStage === STAGE.readyForReview;
@@ -143,7 +167,8 @@ async function main() {
       stats.analyzed += 1;
 
       const compLabel = componentLabel(result.component);
-      const keepLabels = labelNames.filter((l) => !STAGE_LABEL_SET.has(l) && l !== APPROVAL_LABEL);
+      // A re-analysis changes the summary, so any earlier PO verdict is stale — the PO agent re-reviews.
+      const keepLabels = labelNames.filter((l) => !STAGE_LABEL_SET.has(l) && l !== APPROVAL_LABEL && l !== PO_ENDORSED && l !== PO_OBJECTION);
 
       if (result.status === 'needs_info') {
         stats.needsInfo += 1;
