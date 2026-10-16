@@ -13,12 +13,18 @@ import * as queue from './queue';
 import { runSync } from './runSync';
 import { loadUserSnapshot } from './sessionSnapshot';
 import { setStorageScope } from './storage';
+import { loadPinnedTenant } from '../lib/tenantMigration';
 
 export const BACKGROUND_SYNC_TASK = 'cb-background-sync';
 const MINIMUM_INTERVAL_MINUTES = 15;
 
 /** Headless sync pass. Returns whether there was anything to do. */
 export async function backgroundSyncOnce(): Promise<boolean> {
+  // The OS can start the app headless just to run this, so no React effect has
+  // restored which agency this install is pinned to. Do it first: every key read
+  // below is tenant-namespaced, and without the pin they all resolve to the
+  // unscoped names and come back empty.
+  await loadPinnedTenant();
   // Signed out (or never signed in): nothing on this phone is ours to send.
   const user = await loadUserSnapshot();
   if (!user) return false;

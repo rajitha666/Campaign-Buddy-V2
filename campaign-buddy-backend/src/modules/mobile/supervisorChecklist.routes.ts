@@ -16,6 +16,7 @@ import crypto from "crypto";
 import multer from "multer";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { PHOTO_MAX_BYTES } from "../../utils/meta";
 import { ok, notFound, validationError } from "../../utils/apiResponse";
 import { dayDate } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
@@ -35,7 +36,7 @@ const visitPhotoUpload = multer({
       cb(null, `${req.staff!.sub}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${imageExtension(file.mimetype)}`);
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: PHOTO_MAX_BYTES },
   fileFilter: imageFileFilter,
 });
 
