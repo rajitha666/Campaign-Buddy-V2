@@ -16,3 +16,6 @@ Thumbs.db
 /Archive/
 
 dumps/
+
+# Local deck tooling installs
+marketing/deck/node_modules/

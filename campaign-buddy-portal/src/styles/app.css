@@ -466,6 +466,9 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 
   .logout-menu { right:16px; }
 
+  /* Section headers are tap targets on a phone: meet the ~44px minimum. */
+  .nav-section-toggle { min-height:44px; padding-top:0; padding-bottom:0; }
+
   /* topbar: keep only what fits a phone width — full title, campaign picker,
      account menu. Persona badge and the report-issue label are redundant
      with what's reachable via the drawer/account menu, so they compress. */
