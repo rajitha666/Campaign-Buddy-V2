@@ -505,3 +505,6 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
   .data-card-value { font-size:13px; text-align:left; word-break:break-word; max-width:100%; }
   .data-card-actions { justify-content:flex-end; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
 }
+
+/* Live Locations: last ping is well past the 5-min stationary heartbeat. */
+.text-warn { color:#B45309; font-weight:600; }

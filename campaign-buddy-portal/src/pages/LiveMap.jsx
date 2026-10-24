@@ -5,6 +5,7 @@ import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import LiveMapView from '../components/LiveMapView';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { lastSeenLabel, isStale } from '../lib/lastSeen';
 
 function uniqueOutlets(activationRows) {
   const map = new Map();
@@ -20,6 +21,8 @@ export default function LiveMap() {
   const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Re-render so "N min ago" keeps counting between the 15s refreshes.
+  const [now, setNow] = useState(Date.now());
   // Click a "Currently checked in" row to highlight that person's marker on
   // the map (same interaction as clicking a Promoter Tracking row highlights
   // their trail). Keyed by staff label — the live rows have no id.
@@ -43,8 +46,11 @@ export default function LiveMap() {
       }
     }
     load();
-    const interval = setInterval(load, 15000); // matches the mobile app's ~foreground ping cadence
-    return () => { cancelled = true; clearInterval(interval); };
+    // Poll for new positions. The app now pings on movement or a 5-min heartbeat, so a
+    // still rep legitimately shows an older position — see the Last seen column.
+    const interval = setInterval(load, 15000);
+    const tick = setInterval(() => setNow(Date.now()), 30000);
+    return () => { cancelled = true; clearInterval(interval); clearInterval(tick); };
   }, [currentCampaignId]);
 
   if (!currentCampaignId) return <ErrorState message="No campaign is available for your account yet." />;
@@ -61,7 +67,7 @@ export default function LiveMap() {
             <div className="table-toolbar"><div className="entries-select">Currently checked in ({live.length})</div></div>
             <div className="table-scroll">
               <table className="data-table">
-                <thead><tr><th>{applyDesignationLabel('Promoter', designationLabel)}</th><th>Outlet</th><th>Checked in since</th></tr></thead>
+                <thead><tr><th>{applyDesignationLabel('Promoter', designationLabel)}</th><th>Outlet</th><th>Checked in since</th><th>Last seen</th></tr></thead>
                 <tbody>
                   {live.map((p, i) => {
                     const k = rowKey(p);
@@ -74,6 +80,9 @@ export default function LiveMap() {
                         <td>{p.staffName || p.userId}</td>
                         <td>{p.outletName || p.outletId}</td>
                         <td>{p.checkedInSince ? new Date(p.checkedInSince).toLocaleString() : '—'}</td>
+                        <td className={isStale(p.lastPosition?.capturedAt, now) ? 'text-warn' : undefined}>
+                          {lastSeenLabel(p.lastPosition?.capturedAt, now)}
+                        </td>
                       </tr>
                     );
                   })}

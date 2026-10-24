@@ -6,7 +6,9 @@
 
 export const MIN_DISTANCE_METERS = 40; // smaller than typical indoor "Balanced" GPS wander
 export const MIN_GAP_MS = 45_000; // never two pings closer than this — also skips the GPS fix entirely
-export const HEARTBEAT_MS = 300_000; // a stationary rep still reports in this often
+// A stationary rep still reports in this often. The portal flags a position stale at 12 min
+// (STALE_AFTER_MS in campaign-buddy-portal/src/lib/lastSeen.js) — keep that above this value.
+export const HEARTBEAT_MS = 300_000;
 const CHECK_STEPS_MS = [60_000, 120_000, HEARTBEAT_MS]; // poll interval as the rep stays put
 
 export interface Fix {
