@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { documentTitle } from '../lib/navLabel';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
@@ -20,6 +21,9 @@ function matchesPhone() {
 }
 
 export default function AppShell() {
+  const location = useLocation();
+  // Browser tab / history entries name the page, not just the product.
+  useEffect(() => { document.title = documentTitle(location.pathname); }, [location.pathname]);
   const [isPhone, setIsPhone] = useState(matchesPhone);
   const [collapsed, setCollapsed] = useState(() => (matchesPhone() ? false : loadCollapsed()));
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -64,6 +68,7 @@ export default function AppShell() {
 
   return (
     <div id="app-shell" className={shellClass}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       {mobileNavOpen ? <div className="mobile-nav-backdrop" onClick={closeMobileNav} /> : null}
       <Sidebar
         collapsed={collapsed}
@@ -73,7 +78,7 @@ export default function AppShell() {
       />
       <div className="main">
         <Topbar onOpenMobileNav={openMobileNav} />
-        <div className="content"><Outlet /></div>
+        <main className="content" id="main-content" tabIndex={-1}><Outlet /></main>
       </div>
     </div>
   );

@@ -164,7 +164,7 @@ export default function AssignRoutes() {
             </p>
           )}
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={load}>Load</button>
+        <button className="btn btn-secondary btn-sm" onClick={load}>Refresh</button>
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (
         <div className="panel">

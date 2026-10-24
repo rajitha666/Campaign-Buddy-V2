@@ -539,6 +539,7 @@ export const RESOURCES = {
   },
 
   staffAttendance: {
+    defaultRange: 'week',
     title: 'Staff Attendance', subtitle: 'Check-in / check-out log for field promoters.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [
@@ -653,6 +654,7 @@ export const RESOURCES = {
   },
 
   skuSales: {
+    defaultRange: 'campaign',
     title: 'Overall Outlet and SKU Wise', subtitle: 'Raw per-item, per-outlet sales log.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
@@ -688,6 +690,7 @@ export const RESOURCES = {
   // The stock each promoter started the day with — the opening stock from the
   // first stock update after check-in (#91). Doubles as the client report download.
   startingStock: {
+    defaultRange: 'campaign',
     title: 'Starting Stock', subtitle: "Each promoter's starting stock per outlet and product, per day.", excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
@@ -703,6 +706,7 @@ export const RESOURCES = {
   },
 
   reportSkuWise: {
+    defaultRange: 'campaign',
     title: 'Overall SKU Wise', subtitle: 'Aggregated sales by item, across the campaign.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
@@ -711,6 +715,7 @@ export const RESOURCES = {
   },
 
   reportBrandWise: {
+    defaultRange: 'campaign',
     title: 'Brand Wise', subtitle: 'Aggregated sales by outlet and brand.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
@@ -732,6 +737,7 @@ export const RESOURCES = {
   },
 
   brandWiseClient: {
+    defaultRange: 'campaign',
     title: 'Brand Wise', subtitle: 'Brand-wise sales, scoped to your outlets.', excel: true, noAdd: true,
     scopeToCampaign: true,
     filters: [{ key: 'outletId', label: 'Outlet', type: 'searchable-select', allLabel: 'All outlets', optionsLoader: () => optionsFrom(outletsApi.list) }, { key: 'dateFrom', label: 'From', type: 'date' }, { key: 'dateTo', label: 'To', type: 'date' }],
