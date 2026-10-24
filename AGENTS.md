@@ -13,6 +13,7 @@ Field-marketing execution platform for in-store product activations. One backend
 | `marketing/` | customer-facing collateral: `landing-site/`, `capability-brief.html`, `training/` (per-role user guides, shipped in-product) | static HTML, no build | — |
 | `campaign-buddy-mcp/` | MCP server (LLM access to campaign data + admin actions, via `/admin/v1`) and the CampaignBuddy Intelligence client — see its `README.md` | Node · TypeScript · MCP SDK | `:4300` (http mode) |
 | `triage-agent/` | scheduled GitHub issue triage bot (3x/day via `.github/workflows/triage-agent.yml`) | Node, zero deps | — |
+| `product-owner-agent/` | Product Owner bot: gates issues (before `approved-for-build`) and PRs (`product-owner` status) against `docs/product-charter.md` — see `docs/product-owner-agent.md` | Node, zero deps | — |
 
 ## Prerequisites
 
@@ -63,6 +64,7 @@ cd campaign-buddy-backend && npm test   # vitest + supertest (needs *_test DB)
 cd campaign-buddy-portal  && npm test   # vitest unit
 cd campaign-buddy-app     && npm test   # vitest unit
 cd campaign-buddy-mcp     && npm test   # vitest, in-memory MCP + fake backend (no DB needed)
+cd product-owner-agent    && npm test   # node:test, pure logic (no network)
 ```
 
 ## Follow minimal TDD for all changes
@@ -104,6 +106,20 @@ matching guide — `admin.html` / `supervisor.html` / `sponsor.html` /
 swap in place, same filename. Full procedure and the screen↔guide map:
 `marketing/training/MAINTENANCE.md`.
 
+## Product Owner review — the gate before the owner
+
+`docs/product-charter.md` is the product's true north (Sri Lanka's in-store activation system of
+record, multi-agency SaaS delivered as one isolated deployment per agency, offline-first, cheap to
+run). Before starting a new feature, enhancement or non-trivial bug fix — and before calling it
+ready — consult the `product-owner` subagent (`.claude/agents/product-owner.md`). On GitHub the same
+review runs automatically: issues are held from `approved-for-build` until `po:endorsed`, and PRs
+get a `product-owner` status. If it **blocks**, don't work around it: resolve it using its
+recommended option, or ask the owner to apply the `po-override` label. Never apply that label
+yourself and never edit the charter to make a change pass; propose charter changes to the owner
+instead. Don't add a tenant/organisation column meant to span multiple agencies in one database (the
+architecture is decided: deployment-per-agency, not shared multi-tenant — charter §2), and don't add
+new `LKR` / `Asia/Colombo` / `+94` literals where a setting would do (see charter §6).
+
 ## Token usage — keep it minimal
 
 - Read only the files you need; avoid dumping entire codebases.
@@ -130,3 +146,4 @@ The seeds create their own logins and print them to the terminal when run.
 - `marketing/README.md` — the landing site, evaluation brief and user-training guides
 - `docs/mcp-sync-agent.md` — the agent that keeps `campaign-buddy-mcp/` in step with backend changes (and the CI gate it relies on)
 - `docs/triage-agent-spec.md` — the scheduled issue-triage bot; setup in `triage-agent/README.md`
+- `docs/product-charter.md` — the true north, principles, known platform gaps and what blocks; `docs/product-owner-agent.md` — the agent that enforces it (gates, override, setup)

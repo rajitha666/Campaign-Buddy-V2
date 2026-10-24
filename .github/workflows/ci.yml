@@ -100,6 +100,19 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  product-owner-agent:
+    name: Product Owner agent (unit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: product-owner-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm test
+
   portal-e2e:
     name: Portal e2e (Playwright)
     runs-on: ubuntu-latest

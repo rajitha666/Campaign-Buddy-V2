@@ -1,0 +1,13 @@
+{
+  "name": "campaign-buddy-product-owner-agent",
+  "private": true,
+  "type": "module",
+  "description": "Product Owner agent: reviews issues and PRs against docs/product-charter.md",
+  "scripts": {
+    "start": "node run.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

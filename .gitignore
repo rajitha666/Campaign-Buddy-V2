@@ -6,7 +6,8 @@
 Thumbs.db
 
 # Local editor / tooling config
-.claude/
+.claude/*
+!.claude/agents/
 .vscode/
 .idea/
 
