@@ -7,6 +7,16 @@ import { applyDesignationLabel } from '../lib/designationLabel';
 import { useFavorites } from '../context/PreferencesContext';
 import { navEntriesFor, resolveFavorites, entryLabel } from '../lib/favorites';
 
+const FOLD_KEY = 'cb.nav.sections';
+
+function readFolds() {
+  try { return JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch { return {}; }
+}
+
+function sectionHasPath(items, pathname) {
+  return items.some((it) => it.path === pathname || it.children?.some((c) => c.path === pathname));
+}
+
 export default function Sidebar({ collapsed = false, isPhone = false, onToggleCollapse, onNavigate }) {
   const { persona, designationLabel } = useAuth();
   const location = useLocation();
@@ -20,6 +30,17 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
     () => resolveFavorites(favorites.paths, navEntriesFor(NAV, persona)),
     [favorites.paths, persona]
   );
+
+  // Section accordion: an explicit user choice wins; otherwise a section is
+  // folded unless it holds the current page. Persisted per browser.
+  const [folds, setFolds] = useState(readFolds);
+  function toggleSection(name, currentlyFolded) {
+    setFolds((f) => {
+      const next = { ...f, [name]: !currentlyFolded };
+      try { localStorage.setItem(FOLD_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+      return next;
+    });
+  }
 
   const roleLabel = persona === 'admin' ? 'SUPER ADMIN' : persona === 'supervisor' ? 'SUPERVISOR' : 'SPONSOR';
 
@@ -80,21 +101,38 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
           if (sec.roles && !sec.roles.includes(persona)) return null;
           const visibleItems = sec.items.filter((it) => it.roles.includes(persona));
           if (visibleItems.length === 0) return null;
+          const folded = sec.section
+            ? folds[sec.section] ?? !sectionHasPath(visibleItems, location.pathname)
+            : false;
           return (
             <div key={si}>
-              {sec.section ? <div className="nav-section-label">{applyDesignationLabel(sec.section, designationLabel)}</div> : null}
-              {visibleItems.map((it, ii) => (
-                <NavEntry
-                  key={ii}
-                  item={it}
-                  pathname={location.pathname}
-                  go={go}
-                  isOpen={openGroup === `${si}-${ii}`}
-                  onToggleOpen={() => setOpenGroup((g) => (g === `${si}-${ii}` ? null : `${si}-${ii}`))}
-                  designationLabel={designationLabel}
-                  favorites={favorites}
-                />
-              ))}
+              {sec.section ? (
+                <button
+                  type="button"
+                  className={`nav-section-label nav-section-toggle${folded ? ' is-folded' : ''}`}
+                  aria-expanded={!folded}
+                  onClick={() => toggleSection(sec.section, folded)}
+                >
+                  <span>{applyDesignationLabel(sec.section, designationLabel)}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              ) : null}
+              <div className={`nav-section-body${folded ? ' is-folded' : ''}`}>
+                {visibleItems.map((it, ii) => (
+                  <NavEntry
+                    key={ii}
+                    item={it}
+                    pathname={location.pathname}
+                    go={go}
+                    isOpen={openGroup === `${si}-${ii}`}
+                    onToggleOpen={() => setOpenGroup((g) => (g === `${si}-${ii}` ? null : `${si}-${ii}`))}
+                    designationLabel={designationLabel}
+                    favorites={favorites}
+                  />
+                ))}
+              </div>
             </div>
           );
         })}

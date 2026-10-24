@@ -64,6 +64,13 @@
 }
 .nav-collapsed .nav-children .nav-child { display:flex; }
 .nav-section-label { font-size:10.5px; font-weight:700; color:#7C948A; letter-spacing:0.4px; padding:14px 10px 6px; }
+.nav-section-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:0; cursor:pointer; text-align:left; font-family:inherit; text-transform:inherit; }
+.nav-section-toggle:hover { color:#B5C8BF; }
+.nav-section-toggle svg { transition:transform .15s; }
+.nav-section-toggle.is-folded svg { transform:rotate(-90deg); }
+.nav-section-body.is-folded { display:none; }
+/* The icon-only rail has no section labels, so folding must not hide items. */
+.nav-collapsed .nav-section-body.is-folded { display:block; }
 
 /* ===== mobile off-canvas nav (phone widths) ===== */
 /* AppShell forces `collapsed` false whenever the phone breakpoint matches, so
