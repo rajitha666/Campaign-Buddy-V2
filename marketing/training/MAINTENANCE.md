@@ -81,6 +81,15 @@ needed unless the step text changed.
    cd campaign-buddy-backend && npm run prisma:seed && npx ts-node prisma/demo-seed.ts
    ```
    (builds the "Radiance Q3 Push" sample campaign — a week of activity)
+
+   > **Don't re-seed between 00:00 and 05:30 Colombo.** `demo-seed.ts`'s `D()`
+   > keys its rows by the **UTC** calendar date, while the backend resolves an
+   > implicit "today" on the **Colombo** one (`src/utils/dates.ts`). In that
+   > 5.5-hour window the two disagree, so the seed's "today" lands on yesterday
+   > and every app screen shows a promoter who is not checked in, with zeros
+   > everywhere — which is not the state these screenshots are meant to show.
+   > Seed at any other hour, or shoot against a dataset seeded earlier.
+
 2. Run the portal (`campaign-buddy-portal`, `npm run dev`) or the app
    (`campaign-buddy-app`, `npm run start -- --web`) and sign in as the role.
    Logins are printed to the terminal by the seed scripts; if you don't have

@@ -43,9 +43,10 @@ same as `campaign-buddy-portal/e2e/support/auth.ts` and
 the matching `../assets/<role>/*.webp` — swap-in-place, same as a manual
 re-shoot.
 
-`mobile.js` deliberately only visits read-only tabs (Performance, Sales). It
-does not drive check-in/check-out or edit stock, because those mutate the
-demo data on every run.
+`mobile.js` deliberately only visits read-only screens (Performance, Sales,
+and Today's stats, which it opens but never saves). It does not drive
+check-in/check-out or edit stock, because those mutate the demo data on every
+run.
 
 ## Adding a new shot
 
