@@ -499,9 +499,9 @@ Server computes `checkInLocationVerified` (haversine distance vs. outlet ≤ `ge
 
 **Trigger (client behavior, not server-enforced):** the app sends this while it is in the **foreground** *and* the rep currently has an open check-in (i.e. between `POST /attendance/check-in` and `POST /attendance/check-out`). Recommended:
 - Start sending immediately on a successful check-in.
-- Every **60 seconds** while the app is in the foreground and still checked in.
-- Immediately once when the app transitions from background → foreground, if still checked in.
-- Debounced/skipped if location hasn't changed by more than ~10 meters since the last successful ping (saves battery/bandwidth), except the interval max above still applies as a heartbeat.
+- Check the GPS every **60 seconds** while the app is in the foreground and still checked in (backing off to every 2, then 5 minutes while the rep stays put, to save battery).
+- Immediately once when the app transitions from background → foreground, if still checked in — unless a ping was captured in the last ~45 seconds (then no GPS fix is taken and nothing is sent).
+- Skipped if the rep hasn't moved by more than max(40 m, the GPS's reported accuracy) since the last ping (saves battery/bandwidth and filters indoor GPS jitter), except a **5-minute heartbeat** is still sent while stationary.
 - **Stop sending** the moment any of these happen: the app is backgrounded, the device is locked, or the rep checks out. Backgrounding does not end the shift, but it does pause pings until the app is foregrounded again (still checked in) — this is foreground-only tracking, not a background location service.
 - No pings are sent at all outside a check-in/check-out window (e.g. before the shift starts, or after checkout, even if the app is open).
 

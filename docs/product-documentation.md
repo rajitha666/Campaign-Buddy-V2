@@ -108,7 +108,8 @@ every screen self-explanatory.
   (one value per activation per day) or *product-level* (one value per item per
   day), and typed number / text / yes-no / dropdown. Its captured values are
   stored alongside the standard sales data.
-- **Tracking Ping** — a GPS position logged every ~60 s while a promoter is
+- **Tracking Ping** — a GPS position logged (at most once a minute, when the
+  rep moves; a 5-minute heartbeat when stationary) while a promoter is
   checked in and has the app open.
 - **Leave Request** — a time-off request from the mobile app (from/to dates,
   reason, note, status, approver).
@@ -435,11 +436,14 @@ The core daily workflow.
      clear message.
 5. A live "on shift for 2h 15m" ticker runs on the screen.
 
-**While checked in:** the app sends a **GPS ping about every 60 seconds**, but
-**only while the app is in the foreground**. Backgrounding the app pauses pings
-(without ending the shift); returning to foreground sends one immediately and
-resumes. Pings never fire outside a check-in/check-out window. A ping that hasn't
-moved >10 m since the last is skipped, though the 60 s heartbeat still fires.
+**While checked in:** the app checks the GPS **about every 60 seconds** — and
+uploads a ping only when the rep has moved (more than 40 m, or more than the
+GPS's own error margin), **only while the app is in the foreground**. A rep who
+stays put is checked less often (every 2, then 5 minutes) and sends a 5-minute
+heartbeat, which saves battery. Backgrounding the app pauses pings (without
+ending the shift); returning to foreground sends one immediately and resumes —
+unless a ping was captured in the last 45 s. Pings never fire outside a
+check-in/check-out window.
 
 **Check out:** tapping **Check out** opens a confirmation sheet — *"Did you confirm
 the sales summary for today?"*
@@ -593,7 +597,7 @@ These are the rules a marketing/sales or training writer needs to state correctl
 | **Campaign status auto-syncs, manual override sticks** | Status is derived from the date range, but an admin override (e.g. ending early) is respected until the dates change. |
 | **Totals are always computed, never stored** | Sales totals, summary roll-ups and remaining stock are calculated on read from the raw counters. No stale cached numbers. |
 | **Mid-day restock edits opening stock** | There's never a second stock row for the same item/day — you raise `opening stock` in place, on mobile or via the portal's Update Sales. |
-| **Location pings: foreground + checked-in only** | ~60 s heartbeat, paused on background, stopped on check-out, never before a shift. |
+| **Location pings: foreground + checked-in only** | moves logged ≤1/min (5-min heartbeat when stationary), paused on background, stopped on check-out, never before a shift. |
 | **Read-only roles are enforced server-side** | Supervisor and Sponsor tokens are rejected on every write, regardless of the UI. |
 | **Promoters sign in by mobile number** | Either the mobile number (any format, stored canonical as `0…`, unique among active staff) or the legacy app username — same field, same password. |
 | **Custom sales fields are per campaign** | Defined by an admin; day-level or product-level; number / text / yes-no / dropdown. A required one blocks the promoter's submit. Type/scope freeze once values exist; used fields are archived, not deleted. |
