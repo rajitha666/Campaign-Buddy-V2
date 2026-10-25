@@ -23,20 +23,21 @@ Background jobs (`src/jobs/`, cron via `node-cron`): `autoCheckout` (closes open
 
 ## 2. Access control (the one RBAC mechanism)
 
-- Portal roles map to personas in `portal/src/context/AuthContext.jsx`: `adm`/`usr`/`super` → admin, `supervisor`, `sponsor`/`client`. **Writes are `requireRole("adm","usr")`** (55 routes); `adm` alone for a few; read-only roles are enforced **server-side**, regardless of the UI.
-- Every `/admin/v1/campaigns/:campaignId/*` router mounts **`requireCampaignAccess`** (`middleware/campaignAccess.ts`): `adm` bypasses grants; everyone else resolves a `CampaignAccessGrant` (scope `all` or an outlet list). Routes touching outlets also call the outlet guard (`outletIdsAllowed` / `assertOutletAllowed`).
+- Portal roles map to personas in `portal/src/context/AuthContext.jsx`: `adm`/`usr`/`super` → admin, `supervisor`, `sponsor`/`client`. **Writes are `requireRole("adm","usr")`** (55 routes); `adm` alone for five (the city routes). Read-only roles are meant to be enforced **server-side**, not by the UI — but nothing checks automatically that every write route carries `requireRole` (listed in the debt register).
+- Every route under `/admin/v1/campaigns/:campaignId/*` lists **`requireCampaignAccess`** itself, per route (`middleware/campaignAccess.ts`; e.g. `activations.routes.ts`): `adm` bypasses grants; everyone else resolves a `CampaignAccessGrant` (scope `all` or an outlet list). Routes touching outlets also call the outlet guard (`outletIdsAllowed` / `assertOutletAllowed`).
 - **Rule:** a new route is not done until its role, campaign access and outlet scope are explicit and tested (including a 403 for a read-only token and a cross-campaign 404).
 - Mobile uses staff tokens (`staffAuth`); promoters/supervisors act only on their own assignments.
 
 ## 3. Data conventions
 
-**Soft delete (ADR-0002).** Deleting rarely removes a row: `DELETE` sets `deletedAt` (Client, Brand, Item, City, Outlet, DistributorPoint, Campaign, Activation, SupervisorTask, SupervisorRoute), `archivedAt` (SalesRecord, SalesFieldDefinition) or `status: inactive` (Staff). Responses carry `softDeleted: true`.
+**Soft delete (ADR-0002).** Deleting rarely removes a row: `DELETE` sets `deletedAt` (Client, Brand, Item, City, Outlet, DistributorPoint, Campaign, Activation, SupervisorTask, SupervisorRoute), `archivedAt` (SalesRecord, SalesFieldDefinition) or `status: inactive` (Staff). Every entity delete (and restore) response carries `softDeleted: true|false` (14 occurrences, all in `modules/admin`).
 - **Every read of a soft-deletable model must filter the marker** (or check it explicitly right after). `node scripts/agent/soft-delete-lint.mjs` lists reads that don't; 30 were found on 2026-10-25 (tracked in bug #127).
 - **Restore** exists only for sales records today; the pattern to copy is `POST …/:id/restore` (404 if not deleted). Restore endpoints for the rest are story #110.
-- **Hard deletes remain** for `CampaignItem`, `ActivationItem` and `CampaignAccessGrant` (story #111). Several history tables use `ON DELETE CASCADE` (`sales_records`, `attendance_records`, `sales_field_values`, `sales_summaries`, `tracking_pings`, `supervisor_task_responses`) — **a hard delete of a parent can erase recorded history**; treat any new `DELETE`/cascade as a data-loss review item.
+- **Hard deletes remain** for `CampaignItem`, `ActivationItem` and `CampaignAccessGrant` (story #111). Many tables use `ON DELETE CASCADE` — at least `sales_records`, `attendance_records`, `sales_field_values`, `sales_summaries`, `daily_stats`, `tracking_pings`, `leave_requests`, `supervisor_task_responses`, `supervisor_task_photos`, `activation_targets`, plus parent chains (Client→Brand→Item, Campaign→Activation, and Staff→AttendanceRecord/TrackingPing/LeaveRequest; not exhaustive: grep `onDelete: Cascade` in `schema.prisma`). **A hard delete of a parent can erase recorded history** — notably a hard delete of Staff, which is why staff are only deactivated. Treat any new `DELETE`/cascade as a data-loss review item.
 - Unique codes (`outletNo`, `campaignNo`, `employeeId`, `mobileUsername`, `[brandId, sku]`) are unique **including deleted rows**, so a code can't be reused while its record is deleted.
+- Some uniques are **offline-replay idempotency keys**: `[activationId, staffId, date, visitNo]` on attendance and the per-day uniques on `DailyStats`, `SalesSummary` and `SalesRecord` make a replayed queued write an update, not a duplicate. Don't drop or loosen them.
 
-**Dates and time (ADR-0004).** `@db.Date` columns are keyed by the **UTC calendar date at UTC-midnight**; every filter must use a UTC-midnight `Date` (`utils/dates.ts` `dayDate()`). The business day is **Asia/Colombo** (UTC+5:30, no DST): "today" is `colomboYmd()` / `dayDate()`, never `new Date().toISOString()` (which is the UTC day and is wrong 00:00–05:30 Colombo). Portal equivalents: `lib/colomboDay.js`. New `LKR` / `Asia/Colombo` / `+94` literals are discouraged (charter G5) — prefer the campaign's own settings.
+**Dates and time (ADR-0004).** `@db.Date` columns are keyed by the **UTC calendar date at UTC-midnight**; every filter must use a UTC-midnight `Date` (`utils/dates.ts` `dayDate()`). The business day is **Asia/Colombo** (UTC+5:30, no DST): "today" is `colomboYmd()` / `dayDate()`, never `new Date().toISOString()` (which is the UTC day and is wrong 00:00–05:30 Colombo). Portal equivalents: `lib/colomboDay.js`. `Campaign.timezone` exists (default `Asia/Colombo`) but most code still hard-codes the Colombo helpers. New `LKR` / `Asia/Colombo` / `+94` literals are discouraged (charter G5) — prefer the campaign's own settings.
 
 **Responses and paging.** Envelope helpers in `utils/apiResponse.ts` (`ok`, `okList`); lists are paginated (`paginate(req)`); never add an unbounded list endpoint.
 
@@ -44,8 +45,8 @@ Background jobs (`src/jobs/`, cron via `node-cron`): `autoCheckout` (closes open
 
 ## 4. Offline-first and shipped clients
 
-- The mobile app queues field actions while offline (`campaign-buddy-app/src/offline/queue.ts`) and replays them in a fixed order: `checkIn → (stats, salesSummary, productStock) → salesConfirm → checkOut`; transient 5xx/429/401 are retried with backoff (max 8 attempts); only 4xx is a hard failure.
-- **`capturedAt` trust rule (ADR-0003, `utils/clientTime.ts`):** the app sends a client time **only** for queued actions; the server trusts it only if valid, not in the future (2-min skew allowed) and on the **same Colombo day** as now; otherwise it uses server time. A queued write may land on a shift that auto-closed meanwhile if `capturedAt` falls inside the shift window.
+- The mobile app queues field actions while offline (`campaign-buddy-app/src/offline/queue.ts`) and replays them in a fixed order: `checkIn → (stats, salesSummary, productStock) → salesConfirm → checkOut`; `classifyError` (`offline/networkError.ts`) sorts failures: no response → network and 408/429/5xx → retryable (kept queued, backoff, max 8 attempts); **401 → auth (the queue waits for the session to refresh; it is not a verdict on the edit)**; any other status → permanent (the server refused it).
+- **`capturedAt` trust rule (ADR-0003, `utils/clientTime.ts`):** the app sends a client time **only** for queued actions; the server trusts it only if valid, not in the future (2-min skew allowed) and on the **same Colombo day** as now; otherwise it uses server time. Sales writes (stats, product stock, sales summary) pass `requireOpenShift` (`utils/salesGuards.ts`): a shift that closed meanwhile (the rep's check-out or the end-of-day auto-checkout) still accepts a queued write whose `capturedAt` falls inside [check-in, check-out]; otherwise 422 `NOT_CHECKED_IN`.
 - **Old app versions replay old payloads days later**, so the server must keep accepting them. There is **no client-version gate yet (charter G2)** — an API request/response change needs an explicit compatibility path (additive fields, tolerate old shapes) and a note in the PR.
 - Native modules (AsyncStorage, NetInfo, expo-background-task, expo-task-manager) mean an app change that adds one needs a native rebuild and a device-test entry (`docs/physical-device-tests.md`).
 
@@ -87,6 +88,7 @@ Mobile: small payloads, compressed photos, few dependencies (charter §4.1-3).
 | Locale literals (~30 files) | §3 | charter G5 |
 | Dashboard totals computed client-side from all rows | §5 | #114 |
 | Privacy lifecycle (retention/deletion/audit) undocumented | §6 | charter G7 |
+| No automated check that every write route carries `requireRole` / campaign access | §2 | none yet |
 | Backups/monitoring/restore drills unverified | §8 | charter G9 |
 
 ## 10. Decision records
