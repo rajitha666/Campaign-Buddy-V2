@@ -136,7 +136,7 @@ router.get(
   "/campaigns/:campaignId/items",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, item: { deletedAt: null } }, include: { item: true } });
+    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, deletedAt: null, item: { deletedAt: null } }, include: { item: true } });
     res.json(okList(rows, rows.length));
   })
 );
@@ -157,7 +157,7 @@ router.post(
           prisma.campaignItem.upsert({
             where: { campaignId_itemId: { campaignId, itemId: id } },
             create: { campaignId, itemId: id },
-            update: {},
+            update: { deletedAt: null },
           })
         )
       );
@@ -174,9 +174,13 @@ router.post(
     }
 
     const resolvedItemId = itemId ?? (await prisma.item.create({ data: newItem })).id;
-    const created = await prisma.campaignItem.create({
-      data: { campaignId, itemId: resolvedItemId },
+    // A previously removed product is revived (same row) rather than colliding on the unique key.
+    const removed = await prisma.campaignItem.findFirst({
+      where: { campaignId, itemId: resolvedItemId, deletedAt: { not: null } },
     });
+    const created = removed
+      ? await prisma.campaignItem.update({ where: { id: removed.id }, data: { deletedAt: null } })
+      : await prisma.campaignItem.create({ data: { campaignId, itemId: resolvedItemId } });
     // #43 — backfill: item assigned to the campaign after activations exist
     // must still reach the promoters; previously only future activations saw it.
     await prisma.activationItem.createMany({
@@ -195,12 +199,30 @@ router.delete(
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
     const row = await prisma.campaignItem.findFirst({
-      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId },
+      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId, deletedAt: null },
       select: { id: true },
     });
     if (!row) throw notFound("Campaign item");
-    await prisma.campaignItem.delete({ where: { id: row.id } });
+    // #111: soft delete — activation items and their sales are untouched; the
+    // product just stops being offered. Restoring brings back exactly what was there.
+    await prisma.campaignItem.update({ where: { id: row.id }, data: { deletedAt: new Date() } });
     res.status(204).send();
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/items/:campaignItemId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const row = await prisma.campaignItem.findFirst({
+      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId, deletedAt: { not: null } },
+      include: { item: true },
+    });
+    if (!row) throw notFound("Campaign item");
+    if (row.item.deletedAt) throw new ApiError(409, "PARENT_DELETED", "Restore the product in the catalogue first");
+    const restored = await prisma.campaignItem.update({ where: { id: row.id }, data: { deletedAt: null } });
+    res.json(ok(restored));
   })
 );
 

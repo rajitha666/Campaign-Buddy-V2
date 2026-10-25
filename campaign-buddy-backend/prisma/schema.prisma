@@ -447,6 +447,8 @@ model CampaignItem {
   campaignId String
   itemId     String
   addedAt    DateTime @default(now())
+  // #111: soft delete — a removed product keeps its row (and sales history).
+  deletedAt  DateTime?
 
   campaign        Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   item            Item             @relation(fields: [itemId], references: [id])
@@ -507,6 +509,8 @@ model ActivationItem {
   activationId   String
   campaignItemId String
   addedAt        DateTime @default(now())
+  // #111: soft delete — a removed product keeps its row (and sales history).
+  deletedAt      DateTime?
 
   activation       Activation        @relation(fields: [activationId], references: [id], onDelete: Cascade)
   campaignItem     CampaignItem      @relation(fields: [campaignItemId], references: [id])
