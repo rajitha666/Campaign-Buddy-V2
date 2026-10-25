@@ -275,3 +275,31 @@ describe("access-grant removal is reversible (#111)", () => {
     expect(del.body.data.outletIds).toHaveLength(2);
   });
 });
+
+describe("edge cases (#111)", () => {
+  it("adding a product that is already live in the campaign is still 409 DUPLICATE", async () => {
+    const { campaign, item } = await makeCampaignWithActivation();
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/items`)
+      .set("Authorization", `Bearer ${await adminToken()}`)
+      .send({ itemId: item.id });
+    expect(res.status).toBe(409);
+  });
+
+  it("portal sales POST: a day before the removal can be backfilled, the removal day cannot", async () => {
+    const { campaign, activationItem } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await adminToken()}` };
+    await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: new Date() } });
+    const post = (date: string) =>
+      request(app)
+        .post(`/admin/v1/campaigns/${campaign.id}/sales`)
+        .set(auth)
+        .send({ activationItemId: activationItem.id, date, openingStock: 5, soldToday: 1 });
+    const today = dayDate();
+    const yesterday = new Date(today.getTime() - 86400000).toISOString().slice(0, 10);
+    expect((await post(yesterday)).status).toBe(201);
+    const res = await post(today.toISOString().slice(0, 10));
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("PRODUCT_REMOVED");
+  });
+});
