@@ -225,3 +225,30 @@ describe("restore keeps the delete's access rules (#110)", () => {
     expect((await prisma.activation.findUniqueOrThrow({ where: { id: activation.id } })).deletedAt).not.toBeNull();
   });
 });
+
+describe("restore roles and deleted campaigns (#110)", () => {
+  async function login(username: string, roleId: string) {
+    const bcrypt = (await import("bcrypt")).default;
+    const u = await prisma.user.create({ data: { username, passwordHash: await bcrypt.hash("pw", 4), displayName: username, roleId } });
+    const token = (await request(app).post(`${A}/auth/login`).send({ username, password: "pw" })).body.data.accessToken;
+    return { u, h: { Authorization: `Bearer ${token}` } };
+  }
+
+  it("a sponsor token cannot restore (403)", async () => {
+    const { campaign } = await makeCampaignWithActivation();
+    await prisma.campaign.update({ where: { id: campaign.id }, data: { deletedAt: new Date() } });
+    const sp = await login("sponsor1", "sponsor");
+    await prisma.campaignAccessGrant.create({ data: { userId: sp.u.id, campaignId: campaign.id, scopeType: "all", outletIds: [] } });
+    expect((await request(app).post(`${A}/campaigns/${campaign.id}/restore`).set(sp.h)).status).toBe(403);
+  });
+
+  it("a usr who holds a grant can restore a deleted campaign", async () => {
+    const { campaign } = await makeCampaignWithActivation();
+    await prisma.campaign.update({ where: { id: campaign.id }, data: { deletedAt: new Date() } });
+    const usr = await login("usr9", "usr");
+    await prisma.campaignAccessGrant.create({ data: { userId: usr.u.id, campaignId: campaign.id, scopeType: "all", outletIds: [] } });
+    const res = await request(app).post(`${A}/campaigns/${campaign.id}/restore`).set(usr.h);
+    expect(res.status).toBe(200);
+    expect(res.body.data.deletedAt).toBeNull();
+  });
+});
