@@ -113,6 +113,17 @@ jobs:
           node-version: "20"
       - run: npm test
 
+  agent-toolkit:
+    name: Agent toolkit (unit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Zero-dependency helper scripts used by the agent team (review-brief, doc-section, quiet-run, lints, claims-seed).
+      - run: node --test scripts/agent/test/*.test.mjs
+
   portal-e2e:
     name: Portal e2e (Playwright)
     runs-on: ubuntu-latest
