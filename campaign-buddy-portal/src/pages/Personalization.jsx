@@ -1,3 +1,4 @@
+import { useToast } from '../context/ToastContext';
 import { useMemo } from 'react';
 import { NAV } from '../config/nav';
 import { useAuth } from '../context/AuthContext';
@@ -53,13 +54,18 @@ function FavoritesSection() {
 const SECTIONS = [FavoritesSection];
 
 export default function Personalization() {
-  const { loaded, update } = usePreferences();
+  const { loaded, prefs, update } = usePreferences();
+  const { push } = useToast();
 
   if (!loaded) return <Loader label="Loading your preferences…" />;
 
+  // Fully reversible, so no "are you sure?": reset now, and offer Undo for a few seconds.
   function resetAll() {
-    if (!window.confirm('Reset all your personalization to the defaults?')) return;
+    const before = Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, prefs[k] ?? null]));
     update(Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, null])));
+    push('Personalization reset to the defaults', 'default', {
+      action: { label: 'Undo', onClick: () => update(before) },
+    });
   }
 
   return (

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
@@ -36,6 +37,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <ConfirmProvider>
           <PreferencesProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -106,6 +108,7 @@ export default function App() {
             </Route>
           </Routes>
           </PreferencesProvider>
+          </ConfirmProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

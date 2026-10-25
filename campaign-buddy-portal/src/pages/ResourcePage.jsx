@@ -9,6 +9,7 @@ import ErrorState from '../components/ErrorState';
 import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
@@ -21,6 +22,7 @@ export default function ResourcePage({ resourceKey }) {
   const config = RESOURCES[resourceKey];
   const { currentCampaignId, currentCampaign, isAdmin, designationLabel } = useAuth();
   const { push } = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
@@ -163,7 +165,14 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
-      if (!window.confirm('Remove this record?')) return;
+      const name = row.name || row.displayName || row.fullName || row.label;
+      const ok = await confirm({
+        title: name ? `Remove "${name}"?` : 'Remove this record?',
+        message: "This removes it from the list. It can't be undone from here.",
+        confirmLabel: 'Remove',
+        tone: 'danger',
+      });
+      if (!ok) return;
       try {
         const result = await config.deleteItem({ campaignId, id: row.id });
         push('Removed');
