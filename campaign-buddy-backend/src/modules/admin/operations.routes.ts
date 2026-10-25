@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, okList, notFound, validationError } from "../../utils/apiResponse";
+import { liveActivationItem } from "../../utils/liveItems";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { dayDate, dayBounds } from "../../utils/dates";
@@ -107,10 +108,13 @@ router.post(
     const { activationItemId, date, openingStock, soldToday, otherInterestedCustomers, reorderFlag } = req.body;
     const item = await prisma.activationItem.findUnique({
       where: { id: activationItemId },
-      include: { activation: true },
+      include: { activation: true, campaignItem: { select: { deletedAt: true } } },
     });
     if (!item || item.activation.campaignId !== req.params.campaignId) throw notFound("Activation product");
     assertOutletAllowed(req, item.activation.outletId);
+    if (item.deletedAt || item.campaignItem.deletedAt) {
+      throw new ApiError(409, "PRODUCT_REMOVED", "This product was removed from the activation");
+    }
     if (soldToday > openingStock) throw validationError("soldToday cannot exceed openingStock", "soldToday");
 
     try {
@@ -229,7 +233,8 @@ router.get(
     assertOutletAllowed(req, activation.outletId);
     const [activationItems, salesDefs] = await Promise.all([
       prisma.activationItem.findMany({
-        where: { activationId: activation.id },
+        // live products, plus removed ones that already have a record that day (history stays editable)
+        where: { activationId: activation.id, OR: [liveActivationItem, { salesRecords: { some: { date: when } } }] },
         include: {
           campaignItem: { include: { item: true } },
           salesRecords: { where: { date: when } },

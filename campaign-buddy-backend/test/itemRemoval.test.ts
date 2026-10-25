@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
 import { dayDate } from "../src/utils/dates";
-import { app, resetDb, adminToken, makeCampaignWithActivation } from "./helpers";
+import { app, resetDb, adminToken, staffToken, makeCampaignWithActivation } from "./helpers";
 
 beforeEach(resetDb);
 
@@ -135,5 +135,68 @@ describe("item removal is soft and reversible (#111)", () => {
       .set("Authorization", `Bearer ${await adminToken()}`)
       .send({ campaignItemId: b.campaignItem.id });
     expect(res.status).toBe(404);
+  });
+});
+
+// Mobile: a removed product leaves the promoter's list; a sale recorded from a
+// cached (offline) list on the day of removal is still accepted, a later one is
+// refused with a clear message instead of a bare 404.
+describe("removed products on the mobile app (#111)", () => {
+  async function checkedIn() {
+    const ctx = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await staffToken(ctx.staff.mobileUsername, "field-pw")}` };
+    const geo = { latitude: ctx.outlet.latitude, longitude: ctx.outlet.longitude };
+    await request(app).post("/v1/attendance/check-in").set(auth).send(geo).expect(201);
+    return { ...ctx, auth };
+  }
+  const stock = (auth: Record<string, string>, id: string) =>
+    request(app).patch(`/v1/products/${id}/stock`).set(auth).send({ openingStock: 10, soldToday: 2 });
+
+  it("product list omits an activation item or campaign item that was removed", async () => {
+    const { auth, campaign, outlet, activationItem, campaignItem } = await checkedIn();
+    const list = () =>
+      request(app).get(`/v1/campaigns/${campaign.id}/outlets/${outlet.id}/products`).set(auth);
+    expect((await list()).body.data).toHaveLength(1);
+    await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: new Date() } });
+    expect((await list()).body.data).toHaveLength(0);
+    await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: null } });
+    await prisma.campaignItem.update({ where: { id: campaignItem.id }, data: { deletedAt: new Date() } });
+    expect((await list()).body.data).toHaveLength(0);
+  });
+
+  it("accepts a stock write for a product removed earlier the same day", async () => {
+    const { auth, activationItem } = await checkedIn();
+    await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: new Date() } });
+    expect((await stock(auth, activationItem.id)).status).toBe(200);
+  });
+
+  it("refuses a stock write for a product removed on an earlier day with PRODUCT_REMOVED", async () => {
+    const { auth, activationItem } = await checkedIn();
+    await prisma.activationItem.update({
+      where: { id: activationItem.id },
+      data: { deletedAt: new Date(Date.now() - 2 * 86400000) },
+    });
+    const res = await stock(auth, activationItem.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("PRODUCT_REMOVED");
+  });
+});
+
+// History is not rewritten: a product removed after it sold keeps counting in reports.
+describe("sales totals are unchanged by removing a product (#111)", () => {
+  it("sku-wise report is identical before and after the activation item and campaign item are removed", async () => {
+    const { campaign, campaignItem, activationItem } = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await adminToken()}` };
+    await prisma.salesRecord.create({
+      data: { activationItemId: activationItem.id, date: dayDate(), openingStock: 10, soldToday: 6 },
+    });
+    const report = async () =>
+      (await request(app).get(`/admin/v1/campaigns/${campaign.id}/reports/sku-wise`).set(auth)).body;
+    const before = await report();
+    expect(JSON.stringify(before)).toContain("6");
+
+    await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: new Date() } });
+    await prisma.campaignItem.update({ where: { id: campaignItem.id }, data: { deletedAt: new Date() } });
+    expect(await report()).toEqual(before);
   });
 });
