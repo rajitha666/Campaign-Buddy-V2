@@ -65,6 +65,7 @@ cd campaign-buddy-portal  && npm test   # vitest unit
 cd campaign-buddy-app     && npm test   # vitest unit
 cd campaign-buddy-mcp     && npm test   # vitest, in-memory MCP + fake backend (no DB needed)
 cd product-owner-agent    && npm test   # node:test, pure logic (no network)
+node --test scripts/agent/test/*.test.mjs   # agent toolkit (review-brief, doc-section, quiet-run logic)
 ```
 
 ## Follow minimal TDD for all changes
