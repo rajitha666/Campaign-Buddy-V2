@@ -72,6 +72,15 @@
     "DELETE /campaigns/:campaignId/admins/:userId": {
       "excluded": "Deletes are never exposed to an LLM."
     },
+    "POST /campaigns/:campaignId/admins/:userId/restore": {
+      "excluded": "Restores (undo of deletes) are not exposed to an LLM."
+    },
+    "POST /campaigns/:campaignId/items/:campaignItemId/restore": {
+      "excluded": "Restores (undo of deletes) are not exposed to an LLM."
+    },
+    "POST /campaigns/:campaignId/activations/:activationId/items/:activationItemId/restore": {
+      "excluded": "Restores (undo of deletes) are not exposed to an LLM."
+    },
     "GET /clients": {
       "tool": "lookup_catalog"
     },
