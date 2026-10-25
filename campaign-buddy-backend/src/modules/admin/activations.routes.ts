@@ -5,6 +5,7 @@ import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { coerceDates } from "../../utils/coerce";
+import { liveActivationItem } from "../../utils/liveItems";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { computeTargetProgress } from "./targetProgress";
@@ -80,7 +81,7 @@ router.post(
       // to start with zero ActivationItems and the promoter's Products screen
       // was empty until every row was hand-created; the Activation Items screen
       // still trims this default down to the actual subset.
-      const campaignItems = await tx.campaignItem.findMany({ where: { campaignId: req.params.campaignId }, select: { id: true } });
+      const campaignItems = await tx.campaignItem.findMany({ where: { campaignId: req.params.campaignId, deletedAt: null }, select: { id: true } });
       if (campaignItems.length) {
         await tx.activationItem.createMany({
           data: campaignItems.map((ci) => ({ activationId: activation.id, campaignItemId: ci.id })),
@@ -100,7 +101,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const activation = await prisma.activation.findUnique({
       where: { id: req.params.activationId },
-      include: { outlet: true, staff: true, supervisor: true, activationItems: true },
+      include: { outlet: true, staff: true, supervisor: true, activationItems: { where: liveActivationItem } },
     });
     if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
@@ -146,7 +147,7 @@ router.get(
     if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     const rows = await prisma.activationItem.findMany({
-      where: { activationId: req.params.activationId, campaignItem: { item: { deletedAt: null } } },
+      where: { activationId: req.params.activationId, ...liveActivationItem },
       include: { campaignItem: { include: { item: { include: { brand: true } } } } },
     });
     res.json(okList(rows, rows.length));
@@ -165,7 +166,7 @@ router.post(
     // Resolve the set of campaignItemIds to attach, from any of the accepted shapes.
     let ids: string[];
     if (body.addAll) {
-      ids = (await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId }, select: { id: true } })).map((c) => c.id);
+      ids = (await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, deletedAt: null }, select: { id: true } })).map((c) => c.id);
     } else if (Array.isArray(body.campaignItemIds)) {
       ids = body.campaignItemIds;
     } else if (body.campaignItemId) {
@@ -174,13 +175,20 @@ router.post(
       throw new ApiError(400, "VALIDATION_ERROR", "campaignItemId, campaignItemIds or addAll is required");
     }
 
-    // Idempotent — re-attaching an already-linked item is a no-op, not a 409.
+    // Only live products of THIS campaign can be attached.
+    const owned = await prisma.campaignItem.count({
+      where: { id: { in: ids }, campaignId: req.params.campaignId, deletedAt: null },
+    });
+    if (owned !== new Set(ids).size) throw notFound("Campaign item");
+
+    // Idempotent — re-attaching an already-linked item is a no-op, not a 409;
+    // a previously removed one is revived (same row, so its sales history re-attaches).
     const created = await prisma.$transaction(
       ids.map((campaignItemId) =>
         prisma.activationItem.upsert({
           where: { activationId_campaignItemId: { activationId, campaignItemId } },
           create: { activationId, campaignItemId },
-          update: {},
+          update: { deletedAt: null },
         })
       )
     );
@@ -193,8 +201,44 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.activationItem.delete({ where: { id: req.params.activationItemId } });
+    const row = await prisma.activationItem.findFirst({
+      where: {
+        id: req.params.activationItemId,
+        activationId: req.params.activationId,
+        deletedAt: null,
+        activation: { campaignId: req.params.campaignId, deletedAt: null },
+      },
+      select: { id: true, activation: { select: { outletId: true } } },
+    });
+    if (!row) throw notFound("Activation item");
+    assertOutletAllowed(req, row.activation.outletId);
+    // #111: soft delete — recorded sales stay, and the removal can be undone.
+    await prisma.activationItem.update({ where: { id: row.id }, data: { deletedAt: new Date() } });
     res.status(204).send();
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/activations/:activationId/items/:activationItemId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const row = await prisma.activationItem.findFirst({
+      where: {
+        id: req.params.activationItemId,
+        activationId: req.params.activationId,
+        deletedAt: { not: null },
+        activation: { campaignId: req.params.campaignId },
+      },
+      include: { activation: true, campaignItem: { include: { item: true } } },
+    });
+    if (!row) throw notFound("Activation item");
+    assertOutletAllowed(req, row.activation.outletId);
+    if (row.activation.deletedAt || row.campaignItem.deletedAt || row.campaignItem.item.deletedAt) {
+      throw new ApiError(409, "PARENT_DELETED", "Restore the activation and the product first");
+    }
+    const restored = await prisma.activationItem.update({ where: { id: row.id }, data: { deletedAt: null } });
+    res.json(ok(restored));
   })
 );
 
@@ -234,7 +278,7 @@ router.post(
 
     if (targetBrandId) {
       const brandOnActivation = await prisma.activationItem.findFirst({
-        where: { activationId: req.params.activationId, campaignItem: { item: { brandId: targetBrandId as string } } },
+        where: { activationId: req.params.activationId, ...liveActivationItem, campaignItem: { deletedAt: null, item: { deletedAt: null, brandId: targetBrandId as string } } },
       });
       if (!brandOnActivation) {
         throw new ApiError(400, "VALIDATION_ERROR", "targetBrandId has no items on this activation");

@@ -207,7 +207,7 @@ router.put(
     const itemIds = Object.keys(products ?? {});
     if (itemIds.length) {
       const validItems = await prisma.activationItem.findMany({
-        where: { id: { in: itemIds }, activationId },
+        where: { id: { in: itemIds }, activationId, deletedAt: null, campaignItem: { deletedAt: null } },
         select: { id: true },
       });
       const validItemIds = new Set(validItems.map((i) => i.id));

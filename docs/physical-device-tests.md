@@ -44,6 +44,8 @@ native modules. Only the web flows were verified end-to-end; these were not.
 - [ ] **Logout warning** appears when changes are unsynced; they are sent at the next sign-in on that phone.
 - [ ] **Inactivity sign-out** flushes the queue first.
 
+- [ ] **Product removed while offline (#111):** with the app offline, record a sale for a product; have head office remove that product from the activation; reconnect the same day: the sale syncs. The next day a queued write for that product fails with the "removed by head office" message and the rest of the queue still syncs.
+
 ---
 
 ## Adding to this list
