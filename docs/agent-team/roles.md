@@ -36,6 +36,17 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 
 `0 Intake` → `1 Design` → **Gate A** → `2 Build` → `3 Review` → **Gate B (merge)** → `4 Docs` → **Gate C** → `5 Marketing (major only)` → **Gate D** → `6 Close`.
 
+## Knowledge base each role works from
+
+| Doc | Owner role | Holds |
+|---|---|---|
+| `docs/product-charter.md` (digest: `docs/agent-team/charter-digest.md`) | Product Owner | true north, non-negotiables, gaps, what blocks (edited only by the owner) |
+| `docs/architecture.md` + `docs/adr/` | Technical Architect | system map, access control, data conventions (soft delete, dates), offline/shipped-client rules, budgets, tech-debt register, decision records |
+| `docs/portal-design.md` | UX/UI Architect | tokens, layout/responsive rules, components, patterns, accessibility checklist, copy rules, known deviations |
+| `marketing/CLAIMS.md` | Marketing writer | the strict claims ledger (section rows seeded by `claims-seed.mjs`) |
+| `docs/agent-team/autonomy.yml` | owner | gate settings, risky/major definitions, token-guard thresholds, review budgets |
+| `docs/physical-device-tests.md` | QA verifier | device-only checks for pre-release testing |
+
 ## Efficiency toolkit (zero-token tools in `scripts/agent/`)
 
 | Command | Use | Instead of |

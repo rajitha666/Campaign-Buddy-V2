@@ -25,7 +25,7 @@ Do **not** paste the diff or whole files. Then run `product-owner` last (full mo
 When the brief shows them, give reviewers the matching leads first: migration flags → `migration-lint`; backend reads → `soft-delete-lint`; UI changes → bring up `fresh-stack`, run `shoot` on the changed routes and pass the screenshot paths to `ux-ui-architect`; removed labels → `stale-wording`; major change → `claim-impact` for marketing. Tear the stack down afterwards.
 
 ## 4. Consolidate (short)
-Reply with: one line per role (verdict + one-sentence TL;DR), then the **required changes** merged and de-duplicated, then **needs owner decision**, then which **owner gate** is next (design A / merge B / docs C / marketing D) per the autonomy settings. Under 250 words unless something is blocked. Never apply `po-override`; never edit the charter.
+Reply with: one line per role (verdict + one-sentence TL;DR), then the **required changes** merged and de-duplicated, then **needs owner decision**, then which **owner gate** is next (design A / merge B / docs C / marketing D) per `docs/agent-team/autonomy.yml`. Under 250 words unless something is blocked. Never apply `po-override`; never edit the charter.
 
 ## 5. Automatic checks (always, any mode)
 `node scripts/agent/quiet-run.mjs --cwd <package> -- <test command>` for each package touched (portal `npx vitest run`, app `npm test` + `npm run typecheck`, backend `npm test`, MCP `npm test`); e2e through `node scripts/agent/fresh-stack.mjs up` then `quiet-run … npx playwright test`, then `fresh-stack down`. Report counts only.
