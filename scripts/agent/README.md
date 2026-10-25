@@ -14,6 +14,7 @@ Usage and rules: `docs/agent-team/roles.md` → "Efficiency toolkit".
 | `stale-wording.mjs` | UI labels a change removed that docs/guides/marketing still mention |
 | `claim-impact.mjs` | marketing lines that mention given feature keywords (ledger first once `marketing/CLAIMS.md` exists) |
 | `shoot.mjs` | screenshots + accessibility/layout checks at several widths (uses the portal's Playwright; run against `fresh-stack`). Windows Git Bash: pass routes without a leading slash |
+| `claims-seed.mjs` | seed / re-sync `marketing/CLAIMS.md` from the marketing pages' headings without losing recorded status or evidence |
 | `lib/` | pure logic, unit-tested in `test/` (`node --test scripts/agent/test/*.test.mjs`) |
 
 Red flags are heuristics ("verify before reporting"), not verdicts.
