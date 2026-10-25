@@ -37,6 +37,29 @@ test("a deleted city is listed with who deleted it, and Restore puts it back", a
   await expect(page.locator("table tbody tr", { hasText: name })).toBeVisible();
 });
 
+test("on a phone the list becomes cards and Restore is still reachable", async ({ page }) => {
+  const name = `E2E Phone Deleted ${Date.now()}`;
+  await page.setViewportSize({ width: 375, height: 800 });
+  await loginAs(page, "admin");
+  const { token, id } = await createCity(page, name);
+  await page.request.delete(`/admin/v1/cities/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  await page.goto("/recently-deleted");
+  await page.getByLabel("Search deleted records").fill(name);
+  const card = page.locator(".data-card", { hasText: name });
+  await expect(card).toBeVisible();
+  await expect(page.locator(".table-scroll")).toBeHidden();
+  await card.getByRole("button", { name: `Restore ${name}` }).click();
+  await expect(page.locator(".toast", { hasText: `Restored "${name}"` })).toBeVisible();
+});
+
+test("an empty search explains itself and offers the way out", async ({ page }) => {
+  await loginAs(page, "admin");
+  await page.goto("/recently-deleted");
+  await page.getByLabel("Search deleted records").fill(`zzz-no-such-record-${Date.now()}`);
+  await expect(page.getByText("No matches")).toBeVisible();
+  await expect(page.getByText("Clear the search or the type filter")).toBeVisible();
+});
+
 test("supervisors do not get the menu item and the API refuses them", async ({ page }) => {
   await loginAs(page, "supervisor");
   await expect(page.getByRole("link", { name: "Recently deleted" })).toHaveCount(0);

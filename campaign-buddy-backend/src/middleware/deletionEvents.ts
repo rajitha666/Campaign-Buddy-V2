@@ -11,21 +11,21 @@ type Rule = { re: RegExp; entityType: string; campaignGroup?: number; idGroup: n
 // Order matters only in that every pattern is fully anchored.
 const SEG = "([^/]+)";
 const RULES: Rule[] = [
-  { re: new RegExp(`^/clients/${SEG}$`), entityType: "client", idGroup: 1 },
-  { re: new RegExp(`^/brands/${SEG}$`), entityType: "brand", idGroup: 1 },
-  { re: new RegExp(`^/items/${SEG}$`), entityType: "item", idGroup: 1 },
-  { re: new RegExp(`^/cities/${SEG}$`), entityType: "city", idGroup: 1 },
-  { re: new RegExp(`^/outlets/${SEG}$`), entityType: "outlet", idGroup: 1 },
-  { re: new RegExp(`^/distributor-points/${SEG}$`), entityType: "distributor_point", idGroup: 1 },
-  { re: new RegExp(`^/staff/${SEG}$`), entityType: "staff", idGroup: 1 },
-  { re: new RegExp(`^/campaigns/${SEG}$`), entityType: "campaign", idGroup: 1, campaignGroup: 1 },
-  { re: new RegExp(`^/campaigns/${SEG}/items/${SEG}$`), entityType: "campaign_item", campaignGroup: 1, idGroup: 2 },
-  { re: new RegExp(`^/campaigns/${SEG}/activations/${SEG}$`), entityType: "activation", campaignGroup: 1, idGroup: 2 },
-  { re: new RegExp(`^/campaigns/${SEG}/activations/${SEG}/items/${SEG}$`), entityType: "activation_item", campaignGroup: 1, idGroup: 3 },
-  { re: new RegExp(`^/campaigns/${SEG}/supervisor-routes/${SEG}$`), entityType: "supervisor_route", campaignGroup: 1, idGroup: 2 },
-  { re: new RegExp(`^/campaigns/${SEG}/supervisor-tasks/${SEG}$`), entityType: "supervisor_task", campaignGroup: 1, idGroup: 2 },
-  { re: new RegExp(`^/campaigns/${SEG}/sales-fields/${SEG}$`), entityType: "sales_field", campaignGroup: 1, idGroup: 2 },
-  { re: new RegExp(`^/campaigns/${SEG}/sales/${SEG}$`), entityType: "sales_record", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/clients/${SEG}$`, "i"), entityType: "client", idGroup: 1 },
+  { re: new RegExp(`^/brands/${SEG}$`, "i"), entityType: "brand", idGroup: 1 },
+  { re: new RegExp(`^/items/${SEG}$`, "i"), entityType: "item", idGroup: 1 },
+  { re: new RegExp(`^/cities/${SEG}$`, "i"), entityType: "city", idGroup: 1 },
+  { re: new RegExp(`^/outlets/${SEG}$`, "i"), entityType: "outlet", idGroup: 1 },
+  { re: new RegExp(`^/distributor-points/${SEG}$`, "i"), entityType: "distributor_point", idGroup: 1 },
+  { re: new RegExp(`^/staff/${SEG}$`, "i"), entityType: "staff", idGroup: 1 },
+  { re: new RegExp(`^/campaigns/${SEG}$`, "i"), entityType: "campaign", idGroup: 1, campaignGroup: 1 },
+  { re: new RegExp(`^/campaigns/${SEG}/items/${SEG}$`, "i"), entityType: "campaign_item", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/campaigns/${SEG}/activations/${SEG}$`, "i"), entityType: "activation", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/campaigns/${SEG}/activations/${SEG}/items/${SEG}$`, "i"), entityType: "activation_item", campaignGroup: 1, idGroup: 3 },
+  { re: new RegExp(`^/campaigns/${SEG}/supervisor-routes/${SEG}$`, "i"), entityType: "supervisor_route", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/campaigns/${SEG}/supervisor-tasks/${SEG}$`, "i"), entityType: "supervisor_task", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/campaigns/${SEG}/sales-fields/${SEG}$`, "i"), entityType: "sales_field", campaignGroup: 1, idGroup: 2 },
+  { re: new RegExp(`^/campaigns/${SEG}/sales/${SEG}$`, "i"), entityType: "sales_record", campaignGroup: 1, idGroup: 2 },
 ];
 
 export function classifyRequest(method: string, path: string):
@@ -44,12 +44,16 @@ export function classifyRequest(method: string, path: string):
   for (const r of RULES) {
     const m = r.re.exec(base);
     if (!m) continue;
-    return {
-      entityType: r.entityType,
-      entityId: decodeURIComponent(m[r.idGroup]),
-      campaignId: r.campaignGroup ? decodeURIComponent(m[r.campaignGroup]) : null,
-      action,
-    };
+    try {
+      return {
+        entityType: r.entityType,
+        entityId: decodeURIComponent(m[r.idGroup]),
+        campaignId: r.campaignGroup ? decodeURIComponent(m[r.campaignGroup]) : null,
+        action,
+      };
+    } catch {
+      return null; // malformed %-escape: let the route answer it, just don't record
+    }
   }
   return null;
 }
@@ -59,9 +63,19 @@ export function recordDeletionEvents(req: Request, res: Response, next: NextFunc
   if (hit) {
     res.on("finish", () => {
       if (res.statusCode < 200 || res.statusCode >= 300 || !req.user) return;
-      prisma.deletionEvent
-        .create({ data: { ...hit, userId: req.user.sub } })
-        .catch((err) => console.error("[deletion-events] could not record", hit, err?.message));
+      const userId = req.user.sub;
+      (async () => {
+        // A repeated delete of something already deleted (e.g. staff, whose DELETE is idempotent)
+        // must not overwrite who/when of the real one.
+        if (hit.action === "delete") {
+          const last = await prisma.deletionEvent.findFirst({
+            where: { entityType: hit.entityType, entityId: hit.entityId },
+            orderBy: { at: "desc" },
+          });
+          if (last?.action === "delete") return;
+        }
+        await prisma.deletionEvent.create({ data: { ...hit, userId } });
+      })().catch((err) => console.error("[deletion-events] could not record", hit, err?.message));
     });
   }
   next();

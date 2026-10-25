@@ -16,6 +16,15 @@ async function login(username: string, roleId: string) {
   const token = (await request(app).post(`${A}/auth/login`).send({ username, password: "pw" })).body.data.accessToken;
   return { u, h: { Authorization: `Bearer ${token}` } };
 }
+// Events are written right after the response finishes (fire-and-forget), so wait for them.
+async function eventsReach(n: number, ms = 3000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if ((await prisma.deletionEvent.count()) >= n) return;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error(`expected ${n} deletion events`);
+}
 const adminUser = () => prisma.user.findFirstOrThrow({ where: { username: "admin" } });
 
 describe("deletion events (#113)", () => {
@@ -27,6 +36,7 @@ describe("deletion events (#113)", () => {
 
     await request(app).delete(`${A}/cities/${city.id}`).set(h).expect(200);
     await request(app).post(`${A}/cities/${city.id}/restore`).set(h).expect(200);
+    await eventsReach(2);
     const events = await prisma.deletionEvent.findMany({ orderBy: { at: "asc" } });
     const adminId = (await adminUser()).id;
     expect(events.map((e) => [e.entityType, e.entityId, e.action, e.userId])).toEqual([
@@ -42,6 +52,7 @@ describe("deletion events (#113)", () => {
     const staff = await makeStaff();
     await request(app).delete(`${A}/staff/${staff.id}`).set(h).expect(200);
     await request(app).post(`${A}/staff/${staff.id}/reactivate`).set(h).expect(200);
+    await eventsReach(3);
     const ev = await prisma.deletionEvent.findMany({ orderBy: { at: "asc" } });
     expect(ev.map((e) => `${e.entityType}:${e.action}`)).toEqual(["activation:delete", "staff:delete", "staff:restore"]);
     expect(ev[0].campaignId).toBe(campaign.id);
@@ -56,6 +67,7 @@ describe("GET /deleted (#113)", () => {
       data: { name: "Old", province: "C", district: "Kandy", deletedAt: new Date(Date.now() - 86400000) },
     });
     await request(app).delete(`${A}/cities/${city.id}`).set(h).expect(200);
+    await eventsReach(1);
 
     const res = await request(app).get(`${A}/deleted?entity=city`).set(h);
     expect(res.status).toBe(200);
@@ -117,6 +129,7 @@ describe("GET /campaigns/:id/deleted (#113)", () => {
     await request(app).delete(`${A}/campaigns/${campaign.id}/activations/${activation.id}/items/${activationItem.id}`).set(h).expect(204);
     await request(app).delete(`${A}/campaigns/${campaign.id}/items/${campaignItem.id}`).set(h).expect(204);
     await request(app).delete(`${A}/campaigns/${campaign.id}/activations/${activation.id}`).set(h).expect(200);
+    await eventsReach(3);
 
     const res = await request(app).get(`${A}/campaigns/${campaign.id}/deleted`).set(h);
     expect(res.status).toBe(200);

@@ -15,6 +15,7 @@ Deletes are soft (ADR-0002) and now reversible (#110, #111, #112), but nothing r
 ## Consequences
 - "Recently deleted" (`GET /deleted`, `GET /campaigns/:id/deleted`) lists current soft-deleted rows and joins the latest delete event for "deleted by"; rows deleted before this change show no deleter.
 - Deleting a campaign access grant (a hard delete) and the mobile-side un-archive of a sales record are not recorded yet; a later audit-log story (#138) extends the same table.
+- Known limits: an event is lost if the client aborts before the response finishes; staff set inactive through an *edit* (not Delete) appear in Recently deleted with no time or deleter; each type lists at most 500 deleted rows (older ones are not reachable from the screen, and the total is capped); a repeated Delete of something already deleted does not overwrite who/when.
 - Storage grows without bound but slowly (small sets per agency). Revisit if a deployment's `deletion_events` or soft-deleted tables get large.
 
 ## Alternatives considered
