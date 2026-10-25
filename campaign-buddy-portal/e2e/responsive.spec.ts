@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAs } from "./support/auth";
+import { loginAs, openNavSection } from "./support/auth";
 
 // Covers the phone/tablet layout added for touch use: the off-canvas nav
 // drawer (phones), the tap-to-open icon-rail flyout (tablets, where hover
@@ -22,6 +22,7 @@ test.describe("phone viewport (375x812)", () => {
     // Clicking a route closes the drawer and navigates.
     // .first(): the favorites e2e can pin Clients on this shared admin account
     // while this test runs in parallel, which adds a second matching nav item.
+    await openNavSection(page, "Client & Catalog");
     await page.locator(".nav-item", { hasText: "Clients" }).first().click();
     await expect(page).toHaveURL(/\/clients/);
     await expect(page.locator(".sidebar")).not.toBeInViewport();

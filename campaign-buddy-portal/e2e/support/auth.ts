@@ -10,6 +10,15 @@ export const CREDENTIALS = {
 
 export type Persona = keyof typeof CREDENTIALS;
 
+// Sidebar sections start folded unless they hold the current page, so a test that
+// clicks a menu item has to open its section first. No-op if it is already open
+// (or the section has no toggle — e.g. the icon-only rail shows everything).
+export async function openNavSection(page: Page, section: string) {
+  const toggle = page.locator(".nav-section-toggle", { hasText: section }).first();
+  if ((await toggle.count()) === 0) return;
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+}
+
 export async function loginAs(page: Page, persona: Persona) {
   const { username, password } = CREDENTIALS[persona];
   await page.goto("/login");
