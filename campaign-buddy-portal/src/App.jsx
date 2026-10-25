@@ -19,6 +19,7 @@ import CustomSalesFields from './pages/CustomSalesFields';
 import LicenseUsage from './pages/LicenseUsage';
 import IssueReports from './pages/IssueReports';
 import SystemStatus from './pages/SystemStatus';
+import RecentlyDeleted from './pages/RecentlyDeleted';
 import AssignRoutes from './pages/AssignRoutes';
 import MonthlyAttendance from './pages/MonthlyAttendance';
 import SupervisorTaskResults from './pages/SupervisorTaskResults';
@@ -103,6 +104,7 @@ export default function App() {
               <Route path="/license" element={<LicenseUsage />} />
               <Route path="/issues" element={<IssueReports />} />
               <Route path="/system-status" element={<SystemStatus />} />
+              <Route path="/recently-deleted" element={<RecentlyDeleted />} />
 
               <Route path="*" element={<NotFound />} />
             </Route>

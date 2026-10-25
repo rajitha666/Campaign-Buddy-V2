@@ -62,6 +62,12 @@ export const cities = {
 };
 
 // ---------- Campaign setup ----------
+// #113 — Recently deleted: soft-deleted records with who/when. Restore uses each row's own `restore.path`.
+export const deleted = {
+  list: (query) => api.get('/deleted', { query }),
+  listForCampaign: (campaignId, query) => api.get(`/campaigns/${campaignId}/deleted`, { query }),
+};
+
 export const campaigns = {
   list: (query) => api.get('/campaigns', { query }), // scoped to caller's CampaignAccessGrant
   create: (body) => api.post('/campaigns', body),

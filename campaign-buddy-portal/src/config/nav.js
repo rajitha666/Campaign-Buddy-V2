@@ -85,6 +85,7 @@ export const NAV = [
     { path: '/reports/sku-wise', label: 'Overall Reports', icon: 'reports', roles: ['supervisor'] },
   ]},
   { section: 'Admin', roles: ['admin'], items: [
+    { path: '/recently-deleted', label: 'Recently deleted', icon: 'reports', roles: ['admin'] },
     { path: '/license', label: 'License Usage', icon: 'reports', roles: ['admin'] },
     { path: '/issues', label: 'Issue Reports', icon: 'reports', roles: ['admin'] },
     { path: '/system-status', label: 'System Status', icon: 'reports', roles: ['admin'] },
