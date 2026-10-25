@@ -163,6 +163,10 @@ export const RESOURCES = {
     }),
     updateItem: ({ id, values }) => clientsApi.update(id, { ...values, contactNumber: normalizePhone(values.contactNumber) }),
     deleteItem: ({ id }) => clientsApi.remove(id),
+    restoreItem: ({ id }) => clientsApi.restore(id),
+    confirmDelete: true,
+    deleteMessage: 'Its brands and campaigns may disappear from lists too. You can undo this for a few seconds afterwards.',
+    deleteConfirmLabel: 'Remove client',
     formFields: [
       { key: 'companyName', label: 'Company', type: 'text', required: true, placeholder: 'e.g. Prisha Naturals (Pvt) Ltd' },
       { key: 'clientName', label: 'Client Name', type: 'text', required: true, placeholder: 'Primary contact name' },
@@ -188,6 +192,7 @@ export const RESOURCES = {
     createItem: ({ values }) => brandsApi.create({ name: values.name, clientId: values.clientId }),
     updateItem: ({ id, values }) => brandsApi.update(id, { name: values.name, clientId: values.clientId }),
     deleteItem: ({ id }) => brandsApi.remove(id),
+    restoreItem: ({ id }) => brandsApi.restore(id),
     formFields: [
       { key: 'name', label: 'Brand Name', type: 'text', required: true },
       { key: 'clientId', label: 'Client', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
@@ -234,6 +239,7 @@ export const RESOURCES = {
       return updated;
     },
     deleteItem: ({ id }) => itemsApi.remove(id),
+    restoreItem: ({ id }) => itemsApi.restore(id),
     formFields: [
       { key: 'name', label: 'Product Name', type: 'text', required: true },
       { key: 'sku', label: 'SKU', type: 'text', required: true, validate: validators.required() },
@@ -273,6 +279,7 @@ export const RESOURCES = {
       latitude: Number(values.geo?.lat), longitude: Number(values.geo?.lng),
     }),
     deleteItem: ({ id }) => outletsApi.remove(id),
+    restoreItem: ({ id }) => outletsApi.restore(id),
     formFields: [
       { key: 'outletNo', label: 'Outlet No', type: 'text', required: true },
       { key: 'name', label: 'Outlet Name', type: 'text', required: true },
@@ -306,6 +313,7 @@ export const RESOURCES = {
     createItem: ({ values }) => distributorPointsApi.create(values),
     updateItem: ({ id, values }) => distributorPointsApi.update(id, values),
     deleteItem: ({ id }) => distributorPointsApi.remove(id),
+    restoreItem: ({ id }) => distributorPointsApi.restore(id),
     formFields: [
       { key: 'name', label: 'Distributor Name', type: 'text', required: true },
       { key: 'contact', label: 'Contact', type: 'text' },
@@ -323,6 +331,7 @@ export const RESOURCES = {
     createItem: ({ values }) => citiesApi.create(values),
     updateItem: ({ id, values }) => citiesApi.update(id, values),
     deleteItem: ({ id }) => citiesApi.remove(id),
+    restoreItem: ({ id }) => citiesApi.restore(id),
     formFields: [
       { key: 'name', label: 'City Name', type: 'text', required: true },
       { key: 'province', label: 'Province', type: 'searchable-select', required: true, options: PROVINCES },
@@ -373,6 +382,10 @@ export const RESOURCES = {
       testerFieldEnabled: !!values.testerFieldEnabled,
     }),
     deleteItem: ({ id }) => campaignsApi.remove(id),
+    restoreItem: ({ id }) => campaignsApi.restore(id),
+    confirmDelete: true,
+    deleteMessage: 'Everything inside it (activations, assignments, sales) is hidden with it. You can undo this for a few seconds afterwards.',
+    deleteConfirmLabel: 'Remove campaign',
     formFields: [
       { key: 'campaignNo', label: 'Campaign No', type: 'text', required: true, placeholder: 'CMP-0234' },
       { key: 'name', label: 'Campaign Name', type: 'text', required: true },
@@ -439,6 +452,7 @@ export const RESOURCES = {
       shiftStartMinutes: hhmmToMinutes(values.shiftStart), shiftEndMinutes: hhmmToMinutes(values.shiftEnd),
     }),
     deleteItem: ({ campaignId, id }) => activationsApi.remove(campaignId, id),
+    restoreItem: ({ campaignId, id }) => activationsApi.restore(campaignId, id),
     formFields: [
       { key: 'name', label: 'Activation Name', type: 'text', required: true },
       { key: 'outletId', label: 'Outlet', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(outletsApi.list) },
@@ -502,6 +516,11 @@ export const RESOURCES = {
       return updated;
     },
     deleteItem: ({ id }) => staffApi.remove(id),
+    restoreItem: ({ id }) => staffApi.restore(id),
+    removedVerb: 'Deactivated',
+    removedNote: " They can't sign in on the app.",
+    restoredVerb: 'Reactivated',
+    restoredNote: ' They can sign in again.',
     // Fixed HR field set for v3 (schema / Changelog v3 "Staff HR fields"). The
     // backend whitelists these columns; extras are ignored.
     formFields: [
@@ -606,6 +625,7 @@ export const RESOURCES = {
     createItem: ({ campaignId, values }) => supervisorTasksApi.create(campaignId, supervisorTaskPayload(values)),
     updateItem: ({ campaignId, id, values }) => supervisorTasksApi.update(campaignId, id, supervisorTaskPayload(values)),
     deleteItem: ({ campaignId, id }) => supervisorTasksApi.remove(campaignId, id),
+    restoreItem: ({ campaignId, id }) => supervisorTasksApi.restore(campaignId, id),
     formFields: [
       { key: 'category', label: 'Category', type: 'searchable-select', required: true, options: ['Sale', 'Outlet PR', 'Documentation', 'Discipline', 'Competitor Activities', 'Communication', 'Capability / Knowledge', 'Attitude', 'Attire & Grooming'] },
       { key: 'taskType', label: 'Task Type', type: 'radio', options: [{ value: 'range', label: 'Range' }, { value: 'feedback', label: 'Feedback' }, { value: 'photo', label: 'Photo' }] },

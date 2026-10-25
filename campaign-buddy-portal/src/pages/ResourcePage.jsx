@@ -10,6 +10,7 @@ import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { useUndoableDelete, needsConfirm } from '../lib/useUndoableDelete';
 import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
@@ -23,6 +24,7 @@ export default function ResourcePage({ resourceKey }) {
   const { currentCampaignId, currentCampaign, isAdmin, designationLabel } = useAuth();
   const { push } = useToast();
   const confirm = useConfirm();
+  const undoableDelete = useUndoableDelete();
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
@@ -166,17 +168,34 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'delete') {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
       const name = row.name || row.displayName || row.fullName || row.label;
-      const ok = await confirm({
-        title: name ? `Remove "${name}"?` : 'Remove this record?',
-        message: "This removes it from the list. It can't be undone from here.",
-        confirmLabel: 'Remove',
-        tone: 'danger',
-      });
-      if (!ok) return;
+      // Campaigns and clients (dependants disappear with them) ask first; everything else
+      // deletes at once and offers Undo (#112).
+      if (needsConfirm(config)) {
+        const ok = await confirm({
+          title: name ? `Remove "${name}"?` : 'Remove this record?',
+          message: config.deleteMessage || 'This removes it from the list.',
+          confirmLabel: config.deleteConfirmLabel || 'Remove',
+          tone: 'danger',
+        });
+        if (!ok) return;
+      }
+      const verb = config.removedVerb || 'Removed';
+      const restoredVerb = config.restoredVerb || 'Restored';
       try {
-        const result = await config.deleteItem({ campaignId, id: row.id });
-        push('Removed');
-        load();
+        if (typeof config.restoreItem === 'function') {
+          await undoableDelete({
+            name,
+            remove: () => config.deleteItem({ campaignId, id: row.id }),
+            restore: () => config.restoreItem({ campaignId, id: row.id }),
+            onChange: load,
+            removedText: `${verb} ${name ? `"${name}"` : 'it'}${config.removedNote ? `.${config.removedNote}` : ''}`,
+            restoredText: `${restoredVerb} ${name ? `"${name}"` : 'it'}${config.restoredNote ? `.${config.restoredNote}` : ''}`,
+          });
+        } else {
+          await config.deleteItem({ campaignId, id: row.id });
+          push('Removed');
+          load();
+        }
       } catch (e) {
         push(e.message || 'Could not delete', 'error');
       }

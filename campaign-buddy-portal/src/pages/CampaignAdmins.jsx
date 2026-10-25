@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { campaigns as campaignsApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useUndoableDelete } from '../lib/useUndoableDelete';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import SearchableSelect from '../components/SearchableSelect';
@@ -28,7 +28,7 @@ export default function CampaignAdmins() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { push } = useToast();
-  const confirm = useConfirm();
+  const undoableDelete = useUndoableDelete();
 
   const [campaign, setCampaign] = useState(null);
   const [grants, setGrants] = useState([]);
@@ -99,17 +99,18 @@ export default function CampaignAdmins() {
   }
 
   async function unlink(userId) {
-    const ok = await confirm({
-      title: 'Remove this account from the campaign?',
-      message: 'They lose access to this campaign. The account itself is not deleted.',
-      confirmLabel: 'Remove',
-      tone: 'danger',
-    });
-    if (!ok) return;
+    const g = grants.find((x) => x.userId === userId);
+    const name = g?.user?.displayName || g?.user?.username || 'account';
     try {
-      await campaignsApi.removeAdmin(campaignId, userId);
-      push('Account removed from campaign');
-      load();
+      await undoableDelete({
+        name,
+        // the DELETE returns the removed grant ({ scopeType, outletIds }) so Undo re-creates it exactly
+        remove: async () => (await campaignsApi.removeAdmin(campaignId, userId))?.data,
+        restore: (grant) => campaignsApi.restoreAdmin(campaignId, userId, grant),
+        onChange: load,
+        removedText: `Removed ${name} from this campaign`,
+        restoredText: `Restored ${name} to this campaign`,
+      });
     } catch (e) { push(e.message || 'Could not remove account', 'error'); }
   }
 
@@ -201,7 +202,7 @@ export default function CampaignAdmins() {
                         <td>{g.user?.username || '—'}</td>
                         <td className="cell-muted">{g.user?.email || '—'}</td>
                         <td><Badge type={g.user?.roleId === 'sponsor' ? 'info' : 'muted'}>{ROLE_LABELS[g.user?.roleId] || g.user?.roleId || '—'}</Badge></td>
-                        {isAdmin ? <td><div className="icon-btn delete" onClick={() => unlink(g.userId)}>✕</div></td> : null}
+                        {isAdmin ? <td><button type="button" className="icon-btn delete" onClick={() => unlink(g.userId)} aria-label={`Remove ${g.user?.displayName || g.user?.username || 'account'} from this campaign`}>✕</button></td> : null}
                       </tr>
                     ))}
                   </tbody>
