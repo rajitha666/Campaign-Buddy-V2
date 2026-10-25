@@ -5,7 +5,7 @@ import { ApiError, ok, okList, notFound, validationError } from "../../utils/api
 import { liveActivationItem } from "../../utils/liveItems";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
-import { dayDate, dayBounds } from "../../utils/dates";
+import { dayDate, dayBounds, colomboYmd } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { computeTotalSales } from "../../utils/salesCalc";
@@ -112,7 +112,11 @@ router.post(
     });
     if (!item || item.activation.campaignId !== req.params.campaignId) throw notFound("Activation product");
     assertOutletAllowed(req, item.activation.outletId);
-    if (item.deletedAt || item.campaignItem.deletedAt) {
+    // Head office may still backfill days from before the removal; not days on/after it.
+    const removedAt = [item.deletedAt, item.campaignItem.deletedAt]
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    if (removedAt && dayDate(date).toISOString().slice(0, 10) >= colomboYmd(removedAt)) {
       throw new ApiError(409, "PRODUCT_REMOVED", "This product was removed from the activation");
     }
     if (soldToday > openingStock) throw validationError("soldToday cannot exceed openingStock", "soldToday");

@@ -175,12 +175,16 @@ router.post(
 
     const resolvedItemId = itemId ?? (await prisma.item.create({ data: newItem })).id;
     // A previously removed product is revived (same row) rather than colliding on the unique key.
-    const removed = await prisma.campaignItem.findFirst({
-      where: { campaignId, itemId: resolvedItemId, deletedAt: { not: null } },
+    // Adding one that is already live stays a 409.
+    const existing = await prisma.campaignItem.findUnique({
+      where: { campaignId_itemId: { campaignId, itemId: resolvedItemId } },
     });
-    const created = removed
-      ? await prisma.campaignItem.update({ where: { id: removed.id }, data: { deletedAt: null } })
-      : await prisma.campaignItem.create({ data: { campaignId, itemId: resolvedItemId } });
+    if (existing && !existing.deletedAt) throw new ApiError(409, "DUPLICATE", "This product is already in the campaign");
+    const created = await prisma.campaignItem.upsert({
+      where: { campaignId_itemId: { campaignId, itemId: resolvedItemId } },
+      create: { campaignId, itemId: resolvedItemId },
+      update: { deletedAt: null },
+    });
     // #43 — backfill: item assigned to the campaign after activations exist
     // must still reach the promoters; previously only future activations saw it.
     await prisma.activationItem.createMany({

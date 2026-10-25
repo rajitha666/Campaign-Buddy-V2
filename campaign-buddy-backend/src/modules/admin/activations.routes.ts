@@ -101,7 +101,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const activation = await prisma.activation.findUnique({
       where: { id: req.params.activationId },
-      include: { outlet: true, staff: true, supervisor: true, activationItems: { where: { deletedAt: null, campaignItem: { deletedAt: null } } } },
+      include: { outlet: true, staff: true, supervisor: true, activationItems: { where: liveActivationItem } },
     });
     if (!activation || activation.deletedAt) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
