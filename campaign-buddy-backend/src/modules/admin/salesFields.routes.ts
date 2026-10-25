@@ -9,6 +9,7 @@ import { requireCampaignAccess } from "../../middleware/campaignAccess";
 import { dayDate } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
 import { slugifyFieldKey, coerceFieldValue, serializeDefinition, readFieldValue } from "../../utils/salesFields";
 
 // Admin CRUD for the campaign's custom sales-field definitions + a bulk value
@@ -132,6 +133,23 @@ router.delete(
       data: { archivedAt: new Date() },
     });
     res.json(ok({ ...serializeDefinition(updated), softDeleted: true }));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/sales-fields/:id/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Custom sales field",
+      marker: "archivedAt",
+      load: () => loadOwnedField(req.params.campaignId, req.params.id),
+      guard: async (row) =>
+        parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
+      update: (row) => clearMarker(prisma.salesFieldDefinition, row.id, "archivedAt", "Custom sales field"),
+    });
+    res.json(ok({ ...serializeDefinition(out), softDeleted: false }));
   })
 );
 

@@ -734,3 +734,22 @@ user to any device.
   schemas. Add a key there to add an option — no migration. Current keys:
   `menu.favorites` — array of portal route paths (≤ 12, de-duplicated, order
   preserved).
+
+## Restore routes — undo of soft deletes (#110)
+
+Every `DELETE` that only sets a marker (`deletedAt` / `archivedAt` / staff `status: inactive`) now has an inverse. `DELETE` itself is unchanged. All restores are **[adm/usr]** (supervisor and sponsor tokens get `403`) and use the same access guards as the matching delete (`requireCampaignAccess`; the activation restore also applies the outlet guard).
+
+| Restore | Marker cleared |
+|---|---|
+| `POST /clients/:id/restore`, `/brands/:id/restore`, `/items/:id/restore`, `/cities/:id/restore`, `/outlets/:id/restore`, `/distributor-points/:id/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/restore`, `/campaigns/:campaignId/activations/:activationId/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/supervisor-routes/:id/restore`, `/supervisor-tasks/:id/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/sales-fields/:id/restore` | `archivedAt` |
+| `POST /staff/:id/reactivate` | `status: "active"` |
+
+Behaviour:
+- Returns the restored row (`softDeleted: false`). `404` if the row is unknown, belongs to another campaign, or is **not currently deleted**, so a double Undo is a clean 404.
+- `409 PARENT_DELETED` if a parent is still deleted (brand→client, item→brand, outlet/distributor point→city, campaign→client, activation→campaign/outlet, supervisor route/task and sales field→campaign). Nothing cascades up. An *inactive promoter* is not a deleted parent, so historical activations stay restorable.
+- Codes are unique among **live** rows only for `outletNo`, `campaignNo`, `[brandId, sku]` and active staff `phone` (partial indexes). If a code was re-used while the row was deleted, restore returns `409 CODE_IN_USE` (staff: `409 DUPLICATE`, field `phone`). `employeeId`, `mobileUsername` and `[campaignId, key]` are unique including deleted rows, so they cannot collide.
+- Staff: `reactivate` turns mobile login back on and the member counts towards licence seats again. "Deleted" and "manually set inactive" are the same state, so it works for both.
+- Writes the mobile app sent while an activation was deleted were rejected at the time and are not replayed by a restore.

@@ -18,12 +18,12 @@ const router = Router();
 // currently deleted; 409 PARENT_DELETED if its parent is still deleted (never cascades up).
 // sku / outletNo are unique among LIVE rows only, so a code re-used meanwhile is a 409.
 const codeInUse = (what: string) => ({ code: "CODE_IN_USE", message: `That ${what} is now used by another record` });
-function restoreRoute(
-  path: string, entity: string, delegate: any,
+function restoreHandler(
+  entity: string, delegate: any,
   parents: (row: any) => Promise<Array<[string, { deletedAt?: Date | null } | null | undefined]>> = async () => [],
   conflict?: { code: string; message: string }
 ) {
-  router.post(path, requireRole("adm", "usr"), asyncHandler(async (req, res) => {
+  return asyncHandler(async (req, res) => {
     const out = await restoreSoftDeleted({
       entity,
       load: () => delegate.findUnique({ where: { id: req.params.id } }),
@@ -32,7 +32,7 @@ function restoreRoute(
       conflict,
     });
     res.json(ok(out));
-  }));
+  });
 }
 
 // Product photo storage — local disk under <repo>/uploads/items, served
@@ -86,7 +86,7 @@ router.delete("/clients/:id", requireRole("adm", "usr"), asyncHandler(async (req
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
-restoreRoute("/clients/:id/restore", "Client", prisma.client);
+router.post("/clients/:id/restore", requireRole("adm", "usr"), restoreHandler("Client", prisma.client));
 
 // ---- Brands ----
 router.get("/brands", asyncHandler(async (req, res) => {
@@ -109,7 +109,7 @@ router.delete("/brands/:id", requireRole("adm", "usr"), asyncHandler(async (req,
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
-restoreRoute("/brands/:id/restore", "Brand", prisma.brand, async (r) => [["client", await prisma.client.findUnique({ where: { id: r.clientId } })]]);
+router.post("/brands/:id/restore", requireRole("adm", "usr"), restoreHandler("Brand", prisma.brand, async (r) => [["client", await prisma.client.findUnique({ where: { id: r.clientId } })]]));
 
 // ---- Items ----
 router.get("/items", asyncHandler(async (req, res) => {
@@ -137,7 +137,7 @@ router.delete("/items/:id", requireRole("adm", "usr"), asyncHandler(async (req, 
   await prisma.item.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
-restoreRoute("/items/:id/restore", "Item", prisma.item, async (r) => [["brand", await prisma.brand.findUnique({ where: { id: r.brandId } })]], codeInUse("SKU"));
+router.post("/items/:id/restore", requireRole("adm", "usr"), restoreHandler("Item", prisma.item, async (r) => [["brand", await prisma.brand.findUnique({ where: { id: r.brandId } })]], codeInUse("SKU")));
 router.post(
   "/items/:id/image",
   requireRole("adm", "usr"),
@@ -170,7 +170,7 @@ router.delete("/cities/:id", requireRole("adm", "usr"), asyncHandler(async (req,
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
-restoreRoute("/cities/:id/restore", "City", prisma.city);
+router.post("/cities/:id/restore", requireRole("adm", "usr"), restoreHandler("City", prisma.city));
 
 // ---- Outlets ----
 router.get("/outlets", asyncHandler(async (req, res) => {
@@ -202,7 +202,7 @@ router.delete("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
-restoreRoute("/outlets/:id/restore", "Outlet", prisma.outlet, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]], codeInUse("outlet number"));
+router.post("/outlets/:id/restore", requireRole("adm", "usr"), restoreHandler("Outlet", prisma.outlet, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]], codeInUse("outlet number")));
 
 // ---- Distributor Points ----
 router.get("/distributor-points", asyncHandler(async (_req, res) => {
@@ -224,6 +224,6 @@ router.delete("/distributor-points/:id", requireRole("adm", "usr"), asyncHandler
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
-restoreRoute("/distributor-points/:id/restore", "Distributor point", prisma.distributorPoint, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]]);
+router.post("/distributor-points/:id/restore", requireRole("adm", "usr"), restoreHandler("Distributor point", prisma.distributorPoint, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]]));
 
 export default router;
