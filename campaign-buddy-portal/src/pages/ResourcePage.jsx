@@ -10,7 +10,7 @@ import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { useUndoableDelete, needsConfirm } from '../lib/useUndoableDelete';
+import { useUndoableDelete, needsConfirm, recordName } from '../lib/useUndoableDelete';
 import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
@@ -167,7 +167,7 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
-      const name = row.name || row.displayName || row.fullName || row.label;
+      const name = recordName(row);
       // Campaigns and clients (dependants disappear with them) ask first; everything else
       // deletes at once and offers Undo (#112).
       if (needsConfirm(config)) {

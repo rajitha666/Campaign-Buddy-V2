@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { needsConfirm } from './useUndoableDelete';
+import { needsConfirm, recordName } from './useUndoableDelete';
 import { RESOURCES } from '../config/resources';
 
 describe('which deletes ask first (#112)', () => {
@@ -14,5 +14,14 @@ describe('which deletes ask first (#112)', () => {
     expect(deletable.length).toBeGreaterThan(5);
     const asking = deletable.filter(([, c]) => needsConfirm(c)).map(([k]) => k).sort();
     expect(asking).toEqual(['campaigns', 'clients']);
+  });
+});
+
+describe('naming a record in dialogs and toasts', () => {
+  it('falls back through the fields each resource really has, so two toasts are never both "Removed it"', () => {
+    expect(recordName({ companyName: 'Acme Ltd', clientName: 'Acme' })).toBe('Acme Ltd');
+    expect(recordName({ displayName: 'Sanduni' })).toBe('Sanduni');
+    expect(recordName({ task: 'Is the display set?' })).toBe('Is the display set?');
+    expect(recordName({})).toBe('');
   });
 });

@@ -8,6 +8,11 @@ export function needsConfirm(config) {
   return Boolean(config?.confirmDelete) || typeof config?.restoreItem !== 'function';
 }
 
+// What to call a record in dialogs and toasts. Clients have companyName/clientName, tasks have `task`.
+export function recordName(row) {
+  return row?.name || row?.displayName || row?.fullName || row?.label || row?.companyName || row?.clientName || row?.task || '';
+}
+
 // Plain-language failure for an Undo that did not work. Never exposes error codes.
 export function restoreFailureMessage(err, name) {
   const label = name ? `"${name}"` : 'it';
