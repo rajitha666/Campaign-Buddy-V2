@@ -9,6 +9,7 @@ You are the Technical Architect for Campaign Buddy. You judge whether a change i
 
 ## Efficiency — read this first
 Tokens are the budget. The delivery lead gives you a **review brief** (`node scripts/agent/review-brief.mjs`: reviewers needed, size by package, mechanical red flags). Start from it; don't rediscover what it already says.
+- Run `node scripts/agent/migration-lint.mjs --merge <sha>` (or `base head`) when the brief shows a migration, and `node scripts/agent/soft-delete-lint.mjs` when it shows backend reads; treat their output as leads to verify.
 - From the brief, read the **Biggest changes** by hunk (`git diff -U3 <spec> -- <file>`), check the **Red flags** (routes, migrations, soft-delete reads, locale) and the **coverage** lines, then read only the surrounding code you need.
 - Read **named files and line ranges**, never a whole big doc: `node scripts/agent/doc-section.mjs <file> "<heading or number>"` prints one section (a section of `api-spec.md` is ~2k tokens vs ~10k for the file).
 - Use `docs/agent-team/charter-digest.md` (1 page) instead of the full charter unless a finding touches tenancy, privacy or a block category.

@@ -45,6 +45,11 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 | `node scripts/agent/quiet-run.mjs [--cwd dir] -- <command>` | run tests/build/tsc; print counts + first failures; full log to a file | hundreds of lines of test output |
 | `node scripts/agent/fresh-stack.mjs up\|down\|status [--root dir]` | isolated, freshly seeded test DB + backend + portal; refuses non-`_test` databases | ~12 manual setup steps |
 | `docs/agent-team/charter-digest.md` | one-page charter for specialists | the 4k-token full charter (PO still reads it in full) |
+| `node scripts/agent/migration-lint.mjs [--merge <sha>\|--all]` | data-loss / populated-table risks in migrations (DROP, SET NOT NULL, ADD COLUMN NOT NULL without default, RENAME, cascades); exit 1 on danger | eyeballing SQL |
+| `node scripts/agent/soft-delete-lint.mjs [--root dir] [--strict]` | backend reads of soft-deletable models with no `deletedAt`/`archivedAt` filter (heuristic) | grepping every query |
+| `node scripts/agent/stale-wording.mjs [--merge <sha>]` | UI labels removed by a change that docs/guides/marketing still mention | hunting for stale docs |
+| `node scripts/agent/claim-impact.mjs <keyword>…` | marketing lines (ledger first, once it exists) that mention a feature | reading the 17k-token brief |
+| `node scripts/agent/shoot.mjs --routes a,b [--widths 375,768,1280] [--login role] [--campaign name]` | screenshots + accessibility/layout checks (names, labels, target size, contrast, overflow, headings, console errors) at several widths; against a `fresh-stack` | UX review with no pixels |
 
 **Measured 2026-10-25** on the same change (merged PR #107, architect review): general-purpose agent without the toolkit **84,322 tokens** → general-purpose agent *with* the brief **72,549** →
 the real `technical-architect` role *with* the brief **14,846** (2 tool uses, 12 s). Two lessons: (1) **always spawn the defined role types, never `general-purpose`** — a general agent
@@ -52,8 +57,7 @@ carries every tool/skill definition on every turn, which dominates the bill; (2)
 a minor note and listed what it did not read) — for a risky change ask the reviewer to go deeper on named files rather than skipping the brief.
 
 Rules: start from the brief · read named files/line ranges · one read per file · batch independent steps · short answers (clean change ≤150 words,
-findings ≤400). The same scripts are meant to run unchanged in the GitHub layer (deterministic gates cost no tokens). Not built yet (second pass):
-`stale-wording`, `claim-impact`, `shoot` (screenshots + accessibility scan), `migration-lint`, `soft-delete-lint` (the brief already has a basic soft-delete flag).
+findings ≤400). The same scripts are meant to run unchanged in the GitHub layer (deterministic gates cost no tokens). All tool output is a lead to verify, not a verdict. On Windows Git Bash pass routes to `shoot` without a leading slash (`--routes dashboard,staff`): the shell rewrites `/x` into a file path.
 
 ## Team mode (owner's stop/start gate)
 
