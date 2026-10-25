@@ -20,7 +20,7 @@ From the brief's **Needs:** line, launch the listed specialists **in one message
 - the brief (paste it), the story/acceptance criteria (a few lines or the issue number), the worktree path and diff command;
 - for UX/UI: screenshot paths if any (otherwise it will say "visual review not done");
 - for QA: the packages touched and the instruction to use `fresh-stack` and `quiet-run`.
-Do **not** paste the diff or whole files. Then run `product-owner` last (full mode: always; light mode: yes) with the specialists' verdicts so it can consolidate and decide on blocks. Use `sonnet`-tier agents as defined in their files; don't override models upward.
+Do **not** paste the diff or whole files. Then run `product-owner` last (full mode: always; light mode: yes) with the specialists' verdicts so it can consolidate and decide on blocks. Always spawn the **defined role types** by name (never `general-purpose`: it carries every tool definition on every turn and cost ~5× more in measurement). Use the models defined in their files; don't override upward. For a risky change (the brief shows route/schema/auth/sync flags) tell the architect to go deeper on the named files.
 
 ## 4. Consolidate (short)
 Reply with: one line per role (verdict + one-sentence TL;DR), then the **required changes** merged and de-duplicated, then **needs owner decision**, then which **owner gate** is next (design A / merge B / docs C / marketing D) per the autonomy settings. Under 250 words unless something is blocked. Never apply `po-override`; never edit the charter.

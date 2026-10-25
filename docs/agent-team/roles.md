@@ -46,6 +46,11 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 | `node scripts/agent/fresh-stack.mjs up\|down\|status [--root dir]` | isolated, freshly seeded test DB + backend + portal; refuses non-`_test` databases | ~12 manual setup steps |
 | `docs/agent-team/charter-digest.md` | one-page charter for specialists | the 4k-token full charter (PO still reads it in full) |
 
+**Measured 2026-10-25** on the same change (merged PR #107, architect review): general-purpose agent without the toolkit **84,322 tokens** → general-purpose agent *with* the brief **72,549** →
+the real `technical-architect` role *with* the brief **14,846** (2 tool uses, 12 s). Two lessons: (1) **always spawn the defined role types, never `general-purpose`** — a general agent
+carries every tool/skill definition on every turn, which dominates the bill; (2) the brief then cuts the reading. Trade-off: the 14.8k review checked less than the 84k one (it flagged only
+a minor note and listed what it did not read) — for a risky change ask the reviewer to go deeper on named files rather than skipping the brief.
+
 Rules: start from the brief · read named files/line ranges · one read per file · batch independent steps · short answers (clean change ≤150 words,
 findings ≤400). The same scripts are meant to run unchanged in the GitHub layer (deterministic gates cost no tokens). Not built yet (second pass):
 `stale-wording`, `claim-impact`, `shoot` (screenshots + accessibility scan), `migration-lint`, `soft-delete-lint` (the brief already has a basic soft-delete flag).
