@@ -373,6 +373,18 @@ see a read-only **My Campaigns** card view.
   Storage is a generic per-user key/value table (`UserPreference`) with a
   server-side key registry (`utils/userPreferences.ts`), so new options are an
   additive change: register a key, add a section to the Personalization page.
+- **Recently deleted** (Admin → Recently deleted, `/recently-deleted`; Super Admins
+  and Campaign Admins only — supervisors and sponsors do not see it). Deletes are
+  soft, so removed records can be brought back at any time, not just while the Undo
+  toast shows. Two tabs: *Clients, products, outlets, staff & campaigns*, and
+  *Inside <selected campaign>* (campaign products, activations, activation products,
+  route assignments, supervisor tasks, custom sales fields, archived sales records).
+  A type filter and search sit above a table of Name / Type / Deleted by / When with
+  a **Restore** button per row. Rows deleted before this feature show "—" for who.
+  If the record's parent is still deleted the row reads "Restore the <parent> first"
+  and Restore is disabled. If a code (outlet number, product SKU, campaign number)
+  was reused in the meantime, the restore fails with a plain message. Restoring a
+  staff member turns their mobile login back on.
 - **Excel/CSV export** on the log and report tables.
 - **Grant-scoped empty states** — "No activity in your assigned outlets for this
   range" rather than a blank table, for supervisors/sponsors whose outlet subset
@@ -382,6 +394,16 @@ see a read-only **My Campaigns** card view.
 - **Additive-access confirmation toast** whenever the supervisor auto-grant fires.
 - **List pages**: search, sort, show-N-entries, pagination; every `/admin` list
   endpoint takes `?page`, `?pageSize`, `?search`.
+
+### 4.12 Data retention (what is kept)
+
+- Removed records are **kept**. Nothing is permanently deleted, and there is no
+  automatic purge; Recently deleted (§4.11) can restore them.
+- **Sales, attendance and tracking history are never permanently deleted.**
+- Who deleted or restored a record is logged (an append-only trail; ADR-0006).
+- Personal data of former staff (ID number, bank, address, photo) will be handled
+  separately, by redaction after a retention period the owner decides — tracked in
+  issue #137. Until then it is retained.
 
 ---
 

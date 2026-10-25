@@ -265,3 +265,12 @@ Per-campaign seat metering panel. Spec: `docs/license-usage-spec.md`.
   action for stuck rows. A banner states whether GitHub sync is on, enabled but
   unconfigured, or off.
 - Both surfaces are `adm` + `usr` only. Full spec: `docs/issue-reporting-spec.md`.
+
+### 8.3 Recently deleted (`/recently-deleted`, Admin nav) — #113
+
+- **Access:** `adm` and `usr` only (Admin sidebar section, first item). Supervisors and sponsors do not see it and the API refuses them.
+- **Tabs:** (1) *Clients, products, outlets, staff & campaigns* — `GET /admin/v1/deleted`; (2) *Inside <selected campaign>* — `GET /admin/v1/campaigns/:campaignId/deleted`: campaign products, activations, activation products, route assignments, supervisor tasks, custom sales fields, archived sales records. Tab 2 with no campaign selected shows "Select a campaign from the top bar first."
+- **Controls:** type filter ("Filter by type"), search ("Search deleted records…"), table columns Name / Type / Deleted by / When / (action).
+- **Restore:** per-row button calling that row's own restore route, then a "Restored …" toast. Deleted-by shows "—" for rows deleted before the deletion trail existed. If a parent is still deleted the row shows "Restore the <parent> first" and the button is disabled. A reused unique code (outlet no, product SKU, campaign no) makes the restore fail with a plain message. Restoring staff re-enables their mobile login. A 404 reads "already restored or no longer exists".
+- **Policy:** removed records are kept; no purge. Sales, attendance and tracking history are never permanently deleted. Former-staff personal data is handled separately (#137). See ADR-0006 and `backend-spec.md` ("Recently deleted and the deletion trail").
+- **Screenshot:** none yet; add to the admin guide when #119 re-shoots.
