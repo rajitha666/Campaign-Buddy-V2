@@ -213,6 +213,8 @@ Form fields unchanged: Id, Label, Description, Modules, Functionality, Default u
 
 **13. Geofence-unverified flag, never an error state.** Any attendance table showing `checkInLocationVerified = false` should render it as a neutral/warning flag ("Location unverified") for review, not as a failed or rejected state — check-in always succeeded.
 
+**14. Delete with Undo, not confirm.** Deleting most records does not ask "Are you sure?": the row is removed at once and a toast `Removed "Name"` shows ~7 s with an **Undo** button (pauses on hover/focus); Undo calls the restore route and the row returns. Staff use `Deactivated "Name". They can't sign in on the app.` / `Reactivated "Name". They can sign in again.`; route assignments, custom sales fields and campaign team members (exact access restored) follow the same pattern. A failed Undo explains why (parent removed — restore it first; already restored). Exceptions that keep a red confirm dialog (Cancel focused): deleting a **campaign** or a **client**, and the sales-record archive.
+
 ---
 
 ## 5. Suggested Entity List for Rebuild's Data Model
