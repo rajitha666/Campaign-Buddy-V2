@@ -597,7 +597,7 @@ model SalesRecord {
   archivedAt               DateTime?
   updatedAt                DateTime @updatedAt
 
-  activationItem ActivationItem @relation(fields: [activationItemId], references: [id], onDelete: Cascade)
+  activationItem ActivationItem @relation(fields: [activationItemId], references: [id], onDelete: Restrict)
 
   @@unique([activationItemId, date])
   @@index([activationItemId])
@@ -677,7 +677,7 @@ model SalesFieldValue {
 
   definition     SalesFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
   activation     Activation           @relation(fields: [activationId], references: [id], onDelete: Cascade)
-  activationItem ActivationItem?      @relation(fields: [activationItemId], references: [id], onDelete: Cascade)
+  activationItem ActivationItem?      @relation(fields: [activationItemId], references: [id], onDelete: Restrict)
 
   @@index([activationId, date])
   @@index([definitionId])
