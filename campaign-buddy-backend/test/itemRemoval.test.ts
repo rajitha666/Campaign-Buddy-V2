@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/utils/prisma";
 import { dayDate } from "../src/utils/dates";
+import bcrypt from "bcrypt";
 import { app, resetDb, adminToken, staffToken, makeCampaignWithActivation } from "./helpers";
 
 beforeEach(resetDb);
@@ -198,5 +199,79 @@ describe("sales totals are unchanged by removing a product (#111)", () => {
     await prisma.activationItem.update({ where: { id: activationItem.id }, data: { deletedAt: new Date() } });
     await prisma.campaignItem.update({ where: { id: campaignItem.id }, data: { deletedAt: new Date() } });
     expect(await report()).toEqual(before);
+  });
+});
+
+// Access grants keep their hard delete, but the removed grant is returned so
+// the client can re-create it exactly (Undo), through a route that re-checks scope.
+describe("access-grant removal is reversible (#111)", () => {
+  async function setup() {
+    const { campaign, outlet } = await makeCampaignWithActivation();
+    const other = await prisma.outlet.create({
+      data: { outletNo: "O-other", name: "Other", cityId: outlet.cityId, latitude: 6.9, longitude: 79.9 },
+    });
+    const user = await prisma.user.create({
+      data: { username: "u-sub", passwordHash: "x", displayName: "Sub", roleId: "usr" },
+    });
+    await prisma.campaignAccessGrant.create({
+      data: { userId: user.id, campaignId: campaign.id, scopeType: "subset", outletIds: [outlet.id, other.id] },
+    });
+    return { campaign, outlet, other, user, auth: { Authorization: `Bearer ${await adminToken()}` } };
+  }
+
+  it("DELETE returns the removed grant and restore re-creates it exactly", async () => {
+    const { campaign, outlet, other, user, auth } = await setup();
+    const del = await request(app).delete(`/admin/v1/campaigns/${campaign.id}/admins/${user.id}`).set(auth);
+    expect(del.status).toBe(200);
+    expect(del.body.data).toMatchObject({ userId: user.id, campaignId: campaign.id, scopeType: "subset" });
+    expect([...del.body.data.outletIds].sort()).toEqual([outlet.id, other.id].sort());
+
+    const res = await request(app)
+      .post(`/admin/v1/campaigns/${campaign.id}/admins/${user.id}/restore`)
+      .set(auth)
+      .send({ scopeType: del.body.data.scopeType, outletIds: del.body.data.outletIds });
+    expect(res.status).toBe(201);
+    const grant = await prisma.campaignAccessGrant.findUniqueOrThrow({
+      where: { userId_campaignId: { userId: user.id, campaignId: campaign.id } },
+    });
+    expect(grant.scopeType).toBe("subset");
+    expect([...grant.outletIds].sort()).toEqual([outlet.id, other.id].sort());
+  });
+
+  it("restore is 409 when the user already has access, and 400 for a subset with no outlets", async () => {
+    const { campaign, user, auth } = await setup();
+    const url = `/admin/v1/campaigns/${campaign.id}/admins/${user.id}/restore`;
+    expect((await request(app).post(url).set(auth).send({ scopeType: "all" })).status).toBe(409);
+    await request(app).delete(`/admin/v1/campaigns/${campaign.id}/admins/${user.id}`).set(auth);
+    expect((await request(app).post(url).set(auth).send({ scopeType: "subset", outletIds: [] })).status).toBe(400);
+  });
+
+  it("a subset-scoped user cannot restore a grant wider than their own", async () => {
+    const { campaign, outlet, other, auth } = await setup();
+    const actor = await prisma.user.create({
+      data: { username: "actor", passwordHash: await bcrypt.hash("pw", 4), displayName: "Actor", roleId: "usr" },
+    });
+    await prisma.campaignAccessGrant.create({
+      data: { userId: actor.id, campaignId: campaign.id, scopeType: "subset", outletIds: [outlet.id] },
+    });
+    const actorAuth = {
+      Authorization: `Bearer ${(await request(app).post("/admin/v1/auth/login").send({ username: "actor", password: "pw" })).body.data.accessToken}`,
+    };
+    const target = await prisma.user.create({
+      data: { username: "t", passwordHash: "x", displayName: "T", roleId: "supervisor" },
+    });
+    const url = `/admin/v1/campaigns/${campaign.id}/admins/${target.id}/restore`;
+    expect((await request(app).post(url).set(actorAuth).send({ scopeType: "all" })).status).toBe(403);
+    expect((await request(app).post(url).set(actorAuth).send({ scopeType: "subset", outletIds: [other.id] })).status).toBe(403);
+    expect((await request(app).post(url).set(actorAuth).send({ scopeType: "subset", outletIds: [outlet.id] })).status).toBe(201);
+    void auth;
+  });
+
+  it("DELETE /users/:id/campaign-access/:campaignId also returns the removed grant", async () => {
+    const { campaign, user, auth } = await setup();
+    const del = await request(app).delete(`/admin/v1/users/${user.id}/campaign-access/${campaign.id}`).set(auth);
+    expect(del.status).toBe(200);
+    expect(del.body.data.scopeType).toBe("subset");
+    expect(del.body.data.outletIds).toHaveLength(2);
   });
 });

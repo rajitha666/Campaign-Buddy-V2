@@ -4,7 +4,7 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
-import { requireCampaignAccess } from "../../middleware/campaignAccess";
+import { requireCampaignAccess, outletIdsAllowed } from "../../middleware/campaignAccess";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
 import { coerceDates } from "../../utils/coerce";
 import { validate } from "../../middleware/validate";
@@ -334,10 +334,49 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.campaignAccessGrant.delete({
-      where: { userId_campaignId: { userId: req.params.userId, campaignId: req.params.campaignId } },
+    const where = { userId_campaignId: { userId: req.params.userId, campaignId: req.params.campaignId } };
+    const grant = await prisma.campaignAccessGrant.findUnique({ where });
+    if (!grant) throw notFound("Access grant");
+    await prisma.campaignAccessGrant.delete({ where });
+    // #111: return what was removed so the client can offer Undo (restore below).
+    res.json(ok({ userId: grant.userId, campaignId: grant.campaignId, scopeType: grant.scopeType, outletIds: grant.outletIds }));
+  })
+);
+
+// Undo for the route above: re-creates a removed grant with its original scope.
+// Re-checks the actor — a subset-scoped user can only hand out a subset of their own outlets.
+router.post(
+  "/campaigns/:campaignId/admins/:userId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const { scopeType, outletIds = [] } = req.body as { scopeType?: string; outletIds?: string[] };
+    if (scopeType !== "all" && scopeType !== "subset") {
+      throw new ApiError(400, "VALIDATION_ERROR", "scopeType must be 'all' or 'subset'");
+    }
+    if (!Array.isArray(outletIds) || (scopeType === "subset" && outletIds.length === 0)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "outletIds is required when scopeType is 'subset'");
+    }
+    const { campaignId, userId } = req.params;
+    const target = await prisma.user.findUnique({ where: { id: userId } });
+    if (!target) throw notFound("User");
+    if (!["usr", "sponsor", "supervisor"].includes(target.roleId)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Only back-office accounts can be linked to a campaign this way");
+    }
+    if (await prisma.campaignAccessGrant.findUnique({ where: { userId_campaignId: { userId, campaignId } } })) {
+      throw new ApiError(409, "ALREADY_GRANTED", "This user already has access to the campaign");
+    }
+    const actorOutlets = outletIdsAllowed(req);
+    if (actorOutlets && (scopeType === "all" || outletIds.some((id) => !actorOutlets.includes(id)))) {
+      throw new ApiError(403, "OUTLET_NOT_ALLOWED", "You can only grant access to outlets you have access to yourself");
+    }
+    if (outletIds.length && (await prisma.outlet.count({ where: { id: { in: outletIds } } })) !== new Set(outletIds).size) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Unknown outlet in outletIds");
+    }
+    const grant = await prisma.campaignAccessGrant.create({
+      data: { userId, campaignId, scopeType, outletIds: scopeType === "subset" ? outletIds : [] },
     });
-    res.status(204).send();
+    res.status(201).json(ok(grant));
   })
 );
 
