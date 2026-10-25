@@ -36,6 +36,25 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 
 `0 Intake` → `1 Design` → **Gate A** → `2 Build` → `3 Review` → **Gate B (merge)** → `4 Docs` → **Gate C** → `5 Marketing (major only)` → **Gate D** → `6 Close`.
 
+## Efficiency toolkit (zero-token tools in `scripts/agent/`)
+
+| Command | Use | Instead of |
+|---|---|---|
+| `node scripts/agent/review-brief.mjs [base] [head] [--merge <sha>] [--major] [--mode ...]` | reviewers needed, size by package, mechanical red flags, coverage gaps | reading the whole diff (~20k tokens → ~0.6k) |
+| `node scripts/agent/doc-section.mjs <file> ["<heading|number>"] [--max N]` | one section of a big doc (md or html), or its heading index with sizes | reading 10–17k-token documents |
+| `node scripts/agent/quiet-run.mjs [--cwd dir] -- <command>` | run tests/build/tsc; print counts + first failures; full log to a file | hundreds of lines of test output |
+| `node scripts/agent/fresh-stack.mjs up\|down\|status [--root dir]` | isolated, freshly seeded test DB + backend + portal; refuses non-`_test` databases | ~12 manual setup steps |
+| `docs/agent-team/charter-digest.md` | one-page charter for specialists | the 4k-token full charter (PO still reads it in full) |
+
+**Measured 2026-10-25** on the same change (merged PR #107, architect review): general-purpose agent without the toolkit **84,322 tokens** → general-purpose agent *with* the brief **72,549** →
+the real `technical-architect` role *with* the brief **14,846** (2 tool uses, 12 s). Two lessons: (1) **always spawn the defined role types, never `general-purpose`** — a general agent
+carries every tool/skill definition on every turn, which dominates the bill; (2) the brief then cuts the reading. Trade-off: the 14.8k review checked less than the 84k one (it flagged only
+a minor note and listed what it did not read) — for a risky change ask the reviewer to go deeper on named files rather than skipping the brief.
+
+Rules: start from the brief · read named files/line ranges · one read per file · batch independent steps · short answers (clean change ≤150 words,
+findings ≤400). The same scripts are meant to run unchanged in the GitHub layer (deterministic gates cost no tokens). Not built yet (second pass):
+`stale-wording`, `claim-impact`, `shoot` (screenshots + accessibility scan), `migration-lint`, `soft-delete-lint` (the brief already has a basic soft-delete flag).
+
 ## Team mode (owner's stop/start gate)
 
 `full` · `light` · `off` — defined in `AGENTS.md` ("Team mode"). Per-role behaviour:
