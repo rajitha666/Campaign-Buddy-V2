@@ -347,7 +347,8 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | PATCH | `/campaigns/:campaignId` | **[adm/usr]** — includes optional manual `status` override (§5.8) |
 | GET | `/campaigns/:campaignId/items` | grant required — this campaign's `CampaignItem` catalog |
 | POST | `/campaigns/:campaignId/items` | **[adm/usr]** — body `{ itemId }` to link existing, or `{ newItem: {...} }` to create-and-link in one call |
-| DELETE | `/campaigns/:campaignId/items/:campaignItemId` | **[adm/usr]** — join-row delete (hard) |
+| DELETE | `/campaigns/:campaignId/items/:campaignItemId` | **[adm/usr]** — soft delete (`deletedAt`, #111): the product leaves every live list but its activation items and sales history are untouched. 404 if not in this campaign / already removed |
+| POST | `/campaigns/:campaignId/items/:campaignItemId/restore` | **[adm/usr]** — undo; 404 if not currently removed, `409 PARENT_DELETED` if the catalogue item is deleted. Re-adding the product via POST also revives the same row |
 | GET | `/campaigns/:campaignId/access` | **[adm/usr]** — lists every User with a grant on this campaign, with their `scopeType`/`outletIds` |
 
 **Activations** (`activations.routes.ts`, nested under the campaign-scoped router)
@@ -359,7 +360,11 @@ Conventions: campaign-scoped routes are nested under `/admin/v1/campaigns/:campa
 | PATCH | `/campaigns/:campaignId/activations/:activationId` | **[adm/usr]** — re-checks outlet if `outletId` changes; **re-runs the supervisor auto-grant** |
 | DELETE | `/campaigns/:campaignId/activations/:activationId` | **[adm/usr]** — soft delete (#102) |
 | POST | `/.../activations/:activationId/items` | **[adm/usr]** — body `{ campaignItemId }` or `{ addAll: true }` |
-| DELETE | `/.../activations/:activationId/items/:activationItemId` | **[adm/usr]** |
+| DELETE | `/.../activations/:activationId/items/:activationItemId` | **[adm/usr]** — soft delete (#111); recorded sales are kept and still counted in reports/exports/target progress (removal hides the product, it does not rewrite history). Outlet-scoped; 404 if the row is not on this campaign/activation |
+| POST | `/.../activations/:activationId/items/:activationItemId/restore` | **[adm/usr]** — undo; 404 if not removed, `409 PARENT_DELETED` if the campaign item, activation or catalogue item is deleted |
+| DELETE | `/campaigns/:campaignId/admins/:userId` and `/users/:id/campaign-access/:campaignId` | **[adm/usr]** / **[adm]** — remove a campaign access grant (hard delete). Returns `200 { data: { userId, campaignId, scopeType, outletIds } }` so the client can undo |
+| POST | `/campaigns/:campaignId/admins/:userId/restore` | **[adm/usr]** — undo of the above; body `{ scopeType, outletIds? }`. `409 ALREADY_GRANTED`; a subset-scoped caller cannot grant `all` or outlets outside their own (`403 OUTLET_NOT_ALLOWED`) |
+| — | mobile `PATCH /v1/products/:id/stock` | for a product removed by head office: accepted on the business day of removal (offline sales from a cached list are not lost), then `409 PRODUCT_REMOVED`. The portal sales `POST` refuses removed products with the same code |
 | GET | `/.../activations/:activationId/targets` | grant + outlet check |
 | POST | `/.../activations/:activationId/targets` | **[adm/usr]** |
 
@@ -729,3 +734,22 @@ user to any device.
   schemas. Add a key there to add an option — no migration. Current keys:
   `menu.favorites` — array of portal route paths (≤ 12, de-duplicated, order
   preserved).
+
+## Restore routes — undo of soft deletes (#110)
+
+Every `DELETE` that only sets a marker (`deletedAt` / `archivedAt` / staff `status: inactive`) now has an inverse. `DELETE` itself is unchanged. All restores are **[adm/usr]** (supervisor and sponsor tokens get `403`) and use the same access guards as the matching delete (`requireCampaignAccess`; the activation restore also applies the outlet guard).
+
+| Restore | Marker cleared |
+|---|---|
+| `POST /clients/:id/restore`, `/brands/:id/restore`, `/items/:id/restore`, `/cities/:id/restore`, `/outlets/:id/restore`, `/distributor-points/:id/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/restore`, `/campaigns/:campaignId/activations/:activationId/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/supervisor-routes/:id/restore`, `/supervisor-tasks/:id/restore` | `deletedAt` |
+| `POST /campaigns/:campaignId/sales-fields/:id/restore` | `archivedAt` |
+| `POST /staff/:id/reactivate` | `status: "active"` |
+
+Behaviour:
+- Returns the restored row (`softDeleted: false`). `404` if the row is unknown, belongs to another campaign, or is **not currently deleted**, so a double Undo is a clean 404.
+- `409 PARENT_DELETED` if a parent is still deleted (brand→client, item→brand, outlet/distributor point→city, campaign→client, activation→campaign/outlet, supervisor route/task and sales field→campaign). Nothing cascades up. An *inactive promoter* is not a deleted parent, so historical activations stay restorable.
+- Codes are unique among **live** rows only for `outletNo`, `campaignNo`, `[brandId, sku]` and active staff `phone` (partial indexes). If a code was re-used while the row was deleted, restore returns `409 CODE_IN_USE` (staff: `409 DUPLICATE`, field `phone`). `employeeId`, `mobileUsername` and `[campaignId, key]` are unique including deleted rows, so they cannot collide.
+- Staff: `reactivate` turns mobile login back on and the member counts towards licence seats again. "Deleted" and "manually set inactive" are the same state, so it works for both.
+- Writes the mobile app sent while an activation was deleted were rejected at the time and are not replayed by a restore.

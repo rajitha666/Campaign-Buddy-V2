@@ -149,6 +149,24 @@ router.patch(
   })
 );
 
+// #110 - undo for DELETE /staff/:id. Only acts on an inactive member (deleted and
+// manually-set-inactive are the same state, so this also re-enables those). It turns
+// mobile login back on and the member counts towards licence seats again.
+router.post(
+  "/staff/:id/reactivate",
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.staff.findUnique({ where: { id: req.params.id } });
+    if (!existing || existing.status !== "inactive") throw notFound("Staff");
+    const reactivated = await withActivePhoneConflictAsDuplicate(async () => {
+      const r = await prisma.staff.updateMany({ where: { id: existing.id, status: "inactive" }, data: { status: "active" } });
+      if (!r.count) throw notFound("Staff");
+      return prisma.staff.findUniqueOrThrow({ where: { id: existing.id } });
+    });
+    res.json(ok({ ...reactivated, softDeleted: false })); // passwordHash omitted globally
+  })
+);
+
 router.delete(
   "/staff/:id",
   requireRole("adm", "usr"),

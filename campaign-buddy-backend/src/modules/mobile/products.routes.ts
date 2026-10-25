@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { dayDate } from "../../utils/dates";
+import { dayDate, colomboYmd } from "../../utils/dates";
+import { liveActivationItem } from "../../utils/liveItems";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, notFound, validationError } from "../../utils/apiResponse";
@@ -30,7 +31,7 @@ router.get(
 
     const [activationItems, productDefs] = await Promise.all([
       prisma.activationItem.findMany({
-        where: { activationId: activation.id, campaignItem: { item: { deletedAt: null } } },
+        where: { activationId: activation.id, ...liveActivationItem },
         include: {
           campaignItem: { include: { item: true } },
           salesRecords: { where: { date: today, archivedAt: null } },
@@ -86,8 +87,10 @@ router.get(
       include: { salesRecords: { where: { date: today, archivedAt: null } }, campaignItem: true },
     });
     const soldAcrossAllOutletsToday = activationItems.reduce((sum, ai) => sum + (ai.salesRecords[0]?.soldToday ?? 0), 0);
-    const earliestAdded = activationItems.length
-      ? activationItems.map((ai) => ai.campaignItem.addedAt).sort((a, b) => a.getTime() - b.getTime())[0]
+    // Removed products no longer count towards "added to campaign"; their sales above stay.
+    const liveItems = activationItems.filter((ai) => !ai.deletedAt && !ai.campaignItem.deletedAt);
+    const earliestAdded = liveItems.length
+      ? liveItems.map((ai) => ai.campaignItem.addedAt).sort((a, b) => a.getTime() - b.getTime())[0]
       : null;
     // spec §2.9 — `addedToCampaignAt` is a date, not a datetime
     const addedToCampaignAt = earliestAdded ? earliestAdded.toISOString().slice(0, 10) : null;
@@ -123,12 +126,21 @@ router.patch(
 
     const activationItem = await prisma.activationItem.findUnique({
       where: { id: activationItemId },
-      include: { activation: true },
+      include: { activation: true, campaignItem: { select: { deletedAt: true } } },
     });
     // Only the assigned promoter may edit an activation's stock, and never on an
     // activation an admin has deleted.
     if (!activationItem || activationItem.activation.deletedAt || activationItem.activation.staffId !== req.staff!.sub) {
       throw notFound("Activation product");
+    }
+    // #111: a product an admin removed. Sales entered from a cached (offline)
+    // list on the day of removal are still accepted; from the next business day
+    // on the write is refused with a clear message.
+    const removedAt = [activationItem.deletedAt, activationItem.campaignItem.deletedAt]
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    if (removedAt && colomboYmd(removedAt) < colomboYmd()) {
+      throw new ApiError(409, "PRODUCT_REMOVED", "This product was removed from the activation by head office");
     }
     await requireOpenShift(activationItem.activation, capturedAt);
 

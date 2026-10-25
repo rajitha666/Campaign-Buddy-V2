@@ -65,6 +65,7 @@ cd campaign-buddy-portal  && npm test   # vitest unit
 cd campaign-buddy-app     && npm test   # vitest unit
 cd campaign-buddy-mcp     && npm test   # vitest, in-memory MCP + fake backend (no DB needed)
 cd product-owner-agent    && npm test   # node:test, pure logic (no network)
+node --test scripts/agent/test/*.test.mjs   # agent toolkit (review-brief, doc-section, quiet-run logic)
 ```
 
 ## Follow minimal TDD for all changes
@@ -106,7 +107,31 @@ matching guide — `admin.html` / `supervisor.html` / `sponsor.html` /
 swap in place, same filename. Full procedure and the screen↔guide map:
 `marketing/training/MAINTENANCE.md`.
 
+## Team mode — the owner's stop/start gate for agent review
+
+The agent team (`docs/agent-team/roles.md`) costs tokens. The owner can dial it with three modes and **may
+always continue building without it**:
+
+| Mode | Meaning |
+|---|---|
+| `full` | every role and all four owner gates (design, merge, docs, marketing) as designed |
+| `light` | Product Owner at intake and before merge + automatic checks (tests, build, e2e). Specialists run only for **major** or **risky** changes (API contract, schema, auth, sync) or when the owner asks. No docs/marketing agents unless asked |
+| `off` | no agent reviews or gates. Just build. Tests/CI still run (they cost no tokens). The baseline rules in this file still apply: minimal TDD, tests pass before done, update the user guides when a screen changes, no secrets in the repo |
+
+**How it works (for Claude sessions):**
+1. At the start of every work item, read `~/.campaign-buddy/team-mode.json` (`mode`, `since`, `reason`). Missing or unreadable → `full`.
+2. Change it **only when the owner says so** in chat (`team full` / `team light` / `team off`): write the file, update the dashboard's `team/mode` document, confirm in one line. Never switch modes on your own.
+3. Obey it for the whole item. In `light`/`off`, don't spawn reviewer agents "to be safe" — say once, in a line, if you see a clear block-category risk (charter §7), then carry on.
+4. **Token guard:** at stage boundaries (not constantly) check plan usage; at **70%** (then **90%**) of the 5-hour limit, tell the owner and ask whether to go `light` or `off`. Ask, don't decide.
+5. When agents do run, record each run and gate change on the team dashboard (see `docs/agent-team/roles.md` → "Ledger").
+6. The GitHub layer (when it exists) reads the repo variable `AGENT_TEAM_MODE` from the default branch, never from a PR's own files; "team off/light/full" in chat also sets that variable.
+
+This is the owner's own switch. It does not weaken the charter (`docs/product-charter.md` still defines what is acceptable) or the
+CI checks; it only controls whether *agents* review.
+
 ## Product Owner review — the gate before the owner
+
+*(Applies in `full` mode; in `light` the Product Owner still runs at intake and before merge; in `off` skip it — see Team mode above.)*
 
 `docs/product-charter.md` is the product's true north (Sri Lanka's in-store activation system of
 record, multi-agency SaaS delivered as one isolated deployment per agency, offline-first, cheap to
