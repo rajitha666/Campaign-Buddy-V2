@@ -5,6 +5,7 @@ import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
 import { coerceDates } from "../../utils/coerce";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
 import { liveActivationItem } from "../../utils/liveItems";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
@@ -92,6 +93,31 @@ router.post(
     });
     await autoGrantSupervisor(created.supervisorStaffId, req.params.campaignId, created.outletId);
     res.status(201).json(ok(created));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/activations/:activationId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Activation",
+      load: async () => {
+        const row = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
+        return row && row.campaignId === req.params.campaignId ? row : null;
+      },
+      guard: async (row) => {
+        assertOutletAllowed(req, row.outletId);
+        // An inactive promoter is not a deleted parent: history stays restorable.
+        parentDeleted(
+          ["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })],
+          ["outlet", await prisma.outlet.findUnique({ where: { id: row.outletId } })]
+        );
+      },
+      update: (row) => clearMarker(prisma.activation, row.id, "deletedAt", "Activation"),
+    });
+    res.json(ok(out));
   })
 );
 

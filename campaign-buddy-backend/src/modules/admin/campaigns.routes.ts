@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed } from "../../middleware/campaignAccess";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
 import { coerceDates } from "../../utils/coerce";
 import { validate } from "../../middleware/validate";
@@ -129,6 +130,24 @@ router.delete(
     if (!existing || existing.deletedAt) throw notFound("Campaign");
     await prisma.campaign.update({ where: { id: req.params.campaignId }, data: { deletedAt: new Date() } });
     res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Campaign",
+      load: () => prisma.campaign.findUnique({ where: { id: req.params.campaignId } }),
+      guard: async (row) =>
+        parentDeleted(["client", await prisma.client.findUnique({ where: { id: row.clientId } })]),
+      update: (row) => clearMarker(prisma.campaign, row.id, "deletedAt", "Campaign"),
+      // campaignNo is unique among live campaigns only
+      conflict: { code: "CODE_IN_USE", message: "That campaign number is now used by another campaign" },
+    });
+    res.json(ok(out));
   })
 );
 

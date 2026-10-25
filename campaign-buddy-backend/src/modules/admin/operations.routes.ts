@@ -5,6 +5,7 @@ import { ApiError, ok, okList, notFound, validationError } from "../../utils/api
 import { liveActivationItem } from "../../utils/liveItems";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
 import { dayDate, dayBounds, colomboYmd } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
@@ -505,6 +506,25 @@ router.delete(
   })
 );
 
+router.post(
+  "/campaigns/:campaignId/supervisor-routes/:id/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Supervisor route",
+      load: async () => {
+        const row = await prisma.supervisorRoute.findUnique({ where: { id: req.params.id } });
+        return row && row.campaignId === req.params.campaignId ? row : null;
+      },
+      guard: async (row) =>
+        parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
+      update: (row) => clearMarker(prisma.supervisorRoute, row.id, "deletedAt", "Supervisor route"),
+    });
+    res.json(ok(out));
+  })
+);
+
 // ---- Supervisor Tasks (QA checklist) — the per-campaign template that
 // supervisors fill in on mobile during outlet visits (see
 // mobile/supervisorChecklist.routes.ts). A `photo` task carries the number of
@@ -703,6 +723,25 @@ router.delete(
     if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Supervisor task");
     await prisma.supervisorTask.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
     res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/supervisor-tasks/:id/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Supervisor task",
+      load: async () => {
+        const row = await prisma.supervisorTask.findUnique({ where: { id: req.params.id } });
+        return row && row.campaignId === req.params.campaignId ? row : null;
+      },
+      guard: async (row) =>
+        parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
+      update: (row) => clearMarker(prisma.supervisorTask, row.id, "deletedAt", "Supervisor task"),
+    });
+    res.json(ok(out));
   })
 );
 
