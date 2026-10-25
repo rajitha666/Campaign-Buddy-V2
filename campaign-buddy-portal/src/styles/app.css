@@ -156,6 +156,8 @@
 .btn-secondary { background:var(--surface-card); color:var(--ink); border:1.5px solid var(--line); }
 .btn-secondary:hover { border-color:#C7D0C9; }
 .btn-ghost-alert { background:var(--alert-tint); color:var(--alert); }
+.btn-danger { background:var(--alert); color:#fff; }
+.btn-danger:hover:not(:disabled) { background:#BF3A32; }
 .btn-sm { padding:7px 12px; font-size:13px; }
 .locked-note { display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-muted); background:var(--surface); border:1px dashed var(--line); border-radius:10px; padding:8px 13px; }
 
@@ -392,6 +394,17 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .toast-stack { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:1100; display:flex; flex-direction:column; gap:8px; align-items:center; }
 .toast { background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:12px 20px; border-radius:24px; }
 .toast.error { background:var(--alert); }
+.toast { display:flex; align-items:center; gap:14px; }
+.toast-action { background:none; border:0; color:#FFB98F; font-weight:700; font-size:13px; cursor:pointer; padding:2px 6px; margin:-2px -8px -2px 0; border-radius:8px; text-decoration:underline; text-underline-offset:3px; }
+.toast-action:hover { color:#fff; }
+
+/* ===== confirm dialog (replaces window.confirm) ===== */
+.confirm-overlay { z-index:1200; }
+.confirm-card { position:fixed; z-index:1201; left:50%; top:50%; transform:translate(-50%,-50%); width:min(420px, 92vw); background:var(--surface-card); border-radius:16px; padding:22px 22px 18px; box-shadow:0 20px 60px rgba(0,0,0,0.28); }
+.confirm-title { font-size:16px; }
+.confirm-message { font-size:13px; color:var(--text-muted); margin-top:8px; line-height:1.5; }
+.confirm-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+@media (max-width: 480px) { .confirm-actions { flex-direction:column-reverse; } .confirm-actions .btn { width:100%; } }
 
 .crumb-pill { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); background:var(--surface-card); border:1px solid var(--line); border-radius:10px; padding:9px 14px; margin-bottom:16px; }
 .crumb-pill b { color:var(--text-primary); }

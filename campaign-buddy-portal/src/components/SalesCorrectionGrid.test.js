@@ -19,7 +19,9 @@ describe('SalesCorrectionGrid', () => {
 
   it('archives a row only after confirmation (soft delete, sales-archive-spec.md)', () => {
     expect(page).toMatch(/onClick=\{\(\) => archiveRow\(i\)\}>Archive</);
-    expect(page).toMatch(/window\.confirm\('Archive this sales record\? It will be excluded from all totals and reports\.'\)/);
+    expect(page).toMatch(/title: 'Archive this sales record\?'/);
+    expect(page).toMatch(/if \(!ok\) return;/);
+    expect(page).not.toMatch(/window\.confirm/);
     expect(page).toMatch(/archiveRow\(idx\)/);
     expect(page).not.toMatch(/type="checkbox" checked/);
   });
@@ -27,7 +29,7 @@ describe('SalesCorrectionGrid', () => {
   it('shows archived rows muted (no badge) with an Unarchive action', () => {
     expect(page).toMatch(/opacity: 0\.55/);
     expect(page).not.toMatch(/badge pending/);
-    expect(page).toMatch(/window\.confirm\('Unarchive this sales record\? It will be counted in all totals and reports again\.'\)/);
+    expect(page).toMatch(/title: 'Unarchive this sales record\?'/);
   });
 
   it('keeps the actions cell a fixed width and never reloads the grid', () => {

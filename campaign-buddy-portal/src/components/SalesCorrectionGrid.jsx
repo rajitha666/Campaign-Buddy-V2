@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { salesLookup, salesRecords as salesRecordsApi, salesFields as salesFieldsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
@@ -48,6 +49,7 @@ function CustomFieldCell({ def, value, onChange }) {
 // every total/report, Unarchive brings it back.
 export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSaved }) {
   const { push } = useToast();
+  const confirm = useConfirm();
   const { designationLabel } = useAuth();
   const [rows, setRows] = useState(null);
   const [meta, setMeta] = useState({});
@@ -163,7 +165,13 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function archiveRow(idx) {
     const r = rows[idx];
     if (r.id == null) return;
-    if (!window.confirm('Archive this sales record? It will be excluded from all totals and reports.')) return;
+    const ok = await confirm({
+      title: 'Archive this sales record?',
+      message: 'It will be excluded from all totals and reports. You can unarchive it later.',
+      confirmLabel: 'Archive',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await salesRecordsApi.archive(campaignId, r.id);
       // mute the row in place — no reload, the table never jumps
@@ -180,7 +188,12 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function unarchiveRow(idx) {
     const r = rows[idx];
     if (!r.archived) return;
-    if (!window.confirm('Unarchive this sales record? It will be counted in all totals and reports again.')) return;
+    const ok = await confirm({
+      title: 'Unarchive this sales record?',
+      message: 'It will be counted in all totals and reports again.',
+      confirmLabel: 'Unarchive',
+    });
+    if (!ok) return;
     try {
       await salesRecordsApi.restore(campaignId, r.id);
       setRows((rs) => rs.map((row, i) => (i === idx ? { ...row, archived: false } : row)));
