@@ -36,6 +36,33 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 
 `0 Intake` → `1 Design` → **Gate A** → `2 Build` → `3 Review` → **Gate B (merge)** → `4 Docs` → **Gate C** → `5 Marketing (major only)` → **Gate D** → `6 Close`.
 
+## Team mode (owner's stop/start gate)
+
+`full` · `light` · `off` — defined in `AGENTS.md` ("Team mode"). Per-role behaviour:
+
+| Role | full | light | off |
+|---|---|---|---|
+| Product Owner | intake + final | intake + before merge | not run |
+| Technical Architect | per change profile | only major/risky, or on request | not run |
+| UX/UI Architect | per change profile | only major or on request | not run |
+| QA verifier | every PR | every PR (automatic checks always run) | not run (CI tests still run) |
+| Docs & enablement | stage 4 | only on request (builder still keeps guides in sync per `AGENTS.md`) | not run |
+| Marketing writer | major changes | only on request | not run |
+| Owner gates A–D | all four | merge only (Gate B) | none |
+
+State lives in `~/.campaign-buddy/team-mode.json` (owner-local; absent = `full`) and is mirrored to the dashboard. The owner changes it by
+telling Claude in chat. Claude never changes it unprompted; at 70% / 90% of the 5-hour plan limit Claude *asks*.
+
+## Ledger (what the dashboard shows)
+
+Claude records, in the Team Console artifact's database, only these events (so recording stays cheap):
+- `runs/<id>` — one per agent run: `role, subject, model, tokens, tools, durationMs, verdict, at, trigger (chat|ci), modeAtRun`.
+  Tokens and durations are the figures the agent run reports back; they are not billed amounts.
+- `agents/<role>` — `state`: `idle | running | waiting`, and `subject` while running.
+- `gates/<id>` — work item, which gate, `state`: `waiting-owner | approved | skipped | not-started`.
+- `team/mode` and `team/usage` — current mode, and a plan-usage snapshot taken at stage boundaries.
+CI-layer runs will be added when that layer exists (Phase 1).
+
 ## Verdict contract (all roles)
 
 Lead with the verdict, then a one-sentence TL;DR.

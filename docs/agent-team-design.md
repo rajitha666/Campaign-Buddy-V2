@@ -175,6 +175,7 @@ Per PR: reviewer findings **accepted vs dismissed**, owner overrides, review ite
 
 Prerequisites: bot secrets (issue #100 + the PO bot's `CLAUDE_CODE_OAUTH_TOKEN`), `gh auth refresh -s project` if we want a project board for the roadmap.
 
+
 ## 10. Owner decisions (resolved 2026-10-25)
 
 | # | Decision | Effect on the design |
@@ -197,3 +198,23 @@ Phase 0, in order, each reviewed by the owner before the next:
 4. **`AGENTS.md` delivery workflow** section + stage skills (`/intake`, `/design`, `/review`, `/docs-sync`, `/release-marketing`).
 5. **Pilot #114** end to end in chat, all gates on; write down what each role caught or missed.
 6. Only then Phase 1 (GitHub layer, report-only). Prerequisites: PO bot secret + #100 items, `main` branch protection (decision 4).
+
+## 12. Stop/start gate and the Team Console (added 2026-10-25)
+
+**Why:** the pipeline spends tokens, and the owner's Pro plan has a 5-hour limit (read live: ~44% used at the time of writing, with this chat's own context at 57% of 1M tokens). The owner must be able to carry on building without the process, and see what the team is doing and costing.
+
+**Decisions (owner):** three levels (Full / Light / Off); toggled **by telling Claude in chat**; token guard = **warn and ask**, never auto-switch; dashboard = a **private hosted page** the owner can extend over time.
+
+**Mode** — defined in `AGENTS.md` ("Team mode") and `docs/agent-team/roles.md`. Stored in `~/.campaign-buddy/team-mode.json` (owner-local, outside git; absent = `full`), so it works across worktrees and does not change Sankalpana's sessions. The future GitHub layer reads a repo variable `AGENT_TEAM_MODE` from the default branch (a PR can't disable its own reviews); a chat "team off/light/full" sets both.
+
+**Token guard** — at stage boundaries Claude reads plan usage; at 70% then 90% of the 5-hour limit it tells the owner and asks "light or off?". It never decides.
+
+**Team Console** — a private claude.ai page (live, database-backed): current mode, plan-usage meters (5-hour, weekly, extra usage, this chat's context), the roster with live state and last verdict, what is waiting on the owner (gates), tokens by role, and recent runs, each labelled with where the number comes from. Claude updates it in chat as events happen; it shows nothing new when no session runs. Extending it later = adding a collection and a panel.
+
+**Honest limits of v1:**
+- Token figures for agent runs are the totals each run reports (not input/output split, not billed cost).
+- Only in-chat runs are counted until the GitHub layer exists; CI runs will be added by having the runner post a summary that Claude syncs in (or a later direct feed).
+- The dashboard does not control anything; the mode is changed in chat.
+- Recording events costs a few tokens per event; it is batched and limited to the five event types in `roles.md`.
+
+**Possible later additions:** a dashboard switch that writes a mode *request* Claude reads on its next turn; per-story cost roll-ups; findings accepted/dismissed rate (design §8); CI run feed.
