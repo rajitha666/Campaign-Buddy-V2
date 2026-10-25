@@ -13,7 +13,8 @@ export function ConfirmProvider({ children }) {
 
   const confirm = useCallback((opts) => new Promise((resolve) => {
     returnFocusRef.current = document.activeElement;
-    setState({ opts: opts || {}, resolve });
+    // A second confirm() while one is open cancels the first, so its promise never hangs.
+    setState((prev) => { prev?.resolve(false); return { opts: opts || {}, resolve }; });
   }), []);
 
   const close = useCallback((result) => {
@@ -22,7 +23,14 @@ export function ConfirmProvider({ children }) {
       return null;
     });
     const el = returnFocusRef.current;
-    if (el && typeof el.focus === 'function') setTimeout(() => el.focus(), 0);
+    // If the opener was removed (e.g. the deleted row), fall back to the page's main region.
+    setTimeout(() => {
+      const target = el && el.isConnected ? el : document.querySelector('main, [role="main"]');
+      if (target && typeof target.focus === 'function') {
+        if (target === el) target.focus();
+        else { target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
+      }
+    }, 0);
   }, []);
 
   return (
@@ -53,6 +61,7 @@ function ConfirmDialog({ opts, onClose }) {
     if (!focusables || focusables.length === 0) return;
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
+    if (!rootRef.current.contains(document.activeElement)) { e.preventDefault(); first.focus(); return; }
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
@@ -63,7 +72,7 @@ function ConfirmDialog({ opts, onClose }) {
       <div
         ref={rootRef}
         className="confirm-card"
-        role="alertdialog"
+        role={danger ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby={message ? 'confirm-message' : undefined}
