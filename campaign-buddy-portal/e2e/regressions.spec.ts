@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAs } from "./support/auth";
+import { loginAs, openNavSection } from "./support/auth";
 
 // Each spec here pins a specific bug that shipped and got fixed, so it can't
 // silently come back. Not a substitute for the smoke suite's broad coverage.
@@ -52,6 +52,7 @@ test("staff attendance outlet dropdown: reopen on click, keyboard select, and fi
   await page.locator(".topbar select").first().selectOption({ label: "Radiance Q3 Push" });
   // client-side navigation (a full page reload resets the selected campaign);
   // "Staff" opens its flyout, "Attendance" navigates.
+  await openNavSection(page, "People");
   await page.locator(".nav-item", { hasText: "Staff" }).first().click();
   await page.locator(".nav-child", { hasText: "Attendance" }).first().click();
   await expect(page.locator("table tbody tr").first()).toBeVisible();
@@ -87,7 +88,10 @@ test("staff attendance outlet dropdown: reopen on click, keyboard select, and fi
 // preserves its state.
 test("table search: keeps focus while typing and does not carry text across tables (issue #27)", async ({ page }) => {
   await loginAs(page, "admin");
-  await page.goto("/outlets");
+  // Short tables hide their search box by design (<=10 rows), so use two
+  // screens with plenty of demo rows: the sales log, then staff attendance.
+  await page.locator(".topbar select").first().selectOption({ label: "Radiance Q3 Push" });
+  await page.goto("/sales/sku-wise");
   await expect(page.locator("table tbody tr").first()).toBeVisible();
 
   const search = page.locator(".search-box input");
@@ -99,8 +103,9 @@ test("table search: keeps focus while typing and does not carry text across tabl
   await expect(page.locator("table tbody tr").first()).toBeVisible();
 
   // switch to another table — search must not carry over
+  await openNavSection(page, "People");
   await page.locator(".nav-item", { hasText: "Staff" }).first().click();
-  await page.locator(".nav-child", { hasText: "List" }).first().click();
+  await page.locator(".nav-child", { hasText: "Attendance" }).first().click();
   await expect(page.locator("table tbody tr").first()).toBeVisible();
   await expect(page.locator(".search-box input")).toHaveValue("");
 });
@@ -112,6 +117,7 @@ test("table search: keeps focus while typing and does not carry text across tabl
 test("brand_wise activation target form offers brand selection and saves a brand target (issue #28)", async ({ page }) => {
   await loginAs(page, "admin");
   await page.locator(".topbar select").first().selectOption({ label: "Radiance Q3 Push" });
+  await openNavSection(page, "Campaigns");
   await page.locator(".nav-item", { hasText: "Campaigns" }).first().click();
   await page.locator(".nav-child", { hasText: "Activation" }).first().click();
   await expect(page.locator("table tbody tr", { hasText: "Nawala weekday activation" }).first()).toBeVisible({ timeout: 10000 });
@@ -150,6 +156,7 @@ test("favorite pages follow the account to another device (personalization)", as
     r.url().includes("/me/preferences") && r.request().method() === "PUT";
 
   await loginAs(page, "admin");
+  await openNavSection(page, "Client & Catalog"); // the star lives inside a folded sidebar section
   const star = page.getByRole("button", { name: "Add Clients to favorites" });
   const saved = page.waitForResponse(isPreferencePut);
   await star.click({ force: true }); // hover-only affordance on desktop

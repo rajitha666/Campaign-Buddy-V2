@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { auth, campaigns as campaignsApi } from '../lib/endpoints';
 import { setAccessToken, loadStoredToken, registerUnauthorizedHandler, ApiError } from '../lib/apiClient';
 import { sortOptions } from '../lib/sortOptions';
+import { readCampaignChoice, writeCampaignChoice, pickCampaign } from '../lib/campaignChoice';
 
 const AuthCtx = createContext(null);
 
@@ -20,16 +21,24 @@ export function roleToPersona(roleId) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // { id, displayName, roleId, defaultUrl }
   const [campaignList, setCampaignList] = useState([]); // scoped to caller's CampaignAccessGrant
-  const [currentCampaignId, setCurrentCampaignId] = useState(null);
+  const [currentCampaignId, setCurrentCampaignIdState] = useState(null);
+  const userIdRef = useRef(null);
   const [status, setStatus] = useState('loading'); // loading | authed | anon
   const [authError, setAuthError] = useState(null);
 
-  const loadCampaigns = useCallback(async () => {
+  // Selecting a campaign also remembers it for this user (see lib/campaignChoice).
+  const setCurrentCampaignId = useCallback((id) => {
+    setCurrentCampaignIdState(id);
+    writeCampaignChoice(userIdRef.current, id);
+  }, []);
+
+  const loadCampaigns = useCallback(async (userId) => {
+    userIdRef.current = userId || null;
     try {
       const res = await campaignsApi.list({ pageSize: 1000 });
       const list = sortOptions(res?.data, (c) => c.name); // alphabetical campaign switcher (#67)
       setCampaignList(list);
-      setCurrentCampaignId((prev) => prev || list[0]?.id || null);
+      setCurrentCampaignIdState((prev) => prev || pickCampaign(list, readCampaignChoice(userId)));
     } catch (e) {
       // Non-fatal: dashboard/screens will show their own error states.
       setCampaignList([]);
@@ -46,9 +55,10 @@ export function AuthProvider({ children }) {
     // stored user profile saved at login time rather than re-fetching it.
     const stored = localStorage.getItem('cb_user');
     if (stored) {
-      setUser(JSON.parse(stored));
+      const storedUser = JSON.parse(stored);
+      setUser(storedUser);
       setStatus('authed');
-      await loadCampaigns();
+      await loadCampaigns(storedUser?.id);
     } else {
       setStatus('anon');
     }
@@ -59,6 +69,9 @@ export function AuthProvider({ children }) {
       setAccessToken(null);
       localStorage.removeItem('cb_user');
       setUser(null);
+      setCampaignList([]);
+      setCurrentCampaignIdState(null);
+      userIdRef.current = null;
       setStatus('anon');
     });
     bootstrap();
@@ -74,7 +87,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('cb_user', JSON.stringify(u));
       setUser(u);
       setStatus('authed');
-      await loadCampaigns();
+      await loadCampaigns(u?.id);
       return true;
     } catch (e) {
       const message = e instanceof ApiError && e.status === 401
@@ -91,7 +104,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('cb_user');
     setUser(null);
     setCampaignList([]);
-    setCurrentCampaignId(null);
+    setCurrentCampaignIdState(null);
+    userIdRef.current = null;
     setStatus('anon');
   }, []);
 

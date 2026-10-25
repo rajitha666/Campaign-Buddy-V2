@@ -102,6 +102,13 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     }
   }
 
+  // Pick an outlet (or change the date) and the sales appear — no separate Load click.
+  // The button below stays as a manual refresh.
+  useEffect(() => {
+    if (campaignId && form.outletId) loadSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, form.outletId, form.date]);
+
   function setCell(idx, key, val) {
     setRows((r) => r.map((row, i) => (i === idx ? { ...row, [key]: val } : row)));
   }
@@ -218,7 +225,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     <div>
       {filterSlot}
       <div className="filter-bar" style={{ marginTop: 8 }}>
-        <button className="btn btn-primary btn-sm" onClick={loadSales}>Load sales</button>
+        <button className="btn btn-primary btn-sm" onClick={loadSales} disabled={!form.outletId} title={form.outletId ? undefined : 'Choose an outlet first'}>Refresh</button>
         {rows && rows.length > 0 ? <button className="btn btn-secondary btn-sm" onClick={exportCsv}>Export CSV</button> : null}
       </div>
       {rows && meta.activationId ? (
