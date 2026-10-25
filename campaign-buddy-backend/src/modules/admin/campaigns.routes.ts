@@ -194,7 +194,12 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.campaignItem.delete({ where: { id: req.params.campaignItemId } });
+    const row = await prisma.campaignItem.findFirst({
+      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId },
+      select: { id: true },
+    });
+    if (!row) throw notFound("Campaign item");
+    await prisma.campaignItem.delete({ where: { id: row.id } });
     res.status(204).send();
   })
 );

@@ -32,3 +32,25 @@ describe("removing items never deletes recorded sales (#111)", () => {
     expect(await prisma.campaignItem.count({ where: { id: campaignItem.id } })).toBe(1);
   });
 });
+
+// The delete routes used to look the row up by id alone, so a user with access
+// to campaign A could remove an item that belongs to campaign B.
+describe("item delete is scoped to the campaign in the URL (#111)", () => {
+  it("cannot delete another campaign's activation item or campaign item", async () => {
+    const a = await makeCampaignWithActivation();
+    const b = await makeCampaignWithActivation();
+    const auth = { Authorization: `Bearer ${await adminToken()}` };
+
+    const r1 = await request(app)
+      .delete(`/admin/v1/campaigns/${a.campaign.id}/activations/${a.activation.id}/items/${b.activationItem.id}`)
+      .set(auth);
+    expect(r1.status).toBe(404);
+    expect(await prisma.activationItem.count({ where: { id: b.activationItem.id } })).toBe(1);
+
+    const r2 = await request(app)
+      .delete(`/admin/v1/campaigns/${a.campaign.id}/items/${b.campaignItem.id}`)
+      .set(auth);
+    expect(r2.status).toBe(404);
+    expect(await prisma.campaignItem.count({ where: { id: b.campaignItem.id } })).toBe(1);
+  });
+});

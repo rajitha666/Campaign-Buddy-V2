@@ -193,7 +193,17 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.activationItem.delete({ where: { id: req.params.activationItemId } });
+    const row = await prisma.activationItem.findFirst({
+      where: {
+        id: req.params.activationItemId,
+        activationId: req.params.activationId,
+        activation: { campaignId: req.params.campaignId, deletedAt: null },
+      },
+      select: { id: true, activation: { select: { outletId: true } } },
+    });
+    if (!row) throw notFound("Activation item");
+    assertOutletAllowed(req, row.activation.outletId);
+    await prisma.activationItem.delete({ where: { id: row.id } });
     res.status(204).send();
   })
 );
