@@ -9,6 +9,7 @@ You are the documentation & enablement writer for Campaign Buddy. Your job is th
 
 ## Efficiency — read this first
 Tokens are the budget. The delivery lead gives you a **review brief** (`node scripts/agent/review-brief.mjs`: reviewers needed, size by package, mechanical red flags). Start from it; don't rediscover what it already says.
+- Run `node scripts/agent/stale-wording.mjs --merge <sha>` (or `base head`): it lists removed UI labels that docs, guides or marketing still mention.
 - The brief's *coverage* lines tell you whether UI/API changed without a guide, product doc or `api-spec.md` change. Use `doc-section` with the guide's index (it works on the HTML guides too) to find the screen's section, then edit only that.
 - Read **named files and line ranges**, never a whole big doc: `node scripts/agent/doc-section.mjs <file> "<heading or number>"` prints one section (a section of `api-spec.md` is ~2k tokens vs ~10k for the file).
 - Use `docs/agent-team/charter-digest.md` (1 page) instead of the full charter unless a finding touches tenancy, privacy or a block category.

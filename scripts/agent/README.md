@@ -9,6 +9,11 @@ Usage and rules: `docs/agent-team/roles.md` → "Efficiency toolkit".
 | `doc-section.mjs` | one section of a big markdown/HTML doc, or a heading index with token sizes |
 | `quiet-run.mjs` | run a command, print counts and first failures only (full log to a temp file) |
 | `fresh-stack.mjs` | isolated freshly seeded test DB + backend :4300 + portal :5173; **refuses any database not ending in `_test`** |
+| `migration-lint.mjs` | data-loss / populated-table risks in migrations; exit 1 on danger |
+| `soft-delete-lint.mjs` | backend reads of soft-deletable models with no deletedAt/archivedAt filter (heuristic) |
+| `stale-wording.mjs` | UI labels a change removed that docs/guides/marketing still mention |
+| `claim-impact.mjs` | marketing lines that mention given feature keywords (ledger first once `marketing/CLAIMS.md` exists) |
+| `shoot.mjs` | screenshots + accessibility/layout checks at several widths (uses the portal's Playwright; run against `fresh-stack`). Windows Git Bash: pass routes without a leading slash |
 | `lib/` | pure logic, unit-tested in `test/` (`node --test scripts/agent/test/*.test.mjs`) |
 
-Red flags are heuristics ("verify before reporting"), not verdicts. Not built yet: `stale-wording`, `claim-impact`, `shoot`, `migration-lint`, `soft-delete-lint`.
+Red flags are heuristics ("verify before reporting"), not verdicts.
