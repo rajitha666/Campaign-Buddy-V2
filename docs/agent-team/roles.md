@@ -36,6 +36,18 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 
 `0 Intake` → `1 Design` → **Gate A** → `2 Build` → `3 Review` → **Gate B (merge)** → `4 Docs` → **Gate C** → `5 Marketing (major only)` → **Gate D** → `6 Close`.
 
+| Stage | Skill (slash command) | Who runs | Output |
+|---|---|---|---|
+| 0 Intake | `/intake` | Product Owner triages | an approved, well-formed GitHub story with change profile (risky? major?) |
+| 1 Design | `/design` | Architect + UX/UI in parallel, PO confirms | one consolidated design → **Gate A** |
+| 2 Build | (builder, git worktree, minimal TDD) | builder | PR |
+| 3 Review | `/review` | brief → needed reviewers → PO aggregates | one consolidated verdict → **Gate B** |
+| 4 Docs | `/docs-sync` | Docs & enablement | guides, specs, screenshots → **Gate C** |
+| 5 Marketing | `/release-marketing` (major only) | Marketing writer, PO checks claims | brief/landing/deck + ledger → **Gate D** |
+| any | `/team` | delivery lead | mode, token guard, Team Console |
+
+Scope rule for the agent-building chat: fix only the team and its tooling; a product defect found while testing agents becomes a bug ticket for another chat.
+
 ## Knowledge base each role works from
 
 | Doc | Owner role | Holds |
@@ -44,6 +56,7 @@ The PO is always involved (intake and final). Device testing (Sankalpana) is a *
 | `docs/architecture.md` + `docs/adr/` | Technical Architect | system map, access control, data conventions (soft delete, dates), offline/shipped-client rules, budgets, tech-debt register, decision records |
 | `docs/portal-design.md` | UX/UI Architect | tokens, layout/responsive rules, components, patterns, accessibility checklist, copy rules, known deviations |
 | `marketing/CLAIMS.md` | Marketing writer | the strict claims ledger (section rows seeded by `claims-seed.mjs`) |
+| `docs/agent-team/charter-amendment-draft.md` | owner | exact text + follow-up code for the two proposed block categories (`architecture_risk`, `ux_accessibility`); not yet applied |
 | `docs/agent-team/autonomy.yml` | owner | gate settings, risky/major definitions, token-guard thresholds, review budgets |
 | `docs/physical-device-tests.md` | QA verifier | device-only checks for pre-release testing |
 
