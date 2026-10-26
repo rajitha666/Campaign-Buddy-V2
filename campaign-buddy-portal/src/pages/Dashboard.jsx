@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [outlets, setOutlets] = useState([]);
   const [liveStaff, setLiveStaff] = useState([]);
+  const [mapFailed, setMapFailed] = useState(false);
   const [trendDays, setTrendDays] = useState(7);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function Dashboard() {
         setOutlets(uniqueOutlets(actRes?.data || []));
         setLiveStaff(liveRes?.data || []);
       } catch {
-        /* the map is optional — the rest of the page stands without it */
+        if (!cancelled) setMapFailed(true); // the map is optional — the rest of the page stands without it
       }
     })();
     return () => { cancelled = true; };
@@ -81,7 +82,7 @@ export default function Dashboard() {
           {prog ? (
             <div className="ov-progress">
               <b>Day {prog.day} of {prog.totalDays}</b> · {prog.daysLeft} day{prog.daysLeft === 1 ? '' : 's'} left
-              <div className="track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={prog.percent} aria-label="Campaign progress">
+              <div className="track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={prog.percent} aria-valuetext={`Day ${prog.day} of ${prog.totalDays}`} aria-label="Campaign progress">
                 <div className="fill" style={{ width: `${prog.percent}%` }} />
               </div>
             </div>
@@ -105,12 +106,12 @@ export default function Dashboard() {
             {prev ? (
               <>
                 <div className="panel-sub">{daysAgoLabel(prev.daysAgo)}</div>
-                <div className="stat-grid" style={{ marginTop: 12, marginBottom: 0 }}>
-                  <StatCard label="Sales" value={formatMoney(prev.sales)} />
-                  <StatCard label="Units sold" value={prev.units.toLocaleString()} />
-                  <StatCard label="Outlets with sales" value={prev.outlets} />
-                  <StatCard label="Conversion" value={`${prev.conversionPct}%`} delta={`${prev.approached.toLocaleString()} approached · ${prev.converted.toLocaleString()} converted`} deltaDirection="flat" />
-                </div>
+                <dl className="ov-last">
+                  <div><dt>Sales</dt><dd>{formatMoney(prev.sales)}</dd></div>
+                  <div><dt>Units sold</dt><dd>{prev.units.toLocaleString()}</dd></div>
+                  <div><dt>Outlets with sales</dt><dd>{prev.outlets}</dd></div>
+                  <div><dt>Conversion</dt><dd>{prev.conversionPct}% <span className="cell-muted">({prev.converted.toLocaleString()} of {prev.approached.toLocaleString()} approached)</span></dd></div>
+                </dl>
               </>
             ) : (
               <div className="cell-muted" style={{ marginTop: 8 }}>No earlier sales yet.</div>
@@ -121,29 +122,35 @@ export default function Dashboard() {
             <div className="panel ov-block">
               <div className="panel-title">Outlets &amp; live sales staff</div>
               <div className="panel-sub">
-                {outlets.length} outlet{outlets.length === 1 ? '' : 's'} · {liveStaff.length} staff checked in now
+                {mapFailed ? 'Map unavailable right now — the figures above are unaffected.' : `${outlets.length} outlet${outlets.length === 1 ? '' : 's'} · ${liveStaff.length} staff checked in now`}
               </div>
-              <div style={{ marginTop: 14 }}>
-                <CampaignMap outlets={outlets} staff={liveStaff} />
-              </div>
+              {mapFailed ? null : (
+                <div style={{ marginTop: 14 }}>
+                  <CampaignMap outlets={outlets} staff={liveStaff} />
+                </div>
+              )}
             </div>
           ) : null}
 
           <div className="panel ov-block">
-            <div className="ov-tabs" role="group" aria-label="Trend range">
-              {[7, 30].map((d) => (
-                <button key={d} type="button" aria-pressed={trendDays === d} onClick={() => setTrendDays(d)}>{d} days</button>
-              ))}
+            <div className="ov-head">
+              <div>
+                <div className="panel-title">Sales trend</div>
+                <div className="panel-sub">Daily sales, last {trendDays} days</div>
+              </div>
+              <div className="ov-tabs" role="group" aria-label="Trend range">
+                {[7, 30].map((d) => (
+                  <button key={d} type="button" aria-pressed={trendDays === d} onClick={() => setTrendDays(d)}>{d} days</button>
+                ))}
+              </div>
             </div>
-            <div className="panel-title">Sales trend</div>
-            <div className="panel-sub">Daily sales, last {trendDays} days</div>
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 14 }} role="img" aria-label={`Sales trend for the last ${trendDays} days. The same figures are in the table below.`}>
               <TrendChart data={trend} series={[{ key: 'sales', label: 'Sales', color: 'var(--mango)' }]} />
             </div>
             <details style={{ marginTop: 10 }}>
               <summary className="cell-muted">View as table</summary>
               <table className="data-table" aria-label="Daily sales">
-                <thead><tr><th>Date</th><th>Sales</th><th>Approached</th><th>Converted</th></tr></thead>
+                <thead><tr><th scope="col">Date</th><th scope="col">Sales</th><th scope="col">Approached</th><th scope="col">Converted</th></tr></thead>
                 <tbody>
                   {[...trend].reverse().map((d) => (
                     <tr key={d.date}><td>{fmtDayShort(d.date)}</td><td>{formatMoney(d.sales)}</td><td>{d.approached}</td><td>{d.converted}</td></tr>
@@ -183,19 +190,21 @@ function delta(metric) {
   return d ? { delta: d.text, deltaDirection: d.direction } : {};
 }
 
+const SEVERITY_WORD = { high: 'Urgent', medium: 'Warning', low: 'Notice' };
+
 function AttentionStrip({ items }) {
   return (
     <section className="panel ov-block" aria-label="Needs attention">
       <div className="panel-title">Needs attention</div>
       {items.length === 0 ? (
-        <div className="attn-clear">✓ All clear — nothing needs your attention.</div>
+        <div className="attn-clear"><span aria-hidden="true">✓ </span>All clear — nothing needs your attention.</div>
       ) : (
         <div className="attn-list">
-          {items.map((i) => (
-            <Link key={i.type} to={i.link} className={`attn-row ${i.severity}`}>
-              <b>{i.count}</b>
-              <span>{i.label.replace(/^\d+\s/, '')}</span>
-              <span className="go">Fix →</span>
+          {items.map((i, n) => (
+            <Link key={`${i.type}-${n}`} to={i.link} className={`attn-row ${i.severity}`} aria-label={`${SEVERITY_WORD[i.severity]}: ${i.label}. Open to fix.`}>
+              <b aria-hidden="true">{i.count}</b>
+              <span aria-hidden="true">{i.label.replace(/^\d+\s/, '')}</span>
+              <span className="go" aria-hidden="true">Fix →</span>
             </Link>
           ))}
         </div>
@@ -206,7 +215,7 @@ function AttentionStrip({ items }) {
 
 function SetupChecklist({ setup, campaignId, canEdit }) {
   const step = (done, text, to) => (
-    <li>{done ? '✅' : '⬜'} {text}{!done && canEdit && to ? <> — <Link to={to}>set up</Link></> : null}</li>
+    <li><span aria-hidden="true">{done ? '✅' : '⬜'} </span><span className="sr-only">{done ? 'Done: ' : 'To do: '}</span>{text}{!done && canEdit && to ? <> — <Link to={to}>set up</Link></> : null}{!done && !canEdit ? <span className="cell-muted"> — ask an admin</span> : null}</li>
   );
   return (
     <section className="panel ov-setup" aria-label="Set up your campaign">

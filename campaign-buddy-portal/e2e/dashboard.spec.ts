@@ -35,3 +35,22 @@ test("Overview has no horizontal overflow at phone width", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("supervisor Overview loads with the attention strip and stays within the phone width", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await loginAs(page, "supervisor");
+  await expect(page.getByRole("region", { name: "Needs attention" })).toBeVisible();
+  await expect(page.locator(".stat-card .l", { hasText: "Sales today" }).first()).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+for (const width of [768, 1280]) {
+  test(`Overview shows at most four headline tiles above the fold at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await loginAs(page, "admin");
+    await expect(page.getByRole("region", { name: "Needs attention" })).toBeVisible();
+    const above = await page.locator(".stat-card").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().top < 800).length);
+    expect(above).toBeLessThanOrEqual(4);
+  });
+}
