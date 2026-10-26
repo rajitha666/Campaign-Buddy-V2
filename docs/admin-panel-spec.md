@@ -97,8 +97,9 @@ Sidebar sections, with which roles see them:
 ## 3. Module-by-Module Detail
 
 ### 3.1 Dashboard (`/dashboard`)
-**Purpose:** At-a-glance KPI summary for today/yesterday and the month.
-**Elements:** a top campaign/client filter select (**redundant once the global Campaign Switcher ships — keep only one**); 4 stat tiles (Active outlets today, Sales today, Active outlets yesterday, Sales yesterday); two chart panels (date-range chart, monthly bar chart); "Monthly summary" section (Total Sales, Total Units Sold, Average Sales, plus supporting cards — verify with a wider viewport, original audit viewport cut this off).
+**Purpose:** Attention-first Overview for the selected campaign (#114). Data comes from one call, `GET /admin/v1/campaigns/:campaignId/dashboard` (see Backend Spec). Campaign selection is the global Campaign Switcher.
+**Elements (admin / supervisor, top to bottom):** campaign progress ("Day x of y"); **Needs attention** strip (ranked rows linking to the fixing page: promoters not checked in after shift start, location older than 12 min, check-ins outside geofence, outlets with check-in but no sales update, reorder flags, previous-day shifts still open, pending leave; "All clear" when empty); 4 headline tiles (Sales today, Active outlets x of y, Conversion, Customers approached) each with a green/red change vs yesterday; **Last sales day** row (latest earlier day with sales, may be several days ago); live map; **Sales trend** (7/30 day toggle, "View as table"); **Best outlets** / **Lagging outlets** (7 days, zero-sales included) and **Unmet demand** panels; **Top 10 products**. A new campaign (no products or activations) shows a **Set up your campaign** checklist instead of zeros.
+**Sponsor variant (`view: "sponsor"`):** no attention strip, no map; panels renamed **Top-performing outlets**, **Outlets with room to grow**, **Customer interest**.
 
 ### 3.2 Clients (`/clients/all`)
 Manage client companies. Backed by `GET/POST /admin/v1/clients`, `PATCH/DELETE /admin/v1/clients/:id`.
