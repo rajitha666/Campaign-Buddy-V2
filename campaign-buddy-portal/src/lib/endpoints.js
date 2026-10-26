@@ -123,6 +123,9 @@ export const salesRecords = {
   archive: (campaignId, salesRecordId) => api.delete(`/campaigns/${campaignId}/sales/${salesRecordId}`),
   restore: (campaignId, salesRecordId) => api.post(`/campaigns/${campaignId}/sales/${salesRecordId}/restore`),
 };
+export const dashboard = {
+  get: (campaignId) => api.get(`/campaigns/${campaignId}/dashboard`),
+};
 export const dailyStats = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/stats`, { query }),
 };

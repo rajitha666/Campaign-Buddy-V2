@@ -229,7 +229,7 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .stat-card .l { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
 .stat-card .n { font-family:'Poppins',sans-serif; font-weight:600; font-size:25px; margin-top:8px; }
 .stat-card .delta { font-size:12px; margin-top:6px; font-weight:600; }
-.stat-card .delta.up { color:var(--success); } .stat-card .delta.down { color:var(--alert); }
+.stat-card .delta.up { color:var(--success); } .stat-card .delta.down { color:var(--alert); } .stat-card .delta.flat { color:var(--text-muted); }
 .dash-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
 .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; margin-top:18px; }
 .detail-field .l { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
@@ -251,6 +251,25 @@ table.data-table td.cell-wrap, table.data-table th.cell-wrap { white-space:norma
 .rank-num { width:22px; height:22px; border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; font-weight:600; font-size:12px; color:var(--text-muted); flex-shrink:0; }
 .rank-name { font-size:13px; font-weight:600; } .rank-meta { font-size:12px; color:var(--text-muted); }
 .rank-val { margin-left:auto; font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; }
+
+/* ===== overview (attention-first dashboard) ===== */
+.ov-progress { margin:-8px 0 16px; font-size:13px; color:var(--text-muted); }
+.ov-progress .track { height:6px; max-width:420px; background:var(--line); border-radius:3px; margin-top:6px; overflow:hidden; }
+.ov-progress .fill { height:100%; background:var(--mango); }
+.attn-list { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+.attn-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--text-primary); font-size:13.5px; }
+.attn-row:hover { filter:brightness(0.97); }
+.attn-row.high { background:var(--alert-tint); } .attn-row.medium { background:var(--mango-tint); } .attn-row.low { background:var(--surface); border:1px solid var(--line); }
+.attn-row b { min-width:24px; text-align:center; font-family:'Poppins',sans-serif; }
+.attn-row .go { margin-left:auto; font-size:12.5px; color:var(--text-muted); white-space:nowrap; }
+.attn-clear { color:var(--success); font-weight:600; font-size:13.5px; padding:6px 2px; }
+.ov-block { margin-bottom:16px; }
+.ov-tabs { display:inline-flex; gap:4px; float:right; }
+.ov-tabs button { border:1px solid var(--line); background:var(--surface-card); color:var(--text-primary); padding:5px 10px; border-radius:8px; font:inherit; font-size:12.5px; cursor:pointer; min-height:32px; }
+.ov-tabs button[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+.ov-three { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px; }
+.ov-setup li { margin:10px 0; font-size:14px; }
+@media (max-width:900px) { .ov-three { grid-template-columns:1fr; } }
 
 /* ===== maps (Leaflet + OpenStreetMap) ===== */
 /* isolation:isolate boxes in Leaflet's own z-index values (its zoom/attribution
