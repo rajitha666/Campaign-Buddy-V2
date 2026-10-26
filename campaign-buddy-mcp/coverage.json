@@ -273,6 +273,9 @@
     "GET /campaigns/:campaignId/absence": {
       "tool": "get_absence"
     },
+    "GET /campaigns/:campaignId/dashboard": {
+      "tool": "api_get"
+    },
     "GET /campaigns/:campaignId/outlet-attendance": {
       "tool": "get_outlet_attendance"
     },
