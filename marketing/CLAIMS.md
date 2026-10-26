@@ -90,3 +90,21 @@ First pass (2026-10-25): all rows seeded from the headings and **unverified** â€
 | store:8-ready-to-paste-summary-block | 8. Ready-to-paste summary block | marketing/app-store-listing.md:271-291 | unverified |  |  |
 | store:9-status-of-the-other-pieces | 9. Status of the other pieces | marketing/app-store-listing.md:292-318 | unverified |  |  |
 <!-- ledger:end -->
+
+## Claim-level rows: Overview redesign (#114), 2026-10-26
+Added by the Marketing writer. Pages: `marketing/capability-brief.html` (CB Office module table, "Dashboard" row; sponsor bullet in "The four people who log in"), `marketing/landing-site/index.html` (portal mock in the hero frame; sponsor list in "A window into the campaign"). Tests: `campaign-buddy-backend/test/dashboard.test.ts` (DB), `campaign-buddy-backend/test/dashboardRules.test.ts` (rules), `campaign-buddy-portal/e2e/dashboard.spec.ts` (UI).
+
+| ID | Claim | Shipped behaviour / evidence | Status |
+|---|---|---|---|
+| overview:needs-attention | Ranked "Needs attention" strip: promoters who should be checked in but are not, check-ins outside geofence, outlets with check-in but no sales update, open previous-day shifts | dashboard.test.ts "flags a promoter whose shift started...", "counts a geofence miss, a stale open shift and an outlet with no sales update"; dashboardRules.test.ts buildAttention (high severity first), shouldBeCheckedIn; e2e "admin Overview: attention strip..." | verified 2026-10-26 |
+| overview:stale-location | Stale location flagged | dashboardRules.test.ts isStaleShift (12 minute threshold). The brief/landing copy says "stale location" and gives no number | verified 2026-10-26 |
+| overview:reorder-leave | Products flagged for reorder, pending leave appear in the strip | Reorder: dashboard.test.ts "adds campaign progress, ... and a reorder alert". Pending leave: dashboard.test.ts line 87-92 (pending_leave in the attention types) | verified 2026-10-26 |
+| overview:headline-tiles | Four headline tiles (sales, active outlets, conversion, customers approached) with change vs yesterday | dashboard.test.ts "sums sales ... compares today with yesterday and last week"; dashboardRules.test.ts pctChange, conversionPct; e2e "at most four headline tiles above the fold" | verified 2026-10-26 |
+| overview:last-sales-day | "Last sales day" row (latest earlier day with sales) | dashboard.test.ts "returns the most recent earlier day with sales..." and "has no previous sales day..." | verified 2026-10-26 |
+| overview:progress-ranking-demand | Campaign progress (day x of y), best and lagging outlets, unmet demand | dashboard.test.ts "adds campaign progress, outlet ranking, unmet demand..."; dashboardRules.test.ts campaignProgress | verified 2026-10-26 |
+| overview:setup-checklist | Setup checklist for new campaigns | dashboard.test.ts "reports an empty setup state for a new campaign" (API only; no UI test of the checklist) | verified (API) 2026-10-26 |
+| overview:sponsor-view | Sponsors get the performance view without staff or location data (no attention strip, no map) | dashboard.test.ts "returns no staff-level attention items to a sponsor"; e2e "sponsor Overview shows performance only..." (asserts no staff/location requests) | verified 2026-10-26 |
+| overview:one-request | Overview loads from one summary request | e2e "admin Overview: ... from one summary request". Admin map is a separate optional request, so the copy says "loaded in one request" for the figures only | verified 2026-10-26 (wording: see note) |
+| overview:retired-live-map-sponsor | RETIRED: "Sponsors get a parallel dashboard with an embedded live map" and "Sponsor dashboard shows ... top products and a live map" | Sponsor Overview has no map (e2e sponsor test). Removed from both pages | retired; claim was contradicted |
+| overview:retired-yesterday-week | RETIRED: mock tiles "Sales Yesterday", "Outlets Yesterday", "Sales this week" bar chart | Replaced by new layout; stale-wording.mjs now clean | retired |
+| overview:not-shipped | NOT claimed: targets-vs-achieved, AI/agent features on the Overview, push alerts, server caching | Not in shipped code | n/a |
