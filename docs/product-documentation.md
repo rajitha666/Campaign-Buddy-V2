@@ -176,17 +176,36 @@ concurrent outlet Activations in a day where a promoter has one.
 The portal is a left-sidebar web app. Below, each module is described with its
 purpose, what's on the screen, and which roles see it.
 
-### 4.1 Dashboard  *(Admin only)*
+### 4.1 Overview (dashboard)  *(Admin, Supervisor, Sponsor)*
 
-At-a-glance KPIs for the selected campaign, composed live from the underlying data:
+An attention-first summary of the selected campaign, served by one aggregated
+call (`GET /campaigns/:campaignId/dashboard`). "Today" is the Colombo day. For
+admins and supervisors, top to bottom:
 
-- Stat tiles: **active outlets today**, **sales today**, **active outlets
-  yesterday**, **sales yesterday**.
-- A **month-to-date summary**: total sales, total units sold, average sales.
-- Top items by sales for the campaign.
+- **Campaign progress** — "Day x of y" and days left.
+- **Needs attention** — ranked rows, each linking to the page that fixes it:
+  promoters who should be checked in but are not (after shift start), location
+  older than 12 minutes, check-ins outside the geofence, outlets with a check-in
+  but no sales update, products flagged for reorder, shifts from a previous day
+  still open, and pending leave requests. Shows **All clear** when empty.
+- **Four headline tiles** — **Sales today**, **Active outlets** (x of y planned),
+  **Conversion**, **Customers approached** — each with a green/red change vs
+  yesterday.
+- **Last sales day** — the latest earlier day with sales (may be several days
+  ago): sales, units, outlets with sales, conversion.
+- The **live map** of outlets and checked-in staff.
+- **Sales trend** — 7 or 30 day toggle, plus **View as table**.
+- **Best outlets** and **Lagging outlets** (last 7 days; zero-sales outlets
+  included) and **Unmet demand** (products customers asked for but did not buy).
+- **Top 10 products** by sales.
 
-Sponsors get a **parallel Sponsor Dashboard**: today's outlet count, total sales
-and footfall, top products, plus an embedded **live promoter map**.
+A campaign with no products or activations yet shows a **Set up your campaign**
+checklist instead of zeros. Results respect the user's outlet grants.
+
+**Sponsors** see the same page without the attention strip and the map (staff,
+attendance and location signals are never shown to sponsors); the panels are
+named **Top-performing outlets**, **Outlets with room to grow** and **Customer
+interest**.
 
 ### 4.2 Clients & Catalog  *(Admin only)*
 
