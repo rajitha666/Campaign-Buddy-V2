@@ -174,6 +174,47 @@ router.get(
       attention = buildAttention(counts);
     }
 
+    // Most recent earlier day that actually had sales (campaigns skip days, so
+    // "yesterday" is often empty). Looked up beyond the 30-day trend window.
+    const prevRows = await prisma.$queryRaw<{ date: Date; sales: bigint; units: bigint; outlets: bigint }[]>`
+      WITH d AS (
+        SELECT MAX(sr."date") AS date FROM sales_records sr
+        JOIN activation_items ai ON ai."id" = sr."activationItemId"
+        JOIN activations a ON a."id" = ai."activationId"
+        WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL AND sr."archivedAt" IS NULL
+          AND sr."soldToday" > 0 AND sr."date" < ${todayYmd}::date ${outletSql}
+      )
+      SELECT d.date AS date, COALESCE(SUM(sr."soldToday" * i."unitPrice"), 0)::bigint AS sales,
+             COALESCE(SUM(sr."soldToday"), 0)::bigint AS units, COUNT(DISTINCT a."outletId")::bigint AS outlets
+      FROM d
+      JOIN sales_records sr ON sr."date" = d.date AND sr."archivedAt" IS NULL AND sr."soldToday" > 0
+      JOIN activation_items ai ON ai."id" = sr."activationItemId"
+      JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
+      JOIN items i ON i."id" = ci."itemId"
+      JOIN activations a ON a."id" = ai."activationId" AND a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL ${outletSql}
+      GROUP BY d.date`;
+    let previousSalesDay = null as null | { date: string; daysAgo: number; sales: number; units: number; outlets: number; footFall: number; approached: number; converted: number; conversionPct: number };
+    if (prevRows[0]?.date) {
+      const pd = prevRows[0].date;
+      const st = await prisma.dailyStats.aggregate({
+        _sum: { footFall: true, approached: true, converted: true },
+        where: { date: pd, activation: activationWhere },
+      });
+      const approached = st._sum.approached ?? 0;
+      const converted = st._sum.converted ?? 0;
+      previousSalesDay = {
+        date: dayKey(pd),
+        daysAgo: Math.round((today.getTime() - pd.getTime()) / DAY_MS),
+        sales: Number(prevRows[0].sales),
+        units: Number(prevRows[0].units),
+        outlets: Number(prevRows[0].outlets),
+        footFall: st._sum.footFall ?? 0,
+        approached,
+        converted,
+        conversionPct: conversionPct(converted, approached),
+      };
+    }
+
     const t = dayAgg(today);
     const y = dayAgg(yesterday);
     const w = dayAgg(lastWeek);
@@ -191,6 +232,7 @@ router.get(
           conversionPct: headline(conversionPct(t.converted, t.approached), conversionPct(y.converted, y.approached), conversionPct(w.converted, w.approached)),
           activeOutlets: { value: activeOutlets.size, planned: plannedOutlets.size },
         },
+        previousSalesDay,
         attention,
         trend,
         topProducts: topProducts.map((p) => ({ itemName: p.itemName, brandName: p.brandName, units: Number(p.units), sales: Number(p.sales) })),

@@ -42,6 +42,22 @@ describe("GET /admin/v1/campaigns/:id/dashboard (#114)", () => {
     expect(d.topProducts[0]).toMatchObject({ itemName: "Item 1", units: 11, sales: 11000 });
   });
 
+  it("returns the most recent earlier day with sales, even when it is not yesterday", async () => {
+    const { campaign, activation, activationItem } = await makeCampaignWithActivation();
+    const today = dayDate();
+    await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: new Date(today.getTime() - 3 * DAY), soldToday: 6 } });
+    await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: new Date(today.getTime() - 5 * DAY), soldToday: 1 } });
+    await prisma.dailyStats.create({ data: { activationId: activation.id, date: new Date(today.getTime() - 3 * DAY), footFall: 20, approached: 8, converted: 4 } });
+    const res = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.body.data.previousSalesDay).toMatchObject({ daysAgo: 3, sales: 6000, units: 6, outlets: 1, approached: 8, conversionPct: 50 });
+  });
+
+  it("has no previous sales day on a campaign with no earlier sales", async () => {
+    const { campaign } = await makeCampaignWithActivation();
+    const res = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.body.data.previousSalesDay).toBeNull();
+  });
+
   it("ignores archived sales rows", async () => {
     const { campaign, activationItem } = await makeCampaignWithActivation();
     await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: dayDate(), soldToday: 9, archivedAt: new Date() } });
