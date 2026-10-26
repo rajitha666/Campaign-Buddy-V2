@@ -201,8 +201,7 @@ password), not only in the notes.
 
 **Location declaration:** the app requests foreground location only
 (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`). It does **not** request
-`ACCESS_BACKGROUND_LOCATION`. Prominent disclosure is shown in-app before the
-permission prompt at check-in. Have a short screen recording ready showing the
+`ACCESS_BACKGROUND_LOCATION`. Have a short screen recording ready showing the
 check-in permission flow; Play review usually asks for it on any location app.
 
 ### 5.2 IARC content rating questionnaire
