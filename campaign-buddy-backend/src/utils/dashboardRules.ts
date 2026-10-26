@@ -10,6 +10,7 @@ export type AttentionType =
   | "outside_geofence"
   | "stale_location"
   | "no_sales_update"
+  | "reorder_needed"
   | "pending_leave"
   | "open_previous_shift";
 
@@ -31,6 +32,7 @@ const ATTENTION_META: Record<AttentionType, { severity: AttentionItem["severity"
   outside_geofence: { severity: "medium", link: "/staff/attendance", one: "check-in outside the outlet geofence today", many: "check-ins outside the outlet geofence today" },
   no_sales_update: { severity: "medium", link: "/sales/status", one: "outlet with a check-in but no sales update today", many: "outlets with a check-in but no sales update today" },
   open_previous_shift: { severity: "medium", link: "/staff/attendance", one: "shift from a previous day is still open", many: "shifts from previous days are still open" },
+  reorder_needed: { severity: "medium", link: "/reorder", one: "product flagged for reorder today", many: "products flagged for reorder today" },
   pending_leave: { severity: "low", link: "/leave-requests", one: "leave request waiting for a decision", many: "leave requests waiting for a decision" },
 };
 
@@ -70,4 +72,13 @@ export function pctChange(current: number, baseline: number): number | null {
 // Conversion = converted / approached, as a whole percent; 0 when nobody was approached.
 export function conversionPct(converted: number, approached: number): number {
   return approached > 0 ? Math.round((converted / approached) * 100) : 0;
+}
+
+// Where the campaign is in its run. Both dates are @db.Date UTC-midnight keys,
+// as is `today`. Before the start it reports day 0; after the end, 100%.
+export function campaignProgress(start: Date, end: Date, today: Date) {
+  const DAY = 86_400_000;
+  const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY) + 1);
+  const day = Math.min(totalDays, Math.max(0, Math.round((today.getTime() - start.getTime()) / DAY) + 1));
+  return { day, totalDays, daysLeft: totalDays - day, percent: Math.round((day / totalDays) * 100) };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAttention, conversionPct, isStaleShift, pctChange, shouldBeCheckedIn, STALE_AFTER_MS } from "../src/utils/dashboardRules";
+import { buildAttention, campaignProgress, conversionPct, isStaleShift, pctChange, shouldBeCheckedIn, STALE_AFTER_MS } from "../src/utils/dashboardRules";
 
 const at = (iso: string) => new Date(iso);
 
@@ -40,5 +40,13 @@ describe("dashboard rules (#114)", () => {
   it("conversionPct is 0 when nobody was approached", () => {
     expect(conversionPct(5, 0)).toBe(0);
     expect(conversionPct(1, 3)).toBe(33);
+  });
+
+  it("campaignProgress counts days inclusive and clamps before the start and after the end", () => {
+    const start = at("2026-10-01T00:00:00Z");
+    const end = at("2026-10-10T00:00:00Z");
+    expect(campaignProgress(start, end, at("2026-10-05T00:00:00Z"))).toEqual({ day: 5, totalDays: 10, daysLeft: 5, percent: 50 });
+    expect(campaignProgress(start, end, at("2026-09-20T00:00:00Z")).day).toBe(0);
+    expect(campaignProgress(start, end, at("2026-11-01T00:00:00Z"))).toMatchObject({ day: 10, daysLeft: 0, percent: 100 });
   });
 });

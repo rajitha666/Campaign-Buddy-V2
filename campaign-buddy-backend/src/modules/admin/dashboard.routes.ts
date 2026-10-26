@@ -6,7 +6,7 @@ import { ok, ApiError } from "../../utils/apiResponse";
 import { requireCampaignAccess, outletIdsAllowed } from "../../middleware/campaignAccess";
 import { colomboYmd, dayDate } from "../../utils/dates";
 import { resolveShiftStart } from "../../utils/attendanceWindow";
-import { buildAttention, conversionPct, isStaleShift, pctChange, shouldBeCheckedIn, type AttentionType } from "../../utils/dashboardRules";
+import { buildAttention, campaignProgress, conversionPct, isStaleShift, pctChange, shouldBeCheckedIn, type AttentionType } from "../../utils/dashboardRules";
 
 // GET /campaigns/:campaignId/dashboard (#114) — one aggregated call for the
 // portal Overview, replacing seven requests plus a paged walk of every sales
@@ -16,6 +16,7 @@ const router = Router();
 const DAY_MS = 86_400_000;
 const TREND_DAYS = 30;
 const TOP_PRODUCTS = 10;
+const RANK_DAYS = 7;
 
 interface DayAgg {
   sales: number;
@@ -128,6 +129,7 @@ router.get(
 
     // ---- Attention (hidden from sponsors) ----
     let attention: ReturnType<typeof buildAttention> = [];
+    let attentionCounts: Partial<Record<AttentionType, number>> = {};
     if (!isSponsor) {
       const counts: Partial<Record<AttentionType, number>> = {};
       const staffIds = [...new Set(activationRows.map((a) => a.staffId))];
@@ -171,6 +173,7 @@ router.get(
       counts.no_sales_update = noSales.size;
 
       counts.pending_leave = await prisma.leaveRequest.count({ where: { status: "pending", staffId: { in: staffIds } } });
+      attentionCounts = counts;
       attention = buildAttention(counts);
     }
 
@@ -215,6 +218,40 @@ router.get(
       };
     }
 
+    // Outlet ranking over the last RANK_DAYS (incl. today): every planned outlet appears,
+    // so one with zero sales shows up as lagging instead of being silently absent.
+    const rankFrom = dayKey(new Date(today.getTime() - (RANK_DAYS - 1) * DAY_MS));
+    const [outletSales, demand, reorderToday] = await Promise.all([
+      prisma.$queryRaw<{ outletId: string; name: string; sales: bigint }[]>`
+        SELECT o."id" AS "outletId", o."name" AS name, COALESCE(SUM(sr."soldToday" * i."unitPrice"), 0)::bigint AS sales
+        FROM activations a
+        JOIN outlets o ON o."id" = a."outletId"
+        LEFT JOIN activation_items ai ON ai."activationId" = a."id"
+        LEFT JOIN sales_records sr ON sr."activationItemId" = ai."id" AND sr."archivedAt" IS NULL
+          AND sr."date" >= ${rankFrom}::date AND sr."date" <= ${todayYmd}::date
+        LEFT JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
+        LEFT JOIN items i ON i."id" = ci."itemId"
+        WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL
+          AND a."dateFrom" <= ${todayYmd}::date AND a."dateTo" >= ${todayYmd}::date ${outletSql}
+        GROUP BY o."id", o."name"`,
+      prisma.$queryRaw<{ itemName: string; interested: bigint }[]>`
+        SELECT i."name" AS "itemName", SUM(sr."otherInterestedCustomers")::bigint AS interested
+        FROM sales_records sr
+        JOIN activation_items ai ON ai."id" = sr."activationItemId"
+        JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
+        JOIN items i ON i."id" = ci."itemId"
+        JOIN activations a ON a."id" = ai."activationId"
+        WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL AND sr."archivedAt" IS NULL
+          AND sr."otherInterestedCustomers" > 0 AND sr."date" >= ${dayKey(trendFrom)}::date ${outletSql}
+        GROUP BY i."id", i."name" ORDER BY interested DESC LIMIT 5`,
+      isSponsor
+        ? Promise.resolve(0)
+        : prisma.salesRecord.count({ where: { date: today, archivedAt: null, reorderFlag: true, activationItem: { activationId: { in: activationIds } } } }),
+    ]);
+    const ranked = outletSales.map((o) => ({ outletId: o.outletId, name: o.name, sales: Number(o.sales) })).sort((a, b) => b.sales - a.sales);
+    const outletRanking = { days: RANK_DAYS, top: ranked.slice(0, 5), lagging: ranked.length > 5 ? ranked.slice(-3).reverse() : [] };
+    if (!isSponsor && reorderToday) attention = buildAttention({ ...attentionCounts, reorder_needed: reorderToday });
+
     const t = dayAgg(today);
     const y = dayAgg(yesterday);
     const w = dayAgg(lastWeek);
@@ -233,6 +270,9 @@ router.get(
           activeOutlets: { value: activeOutlets.size, planned: plannedOutlets.size },
         },
         previousSalesDay,
+        campaignProgress: campaignProgress(dayDate(campaign.startDate.toISOString().slice(0, 10)), dayDate(campaign.endDate.toISOString().slice(0, 10)), today),
+        outletRanking,
+        unmetDemand: demand.map((d) => ({ itemName: d.itemName, interested: Number(d.interested) })),
         attention,
         trend,
         topProducts: topProducts.map((p) => ({ itemName: p.itemName, brandName: p.brandName, units: Number(p.units), sales: Number(p.sales) })),

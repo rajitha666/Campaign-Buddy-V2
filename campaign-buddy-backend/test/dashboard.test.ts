@@ -58,6 +58,22 @@ describe("GET /admin/v1/campaigns/:id/dashboard (#114)", () => {
     expect(res.body.data.previousSalesDay).toBeNull();
   });
 
+  it("adds campaign progress, outlet ranking, unmet demand and a reorder alert", async () => {
+    const { campaign, activationItem } = await makeCampaignWithActivation();
+    await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: dayDate(), soldToday: 3, otherInterestedCustomers: 4, reorderFlag: true } });
+    const res = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${await adminToken()}`);
+    const d = res.body.data;
+    expect(d.campaignProgress).toMatchObject({ day: 4, totalDays: 24 });
+    expect(d.outletRanking.top).toEqual([expect.objectContaining({ name: "Outlet", sales: 3000 })]);
+    expect(d.outletRanking.lagging).toEqual([]);
+    expect(d.unmetDemand).toEqual([{ itemName: "Item 1", interested: 4 }]);
+    expect(d.attention.map((a: { type: string }) => a.type)).toContain("reorder_needed");
+    const sponsor = await userWithGrant("sponsor", campaign.id, null);
+    const sp = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${sponsor}`);
+    expect(sp.body.data.attention).toEqual([]);
+    expect(sp.body.data.unmetDemand).toHaveLength(1);
+  });
+
   it("ignores archived sales rows", async () => {
     const { campaign, activationItem } = await makeCampaignWithActivation();
     await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: dayDate(), soldToday: 9, archivedAt: new Date() } });
