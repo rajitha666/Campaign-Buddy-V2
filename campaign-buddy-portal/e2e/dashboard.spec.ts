@@ -26,6 +26,10 @@ test("sponsor Overview shows performance only: no attention strip, no map", asyn
   await expect(page.getByRole("region", { name: "Needs attention" })).toHaveCount(0);
   await expect(page.getByText("Outlets & live sales staff")).toHaveCount(0);
   expect(staffCalls, "sponsor must not load staff/location data").toEqual([]);
+  // Sponsor-friendly wording for the ranking panels (admin language stays admin-only).
+  await expect(page.getByText("Outlets with room to grow")).toBeVisible();
+  await expect(page.getByText("Customer interest")).toBeVisible();
+  await expect(page.getByText("Lagging outlets")).toHaveCount(0);
 });
 
 test("Overview has no horizontal overflow at phone width", async ({ page }) => {

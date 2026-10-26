@@ -161,9 +161,9 @@ export default function Dashboard() {
           </div>
 
           <div className="ov-three">
-            <RankPanel title="Best outlets" sub={`Last ${rank.days} days`} rows={rank.top} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty="No outlet sales yet." />
-            <RankPanel title="Lagging outlets" sub="Lowest sales, zero-sales included" rows={rank.lagging} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty="Nothing lagging." />
-            <RankPanel title="Unmet demand" sub="Customers who asked but didn't buy" rows={data.unmetDemand} value={(r) => r.interested.toLocaleString()} name={(r) => r.itemName} empty="No interest logged yet." />
+            <RankPanel title={isSponsor ? 'Top-performing outlets' : 'Best outlets'} sub={`Last ${rank.days} days`} rows={rank.top} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty="No outlet sales yet." />
+            <RankPanel title={isSponsor ? 'Outlets with room to grow' : 'Lagging outlets'} sub={isSponsor ? 'Lowest sales in the last 7 days' : 'Lowest sales, zero-sales included'} rows={rank.lagging} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty={isSponsor ? 'All outlets are performing steadily.' : 'Nothing lagging.'} />
+            <RankPanel title={isSponsor ? 'Customer interest' : 'Unmet demand'} sub={isSponsor ? 'Products shoppers asked about but did not buy' : "Customers who asked but didn't buy"} rows={data.unmetDemand} value={(r) => r.interested.toLocaleString()} name={(r) => r.itemName} empty="No interest logged yet." />
           </div>
 
           <div className="panel">
