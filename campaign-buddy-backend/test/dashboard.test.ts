@@ -134,6 +134,29 @@ describe("GET /admin/v1/campaigns/:id/dashboard (#114)", () => {
     expect(staff.id).toBeTruthy();
   });
 
+  it("ignores a covering supervisor's check-in for active outlets, geofence and sales-update signals", async () => {
+    const { campaign, activation } = await makeCampaignWithActivation();
+    const sup = await makeStaff({ userType: "supervisor" });
+    await prisma.attendanceRecord.create({
+      data: { activationId: activation.id, staffId: sup.id, date: dayDate(), checkInAt: new Date(), checkInLocationVerified: false, status: "on_time" },
+    });
+    const res = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${await adminToken()}`);
+    expect(res.body.data.headline.activeOutlets.value).toBe(0);
+    const types = res.body.data.attention.map((a: { type: string }) => a.type);
+    expect(types).not.toContain("outside_geofence");
+    expect(types).not.toContain("no_sales_update");
+  });
+
+  it("returns nothing for a supervisor whose grant lists no outlets", async () => {
+    const { campaign, activationItem } = await makeCampaignWithActivation();
+    await prisma.salesRecord.create({ data: { activationItemId: activationItem.id, date: dayDate(), soldToday: 2 } });
+    const sup = await userWithGrant("supervisor", campaign.id, []);
+    const res = await request(app).get(url(campaign.id)).set("Authorization", `Bearer ${sup}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.headline.sales.value).toBe(0);
+    expect(res.body.data.headline.activeOutlets).toEqual({ value: 0, planned: 0 });
+  });
+
   it("denies a user with no grant on the campaign", async () => {
     const { campaign } = await makeCampaignWithActivation();
     const { campaign: other } = await makeCampaignWithActivation();

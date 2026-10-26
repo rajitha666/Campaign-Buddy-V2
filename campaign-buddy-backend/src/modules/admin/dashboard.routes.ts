@@ -52,7 +52,7 @@ router.get(
     // ---- Aggregates (DB-side) ----
     const [salesByDay, statsByDay, topProducts, setupItems, activationRows] = await Promise.all([
       prisma.$queryRaw<{ date: Date; sales: bigint }[]>`
-        SELECT sr."date" AS date, COALESCE(SUM(sr."soldToday" * i."unitPrice"), 0)::bigint AS sales
+        SELECT sr."date" AS date, COALESCE(SUM(sr."soldToday"::bigint * i."unitPrice"), 0)::bigint AS sales
         FROM sales_records sr
         JOIN activation_items ai ON ai."id" = sr."activationItemId"
         JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
@@ -71,7 +71,7 @@ router.get(
         GROUP BY ds."date"`,
       prisma.$queryRaw<{ itemName: string; brandName: string; units: bigint; sales: bigint }[]>`
         SELECT i."name" AS "itemName", b."name" AS "brandName",
-               SUM(sr."soldToday")::bigint AS units, SUM(sr."soldToday" * i."unitPrice")::bigint AS sales
+               SUM(sr."soldToday")::bigint AS units, SUM(sr."soldToday"::bigint * i."unitPrice")::bigint AS sales
         FROM sales_records sr
         JOIN activation_items ai ON ai."id" = sr."activationItemId"
         JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
@@ -86,7 +86,7 @@ router.get(
       prisma.campaignItem.count({ where: { campaignId, deletedAt: null } }),
       prisma.activation.findMany({
         where: activationWhere,
-        select: { id: true, outletId: true, staffId: true, dateFrom: true, dateTo: true, shiftStartMinutes: true, shiftEndMinutes: true, staff: { select: { fullName: true } } },
+        select: { id: true, outletId: true, staffId: true, dateFrom: true, dateTo: true, shiftStartMinutes: true, shiftEndMinutes: true },
       }),
     ]);
 
@@ -112,7 +112,8 @@ router.get(
     const activationIds = activationRows.map((a) => a.id);
     const outletOf = new Map(activationRows.map((a) => [a.id, a.outletId]));
 
-    const [attendanceToday, salesToday] = await Promise.all([
+    const promoterOf = new Map(activationRows.map((a) => [a.id, a.staffId]));
+    const [attendanceAll, salesToday] = await Promise.all([
       prisma.attendanceRecord.findMany({
         where: { date: today, activationId: { in: activationIds } },
         select: { activationId: true, staffId: true, checkInAt: true, checkOutAt: true, checkInLocationVerified: true, status: true },
@@ -122,8 +123,12 @@ router.get(
         select: { activationItem: { select: { activationId: true } } },
       }),
     ]);
+    // Only the promoter's own record counts (same rule as /absence): a covering
+    // supervisor's visit must not mark an outlet active, add a geofence miss or hide a missing sales update.
+    const attendanceToday = attendanceAll.filter((r) => r.staffId === promoterOf.get(r.activationId));
     const activeOutlets = new Set<string>();
-    for (const r of attendanceToday) if (r.checkInAt) activeOutlets.add(outletOf.get(r.activationId)!);
+    // Sponsors see sales-only activity — attendance is staff-level data.
+    if (!isSponsor) for (const r of attendanceToday) if (r.checkInAt) activeOutlets.add(outletOf.get(r.activationId)!);
     const activationsWithSales = new Set(salesToday.map((s) => s.activationItem.activationId));
     for (const id of activationsWithSales) activeOutlets.add(outletOf.get(id)!);
 
@@ -187,7 +192,7 @@ router.get(
         WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL AND sr."archivedAt" IS NULL
           AND sr."soldToday" > 0 AND sr."date" < ${todayYmd}::date ${outletSql}
       )
-      SELECT d.date AS date, COALESCE(SUM(sr."soldToday" * i."unitPrice"), 0)::bigint AS sales,
+      SELECT d.date AS date, COALESCE(SUM(sr."soldToday"::bigint * i."unitPrice"), 0)::bigint AS sales,
              COALESCE(SUM(sr."soldToday"), 0)::bigint AS units, COUNT(DISTINCT a."outletId")::bigint AS outlets
       FROM d
       JOIN sales_records sr ON sr."date" = d.date AND sr."archivedAt" IS NULL AND sr."soldToday" > 0
@@ -223,7 +228,7 @@ router.get(
     const rankFrom = dayKey(new Date(today.getTime() - (RANK_DAYS - 1) * DAY_MS));
     const [outletSales, demand, reorderToday] = await Promise.all([
       prisma.$queryRaw<{ outletId: string; name: string; sales: bigint }[]>`
-        SELECT o."id" AS "outletId", o."name" AS name, COALESCE(SUM(sr."soldToday" * i."unitPrice"), 0)::bigint AS sales
+        SELECT o."id" AS "outletId", o."name" AS name, COALESCE(SUM(sr."soldToday"::bigint * i."unitPrice"), 0)::bigint AS sales
         FROM activations a
         JOIN outlets o ON o."id" = a."outletId"
         LEFT JOIN activation_items ai ON ai."activationId" = a."id"
@@ -231,7 +236,7 @@ router.get(
           AND sr."date" >= ${rankFrom}::date AND sr."date" <= ${todayYmd}::date
         LEFT JOIN campaign_items ci ON ci."id" = ai."campaignItemId"
         LEFT JOIN items i ON i."id" = ci."itemId"
-        WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL
+        WHERE a."campaignId" = ${campaignId} AND a."deletedAt" IS NULL AND o."deletedAt" IS NULL
           AND a."dateFrom" <= ${todayYmd}::date AND a."dateTo" >= ${todayYmd}::date ${outletSql}
         GROUP BY o."id", o."name"`,
       prisma.$queryRaw<{ itemName: string; interested: bigint }[]>`
@@ -249,7 +254,7 @@ router.get(
         : prisma.salesRecord.count({ where: { date: today, archivedAt: null, reorderFlag: true, activationItem: { activationId: { in: activationIds } } } }),
     ]);
     const ranked = outletSales.map((o) => ({ outletId: o.outletId, name: o.name, sales: Number(o.sales) })).sort((a, b) => b.sales - a.sales);
-    const outletRanking = { days: RANK_DAYS, top: ranked.slice(0, 5), lagging: ranked.length > 5 ? ranked.slice(-3).reverse() : [] };
+    const outletRanking = { days: RANK_DAYS, top: ranked.slice(0, 5), lagging: ranked.length > 5 ? ranked.slice(Math.max(5, ranked.length - 3)).reverse() : [] };
     if (!isSponsor && reorderToday) attention = buildAttention({ ...attentionCounts, reorder_needed: reorderToday });
 
     const t = dayAgg(today);
