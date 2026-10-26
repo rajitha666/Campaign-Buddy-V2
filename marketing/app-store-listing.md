@@ -261,9 +261,9 @@ Expected result: Everyone / PEGI 3 / rated for all ages.
 |---|---|---|
 | App requires login, reviewer cannot get in (Apple 2.1 / Play "App access") | both | Demo promoter account on a live staging backend, with review notes, filled into the dedicated demo-account fields |
 | "App is for a limited audience, use private distribution" (Apple 4.2 / 3.2) | Apple | App is positioned as a business tool for an industry (activation agencies), not one company. Public marketing site, real category, demo access. If Apple still pushes back, the fallback is Apple Business Manager custom distribution |
-| Location permission purpose unclear (Apple 5.1.1 / Play Location policy) | both | Purpose string already in `app.json`; description has a "How your location is used" section; foreground-only, no background permission; prominent in-app disclosure before the prompt; screen recording ready for Play |
-| Data safety form does not match observed behaviour | Play | Form in 5.1 matches the code: foreground location + name + phone + user id + battery, nothing shared, encrypted in transit |
-| Minimum functionality (Apple 4.2) | Apple | Full shift workflow, not a repackaged website; native location, offline-tolerant reads |
+| Location permission purpose unclear (Apple 5.1.1 / Play Location policy) | both | Purpose string already in `app.json`; description has a "How your location is used" section; foreground-only, no background permission; screen recording ready for Play (an in-app disclosure before the prompt is ticketed as #144 and must ship before Play submission) |
+| Data safety form does not match observed behaviour | Play | Form in 5.1 matches the code: foreground location + name + phone + user id + battery, nothing shared (encryption in transit is a deployment property, see INSTALLATION_GUIDE.md) |
+| Minimum functionality (Apple 4.2) | Apple | Full shift workflow, not a repackaged website; native location, offline reads and queued offline writes |
 
 ---
 
