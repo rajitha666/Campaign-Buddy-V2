@@ -54,12 +54,25 @@ router.get(
   "/campaigns/:campaignId/activations",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
+    // Portal table search (issue — search box did nothing): match on the visible
+    // columns — name, outlet, promoter, supervisor.
+    const search = String(req.query.search || "").trim();
     const allowedOutlets = outletIdsAllowed(req);
     const rows = await prisma.activation.findMany({
       where: {
         campaignId: req.params.campaignId,
         deletedAt: null,
         ...(allowedOutlets ? { outletId: { in: allowedOutlets } } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { outlet: { name: { contains: search, mode: "insensitive" } } },
+                { staff: { fullName: { contains: search, mode: "insensitive" } } },
+                { supervisor: { fullName: { contains: search, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
       },
       include: { outlet: true, staff: true, supervisor: true },
     });
