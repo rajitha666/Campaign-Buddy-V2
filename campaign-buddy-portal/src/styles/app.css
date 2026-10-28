@@ -146,6 +146,12 @@
 .content { flex:1; padding:var(--space-6) var(--space-8) 60px; max-width:1400px; width:100%; }
 
 /* ===== page head ===== */
+/* Tabs for pages that share one menu row (#116) */
+.page-tabs { display:flex; gap:var(--space-1); margin-bottom:var(--space-4); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:thin; }
+.page-tab { flex:0 0 auto; display:inline-flex; align-items:center; min-height:44px; padding:0 var(--space-4); font-size:var(--text-sm); font-weight:600; color:var(--text-muted); border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+.page-tab:hover { color:var(--text-primary); }
+.page-tab.active { color:var(--text-primary); border-bottom-color:var(--mango); }
+.page-tab:focus-visible { outline:2px solid var(--ink); outline-offset:-2px; border-radius:var(--radius-xs); }
 .page-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; gap:var(--space-4); flex-wrap:wrap; }
 .page-head h1 { font-family:'Poppins',sans-serif; font-weight:600; font-size:var(--text-xl); }
 .page-sub { font-size:var(--text-sm); color:var(--text-muted); margin-top:3px; }
