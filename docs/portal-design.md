@@ -14,10 +14,13 @@ Verified against `campaign-buddy-portal/src` on 2026-10-25. Items marked **(pend
 
 ## 2. Tokens (interim)
 **Colour** (`src/styles/tokens.css`): `--ink #12241F` (dark green, sidebar), `--ink-soft`, `--surface #F4F6F3` (page), `--surface-card #FFF`, `--line #E3E7E1`, `--text-primary #16211C`, `--text-muted #647169`, accent `--mango #FF7A33` / `--mango-dark` / `--mango-tint`, semantic `--success`, `--pending`, `--alert`, `--info` each with a `-tint`. One accent (mango); semantic colours are separate from it.
-**Typography:** body `Liberation Sans, Arial`; display headings `Poppins` (`.h-display`, page titles). Interim rules: **body text 13px, small labels 12px, nothing under 11px**; table headers 12px uppercase; page title ≈21px. `app.css` currently holds **14 distinct `font-size` values** (9, 10, 10.5, 11.5, 12, 13, 13.5, 14, 15, 16, 18, 20, 21, 25px) — three of them (9, 10, 10.5px: map pins, axis, chips) are already under the 11px floor. #118 replaces them with a scale; don't add new ad-hoc sizes.
-**Radius:** the common values are 8 / 10 / 12 / 16 px and 20 px pills, but about ten other values (2–24px) also appear; prefer 10 (controls) and 12–16 (cards/panels) for new work.
-**Spacing:** 4/8/12/16/24 multiples; use flex/grid `gap`, not margins between siblings.
-**Not yet defined:** type/spacing/elevation tokens, dark theme (all colours go through tokens, so a dark theme is feasible later).
+**Typography:** body `Liberation Sans, Arial`; display headings `Poppins` (`.h-display`, page titles). Use only the type scale: `--text-xs` 12px (labels, table headers, badges), `--text-sm` 13px (default body), `--text-base` 14px, `--text-lg` 16px, `--text-xl` 20px (page title), `--text-2xl` 24px (stat numbers). Nothing under 12px.
+**Radius:** `--radius-xs` 4 (chips), `--radius-sm` 8 (controls), `--radius-md` 12 (cards, panels), `--radius-lg` 16 (large cards, dialogs), `--radius-pill` (badges, toasts).
+**Spacing:** `--space-1..8` = 4, 8, 12, 16, 24, 32px (`--space-N` is N x 4px; there is no 5 or 7). Use flex/grid `gap`, not margins between siblings. Hairlines of 1-3px and page gutters over 32px may stay literal.
+**Elevation:** `--shadow-card`, `--shadow-popover`, `--shadow-modal`. **Motion:** `--dur-fast` 120ms, `--dur-base` 200ms, `--ease`; durations drop to 0 under `prefers-reduced-motion`.
+**Guard:** `src/styles/tokens-guard.test.js` fails if `app.css` gains a raw px literal for `font-size`, `border-radius`, or `padding`/`gap` between 4 and 32px. Add or reuse a token instead.
+**Contrast:** `--text-muted` measures 5.1:1 on white and 4.7:1 on `--surface`; sidebar labels 7.3:1 and 5.0:1 on `--ink`. Don't place muted text on `--line` (4.1:1). White text on the mango primary button is 2.6:1 and still fails (#125, owner decision on the fix).
+**Dark theme (not built):** every colour already goes through `tokens.css`. A dark theme would need a second `:root[data-theme=dark]` block, the few hard-coded hex values in `app.css` (sidebar greys, map and chart colours) moved to tokens, and the Leaflet tiles and chart palettes restyled.
 
 ## 3. Layout and responsive rules
 Shell: sidebar 250px (icon rail 66px), topbar 64px, content max-width 1400px (`.content`). Breakpoints in `app.css`: **≤1200** stat grid 3 columns; **≤1024 or coarse pointer** bigger tap targets; **≤980 (tablet)** sidebar auto-collapses to an icon rail, opened by tap; **≤767 (phone)** sidebar becomes an off-canvas drawer opened from the hamburger, tables render as stacked cards (`.table-cards`), top bar compresses; **≤640** extra phone tightening.
