@@ -264,6 +264,7 @@ see a read-only **My Campaigns** card view.
     to keep). The promoter can sign in on CB Mobile with **either** their mobile
     number (any common format — `0771234567`, `+94771234567` — stored canonical
     as `0771234567`) **or** this username.
+  - **Form layout**: *Essentials* (employee ID, name, display name, type, status, mobile, login) is always open; *Personal details*, *Emergency contact* and *Bank details* are collapsible sections (closed on Add, open on Edit when they hold data; a validation error re-opens its section). Display Name follows Full Name until edited. The Campaign and Outlet forms use the same sections.
   - **Emergency Contact**: name, phone.
   - **Bank Account**: account name, bank, account number, branch.
   - This 11-field HR set is the **final, deliberate scope** — no photo upload, no
