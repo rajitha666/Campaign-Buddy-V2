@@ -22,7 +22,7 @@ test.describe("phone viewport (375x812)", () => {
     // Clicking a route closes the drawer and navigates.
     // .first(): the favorites e2e can pin Clients on this shared admin account
     // while this test runs in parallel, which adds a second matching nav item.
-    await openNavSection(page, "Client & Catalog");
+    await openNavSection(page, "Setup");
     await page.locator(".nav-item", { hasText: "Clients" }).first().click();
     await expect(page).toHaveURL(/\/clients/);
     await expect(page.locator(".sidebar")).not.toBeInViewport();
@@ -50,13 +50,14 @@ test.describe("phone viewport (375x812)", () => {
 test.describe("tablet viewport (768x1024)", () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
-  test("sidebar auto-collapses to an icon rail, opened by tap not hover", async ({ page }) => {
+  test("sidebar auto-collapses to an icon rail; tapping an icon opens the page", async ({ page }) => {
     await loginAs(page, "admin");
     await expect(page.locator("#app-shell")).toHaveClass(/nav-collapsed/);
 
-    const group = page.locator(".nav-group", { hasText: "Campaigns" }).first();
-    await group.locator(".nav-item").click();
-    await expect(group.locator(".nav-children .nav-child", { hasText: "List" })).toBeVisible();
+    // one level deep: a grouped row opens its first tab, the rest show as page tabs
+    await page.locator(".nav-item[title='Campaigns']").first().click();
+    await expect(page).toHaveURL(/\/campaigns$/);
+    await expect(page.getByRole("navigation", { name: /campaigns sections/i })).toBeVisible();
   });
 
   test("tables stay real (scrollable) tables, not cards, above phone width", async ({ page }) => {

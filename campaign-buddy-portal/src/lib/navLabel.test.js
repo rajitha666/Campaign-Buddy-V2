@@ -4,11 +4,11 @@ import { findLabel, documentTitle } from './navLabel';
 describe('navLabel', () => {
   it('finds a top-level and a nested page', () => {
     expect(findLabel('/dashboard').title).toBe('Dashboard');
-    expect(findLabel('/staff/attendance')).toEqual({ title: 'Attendance', crumb: 'Staff' });
+    expect(findLabel('/staff/attendance')).toEqual({ title: 'Check-ins', crumb: 'Attendance' });
   });
 
   it('builds a tab title from section + page', () => {
-    expect(documentTitle('/staff/attendance')).toBe('Staff · Attendance — Campaign Buddy');
+    expect(documentTitle('/staff/attendance')).toBe('Attendance · Check-ins — Campaign Buddy');
     expect(documentTitle('/dashboard')).toBe('Dashboard — Campaign Buddy');
     expect(documentTitle('/personalization')).toBe('Account · Personalization — Campaign Buddy');
   });

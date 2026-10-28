@@ -173,7 +173,7 @@ concurrent outlet Activations in a day where a promoter has one.
 
 ## 4. CB Office — feature by feature
 
-The portal is a left-sidebar web app. Below, each module is described with its
+The portal is a left-sidebar web app. The menu is grouped by job — **Today**, **Campaigns**, **Setup**, **People**, **Reports**, **Admin** — with one row per area; related pages are tabs at the top of the page (e.g. Products has the tabs *All products · Brands · Reorder*). Paths below are written *Group → Page → Tab*. Below, each module is described with its
 purpose, what's on the screen, and which roles see it.
 
 ### 4.1 Overview (dashboard)  *(Admin, Supervisor, Sponsor)*
@@ -207,26 +207,26 @@ attendance and location signals are never shown to sponsors); the panels are
 named **Top-performing outlets**, **Outlets with room to grow** and **Customer
 interest**.
 
-### 4.2 Clients & Catalog  *(Admin only)*
+### 4.2 Setup and products  *(Admin only)*
 
-- **Clients** — CRUD for client companies (company name, contact name, phone,
+- **Setup → Clients** — CRUD for client companies (company name, contact name, phone,
   email, address).
-- **Items → List** — CRUD for the SKU catalog: item name, brand, description, unit
+- **Campaigns → Products → All products** — CRUD for the SKU catalog: item name, brand, description, unit
   price (LKR), re-order level, image. Shared across all campaigns.
-- **Items → Brands** — CRUD for brands, each owned by a client.
-- **Items → Reorder** — a live list of items at or below their re-order level per
+- **Campaigns → Products → Brands** — CRUD for brands, each owned by a client.
+- **Campaigns → Products → Reorder** — a live list of items at or below their re-order level per
   outlet for a chosen date (fed by the re-order flags promoters raise on mobile).
 
 ### 4.3 Campaigns  *(Admin write; Supervisor/Sponsor read-only view)*
 
-- **Campaigns → List** — CRUD for campaigns: campaign number, name, client,
+- **Campaigns → Campaigns → All campaigns** — CRUD for campaigns: campaign number, name, client,
   description, date range. Creating a campaign automatically grants the creator
   full access to it. **Status is an editable field** — it auto-syncs from the date
   range, but an admin can override it (e.g. end a campaign early) and the override
   sticks until the dates themselves change.
 - **Campaign Items** (per campaign) — pick which catalog items are sellable in this
   campaign. Add an existing item, or create-and-link a brand-new item in one step.
-- **Campaigns → Activation (Activation List)** — CRUD for activations. The add/edit
+- **Campaigns → Campaigns → Activations** — CRUD for activations. The add/edit
   form captures outlet, promoter, supervisor, distributor point, date range, and
   the three target settings. **Setting the supervisor here fires the auto-grant**
   (§3). Each activation row links through to:
@@ -243,17 +243,17 @@ see a read-only **My Campaigns** card view.
 
 ### 4.4 Outlets  *(Admin only)*
 
-- **Outlets → List** — CRUD: name, contact person, address, city, phone/mobile/fax,
+- **Setup → Outlets → All outlets** — CRUD: name, contact person, address, city, phone/mobile/fax,
   and **GPS coordinates** (with a geocode helper). The coordinates + geofence
   radius drive mobile check-in verification.
-- **Outlets → Distributor Point** — CRUD for supply points (name, contact, address,
+- **Setup → Outlets → Distributor Points** — CRUD for supply points (name, contact, address,
   city, client).
-- **Outlets → Cities** — CRUD for the city lookup (name, province, district — Sri
+- **Setup → Outlets → Cities** — CRUD for the city lookup (name, province, district — Sri
   Lanka list).
 
 ### 4.5 Staff (People)  *(Admin write; Supervisor read-only on some screens)*
 
-- **Staff → List** — CRUD for promoters and supervisors. The form is grouped:
+- **People → Staff → All staff** — CRUD for promoters and supervisors. The form is grouped:
   - **Basic Info**: employee ID, full name, **Display Name (App Name)** (the name
     the promoter sees in CB Mobile, including the home-screen greeting), user
     type (promoter/supervisor), status (active/inactive), gender, date of birth,
@@ -269,39 +269,39 @@ see a read-only **My Campaigns** card view.
   - **Bank Account**: account name, bank, account number, branch.
   - This 11-field HR set is the **final, deliberate scope** — no photo upload, no
     marital status, no proficiency ratings.
-- **Staff → Attendance** — check-in / check-out log for promoters, filterable by
+- **Today → Attendance → Check-ins** — check-in / check-out log for promoters, filterable by
   outlet and date range, with **on-time / late / status** badges. Supervisors see
   this read-only, filtered to their outlets. A promoter who looks absent here may
   actually be checked in on another campaign (see the one-open-shift rule, §6) —
   the screen is meant to surface that rather than show a bare no-show.
-- **Staff → Absence** — for a chosen date, the promoters who had an activation
+- **Today → Attendance → Absence** — for a chosen date, the promoters who had an activation
   covering that day but **no check-in**, flagged "On leave" vs "No check-in".
-- **Staff → Leave Requests** — time-off requests submitted from CB Mobile, per
+- **People → Leave Requests** — time-off requests submitted from CB Mobile, per
   campaign. Approve / decline inline. "Approved by" defaults to the requester's
   "reports to" person.
-- **Staff → Profiles** — a **performance evaluation** view for a selected staff
+- **People → Staff → Profiles** — a **performance evaluation** view for a selected staff
   member over a date range: overall performance %, attendance %, total sales, total
   items, average sales per month, highest daily sales, highest-performing date, and
   a brand-contribution breakdown.
-- **Promoter List** — a read-only staff directory (also visible to supervisors). For admins it duplicates Staff → List, so it sits in the sidebar's **Archive** section.
+- **Promoter List** — retired as a separate page: the old address now opens **People → Staff → All staff** (the read-only staff directory).
 
 ### 4.6 Sales  *(Admin write; Supervisor/Sponsor read-only, scoped)*
 
-- **Sales → SKU Wise Sales** — the raw per-item, per-promoter, per-day sales log:
+- **Reports → Sales Reports → SKU Wise** — the raw per-item, per-promoter, per-day sales log:
   item, outlet, date, start qty, sold qty, remaining. Filter by outlet and date
   range.
-- **Sales → Starting Stock** — the stock each promoter started the day with, per
+- **Reports → Sales Reports → Starting Stock** — the stock each promoter started the day with, per
   outlet and product: date, outlet, promoter, product, unit price, start qty. It is
   the opening stock from the promoter's **first stock update after checking in**,
   kept even if they restock later that day; only days from the release onward are
   listed (no backfill). Admin, supervisor and sponsor can open it (outlet-scoped by
   their grant), and **Excel** downloads it as the client's starting-stock report (#91).
-- **Sales → Sales Update Status** — daily submission compliance: for a chosen date,
+- **Today → Sales Update Status** — daily submission compliance: for a chosen date,
   which activations have submitted their stats/sales ("Completed") and which
   haven't ("Missing"), with footfall.
-- **Sales → Outlet Wise** — sales + footfall rolled up per outlet, with a
+- **Reports → Sales Reports → Outlet Wise** — sales + footfall rolled up per outlet, with a
   daily/weekly/monthly duration toggle.
-- **Update Sales** *(Admin)* — the correction tool. Cascading dropdowns (outlet →
+- **Campaigns → Update Sales** *(Admin)* — the correction tool. Cascading dropdowns (outlet →
   promoter → activation → date) load that day's sales grid; the admin edits opening
   stock / sold qty for any row and saves. This is how head office fixes a
   promoter's mistake without touching the app. Raising opening stock mid-day is
@@ -331,8 +331,8 @@ see a read-only **My Campaigns** card view.
   This is **planning data only** — it doesn't drive check-in or attendance.
 - **Supervisors → Attendance** — supervisors' own check-in log: attendance rows for
   activations whose assigned staff is a supervisor, so head office can see which
-  outlets a supervisor actually visited and when. (**Outlet Attendance** runs the
-  same query and now sits in the sidebar's **Archive** section.)
+  outlets a supervisor actually visited and when. (The old **Outlet Attendance** page ran the
+  same query; its address now redirects here.)
 - **Supervisors → Tasks** — a QA checklist template per campaign (category + task
   type Range/Feedback/Photo + the question text; a Photo task also sets how many
   photos to capture). Categories include Sale, Outlet PR, Documentation,
@@ -353,31 +353,31 @@ see a read-only **My Campaigns** card view.
 
 ### 4.8 Tracking  *(Admin full; Supervisor/Sponsor get the live map)*
 
-- **Tracking → Promoter** / **Tracking → Supervisor** — the GPS breadcrumb trail
+- **Reports → Tracking History → Promoter** / **→ Supervisor** — the GPS breadcrumb trail
   (coordinate + timestamp) for a chosen person on a chosen date, split by staff
   type.
-- **Tracking → Seller Live Locations** — a **live map** of every currently
+- **Today → Live Locations** — a **live map** of every currently
   checked-in staff member's latest position, auto-refreshing every ~15 s,
   outlet-filtered by the viewer's grant. This is the screen sponsors and
   supervisors care about most.
 
 ### 4.9 Reports  *(Admin; Sponsor sees the same, auto-scoped)*
 
-- **Reports → Overall SKU Wise** — sales aggregated by item across the campaign:
+- **Reports → Overall Reports → Overall SKU Wise** — sales aggregated by item across the campaign:
   item, brand, item count, total sales, plus a grand total. Filter by date range.
-- **Reports → Overall Brand Wise** — the same, aggregated by brand.
-- **Client Reports / Statistic Reports** (sponsor menu; admins see them under **Archive**) — the *same* SKU-wise and brand-wise
+- **Reports → Overall Reports → Brand Wise** — the same, aggregated by brand.
+- **Client Reports / Statistic Reports** (sponsor menu under **Reports**; for admins the same pages are **Reports → Sales Reports → SKU Wise** and **Reports → Overall Reports → Brand Wise**) — the *same* SKU-wise and brand-wise
   endpoints, presented for sponsors and automatically filtered to their grant.
   There is deliberately no separate "client report" data path.
-- **Staff → Monthly Attendance** — a per-promoter day grid for a chosen
+- **Today → Attendance → Monthly** — a per-promoter day grid for a chosen
   month: a tick / A (absent) / L (leave) / · per day, exportable to CSV.
 
 ### 4.10 Administration  *(Super Admin only)*
 
-- **Users** — CRUD for portal logins: username, password, display name, email,
+- **Admin → Access → Users** — CRUD for portal logins: username, password, display name, email,
   role, active flag. Campaign access is *not* set here — it's granted per campaign
   from the Campaign Access screen or automatically via the supervisor auto-grant.
-- **Roles** — view/configure the four roles: id, label, description, modules,
+- **Admin → Access → Roles** — view/configure the four roles: id, label, description, modules,
   functionality, default landing URL, active flag. This screen is for consistency
   and documentation; the actual read-only enforcement is server-side.
 
@@ -659,8 +659,7 @@ These are the rules a marketing/sales or training writer needs to state correctl
 6. Create **Activations** — one per promoter per outlet, setting the supervisor
    (which auto-grants their portal access), shift window, and targets.
 7. Per activation, set **Activation Items** and **Activation Targets**.
-8. Optionally define **Custom Sales Fields** for the campaign (Sales → Custom
-   Fields) — the extra data points promoters should record each day.
+8. Optionally define **Custom Sales Fields** for the campaign (Campaigns → Custom Sales Fields) — the extra data points promoters should record each day.
 9. Optionally grant **Sponsor** users access to the campaign.
 10. Optionally plan **Supervisor Routes**.
 

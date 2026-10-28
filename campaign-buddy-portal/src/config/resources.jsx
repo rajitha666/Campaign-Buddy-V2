@@ -648,17 +648,6 @@ export const RESOURCES = {
     fetchList: ({ campaignId, query }) => attendanceApi.list(campaignId, { ...query, role: 'supervisor' }),
   },
 
-  promoterListReadOnly: {
-    title: 'Promoter List', subtitle: 'Read-only staff directory.', noAdd: true,
-    columns: [
-      { key: 'displayName', label: 'Name', render: (r) => <Avatar name={r.displayName || r.fullName} /> },
-      { key: 'userType', label: 'Type', render: (r) => <Badge type="info">{r.userType}</Badge> },
-      { key: 'email', label: 'Email' }, { key: 'phone', label: 'Mobile' },
-    ],
-    actions: ['view'],
-    fetchList: ({ query }) => staffApi.search(query?.search || '', query),
-  },
-
   skuSales: {
     defaultRange: 'campaign',
     title: 'Overall Outlet and SKU Wise', subtitle: 'Raw per-item, per-outlet sales log.', excel: true, noAdd: true,
