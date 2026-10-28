@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ICONS } from './Icons';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
+import { groupFields, sectionSummary, sectionStartsOpen, fieldError, groupsWithErrors } from '../lib/formSections';
 
 // Stable identities for optional props: literal defaults ({}, []) inside the
 // destructure would be re-created on every render and re-trigger the reset
@@ -29,6 +30,10 @@ export default function Drawer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [openGroups, setOpenGroups] = useState({});
+  const edited = useRef({}); // keys the user typed into, so defaultFrom stops following its source
+  const bodyRef = useRef(null);
+  const groups = groupFields(fields);
 
   useEffect(() => {
     if (open) {
@@ -39,6 +44,11 @@ export default function Drawer({
         else defaults[f.key] = initialValues[f.key] ?? f.defaultValue ?? '';
       });
       setValues(defaults);
+      edited.current = {};
+      const merged = { ...defaults, ...initialValues };
+      const startOpen = {};
+      groupFields(fields).forEach((g, i) => { startOpen[i] = sectionStartsOpen(g, merged, mode); });
+      setOpenGroups(startOpen);
       const builders = {};
       fields.filter((f) => f.type === 'builder').forEach((f) => { builders[f.key] = initialValues[f.key] || f.preset || []; });
       setBuilderRows(builders);
@@ -46,33 +56,57 @@ export default function Drawer({
       setError(null);
       setFieldErrors({});
     }
-  }, [open, fields, initialValues]);
+  }, [open, fields, initialValues, mode]);
 
   if (!open) return null;
 
   function set(key, val) {
-    setValues((v) => ({ ...v, [key]: val }));
+    edited.current[key] = true;
+    setValues((v) => {
+      const next = { ...v, [key]: val };
+      // Fields with `defaultFrom` mirror their source (e.g. Display Name from
+      // Full Name) on Add until the user edits them directly.
+      fields.forEach((f) => {
+        if (f.defaultFrom === key && mode !== 'edit' && !edited.current[f.key]) next[f.key] = val;
+      });
+      return next;
+    });
+  }
+
+  const isHidden = (f) => !!(f.resettable && mode === 'edit' && !revealed[f.key]);
+
+  function validateOne(f) {
+    if (f.type === 'section') return;
+    const msg = fieldError(f, values[f.key], { hidden: isHidden(f) });
+    setFieldErrors((e) => {
+      if (!msg && !e[f.key]) return e;
+      const next = { ...e };
+      if (msg) next[f.key] = msg; else delete next[f.key];
+      return next;
+    });
+  }
+
+  function focusFirstError() {
+    // After the sections re-render open, move focus to the first invalid control.
+    requestAnimationFrame(() => {
+      const el = bodyRef.current?.querySelector('[aria-invalid="true"]');
+      const target = el || bodyRef.current?.querySelector('.form-error');
+      if (target) { target.scrollIntoView?.({ block: 'center' }); target.focus?.(); }
+    });
   }
 
   function validate() {
     const errs = {};
     fields.forEach((f) => {
-      if (f.type === 'section') return;
-      // Resettable edit fields stay required only once revealed — hidden ones
-      // are excluded from the payload entirely (see handleSave).
-      const hidden = f.resettable && mode === 'edit' && !revealed[f.key];
-      if (hidden) return;
-      if (f.type === 'multi-checkbox') {
-        if (f.required && (values[f.key] || []).length === 0) errs[f.key] = 'Required';
-        return;
-      }
-      if (f.required && !values[f.key] && f.type !== 'builder') errs[f.key] = 'Required';
-      else if (f.validate && values[f.key]) {
-        const msg = f.validate(values[f.key]);
-        if (msg) errs[f.key] = msg;
-      }
+      const msg = fieldError(f, values[f.key], { hidden: isHidden(f) });
+      if (msg) errs[f.key] = msg;
     });
     setFieldErrors(errs);
+    if (Object.keys(errs).length) {
+      const open = groupsWithErrors(groups, errs);
+      setOpenGroups((o) => { const n = { ...o }; open.forEach((i) => { n[i] = true; }); return n; });
+      focusFirstError();
+    }
     return Object.keys(errs).length === 0;
   }
 
@@ -109,23 +143,52 @@ export default function Drawer({
           </div>
           <div className="close-btn" onClick={onClose}>{ICONS.close}</div>
         </div>
-        <div className="drawer-body">
+        <div className="drawer-body" ref={bodyRef}>
           {error ? <div className="error-state" style={{ marginBottom: 16 }}>{error}</div> : null}
-          {fields.map((f, i) => (
-            <Field
-              key={f.key || `section-${i}`}
-              field={f}
-              value={values[f.key]}
-              onChange={(v) => set(f.key, v)}
-              error={fieldErrors[f.key]}
-              builderRows={builderRows[f.key]}
-              onBuilderChange={(rows) => setBuilderRows((b) => ({ ...b, [f.key]: rows }))}
-              preview={f.previewKey ? initialValues[f.previewKey] : undefined}
-              edit={mode === 'edit'}
-              revealed={!!revealed[f.key]}
-              onReveal={() => setRevealed((r) => ({ ...r, [f.key]: true }))}
-            />
-          ))}
+          {groups.map((g, gi) => {
+            const isOpen = !g.collapsible || !!openGroups[gi];
+            const body = g.fields.map((f) => (
+              <div key={f.key} data-field={f.key} onBlur={() => validateOne(f)}>
+                <Field
+                  field={f}
+                  value={values[f.key]}
+                  onChange={(v) => set(f.key, v)}
+                  error={fieldErrors[f.key]}
+                  builderRows={builderRows[f.key]}
+                  onBuilderChange={(rows) => setBuilderRows((b) => ({ ...b, [f.key]: rows }))}
+                  preview={f.previewKey ? initialValues[f.previewKey] : undefined}
+                  edit={mode === 'edit'}
+                  revealed={!!revealed[f.key]}
+                  onReveal={() => setRevealed((r) => ({ ...r, [f.key]: true }))}
+                />
+              </div>
+            ));
+            if (!g.collapsible) {
+              return (
+                <div key={`g-${gi}`}>
+                  {g.label ? <div className="section-divider">{g.label}</div> : null}
+                  {body}
+                </div>
+              );
+            }
+            const hasError = g.fields.some((f) => fieldErrors[f.key]);
+            return (
+              <div key={`g-${gi}`} className={`form-section ${isOpen ? 'open' : ''}`}>
+                <button
+                  type="button"
+                  className="form-section-head"
+                  aria-expanded={isOpen}
+                  aria-controls={`form-section-${gi}`}
+                  onClick={() => setOpenGroups((o) => ({ ...o, [gi]: !isOpen }))}
+                >
+                  <span className="form-section-title">{g.label}</span>
+                  <span className={`form-section-sum ${hasError ? 'err' : ''}`}>{hasError ? 'Needs attention' : sectionSummary(g, values)}</span>
+                  <span className="form-section-chev" aria-hidden="true">{ICONS.chevron || '›'}</span>
+                </button>
+                <div id={`form-section-${gi}`} className="form-section-body" hidden={!isOpen}>{body}</div>
+              </div>
+            );
+          })}
         </div>
         <div className="drawer-foot">
           <button className="btn btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
@@ -151,6 +214,12 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
       : { ...o, label: applyDesignationLabel(o.label, designationLabel) })),
   };
   const reqMark = f.required ? <span className="req">*</span> : null;
+  // Label/control/error wiring: the label targets the control, an invalid
+  // control points at its message (announced via role="alert").
+  const fid = `fld-${f.key}`;
+  const eid = `err-${f.key}`;
+  const ctl = { id: fid, 'aria-invalid': error ? 'true' : undefined, 'aria-describedby': error ? eid : undefined };
+  const errEl = error ? <div className="form-error" id={eid} role="alert">{error}</div> : null;
 
   if (f.type === 'section') {
     return <div className="section-divider">{f.label}</div>;
@@ -174,9 +243,9 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
   if (f.type === 'date') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
-        <input type="date" value={value || ''} onChange={(e) => onChange(e.target.value)} />
-        {error ? <div className="form-error">{error}</div> : null}
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
+        <input type="date" {...ctl} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        {errEl}
       </div>
     );
   }
@@ -187,8 +256,9 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
     const [otherMode, setOtherMode] = useState(initialOther);
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
         <select
+          {...ctl}
           value={otherMode ? '__other__' : (value || '')}
           onChange={(e) => {
             if (e.target.value === '__other__') { setOtherMode(true); onChange(''); }
@@ -211,7 +281,7 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
             onChange={(e) => onChange(e.target.value)}
           />
         ) : null}
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
@@ -219,8 +289,9 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
   if (f.type === 'text' || f.type === 'tel' || f.type === 'number') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
         <input
+          {...ctl}
           type={f.type}
           pattern={f.pattern}
           inputMode={f.type === 'tel' ? 'tel' : 'numeric'}
@@ -229,49 +300,49 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
         />
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
   if (f.type === 'time') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
-        <input type="time" value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
+        <input type="time" {...ctl} value={value || ''} onChange={(e) => onChange(e.target.value)} />
         {f.hint ? <div className="cell-muted" style={{ marginTop: 4, fontSize: 12 }}>{f.hint}</div> : null}
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
   if (f.type === 'textarea') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
-        <textarea placeholder={f.placeholder || ''} value={value || ''} onChange={(e) => onChange(e.target.value)} />
-        {error ? <div className="form-error">{error}</div> : null}
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
+        <textarea {...ctl} placeholder={f.placeholder || ''} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        {errEl}
       </div>
     );
   }
   if (f.type === 'select') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
-        <select value={value || ''} onChange={(e) => onChange(e.target.value)}>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
+        <select {...ctl} value={value || ''} onChange={(e) => onChange(e.target.value)}>
           <option value="" disabled>Select…</option>
           {(f.options || []).map((o) => (
             <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
           ))}
         </select>
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
   if (f.type === 'searchable-select') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
         <SearchableSelect options={f.options || []} value={value} onChange={onChange} placeholder={f.placeholder || 'Select…'} />
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
@@ -295,12 +366,12 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
     const [from, to] = Array.isArray(value) ? value : ['', ''];
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
         <div className="form-two">
           <input type="date" value={from} onChange={(e) => onChange([e.target.value, to])} />
           <input type="date" value={to} onChange={(e) => onChange([from, e.target.value])} />
         </div>
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
@@ -329,14 +400,14 @@ function Field({ field: rawField, value, onChange, error, builderRows, onBuilder
             );
           })}
         </div>
-        {error ? <div className="form-error">{error}</div> : null}
+        {errEl}
       </div>
     );
   }
   if (f.type === 'upload') {
     return (
       <div className="form-row">
-        <label>{f.label} {reqMark}</label>
+        <label htmlFor={fid}>{f.label} {reqMark}</label>
         {preview ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <img src={preview} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', background: '#f1f2f6' }}
