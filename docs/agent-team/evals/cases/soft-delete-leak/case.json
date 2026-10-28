@@ -1,0 +1,7 @@
+{
+  "title": "Export route reads outlets without the deletedAt filter",
+  "roles": ["technical-architect"],
+  "planted": "prisma.outlet.findMany with no deletedAt: null, so deleted outlets leak into the export",
+  "mechanical": { "lint": "soft-delete", "expect": "finding" },
+  "expect": { "verdict_not": ["Endorsed"], "categories_any": ["security_privacy", "data_loss_offline", "maintainability", "architecture_risk"] }
+}
