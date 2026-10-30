@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { PHOTO_MAX_BYTES } from "../../utils/meta";
 import { ok, okList, notFound, validationError, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
@@ -30,7 +31,7 @@ const staffPhotoUpload = multer({
       cb(null, `${req.params.id}-${Date.now()}${imageExtension(file.mimetype)}`);
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: PHOTO_MAX_BYTES },
   fileFilter: imageFileFilter,
 });
 
