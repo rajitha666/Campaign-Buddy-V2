@@ -1,0 +1,7 @@
+{
+  "title": "Migration drops a column and adds a NOT NULL column with no default",
+  "roles": ["technical-architect"],
+  "planted": "DROP COLUMN geofenceRadiusMeters (shipped apps may rely on it) and ADD COLUMN region NOT NULL without DEFAULT (fails on populated outlets table)",
+  "mechanical": { "lint": "migration", "expect": "danger" },
+  "expect": { "verdict_not": ["Endorsed"], "categories_any": ["data_loss_offline", "breaks_shipped_clients", "architecture_risk"], "suggest_block": true }
+}

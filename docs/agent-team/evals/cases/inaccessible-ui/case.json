@@ -1,0 +1,6 @@
+{
+  "title": "Filter bar with unlabeled input, tiny click targets and weak contrast",
+  "roles": ["ux-ui-architect"],
+  "planted": "input has no label, close control is a 16px span with onClick and white-on-light-orange text, star is a div, fixed 520px width overflows at 375px",
+  "expect": { "verdict_not": ["Endorsed"], "categories_any": ["ux_accessibility", "responsive"], "suggest_block": true }
+}

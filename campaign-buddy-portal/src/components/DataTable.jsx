@@ -1,4 +1,5 @@
 import { ICONS } from './Icons';
+import EmptyState from './EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
 
@@ -27,30 +28,43 @@ export default function DataTable({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = Math.min(page * pageSize, total);
+  // "Show N entries", search and the pager only earn their space once there is
+  // more than a short list. An active search always keeps its box visible so it
+  // can be cleared. Smallest page-size choice is 10.
+  const longList = total > 10;
+  const showSearch = !!onSearchChange && (longList || !!search);
+  const showPageSize = longList;
+  const showToolbar = showPageSize || !!excel || showSearch;
+  const activate = (a, row) => (e) => { e.stopPropagation(); onAction?.(a, row); };
+  const onKey = (a, row) => (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(a, row)(e); } };
 
   return (
     <div className="table-card">
-      <div className="table-toolbar">
-        <div className="entries-select">
-          Show
-          <select value={pageSize} onChange={(e) => onPageSizeChange?.(Number(e.target.value))}>
-            {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-          entries
-        </div>
-        <div className="toolbar-right">
-          {excel ? <button className="btn-excel" onClick={onExport}>⬇ Excel</button> : null}
-          {onSearchChange ? (
-            <div className="search-box">
-              {ICONS.search}
-              <input placeholder="Search..." value={search} onChange={(e) => onSearchChange(e.target.value)} />
+      {showToolbar ? (
+        <div className="table-toolbar">
+          {showPageSize ? (
+            <div className="entries-select">
+              Show
+              <select value={pageSize} onChange={(e) => onPageSizeChange?.(Number(e.target.value))} aria-label="Rows per page">
+                {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+              entries
             </div>
-          ) : null}
+          ) : <div />}
+          <div className="toolbar-right">
+            {excel ? <button className="btn-excel" onClick={onExport}>⬇ Excel</button> : null}
+            {showSearch ? (
+              <div className="search-box">
+                {ICONS.search}
+                <input placeholder="Search..." value={search} onChange={(e) => onSearchChange(e.target.value)} aria-label="Search this table" />
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {rows.length === 0 ? (
-        <div className="empty-state"><div className="big">{emptyText.title}</div>{emptyText.hint}</div>
+        <EmptyState title={emptyText.title} hint={emptyText.hint} />
       ) : (
         <>
           <div className="table-scroll">
@@ -73,7 +87,7 @@ export default function DataTable({
                       <td>
                         <div className="row-actions">
                           {actions.map((a) => (
-                            <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={(e) => { e.stopPropagation(); onAction?.(a, row); }}>
+                            <div key={a} className={`icon-btn ${a}`} role="button" tabIndex={0} title={ACTION_TITLES[a] || a} aria-label={ACTION_TITLES[a] || a} onClick={activate(a, row)} onKeyDown={onKey(a, row)}>
                               {ICONS[a]}
                             </div>
                           ))}
@@ -106,7 +120,7 @@ export default function DataTable({
                 {actions.length > 0 ? (
                   <div className="data-card-actions row-actions">
                     {actions.map((a) => (
-                      <div key={a} className={`icon-btn ${a}`} title={ACTION_TITLES[a] || a} onClick={(e) => { e.stopPropagation(); onAction?.(a, row); }}>
+                      <div key={a} className={`icon-btn ${a}`} role="button" tabIndex={0} title={ACTION_TITLES[a] || a} aria-label={ACTION_TITLES[a] || a} onClick={activate(a, row)} onKeyDown={onKey(a, row)}>
                         {ICONS[a]}
                       </div>
                     ))}
@@ -121,11 +135,13 @@ export default function DataTable({
       {rows.length > 0 ? (
         <div className="table-footer">
           <span>Showing {showingFrom} to {showingTo} of {total} entries</span>
-          <div className="pager">
-            <button disabled={page <= 1} onClick={() => onPageChange?.(page - 1)}>Previous</button>
-            <button className="active">{page}</button>
-            <button disabled={page >= totalPages} onClick={() => onPageChange?.(page + 1)}>Next</button>
-          </div>
+          {totalPages > 1 ? (
+            <div className="pager">
+              <button disabled={page <= 1} onClick={() => onPageChange?.(page - 1)}>Previous</button>
+              <button className="active" aria-current="page">{page}</button>
+              <button disabled={page >= totalPages} onClick={() => onPageChange?.(page + 1)}>Next</button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

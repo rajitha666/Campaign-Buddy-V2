@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { salesFields as salesFieldsApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -14,6 +15,7 @@ const EMPTY = { label: '', type: 'number', scope: 'day', options: '', required: 
 export default function CustomSalesFields() {
   const { currentCampaignId, isAdmin } = useAuth();
   const { push } = useToast();
+  const confirm = useConfirm();
 
   const [rows, setRows] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -109,7 +111,13 @@ export default function CustomSalesFields() {
   }
 
   async function remove(row) {
-    if (!window.confirm(`Delete "${row.label}"? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete "${row.label}"?`,
+      message: "This can't be undone. If it already has recorded values, archive it instead.",
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await salesFieldsApi.remove(currentCampaignId, row.id);
       push('Field deleted');

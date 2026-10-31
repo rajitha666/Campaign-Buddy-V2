@@ -4,7 +4,8 @@ import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ok, okList, notFound, ApiError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
-import { requireCampaignAccess } from "../../middleware/campaignAccess";
+import { requireCampaignAccess, outletIdsAllowed } from "../../middleware/campaignAccess";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
 import { computeCampaignStatus } from "../../utils/campaignStatus";
 import { coerceDates } from "../../utils/coerce";
 import { validate } from "../../middleware/validate";
@@ -43,10 +44,17 @@ async function syncTesterField(campaignId: string, enabled: boolean) {
 router.get(
   "/campaigns",
   asyncHandler(async (req, res) => {
-    const where =
+    const search = String(req.query.search || "").trim();
+    const where: any =
       req.user!.roleId === "adm"
         ? { deletedAt: null }
         : { deletedAt: null, accessGrants: { some: { userId: req.user!.sub } } };
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { client: { clientName: { contains: search, mode: "insensitive" } } },
+      ];
+    }
     const campaigns = await prisma.campaign.findMany({ where, include: { client: true } });
 
     // Auto-sync status on read (§5.8) — skip campaigns with a manual override,
@@ -132,11 +140,29 @@ router.delete(
   })
 );
 
+router.post(
+  "/campaigns/:campaignId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Campaign",
+      load: () => prisma.campaign.findUnique({ where: { id: req.params.campaignId } }),
+      guard: async (row) =>
+        parentDeleted(["client", await prisma.client.findUnique({ where: { id: row.clientId } })]),
+      update: (row) => clearMarker(prisma.campaign, row.id, "deletedAt", "Campaign"),
+      // campaignNo is unique among live campaigns only
+      conflict: { code: "CODE_IN_USE", message: "That campaign number is now used by another campaign" },
+    });
+    res.json(ok(out));
+  })
+);
+
 router.get(
   "/campaigns/:campaignId/items",
   requireCampaignAccess,
   asyncHandler(async (req, res) => {
-    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, item: { deletedAt: null } }, include: { item: true } });
+    const rows = await prisma.campaignItem.findMany({ where: { campaignId: req.params.campaignId, deletedAt: null, item: { deletedAt: null } }, include: { item: true } });
     res.json(okList(rows, rows.length));
   })
 );
@@ -157,7 +183,7 @@ router.post(
           prisma.campaignItem.upsert({
             where: { campaignId_itemId: { campaignId, itemId: id } },
             create: { campaignId, itemId: id },
-            update: {},
+            update: { deletedAt: null },
           })
         )
       );
@@ -174,8 +200,16 @@ router.post(
     }
 
     const resolvedItemId = itemId ?? (await prisma.item.create({ data: newItem })).id;
-    const created = await prisma.campaignItem.create({
-      data: { campaignId, itemId: resolvedItemId },
+    // A previously removed product is revived (same row) rather than colliding on the unique key.
+    // Adding one that is already live stays a 409.
+    const existing = await prisma.campaignItem.findUnique({
+      where: { campaignId_itemId: { campaignId, itemId: resolvedItemId } },
+    });
+    if (existing && !existing.deletedAt) throw new ApiError(409, "DUPLICATE", "This product is already in the campaign");
+    const created = await prisma.campaignItem.upsert({
+      where: { campaignId_itemId: { campaignId, itemId: resolvedItemId } },
+      create: { campaignId, itemId: resolvedItemId },
+      update: { deletedAt: null },
     });
     // #43 — backfill: item assigned to the campaign after activations exist
     // must still reach the promoters; previously only future activations saw it.
@@ -194,8 +228,31 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.campaignItem.delete({ where: { id: req.params.campaignItemId } });
+    const row = await prisma.campaignItem.findFirst({
+      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!row) throw notFound("Campaign item");
+    // #111: soft delete — activation items and their sales are untouched; the
+    // product just stops being offered. Restoring brings back exactly what was there.
+    await prisma.campaignItem.update({ where: { id: row.id }, data: { deletedAt: new Date() } });
     res.status(204).send();
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/items/:campaignItemId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const row = await prisma.campaignItem.findFirst({
+      where: { id: req.params.campaignItemId, campaignId: req.params.campaignId, deletedAt: { not: null } },
+      include: { item: true },
+    });
+    if (!row) throw notFound("Campaign item");
+    if (row.item.deletedAt) throw new ApiError(409, "PARENT_DELETED", "Restore the product in the catalogue first");
+    const restored = await prisma.campaignItem.update({ where: { id: row.id }, data: { deletedAt: null } });
+    res.json(ok(restored));
   })
 );
 
@@ -307,10 +364,49 @@ router.delete(
   requireCampaignAccess,
   requireRole("adm", "usr"),
   asyncHandler(async (req, res) => {
-    await prisma.campaignAccessGrant.delete({
-      where: { userId_campaignId: { userId: req.params.userId, campaignId: req.params.campaignId } },
+    const where = { userId_campaignId: { userId: req.params.userId, campaignId: req.params.campaignId } };
+    const grant = await prisma.campaignAccessGrant.findUnique({ where });
+    if (!grant) throw notFound("Access grant");
+    await prisma.campaignAccessGrant.delete({ where });
+    // #111: return what was removed so the client can offer Undo (restore below).
+    res.json(ok({ userId: grant.userId, campaignId: grant.campaignId, scopeType: grant.scopeType, outletIds: grant.outletIds }));
+  })
+);
+
+// Undo for the route above: re-creates a removed grant with its original scope.
+// Re-checks the actor — a subset-scoped user can only hand out a subset of their own outlets.
+router.post(
+  "/campaigns/:campaignId/admins/:userId/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const { scopeType, outletIds = [] } = req.body as { scopeType?: string; outletIds?: string[] };
+    if (scopeType !== "all" && scopeType !== "subset") {
+      throw new ApiError(400, "VALIDATION_ERROR", "scopeType must be 'all' or 'subset'");
+    }
+    if (!Array.isArray(outletIds) || (scopeType === "subset" && outletIds.length === 0)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "outletIds is required when scopeType is 'subset'");
+    }
+    const { campaignId, userId } = req.params;
+    const target = await prisma.user.findUnique({ where: { id: userId } });
+    if (!target) throw notFound("User");
+    if (!["usr", "sponsor", "supervisor"].includes(target.roleId)) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Only back-office accounts can be linked to a campaign this way");
+    }
+    if (await prisma.campaignAccessGrant.findUnique({ where: { userId_campaignId: { userId, campaignId } } })) {
+      throw new ApiError(409, "ALREADY_GRANTED", "This user already has access to the campaign");
+    }
+    const actorOutlets = outletIdsAllowed(req);
+    if (actorOutlets && (scopeType === "all" || outletIds.some((id) => !actorOutlets.includes(id)))) {
+      throw new ApiError(403, "OUTLET_NOT_ALLOWED", "You can only grant access to outlets you have access to yourself");
+    }
+    if (outletIds.length && (await prisma.outlet.count({ where: { id: { in: outletIds } } })) !== new Set(outletIds).size) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Unknown outlet in outletIds");
+    }
+    const grant = await prisma.campaignAccessGrant.create({
+      data: { userId, campaignId, scopeType, outletIds: scopeType === "subset" ? outletIds : [] },
     });
-    res.status(204).send();
+    res.status(201).json(ok(grant));
   })
 );
 

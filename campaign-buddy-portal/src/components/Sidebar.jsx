@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { useFavorites } from '../context/PreferencesContext';
 import { navEntriesFor, resolveFavorites, entryLabel } from '../lib/favorites';
+import { itemPath, itemIsActive } from '../lib/navTabs';
+import { redirectFor } from '../config/legacyPaths';
 
 const FOLD_KEY = 'cb.nav.sections';
 
@@ -14,7 +16,7 @@ function readFolds() {
 }
 
 function sectionHasPath(items, pathname) {
-  return items.some((it) => it.path === pathname || it.children?.some((c) => c.path === pathname));
+  return items.some((it) => itemIsActive(it, pathname));
 }
 
 export default function Sidebar({ collapsed = false, isPhone = false, onToggleCollapse, onNavigate }) {
@@ -27,7 +29,8 @@ export default function Sidebar({ collapsed = false, isPhone = false, onToggleCo
   // Personalization: pages this user starred, pinned above the regular menu.
   const favorites = useFavorites();
   const favEntries = useMemo(
-    () => resolveFavorites(favorites.paths, navEntriesFor(NAV, persona)),
+    // Favorites saved on a retired page follow it to its replacement.
+    () => resolveFavorites((favorites.paths || []).map((p) => redirectFor(p, persona) || p), navEntriesFor(NAV, persona)),
     [favorites.paths, persona]
   );
 
@@ -162,38 +165,15 @@ function StarButton({ path, name, favorites }) {
 
 function NavEntry({ item, pathname, go, isOpen, onToggleOpen, designationLabel, favorites }) {
   const label = (text) => applyDesignationLabel(text, designationLabel);
-  if (item.children) {
-    const activeParent = item.children.some((c) => c.path === pathname);
-    return (
-      <div className={`nav-group ${isOpen ? 'flyout-open' : ''}`}>
-        <div className={`nav-item ${activeParent ? 'active' : ''}`} onClick={onToggleOpen}>
-          {ICONS[item.icon]}<span>{label(item.label)}</span>
-        </div>
-        <div className="nav-children">
-          <div className="nav-flyout-title">{label(item.label)}</div>
-          {item.children.map((c) => (
-            <div
-              key={c.path}
-              className={`nav-child ${c.path === pathname ? 'active' : ''}`}
-              onClick={() => go(c.path)}
-            >
-              <span className="dot" />{label(c.label)}
-              <StarButton path={c.path} name={label(c.label)} favorites={favorites} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="nav-group">
       <div
-        className={`nav-item ${item.path === pathname ? 'active' : ''}`}
-        onClick={() => go(item.path)}
+        className={`nav-item ${itemIsActive(item, pathname) ? 'active' : ''}`}
+        onClick={() => go(itemPath(item))}
         title={label(item.label)}
       >
         {ICONS[item.icon]}<span>{label(item.label)}</span>
-        <StarButton path={item.path} name={label(item.label)} favorites={favorites} />
+        <StarButton path={itemPath(item)} name={label(item.label)} favorites={favorites} />
       </div>
       <div className="nav-flyout-label">{label(item.label)}</div>
     </div>

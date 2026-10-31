@@ -43,7 +43,7 @@ export default function MonthlyAttendance() {
       <div className="page-head"><div><h1>Monthly Attendance</h1><p className="page-sub">One column per day of the month.</p></div></div>
       <div className="filter-bar">
         <div className="filter-field"><label>Month</label><input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
-        <button className="btn btn-primary btn-sm" onClick={load}>Load</button>
+        <button className="btn btn-primary btn-sm" onClick={load}>Refresh</button>
         <button className="btn-excel" style={{ marginLeft: 'auto' }} onClick={exportCsv}>⬇ Excel</button>
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (

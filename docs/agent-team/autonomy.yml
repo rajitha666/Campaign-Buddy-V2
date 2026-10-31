@@ -1,0 +1,49 @@
+# Agent team — owner-controlled dials. Agents READ this file; only the owner edits it.
+# Runtime mode (full | light | off) is separate: ~/.campaign-buddy/team-mode.json, changed by telling Claude in chat ("team off").
+# Roles, routing and verdicts: docs/agent-team/roles.md. Design and decisions: docs/agent-team-design.md.
+version: 1
+updated: 2026-10-25
+
+# Who approves at each stage.  owner = always the owner · owner-if-risky = owner only when the change is "risky" (below) · auto = the delivery lead proceeds
+gates:
+  A_design: owner      # approve the design (technical design note + UX spec) before building
+  B_merge: owner       # approve the merge after review
+  C_docs: owner        # approve user-guide / product-doc updates
+  D_marketing: owner   # approve capability brief / landing / deck updates (major changes only)
+
+# "risky" for owner-if-risky and for Light mode (specialists run on risky changes)
+risky_means:
+  - api-contract         # new/changed route, request or response shape
+  - schema-migration     # any prisma migration
+  - auth-or-scope        # roles, campaign grants, outlet scope
+  - offline-sync         # mobile queue, capturedAt, replay
+  - deletes-or-cascades  # any delete, restore or ON DELETE behaviour
+  - personal-data        # location, IDs, bank details, photos
+
+# "major" (triggers Marketing + the claims check): anything a client or prospect would notice —
+# new capability, new menu/page/flow, pricing/licensing, or a big behaviour change. The Product Owner tags it at intake; the owner can override.
+
+# Token guard: at these shares of the 5-hour plan limit Claude tells the owner and ASKS (never switches mode on its own).
+token_guard:
+  warn_at_percent: 70
+  critical_at_percent: 90
+  action: ask
+
+# Reviewer settings
+review:
+  max_iterations_per_pr: 2          # then escalate to the owner with both positions
+  clean_change_word_budget: 150     # a clean change gets the verdict + a few notes
+  findings_word_budget: 400
+  models:                           # spawn the defined role types, never general-purpose (measured ~5x cost)
+    product-owner: opus
+    technical-architect: opus
+    ux-ui-architect: sonnet
+    qa-verifier: sonnet
+    docs-enablement: sonnet
+    marketing-writer: sonnet
+
+# Device testing (physical phones): a formal step before RELEASES, not per PR. Tester: Sankalpana. Checklist: docs/physical-device-tests.md.
+device_tests: pre-release
+
+# How a gate may be relaxed: the owner edits `gates` above after N consecutive clean passes with no escaped defects (a bug filed after merge, linked to the PR).
+relax_after_clean_passes: 5

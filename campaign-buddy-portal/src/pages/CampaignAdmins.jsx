@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { campaigns as campaignsApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import SearchableSelect from '../components/SearchableSelect';
@@ -27,6 +28,7 @@ export default function CampaignAdmins() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { push } = useToast();
+  const confirm = useConfirm();
 
   const [campaign, setCampaign] = useState(null);
   const [grants, setGrants] = useState([]);
@@ -97,7 +99,13 @@ export default function CampaignAdmins() {
   }
 
   async function unlink(userId) {
-    if (!window.confirm('Remove this account from the campaign? The account itself is not deleted.')) return;
+    const ok = await confirm({
+      title: 'Remove this account from the campaign?',
+      message: 'They lose access to this campaign. The account itself is not deleted.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await campaignsApi.removeAdmin(campaignId, userId);
       push('Account removed from campaign');
