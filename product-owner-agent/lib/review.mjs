@@ -11,6 +11,8 @@ export const BLOCK_CATEGORIES = [
   'data_loss_offline',
   'breaks_shipped_clients',
   'scope_creep',
+  'architecture_risk',
+  'ux_accessibility',
 ];
 export const ADVISE_CATEGORIES = ['scale', 'cost', 'locale_hardcoding', 'simplicity', 'missing_tests_or_guides', 'other'];
 const ALL_CATEGORIES = [...BLOCK_CATEGORIES, ...ADVISE_CATEGORIES];

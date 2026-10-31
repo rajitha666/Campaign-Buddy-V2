@@ -44,6 +44,13 @@ test('validateVerdict accepts a well-formed block', () => {
   assert.equal(validateVerdict(blockVerdict()).verdict, 'block');
 });
 
+test('validateVerdict accepts blocking architecture_risk and ux_accessibility findings', () => {
+  for (const category of ['architecture_risk', 'ux_accessibility']) {
+    const v = validateVerdict(blockVerdict({ findings: [blockingFinding({ category })] }));
+    assert.equal(v.verdict, 'block');
+  }
+});
+
 test('validateVerdict rejects a block that has no blocking finding', () => {
   const v = blockVerdict({ findings: [blockingFinding({ blocking: false })] });
   assert.throws(() => validateVerdict(v), /block/i);
