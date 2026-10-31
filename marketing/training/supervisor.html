@@ -41,14 +41,11 @@
     <h2>Running your outlets</h2>
     <ol>
       <li><a href="#t1">Sign in and get your bearings <span class="n">2 steps</span></a></li>
-      <li><a href="#t2">Start the day: attendance <span class="n">2 steps</span></a></li>
-      <li><a href="#t3">Watch the live map <span class="n">1 step</span></a></li>
-      <li><a href="#t4">Check who did not turn up <span class="n">2 steps</span></a></li>
-      <li><a href="#t5">Your promoters <span class="n">1 step</span></a></li>
-      <li><a href="#t6">Review sales for your outlets <span class="n">3 steps</span></a></li>
-      <li><a href="#t7">Your team's leave requests <span class="n">1 step</span></a></li>
-      <li><a href="#t8">Log your outlet visits <span class="n">4 steps</span></a></li>
-      <li><a href="#t9">Your profile, on the app <span class="n">1 step</span></a></li>
+      <li><a href="#t2">Watch the live map <span class="n">1 step</span></a></li>
+      <li><a href="#t3">Review sales for your outlets <span class="n">3 steps</span></a></li>
+      <li><a href="#t4">Your team's leave requests <span class="n">1 step</span></a></li>
+      <li><a href="#t5">Log your outlet visits <span class="n">4 steps</span></a></li>
+      <li><a href="#t6">Your profile, on the app <span class="n">1 step</span></a></li>
     </ol>
   </aside>
 
@@ -67,11 +64,11 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Sign in with your <b>username</b> and password. If you cover more than one campaign, pick the right one from the <b>campaign switcher</b> in the top-right. The header always shows which campaign and how many of its outlets you can see.</p></div>
-            <figure><img src="assets/portal-supervisor/01-dashboard.webp" alt="Supervisor dashboard showing today's KPIs and a live map for the assigned outlets" /></figure>
+            <div class="step-text"><p>Sign in with your <b>username</b> and password. If you cover more than one campaign, pick the right one from the <b>campaign switcher</b> in the top-right. The header always shows which campaign and how many of its outlets you can see. You land on the <b>Overview</b>: campaign progress (<b>Day x of y</b>), then <b>Needs attention</b> &mdash; ranked rows, each opening the page that fixes it (promoters not checked in after shift start, stale location, check-ins outside the geofence, outlets with no sales update, reorder flags, shifts left open from yesterday, pending leave), or <b>All clear</b>. Under it are the tiles <b>Sales today</b>, <b>Active outlets</b>, <b>Conversion</b> and <b>Customers approached</b> (each with the change against yesterday), the <b>Last sales day</b> row, the live map, the <b>Sales trend</b> (7 or 30 days, <b>View as table</b>), <b>Best</b> and <b>Lagging outlets</b>, <b>Unmet demand</b> and the <b>Top 10 products</b>.</p></div>
+            <figure><img src="assets/portal-supervisor/01-dashboard.webp" alt="Supervisor Overview with campaign progress, the Needs attention strip, headline tiles and a live map for the assigned outlets" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>My Campaigns</b> for the list of activations you supervise, which promoter is at which outlet, and the dates. Tap the eye icon to see the detail of one.</p></div>
+            <div class="step-text"><p>Open <b>Campaigns &rarr; My Campaigns</b> for the list of activations you supervise, which promoter is at which outlet, and the dates. Tap the eye icon to see the detail of one.</p></div>
             <figure><img src="assets/portal-supervisor/02-my-campaigns.webp" alt="My Campaigns activation list scoped to the supervisor's assigned outlets" /></figure>
           </li>
           <li>
@@ -85,88 +82,43 @@
     </details>
 
     <details class="task" id="t2" open>
-      <summary><span class="num">02</span><div><h2>Start the day: attendance</h2><div class="sub">First thing, before you set off</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+      <summary><span class="num">02</span><div><h2>Watch the live map</h2><div class="sub">On the road, to see where your promoters are</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Attendance</b>. Each row is a check-in for one of your outlets, with the time and an <b>on time</b> or <b>late</b> badge. A row without a check-in time means the promoter has not started yet.</p></div>
-            <figure><img src="assets/portal-supervisor/03-staff-attendance.webp" alt="Attendance log for the supervisor's outlets with on-time and late badges" /></figure>
-          </li>
-          <li>
-            <div class="step-text">
-              <p>Filter by <b>outlet</b> and a date range to look back over the week; the list updates as you change them, or press <b>Refresh</b>.</p>
-              <div class="tip"><b>Tip:</b> a promoter who looks absent here may be checked in on another campaign, the one-open-shift rule means they can only be checked in one place at a time. Call before you assume the worst.</div>
-            </div>
-          </li>
-        </ol>
-      </div>
-    </details>
-
-    <details class="task" id="t3" open>
-      <summary><span class="num">03</span><div><h2>Watch the live map</h2><div class="sub">On the road, to see where your promoters are</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
-      <div class="task-body">
-        <ol class="steps">
-          <li>
-            <div class="step-text"><p>Open <b>Seller Live Locations</b>. Every promoter currently checked in shows on the map with their outlet, and the list below tells you since when. Click a row in the list to highlight that promoter's marker on the map — click again to clear. It refreshes on its own. A promoter who backgrounds the app stops updating until they reopen it, that is normal.</p></div>
+            <div class="step-text"><p>Open <b>Today &rarr; Live Locations</b>. Every promoter currently checked in shows on the map with their outlet, and the list below tells you since when. Click a row in the list to highlight that promoter's marker on the map — click again to clear. It refreshes on its own. A promoter who backgrounds the app stops updating until they reopen it, that is normal.</p></div>
             <figure><img src="assets/portal-supervisor/08-tracking-live.webp" alt="Seller Live Locations map and a list of promoters currently checked in" /></figure>
           </li>
         </ol>
       </div>
     </details>
 
-    <details class="task" id="t4" open>
-      <summary><span class="num">04</span><div><h2>Check who did not turn up</h2><div class="sub">Mid-morning, once shifts should have started</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+    <details class="task" id="t3" open>
+      <summary><span class="num">03</span><div><h2>Review sales for your outlets</h2><div class="sub">Any time, during the day or at the end</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Absence</b> and pick today's date. It lists every promoter who had an activation covering today but <b>no check-in</b>, and marks whether they are <b>on leave</b> or just <b>not checked in</b>.</p></div>
-            <figure><img src="assets/portal-supervisor/04-staff-absence.webp" alt="Absence screen listing promoters with an activation today but no check-in" /></figure>
-          </li>
-          <li>
-            <div class="step-text"><p>"On leave" is already approved; nothing to do. "No check-in" is the one to chase. Flag anything unexplained to head office.</p></div>
-          </li>
-        </ol>
-      </div>
-    </details>
-
-    <details class="task" id="t5" open>
-      <summary><span class="num">05</span><div><h2>Your promoters</h2><div class="sub">To look up a contact or a detail</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
-      <div class="task-body">
-        <ol class="steps">
-          <li>
-            <div class="step-text"><p>Open <b>Promoter List</b> for a read-only directory, name, type, home city, phone. Use <b>Search</b> to find someone. Details are edited by head office, not here.</p></div>
-            <figure><img src="assets/portal-supervisor/06-promoter-list.webp" alt="Read-only promoter directory with name, type, city and phone" /></figure>
-          </li>
-        </ol>
-      </div>
-    </details>
-
-    <details class="task" id="t6" open>
-      <summary><span class="num">06</span><div><h2>Review sales for your outlets</h2><div class="sub">Any time, during the day or at the end</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
-      <div class="task-body">
-        <ol class="steps">
-          <li>
-            <div class="step-text"><p>Open <b>SKU Wise Sales</b> for the row-by-row log &mdash; date, outlet, promoter, product, start quantity, sold, and a closing <b>Total Sales</b> column (sold quantity &times; unit price) &mdash; for your outlets only. Filter by date and export with <b>Excel</b>.</p></div>
+            <div class="step-text"><p>Open <b>Reports &rarr; SKU Wise Sales</b> for the row-by-row log &mdash; date, outlet, promoter, product, start quantity, sold, and a closing <b>Total Sales</b> column (sold quantity &times; unit price) &mdash; for your outlets only. Filter by date and export with <b>Excel</b>.</p></div>
             <figure><img src="assets/portal-supervisor/07-sales-sku-wise.webp" alt="SKU-wise sales log scoped to the supervisor's outlets" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Sales &rarr; Starting Stock</b> to see the stock each promoter started the day with &mdash; date, outlet, promoter, product, unit price and <b>Start Qty</b> &mdash; for your outlets only. It is the opening stock from their first stock update after checking in, so a mid-day restock does not change it. Only days from the release onward are listed. Filter by outlet and date, and download with <b>Excel</b>.</p></div>
+            <div class="step-text"><p>Open <b>Reports &rarr; Starting Stock</b> to see the stock each promoter started the day with &mdash; date, outlet, promoter, product, unit price and <b>Start Qty</b> &mdash; for your outlets only. It is the opening stock from their first stock update after checking in, so a mid-day restock does not change it. Only days from the release onward are listed. Filter by outlet and date, and download with <b>Excel</b>.</p></div>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Overall Reports</b> for the campaign totals per product, units and value, with a grand total.</p></div>
+            <div class="step-text"><p>Open <b>Reports &rarr; Overall Reports</b> for the campaign totals per product, units and value, with a grand total.</p></div>
             <figure><img src="assets/portal-supervisor/10-reports-sku-wise.webp" alt="Overall SKU-wise report with totals per product" /></figure>
           </li>
         </ol>
       </div>
     </details>
 
-    <details class="task" id="t7" open>
-      <summary><span class="num">07</span><div><h2>Your team's leave requests</h2><div class="sub">To know who is off and when</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+    <details class="task" id="t4" open>
+      <summary><span class="num">04</span><div><h2>Your team's leave requests</h2><div class="sub">To know who is off and when</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>
             <div class="step-text">
-              <p>Open <b>Leave Requests</b> for the time-off requests from promoters who report to you, the reason, the dates, and whether they are awaiting approval, approved or declined.</p>
+              <p>Open <b>People &rarr; Leave Requests</b> for the time-off requests from promoters who report to you, the reason, the dates, and whether they are awaiting approval, approved or declined.</p>
               <div class="tip"><b>Note:</b> this view is read-only. Approvals are made in head office by the promoter's "reports to" person. Chase there if a decision is holding you up.</div>
             </div>
             <figure><img src="assets/portal-supervisor/05-my-leave-requests.webp" alt="Leave requests from the supervisor's team, showing reason, dates and status" /></figure>
@@ -175,8 +127,8 @@
       </div>
     </details>
 
-    <details class="task" id="t8" open>
-      <summary><span class="num">08</span><div><h2>Log your outlet visits</h2><div class="sub">On the app, at each outlet you visit</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+    <details class="task" id="t5" open>
+      <summary><span class="num">05</span><div><h2>Log your outlet visits</h2><div class="sub">On the app, at each outlet you visit</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>
@@ -189,15 +141,15 @@
             <div class="step-text"><p>For a <b>photo</b> task, tap <b>Take photo</b> and shoot the setup — the task says how many photos head office wants. The app opens the camera only (no gallery, so every photo is from the outlet, today), shrinks the picture so it uploads quickly on a weak signal, and sends it straight away; use the <b>&times;</b> on a thumbnail to retake. Photos are taken <b>once per outlet, per visit</b>: if you cover two promoters at the same outlet you score each of them separately, but the setup photos are shared, so you don't photograph the same display twice — on a return visit you photograph it again. Visiting several outlets in a day? Each outlet has its own checklist.</p></div>
           </li>
           <li>
-            <div class="step-text"><p>Back in the portal, <b>Outlet Attendance</b> is your visit log, cross-checked against the promoters' own attendance for the same outlets. Pick a date and press <b>Load</b>; each visit is its own row with a <b>Visit</b> number. <b>Task Results</b>, in the same menu, shows the scores and photos submitted for your outlets: pick a date range and press <b>Load</b> for your average score, the checklists still <b>incomplete</b>, and every answer with photo thumbnails you can click to enlarge.</p></div>
+            <div class="step-text"><p>Back in the portal, <b>Today &rarr; Outlet Attendance</b> is your visit log, cross-checked against the promoters' own attendance for the same outlets. Pick a date and press <b>Load</b>; each visit is its own row with a <b>Visit</b> number. <b>Task Results</b>, in the same menu, shows the scores and photos submitted for your outlets: pick a date range and press <b>Load</b> for your average score, the checklists still <b>incomplete</b>, and every answer with photo thumbnails you can click to enlarge.</p></div>
             <figure><img src="assets/portal-supervisor/09-my-outlet-attendance.webp" alt="Outlet Attendance screen: the supervisor's visit log cross-checked against promoter attendance" /></figure>
           </li>
         </ol>
       </div>
     </details>
 
-    <details class="task" id="t9" open>
-      <summary><span class="num">09</span><div><h2>Your profile, on the app</h2><div class="sub">On the app, any time</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+    <details class="task" id="t6" open>
+      <summary><span class="num">06</span><div><h2>Your profile, on the app</h2><div class="sub">On the app, any time</div></div><span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
       <div class="task-body">
         <ol class="steps">
           <li>

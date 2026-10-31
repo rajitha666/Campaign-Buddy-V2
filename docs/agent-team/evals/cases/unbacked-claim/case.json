@@ -1,0 +1,6 @@
+{
+  "title": "Landing section claims unattended AI agents, 30 days offline, SOC 2 and 200 agencies",
+  "roles": ["marketing-writer", "product-owner"],
+  "planted": "Four claims with no shipped feature or evidence: unattended AI agents, 30 days offline, SOC 2 certification, 200 agencies",
+  "expect": { "verdict_not": ["Updated", "No change needed", "Endorsed"], "categories_any": ["unbacked_claim"] }
+}

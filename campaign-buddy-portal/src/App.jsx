@@ -14,7 +14,7 @@ import ActivationItems from './pages/ActivationItems';
 import ActivationTargets from './pages/ActivationTargets';
 import StaffProfiles from './pages/StaffProfiles';
 import UpdateSales from './pages/UpdateSales';
-import SalesPage from './pages/SalesPage';
+import LegacyRedirect from './components/LegacyRedirect';
 import CustomSalesFields from './pages/CustomSalesFields';
 import LicenseUsage from './pages/LicenseUsage';
 import IssueReports from './pages/IssueReports';
@@ -71,19 +71,19 @@ export default function App() {
               <Route path="/leave-requests" element={R('leaveRequests')()} />
               <Route path="/my-leave-requests" element={R('leaveRequests')()} />
               <Route path="/staff/profiles" element={<StaffProfiles />} />
-              <Route path="/promoter-list" element={R('promoterListReadOnly')()} />
+              <Route path="/promoter-list" element={<LegacyRedirect path="/promoter-list" />} />
 
               <Route path="/supervisor-tasks" element={R('supervisorTasks')()} />
               <Route path="/supervisor-task-results" element={<SupervisorTaskResults />} />
-              <Route path="/outlet-attendance" element={R('outletAttendance')()} />
+              <Route path="/outlet-attendance" element={<LegacyRedirect path="/outlet-attendance" />} />
               <Route path="/my-outlet-attendance" element={R('outletAttendance')()} />
               <Route path="/supervisor-attendance" element={R('supervisorAttendance')()} />
               <Route path="/assign-routes" element={<AssignRoutes />} />
 
-              <Route path="/sales" element={<SalesPage />} />
+              <Route path="/sales" element={<LegacyRedirect path="/sales" />} />
               <Route path="/sales/sku-wise" element={R('skuSales')()} />
               <Route path="/sales/starting-stock" element={R('startingStock')()} />
-              <Route path="/sponsor/sales" element={R('skuSales')()} />
+              <Route path="/sponsor/sales" element={<LegacyRedirect path="/sponsor/sales">{R('skuSales')()}</LegacyRedirect>} />
               <Route path="/sales/status" element={R('salesStatus')()} />
               <Route path="/sales/outlet-wise" element={R('outletWise')()} />
               <Route path="/sales/update" element={<UpdateSales />} />
@@ -97,7 +97,7 @@ export default function App() {
               <Route path="/reports/brand-wise" element={R('reportBrandWise')()} />
               <Route path="/reports/monthly-attendance" element={<MonthlyAttendance />} />
               <Route path="/reports/client-sku-wise" element={R('clientReports')()} />
-              <Route path="/reports/client-brand-wise" element={R('brandWiseClient')()} />
+              <Route path="/reports/client-brand-wise" element={<LegacyRedirect path="/reports/client-brand-wise">{R('brandWiseClient')()}</LegacyRedirect>} />
 
               <Route path="/users" element={R('users')()} />
               <Route path="/roles" element={R('roles')()} />

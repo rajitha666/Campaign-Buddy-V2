@@ -151,8 +151,11 @@ router.post(
 );
 
 // ---- Cities ----
-router.get("/cities", asyncHandler(async (_req, res) => {
-  const rows = await prisma.city.findMany({ where: { deletedAt: null } });
+router.get("/cities", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.city.findMany({
+    where: { deletedAt: null, ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}) },
+  });
   res.json(okList(rows, rows.length));
 }));
 router.post("/cities", requireRole("adm"), validate({ body: s.cityCreate }), asyncHandler(async (req, res) => {
@@ -205,8 +208,11 @@ router.delete("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req
 router.post("/outlets/:id/restore", requireRole("adm", "usr"), restoreHandler("Outlet", prisma.outlet, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]], codeInUse("outlet number")));
 
 // ---- Distributor Points ----
-router.get("/distributor-points", asyncHandler(async (_req, res) => {
-  const rows = await prisma.distributorPoint.findMany({ where: { deletedAt: null } });
+router.get("/distributor-points", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.distributorPoint.findMany({
+    where: { deletedAt: null, ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}) },
+  });
   res.json(okList(rows, rows.length));
 }));
 router.post("/distributor-points", requireRole("adm", "usr"), validate({ body: s.distributorCreate }), asyncHandler(async (req, res) => {

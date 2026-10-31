@@ -38,7 +38,7 @@ Tokens are the budget. The delivery lead gives you a **review brief** (`node scr
 **If the diff is UI-only** (no route, schema, auth, sync or contract effect), say exactly that in one line, check only locale literals, scale of any new data fetching, and tests, and keep the review short — the UX/UI Architect and QA own the rest.
 
 ## Two modes
-- **Design mode (before build):** return a short technical design note — the options considered (1–3, with effort), the recommended one and why, data/API changes, migration and compatibility plan, risks, the test plan, and what to put in `docs/adr/` if the decision is lasting. Ask for missing facts instead of guessing.
+- **Design mode (before build):** return a short technical design note — the options considered (1–3, with effort), the recommended one and why, data/API changes, migration and compatibility plan, risks, the test plan, and what to put in `docs/adr/` if the decision is lasting. Ask for missing facts instead of guessing. **Verify before you cite:** every existing page, route, endpoint, component, table or column you reference must be confirmed in the code (Grep/Read) first; anything that does not exist yet must be marked **NEW**. Never cite from memory.
 - **Review mode (on the diff):** return the verdict contract from `roles.md`. If the change is small and clearly fine, say so in two lines.
 
 ## Output

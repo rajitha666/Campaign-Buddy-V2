@@ -8,6 +8,7 @@ import staffRoutes from "./staff.routes";
 import campaignsRoutes from "./campaigns.routes";
 import activationsRoutes from "./activations.routes";
 import operationsRoutes from "./operations.routes";
+import dashboardRoutes from "./dashboard.routes";
 import reportsRoutes from "./reports.routes";
 import rbacRoutes from "./rbac.routes";
 import salesFieldsRoutes from "./salesFields.routes";
@@ -30,6 +31,7 @@ router.use(staffRoutes);
 router.use(campaignsRoutes);      // includes GET /campaigns (no :campaignId prefix)
 router.use(activationsRoutes);    // nested under /campaigns/:campaignId/*, requireCampaignAccess applied per-route
 router.use(operationsRoutes);     // same
+router.use(dashboardRoutes);      // /campaigns/:campaignId/dashboard — Overview summary (#114)
 router.use(salesFieldsRoutes);    // /campaigns/:campaignId/sales-fields — custom sales fields (#13)
 router.use(licenseRoutes);        // /campaigns/:campaignId/license + /license/usage — license usage tracking
 router.use(issuesRoutes);         // /issue-reports — portal "Report an issue" → GitHub Issues

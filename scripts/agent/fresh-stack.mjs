@@ -44,11 +44,16 @@ function testDbUrl() {
 }
 
 const portOpen = (port) => new Promise((res) => { const s = net.createConnection({ port, host: 'localhost' }); s.once('connect', () => { s.destroy(); res(true); }); s.once('error', () => res(false)); s.setTimeout(800, () => { s.destroy(); res(false); }); });
-async function waitHttp(url, ms = 90000) {
+// Resolves true when the URL answers, false on timeout, or false immediately if `alive()` says the process died.
+async function waitHttp(url, ms = 120000, alive = () => true) {
   const end = Date.now() + ms;
-  while (Date.now() < end) { try { await fetch(url, { signal: AbortSignal.timeout(2500) }); return true; } catch { await new Promise((r) => setTimeout(r, 1000)); } }
+  while (Date.now() < end) {
+    if (!alive()) return false;
+    try { await fetch(url, { signal: AbortSignal.timeout(2500) }); return true; } catch { await new Promise((r) => setTimeout(r, 1000)); }
+  }
   return false;
 }
+const tail = (file, n = 12) => { try { return readFileSync(file, 'utf8').split('\n').filter(Boolean).slice(-n).join('\n'); } catch { return '(no log)'; } };
 function run(label, args, cwd, env) {
   const r = spawnSync(args[0], args.slice(1), { cwd, env: { ...process.env, ...env }, shell: isWin, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (r.status !== 0) die(`✘ ${label} failed (exit ${r.status}):\n${(r.stdout || '').split('\n').slice(-8).join('\n')}\n${(r.stderr || '').split('\n').slice(-8).join('\n')}`);
@@ -57,7 +62,9 @@ function run(label, args, cwd, env) {
 function start(name, args, cwd, env) {
   const log = join(logDir, `stack-${name}.log`); const fd = openSync(log, 'w');
   const c = spawn(args[0], args.slice(1), { cwd, env: { ...process.env, ...env }, shell: isWin, detached: true, stdio: ['ignore', fd, fd] });
-  c.unref(); return { pid: c.pid, log };
+  const proc = { pid: c.pid, log, exited: false, code: null };
+  c.on('exit', (code) => { proc.exited = true; proc.code = code; });
+  c.unref(); return proc;
 }
 function kill(pid) {
   try { if (isWin) spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(-pid, 'SIGTERM'); } catch { /* already gone */ }
@@ -71,14 +78,24 @@ async function up() {
   const { url, db } = testDbUrl();
   const env = { DATABASE_URL: url };
   say(`Resetting and seeding isolated database "${db}" …`);
+  // Regenerate the Prisma client every time: after a pull that changed schema.prisma a stale client makes the backend fail to compile.
+  run('prisma generate', ['npx', 'prisma', 'generate'], backend, env);
   run('prisma migrate reset', ['npx', 'prisma', 'migrate', 'reset', '--force', '--skip-generate', '--skip-seed'], backend, env);
   run('base seed', ['npx', 'ts-node', 'prisma/seed.ts'], backend, env);
   run('demo seed', ['npx', 'ts-node', 'prisma/demo-seed.ts'], backend, env);
-  const b = start('backend', ['npx', 'ts-node', 'src/server.ts'], backend, { ...env, PORT: String(BP) });
+  // --transpile-only: fast start; type errors are CI's job (npm run typecheck), not a reason for the test stack to stay down.
+  const b = start('backend', ['npx', 'ts-node', '--transpile-only', 'src/server.ts'], backend, { ...env, PORT: String(BP) });
   const p = start('portal', ['npx', 'vite', '--port', String(PP), '--strictPort'], portal, { VITE_API_PROXY_TARGET: `http://localhost:${BP}` });
   writeFileSync(stateFile, JSON.stringify({ backendPid: b.pid, portalPid: p.pid, backendPort: BP, portalPort: PP, db, startedAt: new Date().toISOString(), logs: { backend: b.log, portal: p.log } }));
-  const okB = await waitHttp(`http://localhost:${BP}/`); const okP = await waitHttp(`http://localhost:${PP}/`);
-  if (!okB || !okP) { kill(b.pid); kill(p.pid); rmSync(stateFile, { force: true }); die(`✘ stack did not become ready (backend ${okB ? 'ok' : 'DOWN'}, portal ${okP ? 'ok' : 'DOWN'}). Logs: ${b.log} / ${p.log}`); }
+  const okB = await waitHttp(`http://localhost:${BP}/`, 120000, () => !b.exited);
+  const okP = await waitHttp(`http://localhost:${PP}/`, 60000, () => !p.exited);
+  if (!okB || !okP) {
+    const bad = [!okB && 'backend', !okP && 'portal'].filter(Boolean);
+    const why = [!okB && (b.exited ? `backend exited (code ${b.code})` : 'backend timed out'), !okP && (p.exited ? `portal exited (code ${p.code})` : 'portal timed out')].filter(Boolean).join('; ');
+    const lines = bad.map((n) => `--- ${n} log (last lines) ---\n${tail(n === 'backend' ? b.log : p.log)}`).join('\n');
+    kill(b.pid); kill(p.pid); rmSync(stateFile, { force: true });
+    die(`✘ stack did not become ready: ${why}.\n${lines}`);
+  }
   say(`✔ Stack ready — backend http://localhost:${BP}  portal http://localhost:${PP}  (db ${db})`);
   say('  Run e2e with:  cd campaign-buddy-portal && npx playwright test   (baseURL defaults to :5173)');
   say('  Stop with:     node scripts/agent/fresh-stack.mjs down');

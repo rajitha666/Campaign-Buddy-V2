@@ -1,110 +1,99 @@
-// Sidebar structure. `roles` = which personas (see AuthContext.roleToPersona)
-// see this item at all. Generic list/CRUD pages are driven by config/resources.js
-// via ResourcePage; a few screens are bespoke (see App.jsx routes).
+// Sidebar structure, grouped by the job being done (#116). `roles` = which
+// personas (see AuthContext.roleToPersona) see an item at all. An item with
+// `children` is ONE menu row that opens its first child; the children are the
+// tabs shown at the top of each of those pages (components/PageTabs.jsx), so the
+// menu stays one level deep and no label repeats its parent. Generic list/CRUD
+// pages are driven by config/resources.js via ResourcePage; a few screens are
+// bespoke (see App.jsx routes).
 export const NAV = [
   { section: null, items: [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'supervisor', 'sponsor'] },
   ]},
-  { section: 'Client & Catalog', roles: ['admin'], items: [
-    { path: '/clients', label: 'Clients', icon: 'clients', roles: ['admin'] },
+  { section: 'Today', roles: ['admin', 'supervisor', 'sponsor'], items: [
+    { path: '/tracking/live', label: 'Live Locations', icon: 'tracking', roles: ['admin', 'supervisor', 'sponsor'] },
+    { label: 'Attendance', icon: 'staff', roles: ['admin'], children: [
+      { path: '/staff/attendance', label: 'Check-ins' },
+      { path: '/staff/absence', label: 'Absence' },
+      { path: '/reports/monthly-attendance', label: 'Monthly' },
+    ]},
+    { path: '/my-outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['supervisor'] },
+    // Client role (doc G) — read-only visibility into both attendance logs
+    // for their own campaign, same generic outlet-scoping as everyone else.
+    { path: '/staff/attendance', label: 'Attendance', icon: 'staff', roles: ['sponsor'] },
+    { path: '/supervisor-attendance', label: 'Supervisor Attendance', icon: 'supervisors', roles: ['sponsor'] },
+    { path: '/sales/status', label: 'Sales Update Status', icon: 'sales', roles: ['admin'] },
+  ]},
+  { section: 'Campaigns', roles: ['admin', 'supervisor'], items: [
+    { label: 'Campaigns', icon: 'campaigns', roles: ['admin'], children: [
+      { path: '/campaigns', label: 'All campaigns' },
+      { path: '/activations', label: 'Activations' },
+    ]},
+    { path: '/my-campaigns', label: 'My Campaigns', icon: 'campaigns', roles: ['supervisor'] },
     { label: 'Products', icon: 'items', roles: ['admin'], children: [
-      { path: '/items', label: 'List' },
+      { path: '/items', label: 'All products' },
       { path: '/brands', label: 'Brands' },
       { path: '/reorder', label: 'Reorder' },
     ]},
+    { path: '/sales/update', label: 'Update Sales', icon: 'updatesales', roles: ['admin'] },
+    { path: '/sales/custom-fields', label: 'Custom Sales Fields', icon: 'sales', roles: ['admin'] },
   ]},
-  { section: 'Campaigns', roles: ['admin', 'supervisor', 'sponsor'], items: [
-    { label: 'Campaigns', icon: 'campaigns', roles: ['admin'], children: [
-      { path: '/campaigns', label: 'List' },
-      { path: '/activations', label: 'Activation' },
-    ]},
-    { path: '/my-campaigns', label: 'My Campaigns', icon: 'campaigns', roles: ['supervisor'] },
-  ]},
-  { section: 'Outlets', roles: ['admin'], items: [
+  { section: 'Setup', roles: ['admin'], items: [
+    { path: '/clients', label: 'Clients', icon: 'clients', roles: ['admin'] },
     { label: 'Outlets', icon: 'outlets', roles: ['admin'], children: [
-      { path: '/outlets', label: 'List' },
-      { path: '/distributors', label: 'Distributor Point' },
+      { path: '/outlets', label: 'All outlets' },
+      { path: '/distributors', label: 'Distributor Points' },
       { path: '/cities', label: 'Cities' },
     ]},
   ]},
-  { section: 'People', roles: ['admin', 'supervisor', 'sponsor'], items: [
+  { section: 'People', roles: ['admin', 'supervisor'], items: [
     { label: 'Staff', icon: 'staff', roles: ['admin'], children: [
-      { path: '/staff', label: 'List' },
-      { path: '/staff/attendance', label: 'Attendance' },
-      { path: '/staff/absence', label: 'Absence' },
-      { path: '/reports/monthly-attendance', label: 'Monthly Attendance' },
-      { path: '/leave-requests', label: 'Leave Requests' },
+      { path: '/staff', label: 'All staff' },
       { path: '/staff/profiles', label: 'Profiles' },
     ]},
+    { path: '/leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['admin'] },
     { label: 'Supervisors', icon: 'supervisors', roles: ['admin'], children: [
       { path: '/supervisor-tasks', label: 'Tasks' },
       { path: '/supervisor-task-results', label: 'Task Results' },
       { path: '/supervisor-attendance', label: 'Attendance' },
       { path: '/assign-routes', label: 'Assign Routes' },
     ]},
-    { path: '/my-outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['supervisor'] },
     { path: '/my-leave-requests', label: 'Leave Requests', icon: 'staff', roles: ['supervisor'] },
     // Outlet checklist results (photos + 1–5 scores) — read-only, outlet-scoped by grant.
     { path: '/supervisor-task-results', label: 'Task Results', icon: 'supervisors', roles: ['supervisor'] },
-    // Client role (doc G) — read-only visibility into both attendance logs
-    // for their own campaign, same generic outlet-scoping as everyone else.
-    { path: '/staff/attendance', label: 'Attendance', icon: 'staff', roles: ['sponsor'] },
-    { path: '/supervisor-attendance', label: 'Supervisor Attendance', icon: 'supervisors', roles: ['sponsor'] },
-  ]},
-  { section: 'Sales', roles: ['admin', 'supervisor', 'sponsor'], items: [
-    { label: 'Sales Overview', icon: 'sales', roles: ['admin'], children: [
-      { path: '/sales/sku-wise', label: 'SKU Wise Sales' },
-      { path: '/sales/status', label: 'Sales Update Status' },
-      { path: '/sales/outlet-wise', label: 'Outlet wise' },
-    ]},
-    { path: '/sales/update', label: 'Update Sales', icon: 'updatesales', roles: ['admin'] },
-    { path: '/sales/custom-fields', label: 'Custom Fields', icon: 'sales', roles: ['admin'] },
-    { path: '/sales/sku-wise', label: 'SKU Wise Sales', icon: 'sales', roles: ['supervisor'] },
-    // Stock each promoter started the day with (#91) — also the client's starting-stock report.
-    { path: '/sales/starting-stock', label: 'Starting Stock', icon: 'sales', roles: ['admin', 'supervisor', 'sponsor'] },
-  ]},
-  { section: 'Tracking', roles: ['admin', 'supervisor', 'sponsor'], items: [
-    { label: 'Tracking', icon: 'tracking', roles: ['admin'], children: [
-      { path: '/tracking/promoter', label: 'Promoter' },
-      { path: '/tracking/supervisor', label: 'Supervisor' },
-      { path: '/tracking/live', label: 'Seller Live Locations' },
-    ]},
-    { path: '/tracking/promoter', label: 'Promoter Tracking', icon: 'tracking', roles: ['supervisor', 'sponsor'] },
-    { path: '/tracking/supervisor', label: 'Supervisor Tracking', icon: 'tracking', roles: ['sponsor'] },
-    { path: '/tracking/live', label: 'Seller Live Locations', icon: 'tracking', roles: ['supervisor', 'sponsor'] },
   ]},
   { section: 'Reports', roles: ['admin', 'supervisor', 'sponsor'], items: [
-    { label: 'Reports', icon: 'reports', roles: ['admin'], children: [
+    { label: 'Sales Reports', icon: 'sales', roles: ['admin'], children: [
+      { path: '/sales/sku-wise', label: 'SKU Wise' },
+      { path: '/sales/outlet-wise', label: 'Outlet Wise' },
+      // Stock each promoter started the day with (#91).
+      { path: '/sales/starting-stock', label: 'Starting Stock' },
+    ]},
+    { label: 'Overall Reports', icon: 'reports', roles: ['admin'], children: [
       { path: '/reports/sku-wise', label: 'Overall SKU Wise' },
       { path: '/reports/brand-wise', label: 'Brand Wise' },
+    ]},
+    { label: 'Tracking History', icon: 'tracking', roles: ['admin'], children: [
+      { path: '/tracking/promoter', label: 'Promoter' },
+      { path: '/tracking/supervisor', label: 'Supervisor' },
     ]},
     { label: 'Client Reports', icon: 'reports', roles: ['sponsor'], children: [
       { path: '/sponsor/sales', label: 'Overall Outlet and SKU Wise' },
       { path: '/reports/client-brand-wise', label: 'Brand Wise' },
     ]},
+    { path: '/sales/sku-wise', label: 'SKU Wise Sales', icon: 'sales', roles: ['supervisor'] },
     { path: '/reports/sku-wise', label: 'Overall Reports', icon: 'reports', roles: ['supervisor'] },
+    { path: '/sales/starting-stock', label: 'Starting Stock', icon: 'sales', roles: ['supervisor', 'sponsor'] },
+    { path: '/tracking/promoter', label: 'Promoter Tracking', icon: 'tracking', roles: ['supervisor', 'sponsor'] },
+    { path: '/tracking/supervisor', label: 'Supervisor Tracking', icon: 'tracking', roles: ['sponsor'] },
   ]},
   { section: 'Admin', roles: ['admin'], items: [
     { path: '/recently-deleted', label: 'Recently deleted', icon: 'reports', roles: ['admin'] },
+    { label: 'Access', icon: 'users', roles: ['admin'], children: [
+      { path: '/users', label: 'Users' },
+      { path: '/roles', label: 'Roles' },
+    ]},
     { path: '/license', label: 'License Usage', icon: 'reports', roles: ['admin'] },
     { path: '/issues', label: 'Issue Reports', icon: 'reports', roles: ['admin'] },
     { path: '/system-status', label: 'System Status', icon: 'reports', roles: ['admin'] },
-    { path: '/users', label: 'Users', icon: 'users', roles: ['admin'] },
-    { path: '/roles', label: 'Roles', icon: 'roles', roles: ['admin'] },
-  ]},
-  // Nav review (2026-09): pages that duplicate another menu item. Kept reachable
-  // here (routes untouched) so nothing goes missing unnoticed; once confirmed,
-  // delete the entry here and, if the page is now unused, its route/resource.
-  { section: 'Archive', roles: ['admin'], items: [
-    // Dashboard shows the same cards + weekly chart.
-    { path: '/sales', label: 'Sales Overview', icon: 'sales', roles: ['admin'] },
-    // Same query as Supervisors › Attendance (supervisor attendance rows).
-    { path: '/outlet-attendance', label: 'Outlet Attendance', icon: 'supervisors', roles: ['admin'] },
-    // Same page as Sales › SKU Wise Sales.
-    { path: '/sponsor/sales', label: 'Client: Outlet & SKU Wise', icon: 'reports', roles: ['admin'] },
-    // Same API + filters as Reports › Brand Wise.
-    { path: '/reports/client-brand-wise', label: 'Client: Brand Wise', icon: 'reports', roles: ['admin'] },
-    // Read-only subset of Staff › List.
-    { path: '/promoter-list', label: 'Promoter List', icon: 'staff', roles: ['admin'] },
   ]},
 ];
