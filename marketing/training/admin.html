@@ -129,6 +129,7 @@
           </li>
         </ol>
         <div class="tip"><b>Who can delete:</b> both Super Admins and Campaign Admins can remove records; a supervisor or sponsor cannot.</div>
+        <div class="tip"><b>Deleting is instant, and you can undo it.</b> Removing most records (outlets, staff, activations, route assignments, custom sales fields, campaign team members and so on) does not ask &ldquo;Are you sure?&rdquo;. The record goes at once and a message such as <i>Removed &ldquo;Name&rdquo;</i> appears for about 7&nbsp;seconds with an <b>Undo</b> button (the timer pauses while you hover over it or tab to it). Click <b>Undo</b> and the record, and its row, comes back. For staff the message reads <i>Deactivated &ldquo;Name&rdquo;. They can&rsquo;t sign in on the app.</i>, and Undo says <i>Reactivated &ldquo;Name&rdquo;. They can sign in again.</i> A campaign team member who is undone gets back exactly the access they had. If Undo can&rsquo;t work, the message says why, for example that the record it belongs to was removed (restore that first) or that it was already restored. <b>Deleting a campaign or a client still asks first</b> (red dialog, <b>Cancel</b> is selected), because everything under it disappears with it. Archiving a sales record also keeps its confirmation.</div>
         <div class="tip"><b>Deleted something by mistake?</b> Nothing is ever permanently deleted. Open <b>Admin &rarr; Recently deleted</b> and find the row; it shows the <b>Name</b>, <b>Type</b>, <b>Deleted by</b> and <b>When</b>. Press <b>Restore</b> and it comes back, even long after the Undo message has gone. There are two tabs: <b>Clients, products, outlets, staff &amp; campaigns</b>, and <b>Inside &lt;your selected campaign&gt;</b> (campaign products, activations, activation products, route assignments, supervisor tasks, custom sales fields and archived sales records). Use the type filter or search to narrow the list.
           <ul>
             <li>If the row says <b>Restore the &lt;parent&gt; first</b> (for example, its outlet or campaign is still deleted), restore the parent and then come back; Restore is greyed out until then.</li>
@@ -240,7 +241,7 @@
           </li>
           <li>
             <div class="step-text">
-              <p>Supervisors usually get their access from the activation auto-grant (task 6), but you can also grant or widen it here. To revoke, remove the grant.</p>
+              <p>Supervisors usually get their access from the activation auto-grant (task 6), but you can also grant or widen it here. To revoke, remove the grant (you can click <b>Undo</b> in the message that appears to give the exact same access back).</p>
               <div class="tip"><b>Reminder:</b> supervisor and sponsor logins are read-only on the server; they cannot change anything regardless of what any screen shows.</div>
             </div>
           </li>

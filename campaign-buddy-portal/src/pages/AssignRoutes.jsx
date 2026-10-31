@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { campaigns as campaignsApi, outlets as outletsApi, activations as activationsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useUndoableDelete } from '../lib/useUndoableDelete';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import Drawer from '../components/Drawer';
@@ -14,7 +14,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function AssignRoutes() {
   const { currentCampaignId } = useAuth();
   const { push } = useToast();
-  const confirm = useConfirm();
+  const undoableDelete = useUndoableDelete();
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [supervisors, setSupervisors] = useState([]);
   const [supervisorId, setSupervisorId] = useState('');
@@ -136,19 +136,18 @@ export default function AssignRoutes() {
   }
 
   async function handleDelete(route) {
-    const ok = await confirm({
-      title: 'Delete this route assignment?',
-      message: 'The supervisor will no longer be assigned to this route on that day.',
-      confirmLabel: 'Delete',
-      tone: 'danger',
-    });
-    if (!ok) return;
+    const name = `${supervisorLabel(route.supervisorStaffId)} · ${String(route.dateFrom).slice(0, 10)} – ${String(route.dateTo).slice(0, 10)}`;
     try {
-      await routesApi.remove(currentCampaignId, route.id);
-      push('Route deleted.');
-      load();
+      await undoableDelete({
+        name,
+        remove: () => routesApi.remove(currentCampaignId, route.id),
+        restore: () => routesApi.restore(currentCampaignId, route.id),
+        onChange: load,
+        removedText: `Removed route "${name}"`,
+        restoredText: `Restored route "${name}"`,
+      });
     } catch (e) {
-      push(e.message || 'Could not delete route.');
+      push(e.message || 'Could not delete route.', 'error');
     }
   }
 
@@ -205,8 +204,8 @@ export default function AssignRoutes() {
                   <td>{(r.outletIds || []).length} outlet{(r.outletIds || []).length === 1 ? '' : 's'}</td>
                   <td>{String(r.dateFrom).slice(0, 10)} – {String(r.dateTo).slice(0, 10)}</td>
                   <td>
-                    <span className="icon-btn" onClick={() => openEdit(r)} title="Edit">✎</span>
-                    <span className="icon-btn delete" onClick={() => handleDelete(r)} title="Delete">✕</span>
+                    <button type="button" className="icon-btn" onClick={() => openEdit(r)} title="Edit" aria-label={`Edit route for ${supervisorLabel(r.supervisorStaffId)}`}>✎</button>
+                    <button type="button" className="icon-btn delete" onClick={() => handleDelete(r)} title="Delete" aria-label={`Remove route for ${supervisorLabel(r.supervisorStaffId)}`}>✕</button>
                   </td>
                 </tr>
               ))}

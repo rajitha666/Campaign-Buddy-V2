@@ -23,12 +23,14 @@ export const clients = {
   create: (body) => api.post('/clients', body),
   update: (id, body) => api.patch(`/clients/${id}`, body),
   remove: (id) => api.delete(`/clients/${id}`),
+  restore: (id) => api.post(`/clients/${id}/restore`),
 };
 export const brands = {
   list: (query) => api.get('/brands', { query }),
   create: (body) => api.post('/brands', body),
   update: (id, body) => api.patch(`/brands/${id}`, body),
   remove: (id) => api.delete(`/brands/${id}`),
+  restore: (id) => api.post(`/brands/${id}/restore`),
 };
 export const items = {
   list: (query) => api.get('/items', { query }),
@@ -36,6 +38,7 @@ export const items = {
   search: (search) => api.get('/items', { query: { search } }),
   update: (id, body) => api.patch(`/items/${id}`, body),
   remove: (id) => api.delete(`/items/${id}`),
+  restore: (id) => api.post(`/items/${id}/restore`),
   uploadImage: (id, file) => {
     const form = new FormData();
     form.append('image', file);
@@ -47,18 +50,21 @@ export const outlets = {
   create: (body) => api.post('/outlets', body),
   update: (id, body) => api.patch(`/outlets/${id}`, body),
   remove: (id) => api.delete(`/outlets/${id}`),
+  restore: (id) => api.post(`/outlets/${id}/restore`),
 };
 export const distributorPoints = {
   list: (query) => api.get('/distributor-points', { query }),
   create: (body) => api.post('/distributor-points', body),
   update: (id, body) => api.patch(`/distributor-points/${id}`, body),
   remove: (id) => api.delete(`/distributor-points/${id}`),
+  restore: (id) => api.post(`/distributor-points/${id}/restore`),
 };
 export const cities = {
   list: (query) => api.get('/cities', { query }),
   create: (body) => api.post('/cities', body),
   update: (id, body) => api.patch(`/cities/${id}`, body),
   remove: (id) => api.delete(`/cities/${id}`),
+  restore: (id) => api.post(`/cities/${id}/restore`),
 };
 
 // ---------- Campaign setup ----------
@@ -74,6 +80,7 @@ export const campaigns = {
   get: (id) => api.get(`/campaigns/${id}`),
   update: (id, body) => api.patch(`/campaigns/${id}`, body),
   remove: (id) => api.delete(`/campaigns/${id}`),
+  restore: (id) => api.post(`/campaigns/${id}/restore`),
   items: (id) => api.get(`/campaigns/${id}/items`),
   addItem: (id, body) => api.post(`/campaigns/${id}/items`, body), // {itemId} | {itemIds:[...]} | {newItem:{...}}
   removeItem: (id, campaignItemId) => api.delete(`/campaigns/${id}/items/${campaignItemId}`),
@@ -88,6 +95,7 @@ export const campaigns = {
   adminCandidates: (id, search, query = {}) => api.get(`/campaigns/${id}/admin-candidates`, { query: { search, role: 'usr', ...query } }),
   addAdmin: (id, body) => api.post(`/campaigns/${id}/admins`, body), // {userId} | {userId, roleId} | {newUser:{username,password,displayName,email?,roleId?}}
   removeAdmin: (id, userId) => api.delete(`/campaigns/${id}/admins/${userId}`),
+  restoreAdmin: (id, userId, grant) => api.post(`/campaigns/${id}/admins/${userId}/restore`, { scopeType: grant.scopeType, outletIds: grant.outletIds }),
 };
 
 // ---------- Staff & Activations ----------
@@ -96,6 +104,7 @@ export const staff = {
   create: (body) => api.post('/staff', body),
   update: (id, body) => api.patch(`/staff/${id}`, body),
   remove: (id) => api.delete(`/staff/${id}`),
+  restore: (id) => api.post(`/staff/${id}/reactivate`), // Undo of remove: turns mobile login back on
   evaluation: (id, query) => api.get(`/staff/${id}/evaluation`, { query }),
   uploadPhoto: (id, file) => {
     const form = new FormData();
@@ -109,6 +118,7 @@ export const activations = {
   get: (campaignId, activationId) => api.get(`/campaigns/${campaignId}/activations/${activationId}`),
   update: (campaignId, activationId, body) => api.patch(`/campaigns/${campaignId}/activations/${activationId}`, body),
   remove: (campaignId, activationId) => api.delete(`/campaigns/${campaignId}/activations/${activationId}`),
+  restore: (campaignId, activationId) => api.post(`/campaigns/${campaignId}/activations/${activationId}/restore`),
   items: (campaignId, activationId) => api.get(`/campaigns/${campaignId}/activations/${activationId}/items`),
   addItems: (campaignId, activationId, body) => api.post(`/campaigns/${campaignId}/activations/${activationId}/items`, body), // {campaignItemId} | {campaignItemIds:[...]} | {addAll:true}
   removeItem: (campaignId, activationId, activationItemId) => api.delete(`/campaigns/${campaignId}/activations/${activationId}/items/${activationItemId}`),
@@ -179,6 +189,7 @@ export const supervisorRoutes = {
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-routes`, body),    // {supervisorStaffId, outletIds, dateFrom, dateTo}
   update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-routes/${id}`, body),
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-routes/${id}`),
+  restore: (campaignId, id) => api.post(`/campaigns/${campaignId}/supervisor-routes/${id}/restore`),
 };
 export const salesLookup = {
   load: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales/lookup`, { query }), // {staffId, outletId, activationId, date}
@@ -189,6 +200,7 @@ export const salesFields = {
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/sales-fields`, body),
   update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/sales-fields/${id}`, body),
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/sales-fields/${id}`),
+  restore: (campaignId, id) => api.post(`/campaigns/${campaignId}/sales-fields/${id}/restore`),
   saveValues: (campaignId, body) => api.put(`/campaigns/${campaignId}/sales/custom-values`, body), // {activationId, date, day, products}
   dayValues: (campaignId, query) => api.get(`/campaigns/${campaignId}/sales-field-values`, { query }), // {dateFrom, dateTo}
 };
@@ -217,6 +229,7 @@ export const supervisorTasks = {
   create: (campaignId, body) => api.post(`/campaigns/${campaignId}/supervisor-tasks`, body),
   update: (campaignId, id, body) => api.patch(`/campaigns/${campaignId}/supervisor-tasks/${id}`, body),
   remove: (campaignId, id) => api.delete(`/campaigns/${campaignId}/supervisor-tasks/${id}`),
+  restore: (campaignId, id) => api.post(`/campaigns/${campaignId}/supervisor-tasks/${id}/restore`),
 };
 export const supervisorTaskResults = {
   list: (campaignId, query) => api.get(`/campaigns/${campaignId}/supervisor-task-responses`, { query }), // {date, outletId, page, pageSize}

@@ -38,6 +38,27 @@ async function findOrCreate<T>(find: () => Promise<T | null>, create: () => Prom
   return (await find()) ?? (await create());
 }
 
+// A previous run's "today" (checkInAt set, checkOutAt null) goes stale once re-seeding
+// moves "today" forward. Close it out so it doesn't sit open forever and trip the
+// one-open-shift lock (409 ALREADY_CHECKED_IN) for that staff member.
+async function closeStaleOpenShifts(activationIds: string[], today: Date) {
+  const stale = await prisma.attendanceRecord.findMany({
+    where: { activationId: { in: activationIds }, checkInAt: { not: null }, checkOutAt: null, date: { lt: today } },
+    include: { activation: { include: { outlet: true } } },
+  });
+  for (const rec of stale) {
+    await prisma.attendanceRecord.update({
+      where: { id: rec.id },
+      data: {
+        checkOutAt: new Date(rec.date.getTime() + 12 * 3600_000),
+        checkOutLat: rec.activation.outlet.latitude,
+        checkOutLng: rec.activation.outlet.longitude,
+        salesSummaryConfirmedAtCheckout: true,
+      },
+    });
+  }
+}
+
 async function main() {
   const portalHash = await bcrypt.hash("Portal123!", 10);
   const fieldHash = await bcrypt.hash("Field123!", 10);
@@ -237,18 +258,22 @@ async function main() {
     if (!covered) throw new Error(`no promoter activation at ${outletName} for ${supName} to cover`);
     supVisits.push({ id: covered.id, sup: supName, outlet: outlets[outletName] });
   }
+  await closeStaleOpenShifts([...new Set([...supVisits, ...activations].map((a) => a.id))], D(0));
   for (const sv of supVisits) {
     for (const day of [4, 2, 0]) {
       const date = D(day);
       const isToday = day === 0;
+      const checkInAt = at(day, isToday ? 10 : 11, rnd(0, 30));
+      const checkOutAt = isToday ? null : at(day, 12, rnd(10, 40));
+      const times = {
+        checkInAt, checkInLat: sv.outlet.lat, checkInLng: sv.outlet.lng, checkInLocationVerified: true,
+        checkOutAt, checkOutLat: isToday ? null : sv.outlet.lat, checkOutLng: isToday ? null : sv.outlet.lng,
+      };
       await prisma.attendanceRecord.upsert({
         where: { activationId_staffId_date_visitNo: { activationId: sv.id, staffId: supervisors[sv.sup], date, visitNo: 1 } },
-        create: {
-          activationId: sv.id, staffId: supervisors[sv.sup], date, status: "on_time",
-          checkInAt: at(day, isToday ? 10 : 11, rnd(0, 30)), checkInLat: sv.outlet.lat, checkInLng: sv.outlet.lng, checkInLocationVerified: true,
-          checkOutAt: isToday ? null : at(day, 12, rnd(10, 40)), checkOutLat: isToday ? null : sv.outlet.lat, checkOutLng: isToday ? null : sv.outlet.lng,
-        },
-        update: {},
+        create: { activationId: sv.id, staffId: supervisors[sv.sup], date, status: "on_time", ...times },
+        // Re-seeding must re-open "today" and close earlier days, not leave a previous run's row as-is.
+        update: { status: "on_time", ...times },
       });
     }
   }
