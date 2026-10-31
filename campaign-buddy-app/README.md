@@ -141,14 +141,19 @@ Per API spec §5, location pings must fire **only** between check-in and
 check-out, and **only** while the app is foregrounded. `useLocationTracking`
 implements this exactly:
 
-- Starts a 60s timer the instant `AttendanceContext.checkedIn` becomes true
-  AND the app is in the foreground.
+- Starts checking the GPS (every 60s) the instant `AttendanceContext.checkedIn`
+  becomes true AND the app is in the foreground. While the rep stays put the
+  checks back off to 2 then 5 minutes; movement returns them to 60s.
 - Sends one ping immediately whenever the app returns to foreground while
-  still checked in.
+  still checked in — unless one was captured <45s ago (then no GPS fix at all).
 - Stops the timer completely (not just pauses) the moment the app
   backgrounds OR the user checks out.
-- Skips a ping if the device hasn't moved >10m since the last one, except
-  the interval still fires as a heartbeat regardless.
+- Uploads a ping only if the rep moved more than max(40m, the GPS's own
+  accuracy) since the last one, or a 5-minute heartbeat is due.
+- The rules live in `src/lib/pingPolicy.ts` (unit-tested); the hook only wires
+  them to timers. The portal's Live Locations page marks a position stale after
+  12 min (`campaign-buddy-portal/src/lib/lastSeen.js`) — keep it above the
+  heartbeat if you change `HEARTBEAT_MS`.
 
 It's mounted once, in `AuthenticatedApp.tsx`, not per-screen. Don't call
 `sendLocationPing` from anywhere else.

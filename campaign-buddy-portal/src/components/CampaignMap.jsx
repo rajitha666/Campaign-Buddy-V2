@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ICONS } from './Icons';
 import { addBaseLayer } from './baseLayer';
+import { lastSeenLabel } from '../lib/lastSeen';
 
 // Real basemap (OpenStreetMap tiles via Leaflet) with outlet + live sales-staff
 // markers. Staff use their last GPS ping; when none exists we fall back to the
@@ -91,7 +92,7 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380, hi
       const selected = highlightedStaffKey != null && s.key === highlightedStaffKey;
       const marker = L.marker([s.lat, s.lng], { icon: selected ? staffIconSelected : staffIcon })
         .bindTooltip(
-          `<b>${esc(s.staffName)}</b>${s.outletName ? `<br>${esc(s.outletName)}` : ''}${s.approx ? '<br><i>approx. — last GPS unavailable</i>' : ''}`,
+          `<b>${esc(s.staffName)}</b>${s.outletName ? `<br>${esc(s.outletName)}` : ''}${s.approx ? '<br><i>approx. — last GPS unavailable</i>' : s.lastSeen ? `<br><i>${esc(s.lastSeen)}</i>` : ''}`,
           { direction: 'top' }
         )
         .addTo(layer);
@@ -145,7 +146,7 @@ function resolvePoints(outlets, staff) {
     const key = `${s.staffName || s.userId || 'Staff'}|${s.outletName || ''}`;
     const pos = s.lastPosition;
     if (pos && isNum(pos.latitude) && isNum(pos.longitude)) {
-      return { key, lat: pos.latitude, lng: pos.longitude, staffName: label(s), outletName: s.outletName || '', approx: false };
+      return { key, lat: pos.latitude, lng: pos.longitude, staffName: label(s), outletName: s.outletName || '', approx: false, lastSeen: lastSeenLabel(pos.capturedAt) };
     }
     const o = outletByName.get(s.outletName);
     if (o) {
