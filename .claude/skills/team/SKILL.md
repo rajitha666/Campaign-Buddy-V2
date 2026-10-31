@@ -1,6 +1,6 @@
 ---
 name: team
-description: Show or change the agent team's mode (full / light / off), check plan usage against the token guard, and keep the Team Console dashboard in step. Use when the owner says "team off", "team light", "team full", "team status", or asks about token usage of the agent team.
+description: Show or change the R&D team's mode (full / light / off), check plan usage against the token guard, and keep the Team Console dashboard in step. Use when the owner says "team off", "team light", "team full", "team status", or asks about token usage of the R&D team.
 disable-model-invocation: true
 argument-hint: "status | full | light | off"
 ---

@@ -109,7 +109,7 @@ swap in place, same filename. Full procedure and the screen↔guide map:
 
 ## Team mode — the owner's stop/start gate for agent review
 
-The agent team (`docs/agent-team/roles.md`) costs tokens. The owner can dial it with three modes and **may
+The R&D team (`docs/agent-team/roles.md`) costs tokens. The owner can dial it with three modes and **may
 always continue building without it**:
 
 | Mode | Meaning |

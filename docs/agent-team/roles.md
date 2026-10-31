@@ -1,4 +1,4 @@
-# Agent team — roster, routing and verdict contract
+# R&D team — roster, routing and verdict contract
 
 One page every role and the delivery lead works from. Design rationale and decisions: `docs/agent-team-design.md`.
 Role definitions live in `.claude/agents/` (the same files are used in chat and, later, by the GitHub runner).
