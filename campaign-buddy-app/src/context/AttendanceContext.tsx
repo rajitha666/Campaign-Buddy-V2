@@ -19,6 +19,7 @@ import * as attendanceApi from '@/api/attendance';
 import type { AttendanceStatus } from '@/api/types';
 import { getCheckoutCoords } from '@/lib/checkoutLocation';
 import { getCheckInCoords } from '@/lib/checkInLocation';
+import { requestLocationPermission } from '@/lib/requestLocationPermission';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/Toast';
 import { useNetwork } from '@/offline/NetworkContext';
@@ -140,7 +141,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
   const checkIn = useCallback(
     async (assignmentId: string) => {
       const position = await getCheckInCoords({
-        requestPermission: Location.requestForegroundPermissionsAsync,
+        requestPermission: requestLocationPermission,
         getCurrentPosition: () => Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
       });
       const capturedAt = new Date().toISOString();
@@ -196,7 +197,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
       // Best-effort GPS fix — a denied permission or a stalled/failed fix must
       // not block check-out (#50); the backend accepts check-out without coords.
       const coords = await getCheckoutCoords({
-        requestPermission: Location.requestForegroundPermissionsAsync,
+        requestPermission: requestLocationPermission,
         getCurrentPosition: () => Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
       });
       const capturedAt = new Date().toISOString();

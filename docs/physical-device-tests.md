@@ -46,6 +46,8 @@ native modules. Only the web flows were verified end-to-end; these were not.
 
 - [ ] **Product removed while offline (#111):** with the app offline, record a sale for a product; have head office remove that product from the activation; reconnect the same day: the sale syncs. The next day a queued write for that product fails with the "removed by head office" message and the rest of the queue still syncs.
 
+- [ ] **Location disclosure (#144):** on a phone that has never allowed location (fresh install or reset permissions), tap Check In: a "Location during your shift" dialog appears BEFORE the system prompt. Not now: no system prompt, check-in shows the "location is off" message, and the dialog appears again next time. Continue: the system prompt follows. After allowing once, the dialog never appears again (also on Android).
+
 ---
 
 ## Adding to this list
