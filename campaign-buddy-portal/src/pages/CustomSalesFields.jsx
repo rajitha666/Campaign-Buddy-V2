@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useConfirm } from '../context/ConfirmContext';
+import { useUndoableDelete } from '../lib/useUndoableDelete';
 import { salesFields as salesFieldsApi } from '../lib/endpoints';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -15,7 +15,7 @@ const EMPTY = { label: '', type: 'number', scope: 'day', options: '', required: 
 export default function CustomSalesFields() {
   const { currentCampaignId, isAdmin } = useAuth();
   const { push } = useToast();
-  const confirm = useConfirm();
+  const undoableDelete = useUndoableDelete();
 
   const [rows, setRows] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -111,19 +111,17 @@ export default function CustomSalesFields() {
   }
 
   async function remove(row) {
-    const ok = await confirm({
-      title: `Delete "${row.label}"?`,
-      message: "This can't be undone. If it already has recorded values, archive it instead.",
-      confirmLabel: 'Delete',
-      tone: 'danger',
-    });
-    if (!ok) return;
     try {
-      await salesFieldsApi.remove(currentCampaignId, row.id);
-      push('Field deleted');
-      load();
+      await undoableDelete({
+        name: row.label,
+        remove: () => salesFieldsApi.remove(currentCampaignId, row.id),
+        restore: () => salesFieldsApi.restore(currentCampaignId, row.id),
+        onChange: load,
+        removedText: `Deleted field "${row.label}"`,
+        restoredText: `Restored field "${row.label}"`,
+      });
     } catch (e) {
-      push(e.message || 'Could not delete — archive it instead if it has recorded values.', 'error');
+      push(e.message || 'Could not delete the field.', 'error');
     }
   }
 

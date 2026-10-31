@@ -401,6 +401,16 @@ see a read-only **My Campaigns** card view.
 - **Geofence-unverified is a neutral review flag on attendance tables, never an
   error** — the check-in always succeeded.
 - **Additive-access confirmation toast** whenever the supervisor auto-grant fires.
+- **Delete with Undo (CB Office)** — removing most records (outlets, staff, activations,
+  route assignments, custom sales fields, campaign team members, etc.) has no "Are you
+  sure?" step. The record is removed at once and a toast `Removed "Name"` shows for about
+  7 seconds with an **Undo** button (the timer pauses while hovered or focused). Undo
+  restores the record and the row returns. Staff: `Deactivated "Name". They can't sign in
+  on the app.` / Undo: `Reactivated "Name". They can sign in again.` A campaign team
+  member's exact access is restored on Undo. If Undo fails the toast says why (e.g. its
+  parent was removed — restore that first; or it was already restored). **Still asks first**
+  (red dialog, Cancel focused): deleting a **campaign** or a **client**, because their
+  dependants disappear with them. The sales-record archive keeps its confirmation.
 - **List pages**: search, sort, show-N-entries, pagination; every `/admin` list
   endpoint takes `?page`, `?pageSize`, `?search`.
 
