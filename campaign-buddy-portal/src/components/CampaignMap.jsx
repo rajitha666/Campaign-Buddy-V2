@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { ICONS } from './Icons';
 import { addBaseLayer } from './baseLayer';
 import { lastSeenLabel } from '../lib/lastSeen';
+import { staffMarkerLabel } from '../lib/mapLabels';
 
 // Real basemap (OpenStreetMap tiles via Leaflet) with outlet + live sales-staff
 // markers. Staff use their last GPS ping; when none exists we fall back to the
@@ -16,15 +17,15 @@ const INK = '#12241F';
 const staffIcon = L.divIcon({
   className: 'geo-staff-icon',
   html: '<span class="geo-staff-pulse-el"></span><span class="geo-staff-dot"></span>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
 });
 
 const staffIconSelected = L.divIcon({
   className: 'geo-staff-icon',
   html: '<span class="geo-staff-pulse-el"></span><span class="geo-staff-dot geo-staff-dot--selected"></span>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
 });
 
 function fitMapToPoints(map, pts) {
@@ -90,7 +91,7 @@ export default function CampaignMap({ outlets = [], staff = [], height = 380, hi
 
     model.staffPts.forEach((s) => {
       const selected = highlightedStaffKey != null && s.key === highlightedStaffKey;
-      const marker = L.marker([s.lat, s.lng], { icon: selected ? staffIconSelected : staffIcon })
+      const marker = L.marker([s.lat, s.lng], { icon: selected ? staffIconSelected : staffIcon, title: staffMarkerLabel(s), alt: staffMarkerLabel(s) })
         .bindTooltip(
           `<b>${esc(s.staffName)}</b>${s.outletName ? `<br>${esc(s.outletName)}` : ''}${s.approx ? '<br><i>approx. — last GPS unavailable</i>' : s.lastSeen ? `<br><i>${esc(s.lastSeen)}</i>` : ''}`,
           { direction: 'top' }

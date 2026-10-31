@@ -12,7 +12,7 @@ import { sortOptionsWithAllFirstNormalized, normalizeOptions } from '../lib/sort
 // and ArrowUp/ArrowDown/Enter support a keyboard path — typing to filter used
 // to dead-end because selection required a mouse click. A visible caret makes
 // it look selectable (issue #34 class reports).
-export default function SearchableSelect({ options = [], value, onChange, placeholder = 'Select…' }) {
+export default function SearchableSelect({ options = [], value, onChange, placeholder = 'Select…', id }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -76,6 +76,7 @@ export default function SearchableSelect({ options = [], value, onChange, placeh
   return (
     <div className="searchable-select" ref={rootRef}>
       <input
+        id={id}
         type="text"
         value={open ? query : (selected?.label || '')}
         placeholder={placeholder}
