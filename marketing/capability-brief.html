@@ -345,7 +345,7 @@
       <ul class="plain">
         <li><strong>Head office / campaign admin.</strong> Configures everything, corrects data, runs reports.</li>
         <li><strong>Field supervisor.</strong> Read-only portal view of their outlets, plus CB Mobile for their own outlet visits.</li>
-        <li><strong>Sponsor / brand.</strong> Read-only portal, auto-scoped to their campaign: dashboards, live map, self-serve reports.</li>
+        <li><strong>Sponsor / brand.</strong> Read-only portal, auto-scoped to their campaign: an Overview without staff or location data, self-serve reports.</li>
         <li><strong>Promoter.</strong> CB Mobile only; the daily shift workflow.</li>
       </ul>
 
@@ -376,7 +376,7 @@
       <table class="brief">
         <thead><tr><th style="width:22%">Module</th><th>Capabilities</th><th style="width:16%">Write access</th></tr></thead>
         <tbody>
-          <tr><td class="mod">Dashboard</td><td>Live KPIs for the selected campaign: active outlets today / yesterday, sales today / yesterday, month-to-date totals, top items. Sponsors get a parallel dashboard with an embedded live map.</td><td class="who">Admin view</td></tr>
+          <tr><td class="mod">Dashboard</td><td>An attention-first Overview for the selected campaign. A ranked <em>Needs attention</em> strip (promoters who should be checked in but are not, stale location, check-ins outside the geofence, outlets with a check-in but no sales update, products flagged for reorder, open previous-day shifts, pending leave); four headline tiles with change vs yesterday; a Last sales day row; campaign progress (day x of y); best and lagging outlets; unmet demand; a setup checklist for new campaigns. Loaded in one request. Sponsors get the performance view without staff or location data.</td><td class="who">Admin view</td></tr>
           <tr><td class="mod">Clients &amp; Catalog</td><td>Clients; brands; a client-wide SKU catalog (name, code, unit price in whole LKR, re-order level, image); a live re-order list per outlet fed by promoter flags.</td><td class="who">Admin</td></tr>
           <tr><td class="mod">Campaigns &amp; Activations</td><td>Campaigns with date range and auto-syncing status; campaign items; activations (one promoter, one outlet, one date range) with shift window and item- or brand-wise targets; per-campaign access grants.</td><td class="who">Admin write; Supervisor / Sponsor read</td></tr>
           <tr><td class="mod">Outlets &amp; Geography</td><td>Outlets with GPS coordinates (geocode helper) and geofence radius; distributor points; the city lookup.</td><td class="who">Admin</td></tr>
@@ -405,7 +405,7 @@
       <table class="brief">
         <thead><tr><th style="width:24%">Screen</th><th>What the promoter does</th></tr></thead>
         <tbody>
-          <tr><td class="mod">Sign in</td><td>Mobile number in any common local format (or a legacy username) plus a password. Session persists and auto-refreshes the access token, so a promoter is never signed out mid-shift.</td></tr>
+          <tr><td class="mod">Sign in</td><td>Mobile number in any common local format (or a legacy username) plus a password. The promoter stays signed in between visits and is signed out after 5 minutes idle.</td></tr>
           <tr><td class="mod">Home</td><td>Greeting by display name; today's assignment (campaign, outlet, planned shift); check-in status; an expandable stats card; a shortcut to campaign products.</td></tr>
           <tr><td class="mod">Attendance</td><td>Check in: the app takes a GPS fix, flags it against the geofence, marks the shift on-time or late against a 10-minute grace, and enforces the one-open-shift lock. A ~60-second GPS ping runs while checked in and the app is open. Check out asks the promoter to confirm the day's summary first. The current week's history shows on the tab.</td></tr>
           <tr><td class="mod">Campaign products &amp; stock</td><td>Per-SKU list (opening, sold, remaining, re-order flag) with a "needs restock" filter. Per product: opening-stock stepper (raise it for a mid-day restock), sold-today stepper, "other interested customers" stepper for demand that couldn't be filled, re-order toggle, and any product-level custom fields.</td></tr>

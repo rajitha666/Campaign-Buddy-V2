@@ -99,3 +99,10 @@ describe('endpoints — path construction', () => {
     ]);
   });
 });
+
+describe('endpoints — dashboard', () => {
+  it('loads the whole Overview from one campaign-scoped call', async () => {
+    await api.dashboard.get('c1');
+    expect(calls).toEqual([{ method: 'get', path: '/campaigns/c1/dashboard', query: undefined, body: undefined }]);
+  });
+});

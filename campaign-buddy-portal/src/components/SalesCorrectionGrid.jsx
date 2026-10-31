@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { salesLookup, salesRecords as salesRecordsApi, salesFields as salesFieldsApi } from '../lib/endpoints';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import Loader from '../components/Loader';
@@ -48,6 +49,7 @@ function CustomFieldCell({ def, value, onChange }) {
 // every total/report, Unarchive brings it back.
 export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSaved }) {
   const { push } = useToast();
+  const confirm = useConfirm();
   const { designationLabel } = useAuth();
   const [rows, setRows] = useState(null);
   const [meta, setMeta] = useState({});
@@ -101,6 +103,13 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
       setLoading(false);
     }
   }
+
+  // Pick an outlet (or change the date) and the sales appear — no separate Load click.
+  // The button below stays as a manual refresh.
+  useEffect(() => {
+    if (campaignId && form.outletId) loadSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId, form.outletId, form.date]);
 
   function setCell(idx, key, val) {
     setRows((r) => r.map((row, i) => (i === idx ? { ...row, [key]: val } : row)));
@@ -156,7 +165,13 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function archiveRow(idx) {
     const r = rows[idx];
     if (r.id == null) return;
-    if (!window.confirm('Archive this sales record? It will be excluded from all totals and reports.')) return;
+    const ok = await confirm({
+      title: 'Archive this sales record?',
+      message: 'It will be excluded from all totals and reports. You can unarchive it later.',
+      confirmLabel: 'Archive',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await salesRecordsApi.archive(campaignId, r.id);
       // mute the row in place — no reload, the table never jumps
@@ -173,7 +188,12 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
   async function unarchiveRow(idx) {
     const r = rows[idx];
     if (!r.archived) return;
-    if (!window.confirm('Unarchive this sales record? It will be counted in all totals and reports again.')) return;
+    const ok = await confirm({
+      title: 'Unarchive this sales record?',
+      message: 'It will be counted in all totals and reports again.',
+      confirmLabel: 'Unarchive',
+    });
+    if (!ok) return;
     try {
       await salesRecordsApi.restore(campaignId, r.id);
       setRows((rs) => rs.map((row, i) => (i === idx ? { ...row, archived: false } : row)));
@@ -218,7 +238,7 @@ export default function SalesCorrectionGrid({ campaignId, filterSlot, form, onSa
     <div>
       {filterSlot}
       <div className="filter-bar" style={{ marginTop: 8 }}>
-        <button className="btn btn-primary btn-sm" onClick={loadSales}>Load sales</button>
+        <button className="btn btn-primary btn-sm" onClick={loadSales} disabled={!form.outletId} title={form.outletId ? undefined : 'Choose an outlet first'}>Refresh</button>
         {rows && rows.length > 0 ? <button className="btn btn-secondary btn-sm" onClick={exportCsv}>Export CSV</button> : null}
       </div>
       {rows && meta.activationId ? (

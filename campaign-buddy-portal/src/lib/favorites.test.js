@@ -8,7 +8,7 @@ const supervisor = navEntriesFor(NAV, 'supervisor');
 describe('navEntriesFor', () => {
   it('lists every page the persona can reach, once, with its group and icon', () => {
     const sku = admin.find((e) => e.path === '/sales/sku-wise');
-    expect(sku).toMatchObject({ label: 'SKU Wise Sales', parent: 'Sales Overview', icon: 'sales' });
+    expect(sku).toMatchObject({ label: 'SKU Wise', parent: 'Sales Reports', icon: 'sales' });
     const paths = admin.map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
   });

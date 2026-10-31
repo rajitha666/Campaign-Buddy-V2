@@ -19,4 +19,10 @@ describe('data tables fit the window (no horizontal clipping)', () => {
     expect(th).toBeTruthy();
     expect(th[0]).not.toMatch(/white-space\s*:\s*nowrap/);
   });
+
+  it('table.data-table th never breaks a header word mid-letter (PROMOTE / R)', () => {
+    const th = css.match(/table\.data-table th\s*\{[^}]*\}/);
+    expect(th[0]).toMatch(/word-break\s*:\s*normal/);
+    expect(th[0]).not.toMatch(/break-word|anywhere/);
+  });
 });

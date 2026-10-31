@@ -9,17 +9,20 @@ import ErrorState from '../components/ErrorState';
 import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { ApiError } from '../lib/apiClient';
 import { exportFilename } from '../lib/exportFilename';
 import { columnText } from '../lib/columnText';
 import { downloadCsv } from '../lib/csv';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { colomboYmd } from '../lib/colomboDay';
+import { defaultDateRange } from '../lib/defaultDateRange';
 
 export default function ResourcePage({ resourceKey }) {
   const config = RESOURCES[resourceKey];
   const { currentCampaignId, currentCampaign, isAdmin, designationLabel } = useAuth();
   const { push } = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
@@ -64,6 +67,20 @@ export default function ResourcePage({ resourceKey }) {
 
   const needsCampaign = !!config?.scopeToCampaign;
 
+  // Resources that opt in (config.defaultRange: 'week' | 'campaign') start with a
+  // bounded From/To instead of an open range, so the page never fires an
+  // all-time query on open. Blank date inputs fall back to that default; a
+  // user-picked date wins. Computed, not stored, so switching campaign re-bases
+  // it without a second fetch.
+  const rangeDefaults = useMemo(
+    () => (config?.defaultRange ? defaultDateRange(config.defaultRange, currentCampaign) : {}),
+    [config, currentCampaign]
+  );
+  const effectiveFilters = useMemo(() => {
+    const picked = Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v !== '' && v != null));
+    return { ...rangeDefaults, ...picked };
+  }, [rangeDefaults, filterValues]);
+
   // Filters (FilterBar) get the same optionsLoader -> options resolution as
   // the Drawer's formFields — without this, a filter dropdown backed by
   // optionsLoader (Outlet, Promoter, Supervisor, …) never gets any options.
@@ -87,7 +104,7 @@ export default function ResourcePage({ resourceKey }) {
     setLoading(true);
     setError(null);
     try {
-      const query = { page, pageSize, search: search || undefined, ...filterValues };
+      const query = { page, pageSize, search: search || undefined, ...effectiveFilters };
       const res = await config.fetchList({ campaignId, query });
       let data = res?.data || [];
       if (config.hydrate) data = await config.hydrate(data);
@@ -104,10 +121,10 @@ export default function ResourcePage({ resourceKey }) {
       setHasLoaded(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, campaignId, page, pageSize, search, JSON.stringify(filterValues)]);
+  }, [config, campaignId, page, pageSize, search, JSON.stringify(effectiveFilters)]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(1); }, [search, JSON.stringify(filterValues), campaignId]);
+  useEffect(() => { setPage(1); }, [search, JSON.stringify(effectiveFilters), campaignId]);
 
   async function openDrawer(mode, row) {
     setDrawerMode(mode);
@@ -148,7 +165,14 @@ export default function ResourcePage({ resourceKey }) {
     if (action === 'view') { push(`Viewing ${row.name || row.displayName || row.id}`); return; }
     if (action === 'delete') {
       if (!config.deleteItem) { push('Delete is not wired up for this resource yet.', 'error'); return; }
-      if (!window.confirm('Remove this record?')) return;
+      const name = row.name || row.displayName || row.fullName || row.label;
+      const ok = await confirm({
+        title: name ? `Remove "${name}"?` : 'Remove this record?',
+        message: "This removes it from the list. It can't be undone from here.",
+        confirmLabel: 'Remove',
+        tone: 'danger',
+      });
+      if (!ok) return;
       try {
         const result = await config.deleteItem({ campaignId, id: row.id });
         push('Removed');
@@ -199,7 +223,7 @@ export default function ResourcePage({ resourceKey }) {
         <>
           <FilterBar
             filters={resolvedFilters}
-            values={filterValues}
+            values={effectiveFilters}
             onChange={(k, v) => setFilterValues((f) => ({ ...f, [k]: v }))}
             onLoad={load}
           />

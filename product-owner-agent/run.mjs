@@ -24,8 +24,11 @@ const { GITHUB_TOKEN, GITHUB_REPO, CLAUDE_CODE_OAUTH_TOKEN, DRY_RUN, EVENT_NAME,
 // for why, and the condition under which to revisit it. The token isn't read
 // here (the CLI reads it from its own environment), but we check it's present
 // so a missing secret fails with a clear message instead of a buried CLI error.
-if (!GITHUB_TOKEN || !GITHUB_REPO || !CLAUDE_CODE_OAUTH_TOKEN) {
-  console.error('Missing required env vars: GITHUB_TOKEN, GITHUB_REPO, CLAUDE_CODE_OAUTH_TOKEN');
+const missing = Object.entries({ GITHUB_TOKEN, GITHUB_REPO, CLAUDE_CODE_OAUTH_TOKEN })
+  .filter(([, v]) => !v)
+  .map(([k]) => k);
+if (missing.length) {
+  console.error(`Missing required env vars: ${missing.join(', ')}`);
   process.exit(1);
 }
 

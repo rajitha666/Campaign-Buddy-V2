@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  dailyStats as dailyStatsApi,
-  reports as reportsApi,
-  salesRecords as salesApi,
-  attendance as attendanceApi,
+  dashboard as dashboardApi,
   activations as activationsApi,
   tracking as trackingApi,
 } from '../lib/endpoints';
@@ -13,42 +11,23 @@ import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import CampaignMap from '../components/CampaignMap';
 import TrendChart from '../components/TrendChart';
-import { dayDateColombo } from '../lib/colomboDay';
-import { fetchAllPages } from '../lib/fetchAllPages';
+import { formatDelta, formatMoney, daysAgoLabel, fmtDayShort, lastDays } from '../lib/dashboardView';
 
-function todayISO(offsetDays = 0) {
-  // Anchor on the Colombo calendar day (backend convention) so UTC 18:30–24:00
-  // doesn't land these keys a calendar day behind.
-  return new Date(dayDateColombo().getTime() + offsetDays * 86400000).toISOString().slice(0, 10);
-}
-
-// The v3 backend has no single "/dashboard" endpoint and no per-day sales
-// rollup. This page composes it client-side from the real endpoints:
-//   GET /campaigns/{id}/stats           -> { totals:{footFall,approached,converted}, byDay:[] }
-//   GET /campaigns/{id}/sales           -> [ SalesRecord + activationItem.campaignItem.item + activation.outlet ]
-//   GET /campaigns/{id}/attendance      -> [ AttendanceRecord + activation.outlet ]
-//   GET /campaigns/{id}/reports/sku-wise-> [{ itemName, brandName, itemCount, totalSales }] (+ meta.grandTotal)
-//   GET /campaigns/{id}/activations     -> [ Activation + outlet(lat/lng) ]  (outlet pins)
-//   GET /campaigns/{id}/tracking/live   -> [{ staffName, outletName, checkedInSince, lastPosition }]
+// Attention-first Overview (#114). Everything on the page comes from ONE call,
+//   GET /campaigns/{id}/dashboard
+// (headline numbers + comparisons, ranked "needs attention", previous sales day,
+// trend, rankings, setup state). The map is the only extra: it needs outlet
+// coordinates and live positions, so it loads after the summary and is skipped
+// for sponsors, who never see staff or location data.
 export default function Dashboard() {
   const { currentCampaignId, currentCampaign, persona } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [stats, setStats] = useState({ footFall: 0, approached: 0, converted: 0 });
-  const [today, setToday] = useState({ outletCount: 0, totalSales: 0, footFall: 0, approached: 0 });
-  const [yesterday, setYesterday] = useState({ outletCount: 0, totalSales: 0 });
-  const [week, setWeek] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
-  const [interestProducts, setInterestProducts] = useState([]);
-  const [byDay, setByDay] = useState([]);
+  const [data, setData] = useState(null);
   const [outlets, setOutlets] = useState([]);
   const [liveStaff, setLiveStaff] = useState([]);
-
-  const range = useMemo(() => {
-    const start = currentCampaign?.startDate ? String(currentCampaign.startDate).slice(0, 10) : todayISO(-30);
-    const end = currentCampaign?.endDate ? String(currentCampaign.endDate).slice(0, 10) : todayISO();
-    return { from: start, to: end < todayISO() ? end : todayISO() };
-  }, [currentCampaign]);
+  const [mapFailed, setMapFailed] = useState(false);
+  const [trendDays, setTrendDays] = useState(7);
 
   useEffect(() => {
     if (!currentCampaignId) { setLoading(false); return; }
@@ -57,50 +36,35 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [statsRes, weekSalesRes, weekAttRes, skuRes, campaignSalesRes, actRes, liveRes] = await Promise.all([
-          dailyStatsApi.list(currentCampaignId, { dateFrom: range.from, dateTo: range.to }),
-          fetchAllPages((q) => salesApi.list(currentCampaignId, q), { dateFrom: todayISO(-6), dateTo: todayISO() }),
-          fetchAllPages((q) => attendanceApi.list(currentCampaignId, q), { dateFrom: todayISO(-1), dateTo: todayISO() }),
-          reportsApi.skuWise(currentCampaignId, { dateFrom: range.from, dateTo: range.to }),
-          fetchAllPages((q) => salesApi.list(currentCampaignId, q), { dateFrom: range.from, dateTo: range.to }),
-          activationsApi.list(currentCampaignId),
-          trackingApi.live(currentCampaignId),
-        ]);
+        const res = await dashboardApi.get(currentCampaignId);
         if (cancelled) return;
-
-        setStats(statsRes?.data?.totals || { footFall: 0, approached: 0, converted: 0 });
-        const days = statsRes?.data?.byDay || [];
-        setByDay(statsByDay(days));
-
-        const salesRows = weekSalesRes;
-        const attRows = weekAttRes;
-        const todayStat = dayStat(days, todayISO());
-        setToday({ ...daySummary(salesRows, attRows, todayISO()), ...todayStat });
-        setYesterday(daySummary(salesRows, attRows, todayISO(-1)));
-        setWeek(salesByDay(salesRows));
-
-        const skuRows = skuRes?.data || [];
-        setTopProducts([...skuRows].sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0)).slice(0, 10));
-
-        setInterestProducts(interestByProduct(campaignSalesRes).slice(0, 8));
-
-        setOutlets(uniqueOutlets(actRes?.data || []));
-        setLiveStaff(liveRes?.data || []);
+        setData(res?.data || null);
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load dashboard data.');
       } finally {
         if (!cancelled) setLoading(false);
       }
+      if (cancelled || persona === 'sponsor') return;
+      try {
+        const [actRes, liveRes] = await Promise.all([activationsApi.list(currentCampaignId), trackingApi.live(currentCampaignId)]);
+        if (cancelled) return;
+        setOutlets(uniqueOutlets(actRes?.data || []));
+        setLiveStaff(liveRes?.data || []);
+      } catch {
+        if (!cancelled) setMapFailed(true); // the map is optional — the rest of the page stands without it
+      }
     })();
     return () => { cancelled = true; };
-  }, [currentCampaignId, range.from, range.to]);
+  }, [currentCampaignId, persona]);
 
   if (!currentCampaignId) return <ErrorState message="Select a campaign from the top bar to see its dashboard." />;
   if (loading) return <Loader label="Loading dashboard…" />;
   if (error) return <ErrorState message={error} />;
+  if (!data) return <ErrorState message="No dashboard data for this campaign." />;
 
-  const maxWeek = Math.max(1, ...week.map((w) => w.totalSales));
-  const convRate = stats.approached ? Math.round((stats.converted / stats.approached) * 100) : 0;
+  const isSponsor = data.view === 'sponsor';
+  const { headline: h, previousSalesDay: prev, campaignProgress: prog, outletRanking: rank } = data;
+  const trend = lastDays(data.trend || [], trendDays);
 
   return (
     <div>
@@ -110,82 +74,175 @@ export default function Dashboard() {
           <p className="page-sub">{overviewSubtitle(currentCampaign, persona)}</p>
         </div>
       </div>
-      <div className="stat-grid cols-5">
-        <StatCard label="Sales Today" value={`LKR ${today.totalSales.toLocaleString()}`} />
-        <StatCard label="Active Outlets Today" value={today.outletCount || '—'} />
-        <StatCard label="Foot Fall Today" value={today.footFall || 0} />
-        <StatCard label="Customers Approached Today" value={today.approached || 0} />
-        <StatCard label="Sales Yesterday" value={`LKR ${yesterday.totalSales.toLocaleString()}`} />
-      </div>
 
-      <div className="panel" style={{ marginBottom: 16 }}>
-        <div className="panel-title">Outlets &amp; live sales staff</div>
-        <div className="panel-sub">
-          {outlets.length} outlet{outlets.length === 1 ? '' : 's'} · {liveStaff.length} staff checked in now
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <CampaignMap outlets={outlets} staff={liveStaff} />
-        </div>
-      </div>
-
-      <div className="panel" style={{ marginBottom: 16 }}>
-        <div className="panel-title">Footfall, approached &amp; conversion — daily</div>
-        <div className="panel-sub">
-          Campaign to date · {stats.approached.toLocaleString()} approached · {stats.converted.toLocaleString()} converted · {convRate}% conversion
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <TrendChart
-            data={byDay}
-            series={[
-              { key: 'footFall', label: 'Foot fall', color: 'var(--info)' },
-              { key: 'approached', label: 'Approached', color: 'var(--mango)' },
-              { key: 'converted', label: 'Converted', color: 'var(--success)' },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="dash-grid">
-        <div className="panel">
-          <div className="panel-title">Sales this week</div>
-          <div className="panel-sub">Last 7 days</div>
-          <div className="bars-row">
-            {week.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : week.map((w, i) => (
-              <div className="bar-col" key={w.date}>
-                <div className="bar-val">{fmtShort(w.totalSales)}</div>
-                <div className={`bar ${i === week.length - 1 ? 'today' : ''}`} style={{ height: `${Math.max(6, (w.totalSales / maxWeek) * 130)}px` }} />
-                <div className="day">{w.date.slice(5)}</div>
+      {!data.setup.complete ? (
+        <SetupChecklist setup={data.setup} campaignId={currentCampaignId} canEdit={persona === 'admin'} />
+      ) : (
+        <>
+          {prog ? (
+            <div className="ov-progress">
+              <b>Day {prog.day} of {prog.totalDays}</b> · {prog.daysLeft} day{prog.daysLeft === 1 ? '' : 's'} left
+              <div className="track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={prog.percent} aria-valuetext={`Day ${prog.day} of ${prog.totalDays}`} aria-label="Campaign progress">
+                <div className="fill" style={{ width: `${prog.percent}%` }} />
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-title">Most-requested products</div>
-          <div className="panel-sub">Customers who asked but didn&apos;t buy, this activation</div>
-          <div style={{ marginTop: 8 }}>
-            {interestProducts.length === 0 ? <div className="cell-muted">No interest logged yet.</div> : interestProducts.map((p, i) => (
-              <div className="rank-row" key={p.name || i}>
-                <div className="rank-num">{i + 1}</div>
-                <div><div className="rank-name">{p.name}</div><div className="rank-meta">{p.brandName || 'Interested customers'}</div></div>
-                <div className="rank-val">{p.interested.toLocaleString()}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="panel" style={{ marginTop: 16 }}>
-        <div className="panel-title">Top 10 products by sales — this activation</div>
-        <div className="panel-sub">{range.from} → {range.to}</div>
-        <div style={{ marginTop: 8 }}>
-          {topProducts.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : topProducts.map((p, i) => (
-            <div className="rank-row" key={p.itemName || i}>
-              <div className="rank-num">{i + 1}</div>
-              <div><div className="rank-name">{p.itemName}</div><div className="rank-meta">{p.brandName} · {p.itemCount} units</div></div>
-              <div className="rank-val">LKR {(p.totalSales || 0).toLocaleString()}</div>
             </div>
+          ) : null}
+
+          {!isSponsor ? <AttentionStrip items={data.attention || []} /> : null}
+
+          <div className="stat-grid">
+            <StatCard label="Sales today" value={formatMoney(h.sales.value)} {...delta(h.sales)} />
+            <StatCard label="Active outlets" value={`${h.activeOutlets.value} of ${h.activeOutlets.planned}`}
+              delta={h.activeOutlets.value < h.activeOutlets.planned ? `${h.activeOutlets.planned - h.activeOutlets.value} planned with no activity yet` : 'All planned outlets active'}
+              deltaDirection={h.activeOutlets.value < h.activeOutlets.planned ? 'down' : 'up'} />
+            <StatCard label="Conversion" value={`${h.conversionPct.value}%`} {...delta(h.conversionPct)} />
+            <StatCard label="Customers approached" value={h.approached.value.toLocaleString()} {...delta(h.approached)} />
+          </div>
+
+          <div className="panel ov-block">
+            <div className="panel-title">
+              Last sales day{prev ? ` · ${fmtDayShort(prev.date)}` : ''}
+            </div>
+            {prev ? (
+              <>
+                <div className="panel-sub">{daysAgoLabel(prev.daysAgo)}</div>
+                <dl className="ov-last">
+                  <div><dt>Sales</dt><dd>{formatMoney(prev.sales)}</dd></div>
+                  <div><dt>Units sold</dt><dd>{prev.units.toLocaleString()}</dd></div>
+                  <div><dt>Outlets with sales</dt><dd>{prev.outlets}</dd></div>
+                  <div><dt>Conversion</dt><dd>{prev.conversionPct}% <span className="cell-muted">({prev.converted.toLocaleString()} of {prev.approached.toLocaleString()} approached)</span></dd></div>
+                </dl>
+              </>
+            ) : (
+              <div className="cell-muted" style={{ marginTop: 8 }}>No earlier sales yet.</div>
+            )}
+          </div>
+
+          {!isSponsor ? (
+            <div className="panel ov-block">
+              <div className="panel-title">Outlets &amp; live sales staff</div>
+              <div className="panel-sub">
+                {mapFailed ? 'Map unavailable right now — the figures above are unaffected.' : `${outlets.length} outlet${outlets.length === 1 ? '' : 's'} · ${liveStaff.length} staff checked in now`}
+              </div>
+              {mapFailed ? null : (
+                <div style={{ marginTop: 14 }}>
+                  <CampaignMap outlets={outlets} staff={liveStaff} />
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <div className="panel ov-block">
+            <div className="ov-head">
+              <div>
+                <div className="panel-title">Sales trend</div>
+                <div className="panel-sub">Daily sales, last {trendDays} days</div>
+              </div>
+              <div className="ov-tabs" role="group" aria-label="Trend range">
+                {[7, 30].map((d) => (
+                  <button key={d} type="button" aria-pressed={trendDays === d} onClick={() => setTrendDays(d)}>{d} days</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginTop: 14 }} role="img" aria-label={`Sales trend for the last ${trendDays} days. The same figures are in the table below.`}>
+              <TrendChart data={trend} series={[{ key: 'sales', label: 'Sales', color: 'var(--mango)' }]} />
+            </div>
+            <details style={{ marginTop: 10 }}>
+              <summary className="cell-muted">View as table</summary>
+              <table className="data-table" aria-label="Daily sales">
+                <thead><tr><th scope="col">Date</th><th scope="col">Sales</th><th scope="col">Approached</th><th scope="col">Converted</th></tr></thead>
+                <tbody>
+                  {[...trend].reverse().map((d) => (
+                    <tr key={d.date}><td>{fmtDayShort(d.date)}</td><td>{formatMoney(d.sales)}</td><td>{d.approached}</td><td>{d.converted}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </div>
+
+          <div className="ov-three">
+            <RankPanel title={isSponsor ? 'Top-performing outlets' : 'Best outlets'} sub={`Last ${rank.days} days`} rows={rank.top} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty="No outlet sales yet." />
+            <RankPanel title={isSponsor ? 'Outlets with room to grow' : 'Lagging outlets'} sub={isSponsor ? 'Lowest sales in the last 7 days' : 'Lowest sales, zero-sales included'} rows={rank.lagging} value={(r) => formatMoney(r.sales)} name={(r) => r.name} empty={isSponsor ? 'All outlets are performing steadily.' : 'Nothing lagging.'} />
+            <RankPanel title={isSponsor ? 'Customer interest' : 'Unmet demand'} sub={isSponsor ? 'Products shoppers asked about but did not buy' : "Customers who asked but didn't buy"} rows={data.unmetDemand} value={(r) => r.interested.toLocaleString()} name={(r) => r.itemName} empty="No interest logged yet." />
+          </div>
+
+          <div className="panel">
+            <div className="panel-title">Top 10 products by sales</div>
+            <div className="panel-sub">Campaign to date</div>
+            <div style={{ marginTop: 8 }}>
+              {data.topProducts.length === 0 ? <div className="cell-muted">No sales recorded yet.</div> : data.topProducts.map((p, i) => (
+                <div className="rank-row" key={`${p.itemName}-${i}`}>
+                  <div className="rank-num">{i + 1}</div>
+                  <div><div className="rank-name">{p.itemName}</div><div className="rank-meta">{p.brandName} · {p.units.toLocaleString()} units</div></div>
+                  <div className="rank-val">{formatMoney(p.sales)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function delta(metric) {
+  const d = formatDelta(metric.vsYesterdayPct, 'yesterday') || formatDelta(metric.vsLastWeekPct, 'last week');
+  return d ? { delta: d.text, deltaDirection: d.direction } : {};
+}
+
+const SEVERITY_WORD = { high: 'Urgent', medium: 'Warning', low: 'Notice' };
+
+function AttentionStrip({ items }) {
+  return (
+    <section className="panel ov-block" aria-label="Needs attention">
+      <div className="panel-title">Needs attention</div>
+      {items.length === 0 ? (
+        <div className="attn-clear"><span aria-hidden="true">✓ </span>All clear — nothing needs your attention.</div>
+      ) : (
+        <div className="attn-list">
+          {items.map((i, n) => (
+            <Link key={`${i.type}-${n}`} to={i.link} className={`attn-row ${i.severity}`} aria-label={`${SEVERITY_WORD[i.severity]}: ${i.label}. Open to fix.`}>
+              <b aria-hidden="true">{i.count}</b>
+              <span aria-hidden="true">{i.label.replace(/^\d+\s/, '')}</span>
+              <span className="go" aria-hidden="true">Fix →</span>
+            </Link>
           ))}
         </div>
+      )}
+    </section>
+  );
+}
+
+function SetupChecklist({ setup, campaignId, canEdit }) {
+  const step = (done, text, to) => (
+    <li><span aria-hidden="true">{done ? '✅' : '⬜'} </span><span className="sr-only">{done ? 'Done: ' : 'To do: '}</span>{text}{!done && canEdit && to ? <> — <Link to={to}>set up</Link></> : null}{!done && !canEdit ? <span className="cell-muted"> — ask an admin</span> : null}</li>
+  );
+  return (
+    <section className="panel ov-setup" aria-label="Set up your campaign">
+      <div className="panel-title">Set up your campaign</div>
+      <ul>
+        {step(setup.products > 0, `Products added (${setup.products})`, `/campaigns/${campaignId}/items`)}
+        {step(setup.activations > 0, `Activations created (${setup.activations})`, '/activations')}
+        {step(setup.promotersAssigned > 0, `Promoters assigned (${setup.promotersAssigned})`, '/activations')}
+      </ul>
+      <p className="panel-sub">Your numbers appear here once the first promoter checks in.</p>
+    </section>
+  );
+}
+
+function RankPanel({ title, sub, rows, value, name, empty }) {
+  return (
+    <div className="panel">
+      <div className="panel-title">{title}</div>
+      <div className="panel-sub">{sub}</div>
+      <div style={{ marginTop: 8 }}>
+        {rows.length === 0 ? <div className="cell-muted">{empty}</div> : rows.map((r, i) => (
+          <div className="rank-row" key={`${name(r)}-${i}`}>
+            <div className="rank-num">{i + 1}</div>
+            <div className="rank-name">{name(r)}</div>
+            <div className="rank-val">{value(r)}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -212,76 +269,6 @@ function fmtDate(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
   if (!m) return '';
   return `${m[3]} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
-}
-
-// Compact number format, same style as TrendChart's fmtShort: 950 -> "950",
-// 128400 -> "128.4k". Sales values here are LKR totals, so k covers it.
-function fmtShort(n) {
-  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
-  return String(n);
-}
-
-// A SalesRecord row from GET /campaigns/{id}/sales carries the joined
-// activationItem.campaignItem.item (for unitPrice) and activation.outlet.
-function saleValue(r) {
-  const price = r.activationItem?.campaignItem?.item?.unitPrice ?? 0;
-  return (r.soldToday || 0) * price;
-}
-
-function daySummary(salesRows, attRows, isoDay) {
-  const sales = salesRows.filter((r) => String(r.date).slice(0, 10) === isoDay);
-  const totalSales = sales.reduce((s, r) => s + saleValue(r), 0);
-  const outletIds = new Set(
-    attRows
-      .filter((a) => String(a.date).slice(0, 10) === isoDay && a.checkInAt)
-      .map((a) => a.activation?.outletId)
-      .filter(Boolean)
-  );
-  return { totalSales, outletCount: outletIds.size };
-}
-
-function salesByDay(salesRows) {
-  const map = {};
-  for (const r of salesRows) {
-    const day = String(r.date).slice(0, 10);
-    map[day] = (map[day] || 0) + saleValue(r);
-  }
-  return Object.entries(map)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, totalSales]) => ({ date, totalSales }));
-}
-
-// Roll the per-(activation,day) DailyStats rows up to one row per calendar day.
-function statsByDay(rows) {
-  const map = {};
-  for (const r of rows) {
-    const day = String(r.date).slice(0, 10);
-    const acc = map[day] || (map[day] = { date: day, footFall: 0, approached: 0, converted: 0 });
-    acc.footFall += r.footFall || 0;
-    acc.approached += r.approached || 0;
-    acc.converted += r.converted || 0;
-  }
-  return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function dayStat(rows, isoDay) {
-  return rows.filter((r) => String(r.date).slice(0, 10) === isoDay).reduce(
-    (acc, r) => ({ footFall: acc.footFall + (r.footFall || 0), approached: acc.approached + (r.approached || 0) }),
-    { footFall: 0, approached: 0 }
-  );
-}
-
-function interestByProduct(salesRows) {
-  const map = {};
-  for (const r of salesRows) {
-    const n = r.otherInterestedCustomers || 0;
-    if (!n) continue;
-    const item = r.activationItem?.campaignItem?.item;
-    const name = item?.name || 'Unknown item';
-    const acc = map[name] || (map[name] = { name, brandName: item?.brand?.name || '', interested: 0 });
-    acc.interested += n;
-  }
-  return Object.values(map).sort((a, b) => b.interested - a.interested);
 }
 
 function uniqueOutlets(activationRows) {
