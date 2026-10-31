@@ -68,6 +68,7 @@ export default function SearchableSelect({ options = [], value, onChange, placeh
       const o = filtered[highlight] ?? filtered[0];
       if (o) { e.preventDefault(); choose(o); }
     } else if (e.key === 'Escape') {
+      if (open) e.stopPropagation(); // keep an enclosing drawer open
       setOpen(false);
       setQuery('');
     }

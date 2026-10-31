@@ -117,6 +117,6 @@ test("campaign and outlet forms use the same sections", async ({ page }) => {
     await page.getByRole("button", { name: /add new/i }).first().click();
     await expect(page.locator(".drawer.open").getByRole("button", { name: section })).toHaveAttribute("aria-expanded", "false");
     await page.keyboard.press("Escape");
-    await page.locator(".drawer.open .close-btn").click().catch(() => {});
+    await expect(page.locator(".drawer.open")).toBeHidden();
   }
 });
