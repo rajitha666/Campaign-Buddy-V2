@@ -10,7 +10,7 @@ argument-hint: "<pain point, idea, or issue number>"
 Keep it short and cheap; the pipeline and roles are in `docs/agent-team/roles.md`, the dials in `docs/agent-team/autonomy.yml`.
 
 ## 0. Mode and scope
-Read `~/.campaign-buddy/team-mode.json` (missing = `full`). In `off` skip the Product Owner and just write the ticket. If this is a defect in the **Campaign Buddy product** found while building the agent team, file it as a bug ticket and stop (the agent-building chat does not fix product code).
+Read `~/.campaign-buddy/team-mode.json` (missing = `full`). In `off` skip the Product Owner and just write the ticket. If this is a defect in the **Campaign Buddy product** found while building the R&D team, file it as a bug ticket and stop (the agent-building chat does not fix product code).
 
 ## 1. Understand
 Restate the **outcome** the owner needs (not the feature as worded) in one or two sentences. If a key fact is missing, ask one targeted question (AskUserQuestion), not a questionnaire. Search for duplicates first: `gh issue list --search "<keywords>" --state all --limit 10 --json number,title,state`.

@@ -1,6 +1,6 @@
 ---
 name: review
-description: Run the agent team's review of a change cheaply and consistently. Builds a compact review brief, spawns only the reviewers the change needs (in parallel, brief embedded), consolidates the verdicts, and records the runs on the Team Console. Use before declaring a change ready to merge, or when the owner says "review this" / "run the team on this".
+description: Run the R&D team's review of a change cheaply and consistently. Builds a compact review brief, spawns only the reviewers the change needs (in parallel, brief embedded), consolidates the verdicts, and records the runs on the Team Console. Use before declaring a change ready to merge, or when the owner says "review this" / "run the team on this".
 disable-model-invocation: true
 argument-hint: "[base] [head] | --merge <sha> [--major]"
 ---

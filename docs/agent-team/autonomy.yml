@@ -1,4 +1,4 @@
-# Agent team — owner-controlled dials. Agents READ this file; only the owner edits it.
+# R&D team — owner-controlled dials. Agents READ this file; only the owner edits it.
 # Runtime mode (full | light | off) is separate: ~/.campaign-buddy/team-mode.json, changed by telling Claude in chat ("team off").
 # Roles, routing and verdicts: docs/agent-team/roles.md. Design and decisions: docs/agent-team-design.md.
 version: 1

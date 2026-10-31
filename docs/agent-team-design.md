@@ -1,4 +1,4 @@
-# Campaign Buddy — Agent Team Design (DRAFT for owner review)
+# Campaign Buddy — R&D Team Design (DRAFT for owner review)
 
 Status: **draft v2 — owner decisions recorded (§10), nothing built.** Written 2026-10-25 after the portal-UX session (epic #109).
 Owner decisions captured so far: both layers (in-chat + GitHub), specialists advise / Product Owner decides,
