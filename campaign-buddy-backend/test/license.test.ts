@@ -166,3 +166,18 @@ describe("license usage — snapshot job", () => {
     expect(week.promoterUsed).toBe(2);
   });
 });
+
+describe("license usage — soft-deleted campaigns are not licensed (#127)", () => {
+  it("snapshot job and the usage list skip a soft-deleted campaign", async () => {
+    const { campaign } = await makeCampaignWithActivation();
+    await prisma.campaign.update({ where: { id: campaign.id }, data: { deletedAt: new Date() } });
+
+    await captureLicenseSnapshots();
+    expect(await prisma.campaignLicenseUsageSnapshot.count({ where: { campaignId: campaign.id } })).toBe(0);
+
+    const token = await adminToken();
+    const res = await request(app).get("/admin/v1/license/usage").set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body)).not.toContain(campaign.id);
+  });
+});
