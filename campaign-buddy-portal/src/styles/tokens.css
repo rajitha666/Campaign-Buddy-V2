@@ -2,6 +2,8 @@
   --ink:#12241F; --ink-soft:#23413A; --surface:#F4F6F3; --surface-card:#FFFFFF;
   --line:#E3E7E1; --text-primary:#16211C; --text-muted:#647169; --text-inverse:#F4F6F3;
   --mango:#FF7A33; --mango-dark:#E8641F; --mango-tint:#FFE6D6;
+  /* Text-on-tint variants: >=4.5:1 on the matching -tint fill (the base colours are ~3:1 there). */
+  --success-ink:#16713D; --pending-ink:#8A5700; --alert-ink:#B3302A; --info-ink:#1D5F94;
   --success:#1F9D55; --success-tint:#E4F5EA; --pending:#C77F00; --pending-tint:#FBF0DA;
   --alert:#D8483F; --alert-strong:#BF3A32; --alert-strong-hover:#A8312A; --accent-on-dark:#FFB98F; --alert-tint:#FBE6E4; --info:#2673B0; --info-tint:#E3F0FA;
   --sidebar-w:250px; --sidebar-w-collapsed:66px; --topbar-h:64px;

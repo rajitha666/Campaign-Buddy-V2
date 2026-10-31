@@ -92,6 +92,7 @@ export default function Topbar({ onOpenMobileNav }) {
           <div className="switcher campaign-switcher">
             🗂️
             <select
+              aria-label="Campaign"
               value={currentCampaignId || ''}
               onChange={(e) => setCurrentCampaignId(e.target.value)}
               disabled={campaignList.length === 0}
