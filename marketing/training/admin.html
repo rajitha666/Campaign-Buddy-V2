@@ -98,7 +98,7 @@
         <p>The catalog is shared across all campaigns for that client, set a product up once and reuse it.</p>
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Clients</b> and add the brand owner: company name, contact, phone, email, address.</p></div>
+            <div class="step-text"><p>Open <b>Setup &rarr; Clients</b> and add the brand owner: company name, contact, phone, email, address.</p></div>
             <figure><img src="assets/portal-admin/02-clients.webp" alt="Clients list with an Add New Client button" /></figure>
           </li>
           <li>
@@ -106,7 +106,7 @@
             <figure><img src="assets/portal-admin/04-brands.webp" alt="Brands list" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Products &rarr; List</b> and add each SKU: name, brand, SKU code, <b>unit price in whole rupees</b>, re-order level, and an image if you have one.</p></div>
+            <div class="step-text"><p>Open <b>Products &rarr; All products</b> and add each SKU: name, brand, SKU code, <b>unit price in whole rupees</b>, re-order level, and an image if you have one.</p></div>
             <figure><img src="assets/portal-admin/03-items.webp" alt="Products list showing SKUs with brand, price and reorder level" /></figure>
           </li>
         </ol>
@@ -123,7 +123,7 @@
           </li>
           <li>
             <div class="step-text">
-              <p>Open <b>Outlets &rarr; List</b> and add each retail location: <b>outlet no</b> (your own reference code), name, contact person, address, city, phone, and its <b>GPS coordinates</b> (use the geocode helper). The coordinates and the geofence radius (150&nbsp;m by default) are what verify a promoter's check-in.</p>
+              <p>Open <b>Outlets &rarr; All outlets</b> and add each retail location: <b>outlet no</b> (your own reference code), name, contact person, address, city, phone, and its <b>GPS coordinates</b> (use the geocode helper). The coordinates and the geofence radius (150&nbsp;m by default) are what verify a promoter's check-in.</p>
             </div>
             <figure><img src="assets/portal-admin/08-outlets.webp" alt="Outlets list with GPS coordinates" /></figure>
           </li>
@@ -138,7 +138,7 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Campaigns &rarr; List</b> and add the campaign: number, name, client, description, and a <b>start and end date</b>. Creating it grants you full access to it automatically.</p></div>
+            <div class="step-text"><p>Open <b>Campaigns &rarr; All campaigns</b> and add the campaign: number, name, client, description, and a <b>start and end date</b>. Creating it grants you full access to it automatically.</p></div>
             <figure><img src="assets/portal-admin/06-campaigns.webp" alt="Campaigns list showing each campaign with client, dates and status" /></figure>
           </li>
           <li>
@@ -165,7 +165,7 @@
         <ol class="steps">
           <li>
             <div class="step-text">
-              <p>Open <b>Staff &rarr; List</b> and add each person: employee ID, full name, <b>Display Name</b> (what they see in the app), type (promoter or supervisor), <b>mobile number</b>, home city, "reports to" for leave approval, and their emergency and bank details. You can also attach a <b>profile photo</b> — it appears on the person's profile in the mobile app. Images up to 5&nbsp;MB; the app shows initials until a photo is set.</p>
+              <p>Open <b>People &rarr; Staff &rarr; All staff</b> and add each person. The form opens with just the essentials: employee ID, full name, <b>Display Name</b> (what they see in the app; it copies the full name until you change it), type (promoter or supervisor), status, <b>mobile number</b>, app username and password. Optional groups &mdash; <b>Personal details</b> (gender, date of birth, NIC, home city, addresses, photo), <b>Emergency contact</b> and <b>Bank details</b> &mdash; start collapsed when adding; click a heading to open it (each shows how many fields are filled), and editing a person opens the groups that already have data. If a collapsed group has a mistake, it opens when you press Save. You can also attach a <b>profile photo</b> — it appears on the person's profile in the mobile app. Images up to 5&nbsp;MB; the app shows initials until a photo is set.</p>
             </div>
             <figure><img src="assets/portal-admin/11-staff.webp" alt="Staff list with promoters and supervisors" /></figure>
           </li>
@@ -183,7 +183,7 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>With the right campaign selected, open <b>Campaigns &rarr; Activation</b> and add one. An activation is <b>one promoter, at one outlet, for this campaign, over one date range</b>. The list's <b>Type</b> column shows each activation as <b>Weekend</b> or <b>Monthly</b>.</p></div>
+            <div class="step-text"><p>With the right campaign selected, open <b>Campaigns &rarr; Activations</b> and add one. An activation is <b>one promoter, at one outlet, for this campaign, over one date range</b>. The list's <b>Type</b> column shows each activation as <b>Weekend</b> or <b>Monthly</b>.</p></div>
             <figure><img src="assets/portal-admin/07-activations.webp" alt="Activation list showing promoter, outlet, supervisor, activation type, dates and status" /></figure>
           </li>
           <li>
@@ -208,7 +208,7 @@
         <ol class="steps">
           <li>
             <div class="step-text">
-              <p>Open <b>Custom Fields</b> in the Sales section and add a field for this campaign: a label, an <b>applies-to</b> scope (<b>Whole day</b>, one value per promoter per day, like weather; or <b>Each product</b>, one value per SKU per day, like damaged units), a type (number / text / yes-no / dropdown), a <b>Required</b> flag, and a sort order.</p>
+              <p>Open <b>Custom Sales Fields</b> under <b>Campaigns</b> and add a field for this campaign: a label, an <b>applies-to</b> scope (<b>Whole day</b>, one value per promoter per day, like weather; or <b>Each product</b>, one value per SKU per day, like damaged units), a type (number / text / yes-no / dropdown), a <b>Required</b> flag, and a sort order.</p>
             </div>
             <figure><img src="assets/portal-admin/25-custom-fields.webp" alt="Custom Fields screen listing the extra fields defined for the campaign" /></figure>
           </li>
@@ -237,7 +237,7 @@
           </li>
           <li>
             <div class="step-text">
-              <p>A new team member joining partway through a campaign doesn't need Super Admin to step in: from <b>Campaigns &rarr; List</b>, open the campaign's <b>Admins</b> action (the people icon). Pick the role first — <b>Campaign Admin</b>, <b>Sponsor</b> or <b>Supervisor</b> — then search for their existing account by name, username or email and <b>Link To Campaign</b>; or, if they don't have an account yet, fill in <b>+ New Account</b> (with the same role choice) to create and link it in the same step. The list shows every linked account with its role badge.</p>
+              <p>A new team member joining partway through a campaign doesn't need Super Admin to step in: from <b>Campaigns &rarr; All campaigns</b>, open the campaign's <b>Admins</b> action (the people icon). Pick the role first — <b>Campaign Admin</b>, <b>Sponsor</b> or <b>Supervisor</b> — then search for their existing account by name, username or email and <b>Link To Campaign</b>; or, if they don't have an account yet, fill in <b>+ New Account</b> (with the same role choice) to create and link it in the same step. The list shows every linked account with its role badge.</p>
               <div class="tip"><b>Who can do this:</b> Super Admin, or any Campaign Admin already linked to that campaign. A campaign can have any number of linked accounts &mdash; linking a new one never removes another, and the same account can be linked to several campaigns at once.</div>
             </div>
           </li>
@@ -250,15 +250,15 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Supervisors &rarr; Assign Routes</b>. Pick a supervisor (the dropdown lists only supervisors already on this campaign — assigned to an activation or a route), a set of outlets (only outlets already active on this campaign), and a date range. The month calendar shows the plan. This is planning only, it does not drive check-in. If the dropdown is empty, no supervisors are on this campaign yet.</p></div>
+            <div class="step-text"><p>Open <b>People &rarr; Supervisors &rarr; Assign Routes</b>. Pick a supervisor (the dropdown lists only supervisors already on this campaign — assigned to an activation or a route), a set of outlets (only outlets already active on this campaign), and a date range. The month calendar shows the plan. This is planning only, it does not drive check-in. If the dropdown is empty, no supervisors are on this campaign yet.</p></div>
             <figure><img src="assets/portal-admin/19-assign-routes.webp" alt="Assign Routes screen with a month calendar and a table of planned routes" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Supervisors &rarr; Tasks</b> to build the per-campaign QA checklist template: a category, a task type, and the question text, across the nine QA categories. <b>Range</b> is a 1&ndash;5 rating of the promoter (Poor, Needs improvement, Meets standard, Good, Excellent &mdash; the same five definitions for every campaign), <b>Feedback</b> is a free-text note, and <b>Photo</b> asks the supervisor for outlet-setup photos &mdash; enter how many in <b>Photos to capture</b> (taken once per outlet and shared by the promoters there). You can reword a task later, but not change its type once supervisors have answered it &mdash; add a new task instead. Supervisors fill this in on the app after checking in at an outlet.</p></div>
+            <div class="step-text"><p>Open <b>People &rarr; Supervisors &rarr; Tasks</b> to build the per-campaign QA checklist template: a category, a task type, and the question text, across the nine QA categories. <b>Range</b> is a 1&ndash;5 rating of the promoter (Poor, Needs improvement, Meets standard, Good, Excellent &mdash; the same five definitions for every campaign), <b>Feedback</b> is a free-text note, and <b>Photo</b> asks the supervisor for outlet-setup photos &mdash; enter how many in <b>Photos to capture</b> (taken once per outlet and shared by the promoters there). You can reword a task later, but not change its type once supervisors have answered it &mdash; add a new task instead. Supervisors fill this in on the app after checking in at an outlet.</p></div>
             <figure><img src="assets/portal-admin/17-supervisor-tasks.webp" alt="Supervisor Tasks screen with a QA checklist per campaign" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Supervisors &rarr; Task Results</b>, pick a <b>From</b> and <b>To</b> date and press <b>Apply</b>. You see the average score, how many checklists are <b>complete</b> and <b>incomplete</b> (with a list of the incomplete ones to follow up), the average score by promoter, outlet and category, and every answer grouped <b>by outlet</b> with photo thumbnails (click to enlarge; the upload time is the server's). <b>Excel</b> exports the range with a link per photo. A promoter's average also appears as <b>Supervisor QA Score</b> on <b>Staff &rarr; Profiles</b>. Clients and portal supervisors see the same page, read-only and limited to their own outlets.</p></div>
+            <div class="step-text"><p>Open <b>People &rarr; Supervisors &rarr; Task Results</b>, pick a <b>From</b> and <b>To</b> date and press <b>Apply</b>. You see the average score, how many checklists are <b>complete</b> and <b>incomplete</b> (with a list of the incomplete ones to follow up), the average score by promoter, outlet and category, and every answer grouped <b>by outlet</b> with photo thumbnails (click to enlarge; the upload time is the server's). <b>Excel</b> exports the range with a link per photo. A promoter's average also appears as <b>Supervisor QA Score</b> on <b>People &rarr; Staff &rarr; Profiles</b>. Clients and portal supervisors see the same page, read-only and limited to their own outlets.</p></div>
           </li>
         </ol>
       </div>
@@ -269,19 +269,19 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Start on the <b>Dashboard</b>: active outlets today, sales today, month-to-date, top items, and the live map. Check <b>Products &rarr; Reorder</b> for anything the promoters have flagged as low.</p></div>
+            <div class="step-text"><p>Start on the <b>Overview</b> (the dashboard). Read it top to bottom: <b>Day x of y</b> campaign progress; the <b>Needs attention</b> strip, ranked rows that each open the page that fixes the problem (promoters who should be checked in but are not, location older than 12 minutes, check-ins outside the geofence, outlets with a check-in but no sales update, products flagged for reorder, shifts still open from a previous day, pending leave requests), or <b>All clear</b> when there is nothing; then the four tiles &mdash; <b>Sales today</b>, <b>Active outlets</b> (x of y), <b>Conversion</b> and <b>Customers approached</b> &mdash; each with a green or red change against yesterday. <b>Last sales day</b> shows the latest earlier day that had sales, which may be several days ago. Below are the live map, the <b>Sales trend</b> (7 or 30 days, with <b>View as table</b>), <b>Best outlets</b>, <b>Lagging outlets</b>, <b>Unmet demand</b> and the <b>Top 10 products</b>. A brand-new campaign shows a <b>Set up your campaign</b> checklist (products, activations, promoters) instead of zeros. Also check <b>Products &rarr; Reorder</b> for anything promoters have flagged as low.</p></div>
             <figure><img src="assets/portal-admin/05-reorder.webp" alt="Reorder screen listing items at or below their reorder level per outlet" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Staff &rarr; Attendance</b> for the check-in log with on-time / late badges. The <b>Promoter</b> column shows each person's name, and check-in/check-out times are shown to the minute. A blank check-in time means the promoter has not started.</p></div>
+            <div class="step-text"><p>Open <b>Today &rarr; Attendance</b> (the <b>Check-ins</b> tab) for the check-in log with on-time / late badges. The <b>Promoter</b> column shows each person's name, and check-in/check-out times are shown to the minute. A blank check-in time means the promoter has not started.</p></div>
             <figure><img src="assets/portal-admin/12-staff-attendance.webp" alt="Staff attendance log with the promoter name column, and on-time, late, leave and pending statuses" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Staff &rarr; Absence</b> and pick today. It lists everyone with an activation today but no check-in, flagged "on leave" or "no check-in".</p></div>
+            <div class="step-text"><p>Open <b>Today &rarr; Attendance</b>, choose the <b>Absence</b> tab, and pick today. It lists everyone with an activation today but no check-in, flagged "on leave" or "no check-in".</p></div>
             <figure><img src="assets/portal-admin/13-staff-absence.webp" alt="Absence screen for the selected date" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Sales Update Status</b> under <b>Sales Overview</b> in the sidebar and pick a date to see each outlet/promoter's status: <b>Completed</b> (sales submitted), <b>Pending</b> (not yet, but still could be), or <b>Absent</b> (no check-in). Export the list to Excel from the same screen.</p></div>
+            <div class="step-text"><p>Open <b>Sales Update Status</b> under <b>Today</b> in the sidebar and pick a date to see each outlet/promoter's status: <b>Completed</b> (sales submitted), <b>Pending</b> (not yet, but still could be), or <b>Absent</b> (no check-in). Export the list to Excel from the same screen.</p></div>
             <figure><img src="assets/portal-admin/22-sales-status.webp" alt="Sales Update Status showing Completed, Pending and Absent badges per outlet and promoter" /></figure>
           </li>
         </ol>
@@ -293,7 +293,7 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Update Sales</b> in the Sales section. Pick the <b>Outlet</b> and the <b>Date</b> &mdash; the <b>Promoter</b> and <b>Activation</b> are worked out for you from the activation that ran at that outlet on that day, and shown above the grid as soon as you pick the outlet or change the date (if no activation ran there that day, you'll see a "not found" message). <b>Refresh</b> reloads it.</p></div>
+            <div class="step-text"><p>Open <b>Update Sales</b> under <b>Campaigns</b>. Pick the <b>Outlet</b> and the <b>Date</b> &mdash; the <b>Promoter</b> and <b>Activation</b> are worked out for you from the activation that ran at that outlet on that day, and shown above the grid as soon as you pick the outlet or change the date (if no activation ran there that day, you'll see a "not found" message). <b>Refresh</b> reloads it.</p></div>
             <figure><img src="assets/portal-admin/24-sales-update.webp" alt="Update Sales screen with outlet and date dropdowns" /></figure>
           </li>
           <li>
@@ -320,7 +320,7 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p>Open <b>Staff &rarr; Leave Requests</b>. Each row shows the employee, dates, reason and status. <b>Approve</b> or <b>decline</b> inline, "approved by" defaults to the requester's "reports to" person. The promoter sees the decision in the app.</p></div>
+            <div class="step-text"><p>Open <b>People &rarr; Leave Requests</b>. Each row shows the employee, dates, reason and status. <b>Approve</b> or <b>decline</b> inline, "approved by" defaults to the requester's "reports to" person. The promoter sees the decision in the app.</p></div>
             <figure><img src="assets/portal-admin/14-leave-requests.webp" alt="Leave Requests screen with approve and decline actions" /></figure>
           </li>
         </ol>
@@ -332,15 +332,15 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p><b>Tracking &rarr; Seller Live Locations</b>, a live map of everyone checked in, refreshing on its own, with a list of who and since when. Click a row in the list to highlight that person's marker on the map; click again to clear it.</p></div>
+            <div class="step-text"><p><b>Today &rarr; Live Locations</b>, a live map of everyone checked in, refreshing on its own, with a list of who and since when. Click a row in the list to highlight that person's marker on the map; click again to clear it.</p></div>
             <figure><img src="assets/portal-admin/26-tracking-live.webp" alt="Seller Live Locations map for the admin" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Tracking &rarr; Promoter</b> (or Supervisor), the GPS breadcrumb trail for one person on one date, drawn as a coloured path on a map (bigger markers at the start and last-seen point) above the coordinate-and-time table. Set the Promoter filter to <b>All Promoters</b> to see everyone's trail at once, each in their own colour; click a row in the table to bring that person's trail to full strength and zoom to just their points.</p></div>
+            <div class="step-text"><p><b>Reports &rarr; Tracking History &rarr; Promoter</b> (or Supervisor), the GPS breadcrumb trail for one person on one date, drawn as a coloured path on a map (bigger markers at the start and last-seen point) above the coordinate-and-time table. Set the Promoter filter to <b>All Promoters</b> to see everyone's trail at once, each in their own colour; click a row in the table to bring that person's trail to full strength and zoom to just their points.</p></div>
             <figure><img src="assets/portal-admin/27-tracking-promoter.webp" alt="Promoter tracking map with colour-coded GPS trails and the breadcrumb table below" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Supervisors &rarr; Attendance</b>, the supervisors' own check-in and check-out log by outlet and date.</p></div>
+            <div class="step-text"><p><b>People &rarr; Supervisors &rarr; Attendance</b>, the supervisors' own check-in and check-out log by outlet and date.</p></div>
           </li>
         </ol>
       </div>
@@ -351,23 +351,23 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text"><p><b>Sales Overview &rarr; SKU Wise Sales</b>, the raw per-item, per-promoter log (each row's <b>Amount</b> is sold quantity &times; unit price), and <b>Sales Overview &rarr; Outlet Wise</b>, the per-outlet rollup for a date range &mdash; footfall, approach, conversion %, total sale, <b>target</b> and <b>achievement %</b>, plus a column for each of the campaign's custom sales fields. Both are filterable and exportable.</p></div>
+            <div class="step-text"><p><b>Reports &rarr; Sales Reports &rarr; SKU Wise</b>, the raw per-item, per-promoter log (each row's <b>Amount</b> is sold quantity &times; unit price), and <b>Reports &rarr; Sales Reports &rarr; Outlet Wise</b>, the per-outlet rollup for a date range &mdash; footfall, approach, conversion %, total sale, <b>target</b> and <b>achievement %</b>, plus a column for each of the campaign's custom sales fields. Both are filterable and exportable.</p></div>
             <figure><img src="assets/portal-admin/23-sales-outlet-wise.webp" alt="Outlet Wise sales rollup with footfall, conversion, target and achievement percentage" /></figure>
           </li>
           <li>
-            <div class="step-text"><p>Open <b>Sales &rarr; Starting Stock</b> to see the stock each promoter started the day with &mdash; date, outlet, promoter, product, unit price and <b>Start Qty</b>. It is the opening stock from their first stock update after checking in, so a mid-day restock does not change it. Only days from the release onward are listed. Filter by outlet and date, and download with <b>Excel</b>.</p></div>
+            <div class="step-text"><p>Open <b>Reports &rarr; Sales Reports &rarr; Starting Stock</b> to see the stock each promoter started the day with &mdash; date, outlet, promoter, product, unit price and <b>Start Qty</b>. It is the opening stock from their first stock update after checking in, so a mid-day restock does not change it. Only days from the release onward are listed. Filter by outlet and date, and download with <b>Excel</b>.</p></div>
           </li>
           <li>
-            <div class="step-text"><p><b>Reports &rarr; Overall SKU Wise</b> / <b>Brand Wise</b>, campaign totals by product or by outlet-and-brand, with grand totals and Excel export.</p></div>
+            <div class="step-text"><p><b>Reports &rarr; Overall Reports</b>, with the <b>Overall SKU Wise</b> and <b>Brand Wise</b> tabs, campaign totals by product or by outlet-and-brand, with grand totals and Excel export.</p></div>
             <figure><img src="assets/portal-admin/28-reports-sku-wise.webp" alt="Overall SKU Wise report with totals per product" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Staff &rarr; Monthly Attendance</b>, a per-promoter day grid for a chosen month (present / absent / leave / not-started), exportable to CSV.</p></div>
+            <div class="step-text"><p><b>Today &rarr; Attendance &rarr; Monthly</b>, a per-promoter day grid for a chosen month (present / absent / leave / not-started), exportable to CSV.</p></div>
             <figure><img src="assets/portal-admin/30-reports-monthly-attendance.webp" alt="Monthly attendance grid, one column per day" /></figure>
           </li>
           <li>
             <div class="step-text">
-              <p><b>Staff &rarr; Profiles</b>, a performance evaluation for one promoter or supervisor. Search the <b>Staff Member</b> picker by name — it shows each person's type alongside their name so a long roster stays easy to scan. You get their full HR profile (contact, city, reports-to, emergency and bank details), which activation(s) they're on today (or their most recent one), performance and attendance %, most-sold products, a sales-and-customers-approached chart across their activation history, and a table of every past activation.</p>
+              <p><b>People &rarr; Staff &rarr; Profiles</b>, a performance evaluation for one promoter or supervisor. Search the <b>Staff Member</b> picker by name — it shows each person's type alongside their name so a long roster stays easy to scan. You get their full HR profile (contact, city, reports-to, emergency and bank details), which activation(s) they're on today (or their most recent one), performance and attendance %, most-sold products, a sales-and-customers-approached chart across their activation history, and a table of every past activation.</p>
               <div class="tip"><b>Note:</b> the screenshot below still shows the previous, simpler version of this screen — a re-shoot is a follow-up.</div>
             </div>
             <figure><img src="assets/portal-admin/15-staff-profiles.webp" alt="Staff Profiles performance evaluation for a promoter" /></figure>
@@ -381,16 +381,16 @@
       <div class="task-body">
         <ol class="steps">
           <li>
-            <div class="step-text">              <p><b>Users</b>, create portal logins (username, password, display name, email, role) — the password is required on create; editing a user later hides it behind a <b>Reset Password</b> button. Campaign access is <b>not</b> set here; it is granted per campaign (task 8) or by the supervisor auto-grant.</p></div>
+            <div class="step-text">              <p><b>Admin &rarr; Access &rarr; Users</b>, create portal logins (username, password, display name, email, role) — the password is required on create; editing a user later hides it behind a <b>Reset Password</b> button. Campaign access is <b>not</b> set here; it is granted per campaign (task 8) or by the supervisor auto-grant.</p></div>
             <figure><img src="assets/portal-admin/31-users.webp" alt="Users administration screen" /></figure>
           </li>
           <li>
-            <div class="step-text"><p><b>Roles</b>, view the four roles (Super Admin, Campaign Admin, Supervisor, Sponsor) and what each can do. Read-only enforcement is on the server; this screen is for reference.</p></div>
+            <div class="step-text"><p><b>Admin &rarr; Access &rarr; Roles</b>, view the four roles (Super Admin, Campaign Admin, Supervisor, Sponsor) and what each can do. Read-only enforcement is on the server; this screen is for reference.</p></div>
             <figure><img src="assets/portal-admin/32-roles.webp" alt="Roles configuration screen" /></figure>
           </li>
           <li>
             <div class="step-text">
-              <p><b>License Usage</b>, seat usage per campaign across the four groups (promoters, supervisors, admins, sponsors) against each cap, with weekly and monthly history and an alert as a campaign nears its limit. Limits are advisory: going over never blocks an assignment. <b>Edit caps</b> is Super Admin only.</p>
+              <p><b>Admin &rarr; License Usage</b>, seat usage per campaign across the four groups (promoters, supervisors, admins, sponsors) against each cap, with weekly and monthly history and an alert as a campaign nears its limit. Limits are advisory: going over never blocks an assignment. <b>Edit caps</b> is Super Admin only.</p>
             </div>
             <figure><img src="assets/portal-admin/33-license.webp" alt="License Usage screen with seat usage per group and an all-campaigns table" /></figure>
           </li>

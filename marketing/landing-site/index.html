@@ -595,29 +595,33 @@
               </div>
             </div>
             <div class="pm-content">
+              <div class="pm-panel" style="margin-bottom:8px">
+                <div class="pt">Needs attention</div>
+                <div style="margin-top:6px">
+                  <div class="pm-feed"><span class="fd" style="background:var(--alert)"></span><div><div class="ft"><b>2 promoters</b> should be checked in but are not</div></div></div>
+                  <div class="pm-feed"><span class="fd" style="background:var(--pending)"></span><div><div class="ft"><b>1 outlet</b> checked in with no sales update</div></div></div>
+                  <div class="pm-feed"><span class="fd" style="background:var(--pending)"></span><div><div class="ft"><b>1 product</b> flagged for reorder</div></div></div>
+                </div>
+              </div>
               <div class="pm-stat-grid">
-                <div class="pm-stat"><div class="l">Active Outlets Today</div><div class="n">24</div><div class="d up">Up 3 vs yesterday</div></div>
-                <div class="pm-stat"><div class="l">Sales Today</div><div class="n">LKR 1.94M</div><div class="d up">Up 8.4%</div></div>
-                <div class="pm-stat"><div class="l">Outlets Yesterday</div><div class="n">21</div><div class="d down">Down 1</div></div>
-                <div class="pm-stat"><div class="l">Sales Yesterday</div><div class="n">LKR 1.79M</div><div class="d up">Up 2.1%</div></div>
+                <div class="pm-stat"><div class="l">Sales today</div><div class="n">LKR 1.94M</div><div class="d up">Up 8.4% vs yesterday</div></div>
+                <div class="pm-stat"><div class="l">Active outlets</div><div class="n">22 of 24</div><div class="d down">2 planned, no activity yet</div></div>
+                <div class="pm-stat"><div class="l">Conversion</div><div class="n">31%</div><div class="d up">Up vs yesterday</div></div>
+                <div class="pm-stat"><div class="l">Customers approached</div><div class="n">1,240</div><div class="d up">Up vs yesterday</div></div>
               </div>
               <div class="pm-dash">
                 <div class="pm-panel">
-                  <div class="pt">Sales this week</div><div class="ps">Mon 1 Sep to Fri 5 Sep 2026</div>
-                  <div class="pm-bars">
-                    <div class="col"><div class="bar" style="height:48px"></div><div class="day">Mon</div></div>
-                    <div class="col"><div class="bar" style="height:53px"></div><div class="day">Tue</div></div>
-                    <div class="col"><div class="bar" style="height:66px"></div><div class="day">Wed</div></div>
-                    <div class="col"><div class="bar" style="height:68px"></div><div class="day">Thu</div></div>
-                    <div class="col"><div class="bar today" style="height:62px"></div><div class="day">Fri</div></div>
+                  <div class="pt">Last sales day</div><div class="ps">Latest earlier day with sales</div>
+                  <div style="margin-top:8px">
+                    <div class="pm-feed"><span class="fd" style="background:var(--success)"></span><div><div class="ft"><b>LKR 1.79M</b> sales across 21 outlets</div></div></div>
+                    <div class="pm-feed"><span class="fd" style="background:var(--success)"></span><div><div class="ft"><b>Campaign progress:</b> day 5 of 14</div></div></div>
                   </div>
                 </div>
                 <div class="pm-panel">
-                  <div class="pt">Recent activity</div>
+                  <div class="pt">Best and lagging outlets</div><div class="ps">Sample data</div>
                   <div style="margin-top:8px">
-                    <div class="pm-feed"><span class="fd" style="background:var(--success)"></span><div><div class="ft"><b>Sanduni Kumari</b> checked in at Nawala Retail Outlet</div><div class="fm">9:49 AM</div></div></div>
-                    <div class="pm-feed"><span class="fd" style="background:var(--pending)"></span><div><div class="ft"><b>Tea Tree 320ml</b> flagged for reorder at Nawala</div><div class="fm">11:20 AM</div></div></div>
-                    <div class="pm-feed"><span class="fd" style="background:var(--alert)"></span><div><div class="ft"><b>Nadeesha Silva</b> missed sales submission</div><div class="fm">Yesterday</div></div></div>
+                    <div class="pm-feed"><span class="fd" style="background:var(--success)"></span><div><div class="ft"><b>Nawala Retail Outlet</b> leads on sales</div></div></div>
+                    <div class="pm-feed"><span class="fd" style="background:var(--alert)"></span><div><div class="ft"><b>Kandy City Centre</b> has the lowest sales</div></div></div>
                   </div>
                 </div>
               </div>
@@ -993,7 +997,7 @@
         <div class="mini-card"><span class="m">Demand you could not fill</span><h3>Other interested customers</h3><p>A count of shoppers who wanted a product that was out of stock. The sales you missed, in numbers.</p></div>
         <div class="mini-card"><span class="m">Why a day moved</span><h3>Your own fields</h3><p>Your own notes for each campaign, such as weather, competitor promotions, samples given or damaged units.</p></div>
         <div class="mini-card"><span class="m">Restock signals</span><h3>Re-order flags</h3><p>Raised by the promoter the moment stock runs low, and gathered each day for the supply team.</p></div>
-        <div class="mini-card"><span class="m">Where the day went</span><h3>Location trail</h3><p>A record of where each promoter was during the shift. Proof they were where the plan said.</p></div>
+        <div class="mini-card"><span class="m">Where the day went</span><h3>Location trail</h3><p>A GPS trail of where each promoter was while the app was open during the shift, for review.</p></div>
       </div>
     </div>
   </section>
@@ -1018,7 +1022,7 @@
         <ul class="sponsor-list">
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
-            <span><strong>Sponsor dashboard</strong> shows today's live outlets, sales, footfall, top products and a live map</span>
+            <span><strong>Sponsor Overview</strong> shows today's sales with change vs yesterday, active outlets, conversion, campaign progress and top-performing outlets, with no staff or location data</span>
           </li>
           <li>
             <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 9h12M9 3v12" stroke="currentColor" stroke-width="1.5"/></svg>

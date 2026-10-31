@@ -11,8 +11,21 @@ import { s } from "../../schemas";
 const router = Router();
 router.use(requireRole("adm"));
 
-router.get("/users", asyncHandler(async (_req, res) => {
-  const rows = await prisma.user.findMany({ include: { role: true } });
+router.get("/users", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.user.findMany({
+    where: search
+      ? {
+          OR: [
+            { username: { contains: search, mode: "insensitive" } },
+            { displayName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { role: { label: { contains: search, mode: "insensitive" } } },
+          ],
+        }
+      : {},
+    include: { role: true },
+  });
   res.json(okList(rows, rows.length)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
@@ -59,8 +72,19 @@ router.delete("/users/:id/campaign-access/:campaignId", asyncHandler(async (req,
   res.json(ok({ userId: grant.userId, campaignId: grant.campaignId, scopeType: grant.scopeType, outletIds: grant.outletIds }));
 }));
 
-router.get("/roles", asyncHandler(async (_req, res) => {
-  const rows = await prisma.role.findMany();
+router.get("/roles", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.role.findMany({
+    where: search
+      ? {
+          OR: [
+            { id: { contains: search, mode: "insensitive" } },
+            { label: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {},
+  });
   res.json(okList(rows, rows.length));
 }));
 

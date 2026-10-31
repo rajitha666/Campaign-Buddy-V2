@@ -44,10 +44,17 @@ async function syncTesterField(campaignId: string, enabled: boolean) {
 router.get(
   "/campaigns",
   asyncHandler(async (req, res) => {
-    const where =
+    const search = String(req.query.search || "").trim();
+    const where: any =
       req.user!.roleId === "adm"
         ? { deletedAt: null }
         : { deletedAt: null, accessGrants: { some: { userId: req.user!.sub } } };
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { client: { clientName: { contains: search, mode: "insensitive" } } },
+      ];
+    }
     const campaigns = await prisma.campaign.findMany({ where, include: { client: true } });
 
     // Auto-sync status on read (§5.8) — skip campaigns with a manual override,

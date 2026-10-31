@@ -46,7 +46,7 @@ Tokens are the budget. The delivery lead gives you a **review brief** (`node scr
 - If you couldn't measure (e.g. contrast without the token values), say "to check" under **Not checked**; don't report an unmeasured defect.
 
 ## Two modes
-- **Spec mode (before build):** return a compact UX spec — the user's goal, flow in numbered steps, the layout hierarchy (a text wireframe is fine), each state, copy for every string, accessibility notes, and which existing components to reuse. List the decisions only the owner can make.
+- **Spec mode (before build):** return a compact UX spec — the user's goal, flow in numbered steps, the layout hierarchy (a text wireframe is fine), each state, copy for every string, accessibility notes, and which existing components to reuse. List the decisions only the owner can make. **Verify before you cite:** every existing page, route, endpoint, component, table or column you reference must be confirmed in the code (Grep/Read) first; anything that does not exist yet must be marked **NEW**. Never cite from memory.
 - **Review mode (on screenshots/diff):** return the verdict contract. Small and clearly fine → two lines.
 
 ## Output

@@ -281,11 +281,14 @@ export const RESOURCES = {
     deleteItem: ({ id }) => outletsApi.remove(id),
     restoreItem: ({ id }) => outletsApi.restore(id),
     formFields: [
+      { type: 'section', label: 'Essentials' },
       { key: 'outletNo', label: 'Outlet No', type: 'text', required: true },
       { key: 'name', label: 'Outlet Name', type: 'text', required: true },
-      { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'address', label: 'Address', type: 'textarea', required: true },
       { key: 'cityId', label: 'City', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(citiesApi.list) },
+
+      { type: 'section', label: 'Contact and location', collapsible: true },
+      { key: 'contactPerson', label: 'Contact Person', type: 'text' },
       { key: 'phone', label: 'Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'mobile', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       { key: 'fax', label: 'Fax', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d' },
@@ -387,11 +390,14 @@ export const RESOURCES = {
     deleteMessage: 'Everything inside it (activations, assignments, sales) is hidden with it. You can undo this for a few seconds afterwards.',
     deleteConfirmLabel: 'Remove campaign',
     formFields: [
+      { type: 'section', label: 'Essentials' },
       { key: 'campaignNo', label: 'Campaign No', type: 'text', required: true, placeholder: 'CMP-0234' },
       { key: 'name', label: 'Campaign Name', type: 'text', required: true },
       { key: 'clientId', label: 'Client', type: 'searchable-select', required: true, optionsLoader: () => optionsFrom(clientsApi.list, 'clientName') },
-      { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'dateRange', label: 'Date range', type: 'daterange', required: true },
+
+      { type: 'section', label: 'Description and options', collapsible: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'shiftStart', label: 'Shift start', type: 'time', defaultValue: '09:00', hint: 'Default check-in time for every activation in this campaign — used for late/on-time flagging.' },
       { key: 'shiftEnd', label: 'Shift end', type: 'time', defaultValue: '18:00', hint: 'Default check-out time — used for the end-of-day auto check-out.' },
       { key: 'promoterLabel', label: 'Designation Label', type: 'text', placeholder: 'Promoter', hint: 'Swaps "Promoter" for this word everywhere in the portal for this campaign, e.g. "Beauty Advisor". Leave blank to keep "Promoter".' },
@@ -524,16 +530,20 @@ export const RESOURCES = {
     // Fixed HR field set for v3 (schema / Changelog v3 "Staff HR fields"). The
     // backend whitelists these columns; extras are ignored.
     formFields: [
-      { type: 'section', label: 'Basic Info' },
+      { type: 'section', label: 'Essentials' },
       { key: 'employeeId', label: 'Employee ID', type: 'text', required: true, placeholder: 'e.g. EMP-0042' },
       { key: 'fullName', label: 'Full Name', type: 'text', required: true },
-      { key: 'displayName', label: 'Display Name (App Name)', type: 'text', required: true },
+      { key: 'displayName', label: 'Display Name (App Name)', type: 'text', defaultFrom: 'fullName', required: true },
       { key: 'userType', label: 'User Type', type: 'radio', required: true, options: [{ value: 'promoter', label: 'Promoter' }, { value: 'supervisor', label: 'Supervisor' }] },
       { key: 'status', label: 'Status', type: 'radio', required: true, options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
+      { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
+      { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces' },
+      { key: 'password', label: 'Password', type: 'text', required: true, resettable: true, placeholder: 'Set initial password' },
+
+      { type: 'section', label: 'Personal details', collapsible: true },
       { key: 'gender', label: 'Gender', type: 'radio', options: [{ value: 'female', label: 'Female' }, { value: 'male', label: 'Male' }] },
       { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
       { key: 'nic', label: 'NIC', type: 'text', placeholder: 'National ID number', validate: validators.nic() },
-      { key: 'phone', label: 'Mobile', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
       // Promoter's city of residence — HR profile data, independent of any outlet
       // or activation. See issue #5: it is NOT derived from the assigned outlet.
       { key: 'cityId', label: 'Home City', type: 'searchable-select', optionsLoader: () => optionsFrom(citiesApi.list) },
@@ -541,15 +551,11 @@ export const RESOURCES = {
       { key: 'currentAddress', label: 'Current Address', type: 'textarea' },
       { key: 'image', label: 'Profile Photo', type: 'upload', previewKey: 'profilePictureUrl' },
 
-      { type: 'section', label: 'Login' },
-      { key: 'mobileUsername', label: 'Mobile App Username', type: 'text', required: true, placeholder: 'lowercase, no spaces' },
-      { key: 'password', label: 'Password', type: 'text', required: true, resettable: true, placeholder: 'Set initial password' },
-
-      { type: 'section', label: 'Emergency Contact' },
+      { type: 'section', label: 'Emergency contact', collapsible: true },
       { key: 'emergencyContactName', label: 'Contact Name', type: 'text' },
       { key: 'emergencyContactPhone', label: 'Contact Phone', type: 'tel', pattern: '\\+?\\d[\\d\\s()\\-]{7,14}\\d', placeholder: '0771234567', validate: (v) => validators.mobile()(normalizePhone(v)) },
 
-      { type: 'section', label: 'Bank Account' },
+      { type: 'section', label: 'Bank details', collapsible: true },
       { key: 'bankAccountName', label: 'Account Name', type: 'text' },
       { key: 'bankName', label: 'Bank', type: 'text' },
       { key: 'bankAccountNumber', label: 'Account Number', type: 'text' },
@@ -660,17 +666,6 @@ export const RESOURCES = {
       { key: 'checkOutAt', label: 'Check-out', render: (r) => fmtTime(r.checkOutAt) },
     ],
     fetchList: ({ campaignId, query }) => attendanceApi.list(campaignId, { ...query, role: 'supervisor' }),
-  },
-
-  promoterListReadOnly: {
-    title: 'Promoter List', subtitle: 'Read-only staff directory.', noAdd: true,
-    columns: [
-      { key: 'displayName', label: 'Name', render: (r) => <Avatar name={r.displayName || r.fullName} /> },
-      { key: 'userType', label: 'Type', render: (r) => <Badge type="info">{r.userType}</Badge> },
-      { key: 'email', label: 'Email' }, { key: 'phone', label: 'Mobile' },
-    ],
-    actions: ['view'],
-    fetchList: ({ query }) => staffApi.search(query?.search || '', query),
   },
 
   skuSales: {

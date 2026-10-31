@@ -58,6 +58,7 @@ Scope rule for the agent-building chat: fix only the team and its tooling; a pro
 | `marketing/CLAIMS.md` | Marketing writer | the strict claims ledger (section rows seeded by `claims-seed.mjs`) |
 | `docs/agent-team/charter-amendment-draft.md` | owner | exact text + follow-up code for the two proposed block categories (`architecture_risk`, `ux_accessibility`); not yet applied |
 | `docs/agent-team/autonomy.yml` | owner | gate settings, risky/major definitions, token-guard thresholds, review budgets |
+| `docs/agent-team/evals/` | owner | planted-defect cases proving each reviewer catches what it should (run after any prompt or model change) |
 | `docs/physical-device-tests.md` | QA verifier | device-only checks for pre-release testing |
 
 ## Efficiency toolkit (zero-token tools in `scripts/agent/`)

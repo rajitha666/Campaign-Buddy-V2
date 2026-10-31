@@ -30,6 +30,8 @@ const SHOTS = [
 
   { persona: 'supervisor', route: '/sales/sku-wise', outfile: 'assets/portal-supervisor/07-sales-sku-wise.webp' },
 
+  { persona: 'admin', route: '/dashboard', outfile: 'assets/portal-admin/01-dashboard.webp' },
+  { persona: 'supervisor', route: '/dashboard', outfile: 'assets/portal-supervisor/01-dashboard.webp' },
   { persona: 'sponsor', route: '/dashboard', outfile: 'assets/portal-sponsor/01-dashboard.webp' },
   { persona: 'sponsor', route: '/sponsor/sales', outfile: 'assets/portal-sponsor/03-sponsor-sales.webp' },
   { persona: 'sponsor', route: '/reports/client-brand-wise', outfile: 'assets/portal-sponsor/06-reports-brand-wise.webp' },

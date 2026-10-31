@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { documentTitle } from '../lib/navLabel';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import PageTabs from './PageTabs';
 
 const STORAGE_KEY = 'cb_nav_collapsed';
 
@@ -78,7 +79,7 @@ export default function AppShell() {
       />
       <div className="main">
         <Topbar onOpenMobileNav={openMobileNav} />
-        <main className="content" id="main-content" tabIndex={-1}><Outlet /></main>
+        <main className="content" id="main-content" tabIndex={-1}><PageTabs /><Outlet /></main>
       </div>
     </div>
   );
