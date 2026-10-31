@@ -87,6 +87,7 @@ export const NAV = [
     { path: '/tracking/supervisor', label: 'Supervisor Tracking', icon: 'tracking', roles: ['sponsor'] },
   ]},
   { section: 'Admin', roles: ['admin'], items: [
+    { path: '/recently-deleted', label: 'Recently deleted', icon: 'reports', roles: ['admin'] },
     { label: 'Access', icon: 'users', roles: ['admin'], children: [
       { path: '/users', label: 'Users' },
       { path: '/roles', label: 'Roles' },

@@ -754,3 +754,11 @@ Behaviour:
 - Codes are unique among **live** rows only for `outletNo`, `campaignNo`, `[brandId, sku]` and active staff `phone` (partial indexes). If a code was re-used while the row was deleted, restore returns `409 CODE_IN_USE` (staff: `409 DUPLICATE`, field `phone`). `employeeId`, `mobileUsername` and `[campaignId, key]` are unique including deleted rows, so they cannot collide.
 - Staff: `reactivate` turns mobile login back on and the member counts towards licence seats again. "Deleted" and "manually set inactive" are the same state, so it works for both.
 - Writes the mobile app sent while an activation was deleted were rejected at the time and are not replayed by a restore.
+
+## Recently deleted and the deletion trail (#113)
+
+- `deletion_events` (append-only): one row per successful soft delete / restore / staff reactivate (`entityType`, `entityId`, `campaignId?`, `action`, `userId`, `at`), written by the admin router for every route in the "Restore routes" table above. It is the only record of *who*; the entity tables hold the current state. Deleting a campaign access grant is not recorded yet (#138).
+- `GET /admin/v1/deleted?entity=&q=&page=&pageSize=` — **[adm/usr]** — soft-deleted clients, brands, products, cities, outlets, distributor points, staff (inactive) and campaigns. Campaign rows are limited to campaigns the caller has access to (adm sees all).
+- `GET /admin/v1/campaigns/:campaignId/deleted?...` — **[adm/usr]**, `requireCampaignAccess` + outlet scope — removed campaign products, activations, activation products, supervisor routes/tasks, custom sales fields and archived sales records.
+- Each row: `{ entity, id, label, context, campaignId, deletedAt, deletedBy: {id, displayName} | null, canRestore, blockedBy: {code: "PARENT_DELETED", parent} | null, restore: {method, path} }`. Newest first; `deletedBy` is null for rows deleted before this feature. Staff rows carry only name and employee ID, never personal data. Supervisors and sponsors get 403.
+- **Retention:** soft-deleted business records are kept; nothing is purged. Sales, attendance, sales-field and tracking history is never hard-deleted. Staff personal data is handled by redaction after a retention period (#137), not by deleting rows. See ADR-0006.

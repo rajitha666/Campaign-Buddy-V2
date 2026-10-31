@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { userAuth } from "../../middleware/userAuth";
+import { recordDeletionEvents } from "../../middleware/deletionEvents";
+import deletedRoutes from "./deleted.routes";
 import authRoutes from "./auth.routes";
 import catalogRoutes from "./catalog.routes";
 import staffRoutes from "./staff.routes";
@@ -22,6 +24,8 @@ const router = Router();
 router.use(authRoutes); // /auth/login is public; /auth/logout gated inline via userAuth
 
 router.use(userAuth); // everything below requires a valid User token
+router.use(recordDeletionEvents); // #113: who deleted / restored what
+router.use(deletedRoutes);        // #113: GET /deleted, GET /campaigns/:id/deleted
 router.use(catalogRoutes);
 router.use(staffRoutes);
 router.use(campaignsRoutes);      // includes GET /campaigns (no :campaignId prefix)

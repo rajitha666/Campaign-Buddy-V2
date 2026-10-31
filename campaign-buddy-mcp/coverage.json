@@ -108,6 +108,12 @@
     "POST /staff/:id/reactivate": {
       "excluded": "Restores (undo of deletes) are not exposed to an LLM."
     },
+    "GET /deleted": {
+      "excluded": "Recently-deleted screen (who deleted what) is an admin UI feature; not exposed to an LLM."
+    },
+    "GET /campaigns/:campaignId/deleted": {
+      "excluded": "Recently-deleted screen (who deleted what) is an admin UI feature; not exposed to an LLM."
+    },
     "POST /campaigns/:campaignId/admins/:userId/restore": {
       "excluded": "Restores (undo of deletes) are not exposed to an LLM."
     },

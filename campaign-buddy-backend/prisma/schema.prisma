@@ -504,6 +504,23 @@ model Activation {
   @@map("activations")
 }
 
+// #113: append-only trail of soft deletes and restores (who, when). The entity tables keep
+// the current state (deletedAt / archivedAt / staff status); this answers "deleted by".
+// No FKs on purpose: it must outlive any row it names.
+model DeletionEvent {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  campaignId String?
+  action     String // "delete" | "restore"
+  userId     String
+  at         DateTime @default(now())
+
+  @@index([entityType, entityId, at(sort: Desc)])
+  @@index([campaignId, at(sort: Desc)])
+  @@map("deletion_events")
+}
+
 model ActivationItem {
   id             String   @id @default(uuid())
   activationId   String
