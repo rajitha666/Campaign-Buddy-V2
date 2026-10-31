@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { ok, okList, validationError } from "../../utils/apiResponse";
+import { ok, okList, notFound, validationError } from "../../utils/apiResponse";
 import { requireRole } from "../../middleware/userAuth";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
@@ -11,8 +11,21 @@ import { s } from "../../schemas";
 const router = Router();
 router.use(requireRole("adm"));
 
-router.get("/users", asyncHandler(async (_req, res) => {
-  const rows = await prisma.user.findMany({ include: { role: true } });
+router.get("/users", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.user.findMany({
+    where: search
+      ? {
+          OR: [
+            { username: { contains: search, mode: "insensitive" } },
+            { displayName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { role: { label: { contains: search, mode: "insensitive" } } },
+          ],
+        }
+      : {},
+    include: { role: true },
+  });
   res.json(okList(rows, rows.length)); // passwordHash omitted globally (src/utils/prisma.ts)
 }));
 
@@ -51,12 +64,27 @@ router.post("/users/:id/campaign-access", validate({ body: s.campaignAccessGrant
 }));
 
 router.delete("/users/:id/campaign-access/:campaignId", asyncHandler(async (req, res) => {
-  await prisma.campaignAccessGrant.delete({ where: { userId_campaignId: { userId: req.params.id, campaignId: req.params.campaignId } } });
-  res.status(204).send();
+  const where = { userId_campaignId: { userId: req.params.id, campaignId: req.params.campaignId } };
+  const grant = await prisma.campaignAccessGrant.findUnique({ where });
+  if (!grant) throw notFound("Access grant");
+  await prisma.campaignAccessGrant.delete({ where });
+  // #111: return the removed grant so the client can re-create it (Undo) via POST /users/:id/campaign-access.
+  res.json(ok({ userId: grant.userId, campaignId: grant.campaignId, scopeType: grant.scopeType, outletIds: grant.outletIds }));
 }));
 
-router.get("/roles", asyncHandler(async (_req, res) => {
-  const rows = await prisma.role.findMany();
+router.get("/roles", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const rows = await prisma.role.findMany({
+    where: search
+      ? {
+          OR: [
+            { id: { contains: search, mode: "insensitive" } },
+            { label: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {},
+  });
   res.json(okList(rows, rows.length));
 }));
 

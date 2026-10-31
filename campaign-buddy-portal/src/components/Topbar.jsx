@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NAV } from '../config/nav';
+import { findLabel } from '../lib/navLabel';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ReportIssueModal from './ReportIssueModal';
@@ -7,21 +8,6 @@ import { ICONS } from './Icons';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { useFavorites } from '../context/PreferencesContext';
 import { navEntriesFor } from '../lib/favorites';
-
-function findLabel(pathname) {
-  if (pathname === '/personalization') return { title: 'Personalization', crumb: 'Account' };
-  for (const sec of NAV) {
-    for (const item of sec.items) {
-      if (item.path === pathname) return { title: item.label, crumb: sec.section || 'Home' };
-      if (item.children) {
-        for (const c of item.children) {
-          if (c.path === pathname) return { title: c.label, crumb: item.label };
-        }
-      }
-    }
-  }
-  return { title: 'Campaign Buddy', crumb: 'Portal' };
-}
 
 export default function Topbar({ onOpenMobileNav }) {
   const { user, persona, campaignList, currentCampaignId, currentCampaign, setCurrentCampaignId, logout, designationLabel } = useAuth();
@@ -124,8 +110,10 @@ export default function Topbar({ onOpenMobileNav }) {
           <div
             className="topbar-profile"
             onClick={() => setMenuOpen((o) => !o)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMenuOpen((o) => !o); } }}
             role="button"
             tabIndex={0}
+            aria-label="Account menu"
             aria-haspopup="true"
             aria-expanded={menuOpen}
           >

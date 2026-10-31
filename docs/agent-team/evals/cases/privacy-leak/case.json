@@ -1,0 +1,6 @@
+{
+  "title": "Staff card route returns the whole staff row to any signed-in user",
+  "roles": ["technical-architect"],
+  "planted": "No requireRole or requireCampaignAccess, and the full Staff row (passwordHash, nic, bank account) is returned, so any user can read any promoter's secrets across campaigns",
+  "expect": { "verdict_in": ["Changes required"], "categories_any": ["security_privacy", "tenant_isolation"], "suggest_block": true }
+}

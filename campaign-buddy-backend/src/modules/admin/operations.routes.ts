@@ -2,9 +2,11 @@ import { Router } from "express";
 import { prisma } from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError, ok, okList, notFound, validationError } from "../../utils/apiResponse";
+import { liveActivationItem } from "../../utils/liveItems";
 import { requireRole } from "../../middleware/userAuth";
 import { requireCampaignAccess, outletIdsAllowed, assertOutletAllowed } from "../../middleware/campaignAccess";
-import { dayDate, dayBounds } from "../../utils/dates";
+import { restoreSoftDeleted, clearMarker, parentDeleted } from "./restore";
+import { dayDate, dayBounds, colomboYmd } from "../../utils/dates";
 import { validate } from "../../middleware/validate";
 import { s } from "../../schemas";
 import { computeTotalSales } from "../../utils/salesCalc";
@@ -107,10 +109,17 @@ router.post(
     const { activationItemId, date, openingStock, soldToday, otherInterestedCustomers, reorderFlag } = req.body;
     const item = await prisma.activationItem.findUnique({
       where: { id: activationItemId },
-      include: { activation: true },
+      include: { activation: true, campaignItem: { select: { deletedAt: true } } },
     });
     if (!item || item.activation.campaignId !== req.params.campaignId) throw notFound("Activation product");
     assertOutletAllowed(req, item.activation.outletId);
+    // Head office may still backfill days from before the removal; not days on/after it.
+    const removedAt = [item.deletedAt, item.campaignItem.deletedAt]
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    if (removedAt && dayDate(date).toISOString().slice(0, 10) >= colomboYmd(removedAt)) {
+      throw new ApiError(409, "PRODUCT_REMOVED", "This product was removed from the activation");
+    }
     if (soldToday > openingStock) throw validationError("soldToday cannot exceed openingStock", "soldToday");
 
     try {
@@ -229,7 +238,8 @@ router.get(
     assertOutletAllowed(req, activation.outletId);
     const [activationItems, salesDefs] = await Promise.all([
       prisma.activationItem.findMany({
-        where: { activationId: activation.id },
+        // live products, plus removed ones that already have a record that day (history stays editable)
+        where: { activationId: activation.id, OR: [liveActivationItem, { salesRecords: { some: { date: when } } }] },
         include: {
           campaignItem: { include: { item: true } },
           salesRecords: { where: { date: when } },
@@ -496,6 +506,25 @@ router.delete(
   })
 );
 
+router.post(
+  "/campaigns/:campaignId/supervisor-routes/:id/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Supervisor route",
+      load: async () => {
+        const row = await prisma.supervisorRoute.findUnique({ where: { id: req.params.id } });
+        return row && row.campaignId === req.params.campaignId ? row : null;
+      },
+      guard: async (row) =>
+        parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
+      update: (row) => clearMarker(prisma.supervisorRoute, row.id, "deletedAt", "Supervisor route"),
+    });
+    res.json(ok(out));
+  })
+);
+
 // ---- Supervisor Tasks (QA checklist) — the per-campaign template that
 // supervisors fill in on mobile during outlet visits (see
 // mobile/supervisorChecklist.routes.ts). A `photo` task carries the number of
@@ -694,6 +723,25 @@ router.delete(
     if (!existing || existing.deletedAt || existing.campaignId !== req.params.campaignId) throw notFound("Supervisor task");
     await prisma.supervisorTask.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
     res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
+  })
+);
+
+router.post(
+  "/campaigns/:campaignId/supervisor-tasks/:id/restore",
+  requireCampaignAccess,
+  requireRole("adm", "usr"),
+  asyncHandler(async (req, res) => {
+    const out = await restoreSoftDeleted({
+      entity: "Supervisor task",
+      load: async () => {
+        const row = await prisma.supervisorTask.findUnique({ where: { id: req.params.id } });
+        return row && row.campaignId === req.params.campaignId ? row : null;
+      },
+      guard: async (row) =>
+        parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
+      update: (row) => clearMarker(prisma.supervisorTask, row.id, "deletedAt", "Supervisor task"),
+    });
+    res.json(ok(out));
   })
 );
 

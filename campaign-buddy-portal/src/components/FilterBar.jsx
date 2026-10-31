@@ -44,7 +44,7 @@ export default function FilterBar({ filters, values, onChange, onLoad }) {
         </div>
         );
       })}
-      {onLoad ? <button className="btn btn-primary btn-sm" onClick={onLoad}>Load</button> : null}
+      {onLoad ? <button className="btn btn-primary btn-sm" onClick={onLoad}>Refresh</button> : null}
     </div>
   );
 }

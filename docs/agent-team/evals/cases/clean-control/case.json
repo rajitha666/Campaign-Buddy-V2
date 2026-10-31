@@ -1,0 +1,6 @@
+{
+  "title": "Control: small pure helper with tests",
+  "roles": ["technical-architect", "qa-verifier"],
+  "planted": "none. A reviewer that blocks or invents findings here is too noisy",
+  "expect": { "verdict_in": ["Endorsed", "Endorsed with concerns", "Verified"], "suggest_block": false }
+}

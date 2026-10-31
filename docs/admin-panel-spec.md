@@ -69,26 +69,16 @@ Fixed sidebar, collapsible (chevron at bottom), top header shows "Campaign Buddy
 
 **Campaign Switcher** in the header, next to the "Welcome" dropdown. Options populated from `GET /admin/v1/campaigns` — for `adm` this is every campaign in the system; for every other role, exactly the campaigns that User holds a `CampaignAccessGrant` for. Switching campaigns re-scopes every screen below it (Activations, Attendance, Sales, Stats, Tracking, Reports, Leave Requests, Supervisor Routes) to that campaign. Screens that are NOT campaign-scoped (Clients, Items/Brands catalog, Outlets/Cities, Users/Roles/Staff pool) stay reachable regardless of switcher state.
 
-Sidebar sections, with which roles see them:
+Sidebar sections (source of truth: `campaign-buddy-portal/src/config/nav.js`). Each menu row is one level; related pages are tabs at the top of the page. Old addresses are mapped in `src/config/legacyPaths.js` and redirect.
 
-1. Dashboard — `adm`, `usr`
-2. Clients — `adm`, `usr` (catalog, not campaign-scoped)
-3. Campaigns ▾ — List, Activation — `adm`, `usr` (write); read-only variant reachable by `supervisor`/`sponsor` for their granted campaign(s) only
-4. Outlets ▾ — List, Distributor Point, Cities — `adm`, `usr`
-5. Staff ▾ — List, Attendance, Absence, Monthly Attendance, Leave Requests, Profiles — `adm`, `usr` (write); `supervisor` sees Attendance/Absence read-only, filtered to their granted outlets
-6. Sales ▾ — SKU Wise Sales, **Starting Stock** *(per-day starting stock, `GET …/reports/starting-stock`, #91 — `adm`, `usr`, `supervisor`, `sponsor`, outlet-scoped)*, Sales Update Status, Outlet wise, Update Sales, Custom Fields *(§3.6.5)* — `adm`, `usr` (write); `supervisor`/`sponsor` see read-only, scoped
-7. Supervisors ▾ — Tasks, Task Results *(§3.7.1)*, Attendance, Assign Routes *(now buildable — §3.7.4)* — `adm`, `usr`
-8. Items ▾ — List, Brands, Reorder — `adm`, `usr`
-9. Tracking ▾ — Promoter, Supervisor — `adm`, `usr` (full); `supervisor`/`sponsor` see a **live map** view (backed by `GET /campaigns/:id/tracking/live`) scoped to their granted outlets
-10. Reports ▾ — Overall SKU Wise, Overall Brand Wise — `adm`, `usr`; `sponsor` sees the same reports, same endpoints, automatically scoped to their grant (§3.11)
-11. Users — `adm` only (also where Campaign Access is managed — §3.14)
-12. Promoter list — `adm`, `usr`, `supervisor` (read-only variant)
-13. Reports for Sponsor — same screen as item 10, not a separate section (§3.11)
-14. Activation list — see item 3
-15. ~~Admin Reports ▾ — Monthly Attendance~~ — now under Staff ▾ (item 5)
-18. Archive — Sales Overview, Outlet Attendance, Client: Outlet & SKU Wise, Client: Brand Wise, Promoter List (duplicates of other pages; kept reachable pending review) — `adm`
-16. Roles — `adm` only
-17. Update sales — `adm`, `usr`
+1. Dashboard — `adm`, `usr`, `supervisor`, `sponsor`
+2. **Today** — Live Locations (`adm`, `usr`, `supervisor`, `sponsor`; backed by `GET /campaigns/:id/tracking/live`, scoped to granted outlets); Attendance ▾ Check-ins · Absence · Monthly (`adm`, `usr`); Sales Update Status (`adm`, `usr`); supervisors see Outlet Attendance; sponsors see Attendance and Supervisor Attendance, read-only and outlet-scoped
+3. **Campaigns** — Campaigns ▾ All campaigns · Activations (`adm`, `usr`; supervisors see a read-only My Campaigns for granted campaigns); Products ▾ All products · Brands · Reorder; Update Sales; Custom Sales Fields *(§3.6.5)* — `adm`, `usr`
+4. **Setup** — Clients; Outlets ▾ All outlets · Distributor Points · Cities — `adm`, `usr` (catalog, not campaign-scoped)
+5. **People** — Staff ▾ All staff · Profiles; Leave Requests; Supervisors ▾ Tasks · Task Results *(§3.7.1)* · Attendance · Assign Routes *(§3.7.4)* — `adm`, `usr`; supervisors see My Leave Requests and Task Results (read-only, outlet-scoped)
+6. **Reports** — Sales Reports ▾ SKU Wise · Outlet Wise · Starting Stock *(per-day starting stock, `GET …/reports/starting-stock`, #91)*; Overall Reports ▾ Overall SKU Wise · Brand Wise; Tracking History ▾ Promoter · Supervisor — `adm`, `usr`. Supervisors see SKU Wise Sales, Overall Reports, Starting Stock and Promoter Tracking; sponsors see Client Reports (same endpoints, automatically scoped to their grant — §3.11), Starting Stock, Promoter Tracking and Supervisor Tracking
+7. **Admin** — Access ▾ Users · Roles (`adm` only; Users is also where Campaign Access is managed — §3.14); License Usage; Issue Reports; System Status
+8. Retired in #116: the **Archive** section (Sales Overview → Dashboard; Outlet Attendance → Supervisors ▾ Attendance; Client: Outlet & SKU Wise → Sales Reports ▾ SKU Wise; Client: Brand Wise → Overall Reports ▾ Brand Wise; Promoter List → Staff). Old URLs redirect for admins.
 
 **New nav landing for `supervisor`/`sponsor`:** `/portal/campaigns` — a simplified card-based view since these roles typically only look at 1–3 campaigns. See §7.
 
@@ -97,8 +87,9 @@ Sidebar sections, with which roles see them:
 ## 3. Module-by-Module Detail
 
 ### 3.1 Dashboard (`/dashboard`)
-**Purpose:** At-a-glance KPI summary for today/yesterday and the month.
-**Elements:** a top campaign/client filter select (**redundant once the global Campaign Switcher ships — keep only one**); 4 stat tiles (Active outlets today, Sales today, Active outlets yesterday, Sales yesterday); two chart panels (date-range chart, monthly bar chart); "Monthly summary" section (Total Sales, Total Units Sold, Average Sales, plus supporting cards — verify with a wider viewport, original audit viewport cut this off).
+**Purpose:** Attention-first Overview for the selected campaign (#114). Data comes from one call, `GET /admin/v1/campaigns/:campaignId/dashboard` (see Backend Spec). Campaign selection is the global Campaign Switcher.
+**Elements (admin / supervisor, top to bottom):** campaign progress ("Day x of y"); **Needs attention** strip (ranked rows linking to the fixing page: promoters not checked in after shift start, location older than 12 min, check-ins outside geofence, outlets with check-in but no sales update, reorder flags, previous-day shifts still open, pending leave; "All clear" when empty); 4 headline tiles (Sales today, Active outlets x of y, Conversion, Customers approached) each with a green/red change vs yesterday; **Last sales day** row (latest earlier day with sales, may be several days ago); live map; **Sales trend** (7/30 day toggle, "View as table"); **Best outlets** / **Lagging outlets** (7 days, zero-sales included) and **Unmet demand** panels; **Top 10 products**. A new campaign (no products or activations) shows a **Set up your campaign** checklist instead of zeros.
+**Sponsor variant (`view: "sponsor"`):** no attention strip, no map; panels renamed **Top-performing outlets**, **Outlets with room to grow**, **Customer interest**.
 
 ### 3.2 Clients (`/clients/all`)
 Manage client companies. Backed by `GET/POST /admin/v1/clients`, `PATCH/DELETE /admin/v1/clients/:id`.

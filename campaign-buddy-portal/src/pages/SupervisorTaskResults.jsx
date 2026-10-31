@@ -86,7 +86,7 @@ export default function SupervisorTaskResults() {
       <div className="filter-bar">
         <div className="filter-field"><label>From</label><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
         <div className="filter-field"><label>To</label><input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-        <button className="btn btn-primary btn-sm" onClick={() => load(1)}>Load</button>
+        <button className="btn btn-primary btn-sm" onClick={() => load(1)}>Apply</button>
         <button className="btn-excel" style={{ marginLeft: 'auto' }} onClick={exportCsv}>⬇ Excel</button>
       </div>
 

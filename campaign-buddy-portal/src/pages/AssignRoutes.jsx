@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { campaigns as campaignsApi, outlets as outletsApi, activations as activationsApi, supervisorRoutes as routesApi } from '../lib/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import Drawer from '../components/Drawer';
@@ -13,6 +14,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function AssignRoutes() {
   const { currentCampaignId } = useAuth();
   const { push } = useToast();
+  const confirm = useConfirm();
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [supervisors, setSupervisors] = useState([]);
   const [supervisorId, setSupervisorId] = useState('');
@@ -134,7 +136,13 @@ export default function AssignRoutes() {
   }
 
   async function handleDelete(route) {
-    if (!window.confirm('Delete this route assignment?')) return;
+    const ok = await confirm({
+      title: 'Delete this route assignment?',
+      message: 'The supervisor will no longer be assigned to this route on that day.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await routesApi.remove(currentCampaignId, route.id);
       push('Route deleted.');
@@ -164,7 +172,7 @@ export default function AssignRoutes() {
             </p>
           )}
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={load}>Load</button>
+        <button className="btn btn-secondary btn-sm" onClick={load}>Refresh</button>
       </div>
       {loading ? <Loader /> : error ? <ErrorState message={error} onRetry={load} /> : (
         <div className="panel">
