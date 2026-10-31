@@ -212,6 +212,7 @@ router.get(
 
     // Not date-filtered — this is the staff member's full activation history,
     // independent of the evaluation window used for the stats below.
+    // soft-delete-ok: full activation history, deleted included, by design
     const activations = await prisma.activation.findMany({
       where: { staffId },
       include: { campaign: true, outlet: true },

@@ -117,6 +117,7 @@ router.post(
     const out = await restoreSoftDeleted({
       entity: "Activation",
       load: async () => {
+        // soft-delete-ok: restore flow reads deleted rows by design
         const row = await prisma.activation.findUnique({ where: { id: req.params.activationId } });
         return row && row.campaignId === req.params.campaignId ? row : null;
       },
@@ -124,7 +125,9 @@ router.post(
         assertOutletAllowed(req, row.outletId);
         // An inactive promoter is not a deleted parent: history stays restorable.
         parentDeleted(
+          // soft-delete-ok: restore flow reads deleted rows by design
           ["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })],
+          // soft-delete-ok: restore flow reads deleted rows by design
           ["outlet", await prisma.outlet.findUnique({ where: { id: row.outletId } })]
         );
       },

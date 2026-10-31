@@ -363,6 +363,7 @@ router.get(
     const daysInMonth = to.getUTCDate();
     const outlets = outletScope(req);
 
+    // soft-delete-ok: includes deleted activations so their recorded sales stay in report totals; owner decision pending (#127)
     const activations = await prisma.activation.findMany({
       where: { campaignId: req.params.campaignId, ...(outlets ? { outletId: { in: outlets } } : {}) },
       include: {

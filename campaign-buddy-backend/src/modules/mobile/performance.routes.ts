@@ -17,6 +17,7 @@ router.get(
     const activation = await prisma.activation.findFirst({
       where: { staffId: req.staff!.sub, campaignId, deletedAt: null, ...(outletId ? { outletId } : {}) },
     });
+    // soft-delete-ok: name lookup only; the activation read above is live
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
 
     if (!activation) {

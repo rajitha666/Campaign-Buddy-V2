@@ -144,6 +144,7 @@ router.patch(
     }
     await requireOpenShift(activationItem.activation, capturedAt);
 
+    // soft-delete-ok: unique-key lookup for upsert; an archived row must be found to avoid a duplicate
     const existing = await prisma.salesRecord.findUnique({
       where: { activationItemId_date: { activationItemId, date: today } },
     });

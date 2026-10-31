@@ -90,6 +90,7 @@ router.get(
         orderBy: { date: "asc" },
         ...paged,
       }),
+      // soft-delete-ok: archivedAt is filtered in whereSales above (lint cannot follow the variable)
       prisma.salesRecord.count({ where: whereSales }),
     ]);
     res.json(okList(rows, total));
@@ -223,10 +224,11 @@ router.get(
     // outlet+date-only Update Sales flow lands on the right promoter even when
     // an outlet has run more than one activation over time.
     const activation = activationId
-      ? await prisma.activation.findUnique({ where: { id: activationId }, include: { staff: true } })
+      ? await prisma.activation.findFirst({ where: { id: activationId, deletedAt: null }, include: { staff: true } })
       : await prisma.activation.findFirst({
           where: {
             campaignId: req.params.campaignId,
+            deletedAt: null,
             ...(staffId ? { staffId } : {}),
             ...(outletId ? { outletId } : {}),
             dateFrom: { lte: when },
@@ -237,6 +239,7 @@ router.get(
     if (!activation) throw notFound("Activation");
     assertOutletAllowed(req, activation.outletId);
     const [activationItems, salesDefs] = await Promise.all([
+      // soft-delete-ok: removed products with a record that day stay editable (history)
       prisma.activationItem.findMany({
         // live products, plus removed ones that already have a record that day (history stays editable)
         where: { activationId: activation.id, OR: [liveActivationItem, { salesRecords: { some: { date: when } } }] },
@@ -325,6 +328,7 @@ router.patch(
     const activation = await prisma.activation.findFirst({
       where: {
         campaignId: req.params.campaignId,
+        deletedAt: null,
         dateFrom: { lte: today },
         dateTo: { gte: today },
       },
@@ -386,7 +390,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const allowed = outletIdsAllowed(req);
     const activations = await prisma.activation.findMany({
-      where: { campaignId: req.params.campaignId, ...(allowed ? { outletId: { in: allowed } } : {}) },
+      where: { campaignId: req.params.campaignId, deletedAt: null, ...(allowed ? { outletId: { in: allowed } } : {}) },
       select: { staffId: true },
     });
     const staffIds = [...new Set(activations.map((a) => a.staffId))];
@@ -514,10 +518,12 @@ router.post(
     const out = await restoreSoftDeleted({
       entity: "Supervisor route",
       load: async () => {
+        // soft-delete-ok: restore flow reads deleted rows by design
         const row = await prisma.supervisorRoute.findUnique({ where: { id: req.params.id } });
         return row && row.campaignId === req.params.campaignId ? row : null;
       },
       guard: async (row) =>
+        // soft-delete-ok: restore flow reads deleted rows by design
         parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
       update: (row) => clearMarker(prisma.supervisorRoute, row.id, "deletedAt", "Supervisor route"),
     });
@@ -734,10 +740,12 @@ router.post(
     const out = await restoreSoftDeleted({
       entity: "Supervisor task",
       load: async () => {
+        // soft-delete-ok: restore flow reads deleted rows by design
         const row = await prisma.supervisorTask.findUnique({ where: { id: req.params.id } });
         return row && row.campaignId === req.params.campaignId ? row : null;
       },
       guard: async (row) =>
+        // soft-delete-ok: restore flow reads deleted rows by design
         parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
       update: (row) => clearMarker(prisma.supervisorTask, row.id, "deletedAt", "Supervisor task"),
     });
@@ -760,6 +768,7 @@ router.get(
     const activations = await prisma.activation.findMany({
       where: {
         campaignId: req.params.campaignId,
+        deletedAt: null,
         dateFrom: { lte: day },
         dateTo: { gte: day },
         ...(outletId ? { outletId } : allowed ? { outletId: { in: allowed } } : {}),

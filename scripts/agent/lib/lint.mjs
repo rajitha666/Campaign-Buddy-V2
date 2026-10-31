@@ -80,7 +80,12 @@ export function scanSoftDelete(text, models) {
     // a filter built into a `where` variable just above: `const where = { deletedAt: null, … }` then `findMany({ where })`
     const before = lines.slice(Math.max(0, lineNo - 13), lineNo - 1).join('\n');
     const viaVariable = /\bwhere\b/.test(args) && !/where\s*:\s*\{/.test(args) && /(deletedAt|archivedAt)\s*:/.test(before);
-    if (/deletedAt|archivedAt/.test(args) || checked || viaVariable) continue;
+    // an explicit, reasoned opt-out (`// soft-delete-ok: why`) on the call's line or the two above it, or a spread of a
+    // `live…` / `…Scope(...)` helper (which by convention bakes the filter in)
+    const nearby = lines.slice(Math.max(0, lineNo - 3), lineNo).join('\n');
+    const annotated = /soft-delete-ok/.test(nearby);
+    const viaHelper = /\.\.\.\s*(?:live[A-Z]\w*|\w+Scope)/.test(args);
+    if (/deletedAt|archivedAt/.test(args) || checked || viaVariable || annotated || viaHelper) continue;
     findings.push({ line: lineNo, model: m[1], method: m[2] });
   }
   return findings;

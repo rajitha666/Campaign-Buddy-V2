@@ -147,8 +147,10 @@ router.post(
   asyncHandler(async (req, res) => {
     const out = await restoreSoftDeleted({
       entity: "Campaign",
+      // soft-delete-ok: restore flow reads deleted rows by design
       load: () => prisma.campaign.findUnique({ where: { id: req.params.campaignId } }),
       guard: async (row) =>
+        // soft-delete-ok: restore flow reads deleted rows by design
         parentDeleted(["client", await prisma.client.findUnique({ where: { id: row.clientId } })]),
       update: (row) => clearMarker(prisma.campaign, row.id, "deletedAt", "Campaign"),
       // campaignNo is unique among live campaigns only
@@ -191,6 +193,7 @@ router.post(
       // activations too, same as the single-item path below.
       await prisma.activationItem.createMany({
         data: (
+          // soft-delete-ok: adds the item to deleted activations too, so a restored one is not missing it
           await prisma.activation.findMany({ where: { campaignId }, select: { id: true } })
         ).flatMap((a) => created.map((ci) => ({ activationId: a.id, campaignItemId: ci.id }))),
         skipDuplicates: true,
@@ -215,6 +218,7 @@ router.post(
     // must still reach the promoters; previously only future activations saw it.
     await prisma.activationItem.createMany({
       data: (
+        // soft-delete-ok: adds the item to deleted activations too, so a restored one is not missing it
         await prisma.activation.findMany({ where: { campaignId }, select: { id: true } })
       ).map((a) => ({ activationId: a.id, campaignItemId: created.id })),
       skipDuplicates: true,
