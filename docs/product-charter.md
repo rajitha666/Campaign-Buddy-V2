@@ -5,7 +5,7 @@ The Product Owner (PO) agent ([`product-owner-agent.md`](product-owner-agent.md)
 issue and pull request against this file. Only the owner edits it. Where it says *"owner decision
 pending"*, the agent treats the question as open and flags any change that quietly assumes an answer.
 
-Last reviewed: 2026-10-02 (D1–D3 decided — deployment-per-agency, nothing shared, agency is the
+Last reviewed: 2026-10-31 (§7 gains architecture_risk and ux_accessibility block categories); earlier: 2026-10-02 (D1–D3 decided — deployment-per-agency, nothing shared, agency is the
 customer of record; see §2 and §6).
 
 ---
@@ -167,6 +167,8 @@ overridden (§8). Only these categories block:
 | `data_loss_offline` | can lose or duplicate field data (destructive migration, breaking the offline queue or its replay). |
 | `breaks_shipped_clients` | changes an API/response contract in a way app versions already in the field cannot handle, with no compatibility path. |
 | `scope_creep` | adds permanent complexity for everyone to serve one bespoke need, when a generic form exists. |
+| `architecture_risk` | introduces a structural risk, backed by evidence from the code, that no other block category covers: a delete or cascade path that can erase recorded history; a non-additive migration with no rollback or expand/contract plan; a write route with no role, campaign-access or outlet-scope check; an unbounded query on a growing table in a hot path. Must name the file/line or command output that shows it. |
+| `ux_accessibility` | makes a core flow unusable for a group of users, backed by a screenshot or measured value: a core action that cannot be reached by keyboard or screen reader; essential text below 4.5:1 contrast (3:1 for large text); content cut off or unreachable at 375 px; a destructive action with no confirmation and no undo. Cosmetic inconsistency, taste and below-target-but-compliant sizes are **advisory**, never a block. |
 
 **Advise (comment only, never blocks):** `scale`, `cost`, `locale_hardcoding`, `simplicity`,
 `missing_tests_or_guides`, `other`.
