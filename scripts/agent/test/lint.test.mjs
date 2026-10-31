@@ -110,3 +110,25 @@ test('lintSql does not mistake DROP NOT NULL for a NOT NULL column add', () => {
   const f = lintSql(sql);
   assert.deepEqual(f.map((x) => x.line), [2]); // only the genuine NOT NULL add (no default)
 });
+
+test('scanSoftDelete accepts a live*/…Scope spread helper', () => {
+  const src = [
+    'const c = await prisma.client.findMany({ where: { ...liveClient, id } });',
+    'const d = await prisma.client.findMany({ where: { id, ...staffScope(id) } });',
+    'const e = await prisma.client.findMany({ where: { id } });', // flagged
+  ].join('\n');
+  assert.deepEqual(scanSoftDelete(src, ['client']).map((x) => x.line), [3]);
+});
+
+test('scanSoftDelete accepts a soft-delete-ok annotation on the line or just above, not further away', () => {
+  const src = [
+    '// soft-delete-ok: restore reads deleted rows on purpose',
+    'const a = await prisma.client.findUnique({ where: { id } });',
+    'const b = await prisma.client.findMany({ where: { id } }); // soft-delete-ok: admin export',
+    '',
+    '',
+    '',
+    'const c = await prisma.client.findMany({ where: { id } });', // flagged: annotation too far above
+  ].join('\n');
+  assert.deepEqual(scanSoftDelete(src, ['client']).map((x) => x.line), [7]);
+});

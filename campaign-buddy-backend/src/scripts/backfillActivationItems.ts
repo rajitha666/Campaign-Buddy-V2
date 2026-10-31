@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma";
 
 async function main() {
+  // soft-delete-ok: one-off maintenance script covers all rows
   const campaigns = await prisma.campaign.findMany({
     select: { id: true, campaignItems: { select: { id: true } }, activations: { select: { id: true } } },
   });

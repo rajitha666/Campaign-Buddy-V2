@@ -3,6 +3,7 @@
 // a soft-deleted row would leak into lists, reports or exports. Static, heuristic, zero AI tokens.
 //   node scripts/agent/soft-delete-lint.mjs [--root <repo>] [--strict]
 // A read is accepted if its arguments mention deletedAt/archivedAt, or an explicit `.deletedAt`/`.archivedAt` check follows within 8 lines.
+// Deliberate unfiltered reads (restore flows, admin tooling) carry `// soft-delete-ok: <why>` on the call line or the two above.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { scanSoftDelete, softDeleteModels } from './lib/lint.mjs';

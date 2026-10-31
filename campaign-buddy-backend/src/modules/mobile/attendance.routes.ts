@@ -95,6 +95,7 @@ router.get(
     const activation = assignmentId
       ? await prisma.activation.findFirst({ where: { id: assignmentId, ...activationStaffScope(staffId) } })
       : open
+        // soft-delete-ok: shift is already open on this activation; report on it even if since deleted
         ? await prisma.activation.findUnique({ where: { id: open.activationId } })
         : await prisma.activation.findFirst({
             where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(staffId) },
@@ -298,6 +299,7 @@ router.post(
         orderBy: { date: "desc" },
       });
       activation = openElsewhere
+        // soft-delete-ok: shift is already open on this activation; report on it even if since deleted
         ? await prisma.activation.findUnique({ where: { id: openElsewhere.activationId } })
         : await prisma.activation.findFirst({
             where: { dateFrom: { lte: today }, dateTo: { gte: today }, ...activationStaffScope(req.staff!.sub) },

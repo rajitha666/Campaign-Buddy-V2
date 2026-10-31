@@ -109,6 +109,7 @@ router.delete("/brands/:id", requireRole("adm", "usr"), asyncHandler(async (req,
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
+// soft-delete-ok: restore flow reads deleted rows by design
 router.post("/brands/:id/restore", requireRole("adm", "usr"), restoreHandler("Brand", prisma.brand, async (r) => [["client", await prisma.client.findUnique({ where: { id: r.clientId } })]]));
 
 // ---- Items ----
@@ -137,6 +138,7 @@ router.delete("/items/:id", requireRole("adm", "usr"), asyncHandler(async (req, 
   await prisma.item.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
+// soft-delete-ok: restore flow reads deleted rows by design
 router.post("/items/:id/restore", requireRole("adm", "usr"), restoreHandler("Item", prisma.item, async (r) => [["brand", await prisma.brand.findUnique({ where: { id: r.brandId } })]], codeInUse("SKU")));
 router.post(
   "/items/:id/image",
@@ -205,6 +207,7 @@ router.delete("/outlets/:id", requireRole("adm", "usr"), asyncHandler(async (req
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
+// soft-delete-ok: restore flow reads deleted rows by design
 router.post("/outlets/:id/restore", requireRole("adm", "usr"), restoreHandler("Outlet", prisma.outlet, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]], codeInUse("outlet number")));
 
 // ---- Distributor Points ----
@@ -230,6 +233,7 @@ router.delete("/distributor-points/:id", requireRole("adm", "usr"), asyncHandler
   res.json(ok({ ...existing, deletedAt: new Date(), softDeleted: true }));
 }));
 
+// soft-delete-ok: restore flow reads deleted rows by design
 router.post("/distributor-points/:id/restore", requireRole("adm", "usr"), restoreHandler("Distributor point", prisma.distributorPoint, async (r) => [["city", await prisma.city.findUnique({ where: { id: r.cityId } })]]));
 
 export default router;

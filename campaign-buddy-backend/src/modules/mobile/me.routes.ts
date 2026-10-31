@@ -119,6 +119,7 @@ router.get(
   "/me/assignments",
   asyncHandler(async (req, res) => {
     const date = dayDate(typeof req.query.date === "string" ? req.query.date : undefined);
+    // soft-delete-ok: filter is present (lint cannot parse the apostrophe in the comment inside the call)
     const activations = await prisma.activation.findMany({
       // Supervisor mode (#63) matched supervisorStaffId only, so a promoter's own
       // activations were never listed here. Multi-outlet promoters (#promoter-choose)
@@ -167,7 +168,7 @@ router.get(
   "/me/supervisor-routes",
   asyncHandler(async (req, res) => {
     const routes = await prisma.supervisorRoute.findMany({
-      where: { supervisorStaffId: req.staff!.sub },
+      where: { supervisorStaffId: req.staff!.sub, deletedAt: null },
       include: { campaign: true },
       orderBy: { dateFrom: "asc" },
     });

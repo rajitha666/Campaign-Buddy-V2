@@ -17,6 +17,7 @@ import { slugifyFieldKey, coerceFieldValue, serializeDefinition, readFieldValue 
 const router = Router();
 
 async function loadOwnedField(campaignId: string, id: string) {
+  // soft-delete-ok: shared loader, also used by restore
   const field = await prisma.salesFieldDefinition.findUnique({ where: { id } });
   if (!field || field.campaignId !== campaignId) throw notFound("Custom sales field");
   return field;
@@ -50,6 +51,7 @@ router.post(
 
     let resolvedSort = sortOrder;
     if (resolvedSort == null) {
+      // soft-delete-ok: archived fields keep their sort slots
       const last = await prisma.salesFieldDefinition.aggregate({
         where: { campaignId: req.params.campaignId },
         _max: { sortOrder: true },
@@ -146,6 +148,7 @@ router.post(
       marker: "archivedAt",
       load: () => loadOwnedField(req.params.campaignId, req.params.id),
       guard: async (row) =>
+        // soft-delete-ok: restore flow reads deleted rows by design
         parentDeleted(["campaign", await prisma.campaign.findUnique({ where: { id: row.campaignId } })]),
       update: (row) => clearMarker(prisma.salesFieldDefinition, row.id, "archivedAt", "Custom sales field"),
     });
@@ -202,7 +205,7 @@ router.put(
       day?: Record<string, unknown>; products?: Record<string, Record<string, unknown>>;
     };
 
-    const activation = await prisma.activation.findUnique({ where: { id: activationId } });
+    const activation = await prisma.activation.findFirst({ where: { id: activationId, deletedAt: null } });
     if (!activation || activation.campaignId !== req.params.campaignId) throw notFound("Activation");
 
     const defs = await prisma.salesFieldDefinition.findMany({
