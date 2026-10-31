@@ -43,7 +43,7 @@ router.get(
   requireCampaignAccess,
   requireRole("adm", "usr"), // license data is for admin personas only (§ design decision 7)
   asyncHandler(async (req, res) => {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.campaignId } });
+    const campaign = await prisma.campaign.findFirst({ where: { id: req.params.campaignId, deletedAt: null } });
     if (!campaign) throw notFound("Campaign");
     const usage = await computeLicenseUsage(campaign.id);
     res.json(ok(serializeCampaignLicense(campaign, usage)));
@@ -56,7 +56,7 @@ router.patch(
   requireRole("adm"), // cap editing is Super Admin only (usr keeps read access)
   validate({ body: s.licenseUpdate }),
   asyncHandler(async (req, res) => {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.campaignId } });
+    const campaign = await prisma.campaign.findFirst({ where: { id: req.params.campaignId, deletedAt: null } });
     if (!campaign) throw notFound("Campaign");
 
     const body = req.body as Record<string, unknown>;
@@ -104,8 +104,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const where =
       req.user!.roleId === "adm"
-        ? {}
-        : { accessGrants: { some: { userId: req.user!.sub } } };
+        ? { deletedAt: null }
+        : { deletedAt: null, accessGrants: { some: { userId: req.user!.sub } } };
     const campaigns = await prisma.campaign.findMany({
       where,
       include: { client: true },

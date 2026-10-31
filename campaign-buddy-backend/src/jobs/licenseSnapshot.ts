@@ -11,7 +11,7 @@ import { LICENSE_PERIODS, periodStart } from "../utils/licensePeriods";
 
 export async function captureLicenseSnapshots(now: Date = new Date()): Promise<number> {
   const campaigns = await prisma.campaign.findMany({
-    where: { status: { not: "ended" } },
+    where: { status: { not: "ended" }, deletedAt: null },
     select: {
       id: true,
       licensePromoterCap: true,

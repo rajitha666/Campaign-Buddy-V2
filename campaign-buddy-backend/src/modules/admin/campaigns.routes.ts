@@ -400,7 +400,7 @@ router.post(
     if (actorOutlets && (scopeType === "all" || outletIds.some((id) => !actorOutlets.includes(id)))) {
       throw new ApiError(403, "OUTLET_NOT_ALLOWED", "You can only grant access to outlets you have access to yourself");
     }
-    if (outletIds.length && (await prisma.outlet.count({ where: { id: { in: outletIds } } })) !== new Set(outletIds).size) {
+    if (outletIds.length && (await prisma.outlet.count({ where: { id: { in: outletIds }, deletedAt: null } })) !== new Set(outletIds).size) {
       throw new ApiError(400, "VALIDATION_ERROR", "Unknown outlet in outletIds");
     }
     const grant = await prisma.campaignAccessGrant.create({
