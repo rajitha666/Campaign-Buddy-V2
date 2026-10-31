@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ICONS } from './Icons';
 import SearchableSelect from './SearchableSelect';
+import { useDialogA11y } from '../lib/dialogFocus';
 import { useAuth } from '../context/AuthContext';
 import { applyDesignationLabel } from '../lib/designationLabel';
 import { groupFields, sectionSummary, sectionStartsOpen, fieldError, groupsWithErrors } from '../lib/formSections';
@@ -33,6 +34,7 @@ export default function Drawer({
   const [openGroups, setOpenGroups] = useState({});
   const edited = useRef({}); // keys the user typed into, so defaultFrom stops following its source
   const bodyRef = useRef(null);
+  const dialogRef = useDialogA11y(open, onClose);
   const groups = groupFields(fields);
 
   useEffect(() => {
@@ -135,13 +137,13 @@ export default function Drawer({
   return (
     <>
       <div className="overlay" onClick={onClose} />
-      <div className="drawer open">
+      <div className="drawer open" ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="drawer-title">
         <div className="drawer-head">
           <div>
-            <div className="drawer-title h-display">{title}</div>
+            <div className="drawer-title h-display" id="drawer-title">{title}</div>
             <div className="drawer-sub">{subtitle}</div>
           </div>
-          <div className="close-btn" onClick={onClose}>{ICONS.close}</div>
+          <div className="close-btn" role="button" tabIndex={0} aria-label="Close" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>{ICONS.close}</div>
         </div>
         <div className="drawer-body" ref={bodyRef}>
           {error ? <div className="error-state" style={{ marginBottom: 16 }}>{error}</div> : null}
