@@ -82,6 +82,12 @@ describe('resultsCsv', () => {
     expect(second[9]).toBe('2026-09-18 04:30');
   });
 
+  it('uses the campaign designation label in the header instead of "Promoter" (#64)', () => {
+    const [header] = resultsCsv([], 'https://x', 'Beauty Advisor');
+    expect(header[3]).toBe('Beauty Advisor');
+    expect(resultsCsv([], 'https://x')[0][3]).toBe('Promoter'); // default unchanged
+  });
+
   it('numbers each visit so a supervisor\'s second visit to an outlet the same day is told apart', () => {
     const base = { date: '2026-09-18T00:00:00.000Z', outletName: 'Keells', promoterName: 'Kasun', supervisorName: 'Dinesh', category: 'Sale', task: 'Pricing', taskType: 'range', rating: 3, feedback: null, photos: [] };
     const [, v1, v2] = resultsCsv([{ ...base, visitNo: 1 }, { ...base, visitNo: 2 }], 'https://x');
