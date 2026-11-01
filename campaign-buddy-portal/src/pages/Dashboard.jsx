@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { applyDesignationLabel } from '../lib/designationLabel';
 import {
   dashboard as dashboardApi,
   activations as activationsApi,
@@ -214,6 +215,7 @@ function AttentionStrip({ items }) {
 }
 
 function SetupChecklist({ setup, campaignId, canEdit }) {
+  const { designationLabel } = useAuth();
   const step = (done, text, to) => (
     <li><span aria-hidden="true">{done ? '✅' : '⬜'} </span><span className="sr-only">{done ? 'Done: ' : 'To do: '}</span>{text}{!done && canEdit && to ? <> — <Link to={to}>set up</Link></> : null}{!done && !canEdit ? <span className="cell-muted"> — ask an admin</span> : null}</li>
   );
@@ -223,9 +225,9 @@ function SetupChecklist({ setup, campaignId, canEdit }) {
       <ul>
         {step(setup.products > 0, `Products added (${setup.products})`, `/campaigns/${campaignId}/items`)}
         {step(setup.activations > 0, `Activations created (${setup.activations})`, '/activations')}
-        {step(setup.promotersAssigned > 0, `Promoters assigned (${setup.promotersAssigned})`, '/activations')}
+        {step(setup.promotersAssigned > 0, `${applyDesignationLabel('Promoters', designationLabel)} assigned (${setup.promotersAssigned})`, '/activations')}
       </ul>
-      <p className="panel-sub">Your numbers appear here once the first promoter checks in.</p>
+      <p className="panel-sub">Your numbers appear here once the first {applyDesignationLabel('promoter', designationLabel)} checks in.</p>
     </section>
   );
 }

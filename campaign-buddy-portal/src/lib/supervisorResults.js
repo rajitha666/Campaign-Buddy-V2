@@ -1,4 +1,5 @@
 // Helpers for the Supervisor Task Results page (mobile outlet checklist answers).
+import { applyDesignationLabel } from './designationLabel';
 
 export function resultText(r) {
   if (r.taskType === 'photo') {
@@ -57,8 +58,8 @@ export function visitLabel(r, fmt = clock) {
   return r.visitStartedAt ? `${label} · ${fmt(r.visitStartedAt)}` : label;
 }
 
-export function resultsCsv(rows, origin) {
-  const header = ['Date', 'Visit', 'Outlet', 'Promoter', 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded'];
+export function resultsCsv(rows, origin, designationLabel) {
+  const header = ['Date', 'Visit', 'Outlet', applyDesignationLabel('Promoter', designationLabel), 'Supervisor', 'Category', 'Task', 'Result', 'Photo links', 'Photo uploaded'];
   const lines = rows.map((r) => [
     exportDate(r.date),
     r.visitNo ?? 1,
