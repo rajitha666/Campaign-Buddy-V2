@@ -129,7 +129,7 @@ Options (one per line, shown only for Dropdown), Required (Yes/No), Sort order.
 Edit locks Type/Applies-to once values exist. Archive / Restore / Delete actions.
 
 ### Portal — Sales page (`SalesPage.jsx` + `UpdateSales.jsx`)
-On *Load sales*: render day-level fields as inputs above the product table; add one
+When an outlet and date are chosen (the screen loads on selection; the **Refresh** button reloads it): render day-level fields as inputs above the product table; add one
 column per product-level field in the table. *Save corrections* also `PUT`s custom
 values. Last 7 Days panel lists day-level values per day. CSV export gains columns
 (`day:<key>` and `<key>` per product row).
