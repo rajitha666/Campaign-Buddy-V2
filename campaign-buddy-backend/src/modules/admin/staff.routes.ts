@@ -45,6 +45,20 @@ const STAFF_WRITABLE = [
   "bankAccountName", "bankName", "bankAccountNumber", "bankBranch",
 ] as const;
 
+// Personal, HR and contact details only head-office admins may read. The staff list also feeds dropdowns that
+// supervisors and client (sponsor) users see, so for them these are removed from every row.
+const ADMIN_ONLY_STAFF_FIELDS = [
+  "phone", "mobileUsername", "nic", "dateOfBirth", "gender", "permanentAddress", "currentAddress",
+  "emergencyContactName", "emergencyContactPhone",
+  "bankAccountName", "bankName", "bankAccountNumber", "bankBranch",
+] as const;
+const canReadStaffPii = (roleId?: string) => roleId === "adm" || roleId === "usr";
+function withoutStaffPii<T extends Record<string, unknown>>(row: T): Partial<T> {
+  const out: Record<string, unknown> = { ...row };
+  for (const f of ADMIN_ONLY_STAFF_FIELDS) delete out[f];
+  return out as Partial<T>;
+}
+
 // The portal submits "" for any blank optional field (#21) — never send that
 // through raw. A DateTime? column (dateOfBirth) throws on "" rather than
 // accepting it, and it's not meaningfully different from "not set" for any
@@ -115,7 +129,8 @@ router.get(
       prisma.staff.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, include: { city: true } }),
       prisma.staff.count({ where }),
     ]);
-    res.json(okList(rows, total)); // passwordHash omitted globally (src/utils/prisma.ts)
+    // passwordHash omitted globally (src/utils/prisma.ts); HR / contact details only for admins
+    res.json(okList(canReadStaffPii(req.user!.roleId) ? rows : rows.map(withoutStaffPii), total));
   })
 );
 
@@ -197,6 +212,7 @@ router.post(
 // NEW in v3 — folded in from the retired Full Backend Contract §7.7.1 (Spec v3 §4.2).
 router.get(
   "/staff/:staffId/evaluation",
+  requireRole("adm", "usr"), // the response embeds the full HR / bank profile
   asyncHandler(async (req, res) => {
     const { staffId } = req.params;
     const { dateFrom, dateTo } = req.query as { dateFrom?: string; dateTo?: string };
